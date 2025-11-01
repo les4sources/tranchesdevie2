@@ -1,6 +1,4 @@
 class StripeEvent < ApplicationRecord
-  belongs_to :tenant, optional: true
-
   validates :event_id, presence: true, uniqueness: true
 
   def processed?

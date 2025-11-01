@@ -1,0 +1,62 @@
+<% content_for :title, "Catalogue" %>
+
+<div class="mb-8">
+  <h1 class="text-3xl font-bold text-gray-900">Catalogue</h1>
+  
+  <% if @bake_day %>
+    <p class="mt-2 text-gray-600">
+      Jour de cuisson: <strong><%= @bake_day.baked_on.strftime("%d/%m/%Y") %></strong>
+      (commande avant <%= @bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %>)
+    </p>
+  <% else %>
+    <p class="mt-2 text-gray-600">Aucun jour de cuisson disponible</p>
+  <% end %>
+</div>
+
+<% if @products.empty? %>
+  <div class="text-center py-12">
+    <p class="text-gray-500">Aucun produit disponible pour cette date.</p>
+  </div>
+<% else %>
+  <% @products.group_by { |p, _| p[0].category }.each do |category, products| %>
+    <div class="mb-12">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">
+        <%= category == 'breads' ? 'Pains' : 'Boules de pâte' %>
+      </h2>
+      
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <% products.each do |product, variants| %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">
+              <%= product.name %>
+            </h3>
+            
+            <% if product.description.present? %>
+              <p class="text-sm text-gray-600 mb-4"><%= product.description %></p>
+            <% end %>
+
+            <div class="space-y-3">
+              <% variants.each do |variant| %>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-700"><%= variant.name %></span>
+                  <div class="flex items-center space-x-4">
+                    <span class="text-sm font-medium text-gray-900">
+                      <%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %>
+                    </span>
+                    <%= form_with url: cart_add_path, method: :post, local: true, class: "inline" do |f| %>
+                      <%= f.hidden_field :product_variant_id, value: variant.id %>
+                      <%= f.hidden_field :bake_day_id, value: @bake_day&.id %>
+                      <%= f.hidden_field :qty, value: 1 %>
+                      <%= f.submit "Ajouter", class: "ml-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+

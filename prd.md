@@ -1,145 +1,204 @@
+# Tranches de Vie
+
+ID: SG-14
+Statut: En cours
+
 <context>
 
 # Overview
 
-Tranches de Vie is a multi‑tenant web application for artisan bakeries that bake on fixed days (Tuesday and Friday). It lets customers place pre‑orders, pay online, and receive SMS updates, while bakery teams manage catalog, capacities, orders, and production sheets. It reduces admin overhead, enforces cut‑offs, and prioritizes standing orders so bakers produce the right quantities.
+Tranches de Vie is a single-tenant web application for one artisan bakery that bakes on fixed days (Tuesday and Friday). It lets customers place pre-orders, pay online, and receive SMS updates, while the bakery team manages catalog, orders, and production sheets. It reduces admin overhead, enforces cut-offs, and prioritizes standing orders so bakers produce the right quantities.
 
-# Core Features
+# Core Features (MVP)
 
 1. Public Catalog
-
-* **What:** Browse products and variants without login; show seasonal/bonus availability per selected bake day.
-* **Why:** Frictionless discovery improves conversion.
-* **How:** Server‑side filtering by bake day, product availability ranges, and capacity flags.
-
-2. Cart & Checkout (Stripe)
-
-* **What:** Select target bake day (Tue/Fri), pay via Card, Bancontact, Apple Pay, Google Pay.
-* **Why:** Secure, fast payments with strong local methods.
-* **How:** Stripe Payment Element with immediate capture; order created on `payment_intent.succeeded`.
-
-3. Standing Orders with D‑4 Confirmation
-
-* **What:** Recurring orders on Tue/Fri/Both; J‑4 SMS at 10:30 to confirm; keywords **PAUSE** (skip date) and **STOP** (suspend).
-* **Why:** Drives retention and predictable production.
-* **How:** Scheduler sends SMS via Telerivet; inbound webhook records pauses/suspensions; standing orders get priority allocation.
-
-4. Admin Console (per tenant)
-
-* **What:** Orders, capacities, production sheets (by variant and ingredient), dashboards, CGV/refund CMS.
-* **Why:** Centralizes operations; reduces manual spreadsheets.
-* **How:** Rails admin with tenant‑scoped data; BOM aggregation for production.
-
-5. Multi‑Tenant Bakery Support
-
-* **What:** Isolated bakery spaces under one platform.
-* **Why:** Scale to multiple teams without data leakage.
-* **How:** Per‑tenant Postgres schemas using `ros-apartment`; subdomain routing.
-
-6. SMS Notifications (Telerivet)
-
-* **What:** Confirmation, D‑4 recap, and “ready for pickup” messages.
-* **Why:** Clear, timely communication.
-* **How:** Outbound API and inbound webhook for keyword parsing.
-
-# User Experience
-
-* **Personas:**
-
-  * Customer: wants quick ordering, trusted payments, SMS status.
-  * Baker/Admin: wants capacity controls, accurate production, refunds, and no‑show marking.
-  * Platform Owner: provisions tenants, minimal global controls.
-* **Key Flows:**
-
-  1. One‑off order → select bake day → pay → confirmation SMS → ready SMS → pickup 24/7.
-  2. Standing order setup → D‑4 reminder → PAUSE/STOP if needed.
-  3. Admin planning → set caps → auto lock at cut‑off → production sheet → mark ready/picked_up/no_show → dashboards.
-  4. Tenant onboarding → choose subdomain → configure catalog/payments/SMS branding.
-* **UI/UX Considerations:**
-
-  * Bake‑day selector upfront; disable past cut‑off.
-  * Variant weights clear (e.g., 600 g / 1 kg).
-  * Capacity reached → disable with explanation.
-  * Admin in French; client FR/NL/EN via POEditor.
-  * Phone input E.164 validation; SMS OTP login with accessible error states.
+- **What:** Browse products and variants without login; show seasonal/bonus availability per selected bake day.
+- **Why:** Frictionless discovery improves conversion.
+- **How:** Server-side filtering by bake day and product availability ranges.
+1. Cart & Checkout (Stripe)
+- **What:** Select target bake day (Tue/Fri), pay via Card, Bancontact, Apple Pay, Google Pay.
+- **Why:** Secure, fast payments with strong local methods.
+- **How:** Stripe Payment Element with immediate capture; order created on `payment_intent.succeeded`.
+1. SMS Notifications
+- **What:** Confirmation on payment success and "ready for pickup" messages.
+- **Why:** Clear, timely communication.
+- **How:** Outbound API and inbound webhook for keyword parsing (no D-4 loop in MVP).
+1. Admin Console (minimal)
+- **What:** Orders list, status changes (ready / picked_up / no_show).
+- **Why:** Operate daily flow with minimal surface.
+- **How:** Rails admin with app-scoped data.
 
 </context>
 
 <PRD>
 
-# Technical Architecture
+# 0. Environments and Deployment
 
-* **System Components:**
+- Environments: local development and production only. No staging.
+- Deployment: Hatchbox. No special preparation required here.
+- Versions: latest stable Ruby, Rails, Node (for asset build), PostgreSQL 17, recent Redis.
+- Environment variables: all keys and secrets supplied via ENV.
+- Migrations: no zero‑downtime requirement.
+- Jobs/queues: ActiveJob + Sidekiq (Redis).
+- Seeds: create a few demo products/variants with images.
+- Seed (detailed list):
+    - Category: Breads
+        - Spelt bread
+            - 1 kg — 550 cents — price per unit
+            - 600 g — 350 cents — price per unit
+        - Wheat bread
+            - 1 kg — 450 cents — price per unit
+            - 600 g — 300 cents — price per unit
+        - Ancient grains bread
+            - 600 g — 550 cents — price per unit
+        - Walnut bread
+            - 1 kg — 550 cents — price per unit
+            - 600 g — 400 cents — price per unit
+        - Seeded bread
+            - 1 kg — 550 cents — price per unit
+            - 600 g — 400 cents — price per unit
+        - Walnut/fig bread
+            - 600 g — 400 cents — price per unit
+        - Choco/sugar bread
+            - 600 g — 400 cents — price per unit
+    - Category: Dough balls
+        - Take‑away pizza dough ball — 200 cents — price per unit
+        - Private Pizza Party dough ball — 500 cents — price per unit
 
-  * Client web (Hotwire/Turbo + Tailwind)
-  * Admin console (Rails views)
-  * Background workers (ActiveJob) for J‑4 SMS, cut‑off locks, ready notifications
-  * Stripe integration (Payment Element, webhooks)
-  * Telerivet integration (outbound API, inbound webhook)
-  * Multi‑tenant isolation (Postgres schemas via `ros-apartment`)
-* **Data Models (tenant‑scoped):** customers, phone_verifications, products, product_variants, product_availabilities, ingredients, product_ingredients, bake_days, production_caps, orders, order_items, payments, standing_orders, standing_order_items, standing_order_skips, sms_messages, admin_pages. Global: tenants, platform_users (optional).
-* **APIs & Integrations:**
+# 1. Information Architecture Summary (MVP)
 
-  * Stripe: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`.
-  * Telerivet: outbound send; inbound `/webhooks/telerivet` with case‑insensitive `PAUSE`/`STOP`.
-* **Infrastructure:** VPS via Hatchbox; Postgres 17; Rails 8.1; Hotwire/Turbo; Tailwind; ActiveStorage; ActiveJob; SSL via Cloudflare; backups via Linode Backup; Sentry for errors; Europe/Brussels TZ.
+- Primary objects: Product, ProductVariant, Availability, BakeDay, Customer, Order, OrderItem, Payment, SMSMessage, AdminPage.
+- Roles: Customer, Admin (single session protected by password, no multi‑user system).
+- Journeys: Browse → Choose bake day → Cart → Pay → Confirmation SMS → Ready SMS → Pickup.
+- Naming: snake_case tables/columns. Phone E.164. Dates in Europe/Brussels. Prices in EUR cents.
+- Public URLs: `/`, `/catalog?bake_day=YYYY-MM-DD`, `/cart`, `/checkout`, `/orders/:token` (non‑expiring link).
+- Admin URLs: `/admin/orders`, `/admin/products`.
 
-# Development Roadmap
+# 2. Goals and Non‑Goals
 
-* **MVP (Foundations + Ordering):**
+- Goals (MVP):
+    1. Order for Tue/Fri with cut‑offs.
+    2. Stripe payments with immediate capture (Card, Bancontact, Apple Pay, Google Pay).
+    3. Confirmation and “ready” SMS.
+    4. Admin updates order statuses.
+- Phase 2 (out of MVP):
+    - Standing orders (cadence, D‑4, PAUSE/STOP)
+    - Production sheets and BOM
+    - Dashboards/KPIs
+    - CMS for T&Cs/refund
+    - NL/EN languages
+    - Brand profiles, advanced access, waitlists, low‑stock alerts
 
-  * Tenant provisioning (subdomain, schema seed)
-  * Public catalog with bake‑day filter and seasonal availability
-  * Cut‑offs (Sun 18:00 for Tue; Wed 18:00 for Fri) and bake‑day disabling
-  * Checkout with Stripe (Card, Bancontact, Apple Pay, Google Pay), immediate capture
-  * Confirmation SMS; ready SMS; admin orders list; mark ready/picked_up/no_show
-  * CGV/refund CMS pages; client FR/NL/EN; admin FR
-* **Production & Capacities:**
+# 3. Domain Model (conceptual)
 
-  * Per‑variant capacities per bake day; disable at capacity
-  * Production sheets: by product/variant and aggregated ingredients (BOM)
-* **Standing Orders:**
+- Product 1—n ProductVariant
+- Order 1—n OrderItem; Order belongs to a BakeDay
+- Payment 1—1 Order (Stripe)
+- Customer 1—n Orders
 
-  * Create/manage Tue/Fri/Both; priority allocation
-  * D‑4 10:30 SMS recap; inbound PAUSE/STOP; per‑date skips
-* **Dashboards & Multi‑tenant polish:**
+# 4. Data Model (schema)
 
-  * Sales by bake day/product; revenue by range; average order value; recurring revenue forecast; no‑show rate
-  * Tenant self‑service signup (optional approval), branding prefix in SMS
-* **Future Enhancements (Phase 2):**
+- products(id, name, description, active)
+    - Categories and sorting: `category` enum[breads, dough_balls], `position` int for order within category (lower first). Default ordering: category (breads first) → position → name.
+- product_variants(id, product_id FK, name, price_cents, active, image_url)
+    - MVP convention: each weight is a separate fixed‑price variant (e.g., “Country 600 g”, “Country 1 kg”). No per‑kg dynamic pricing.
+- product_availabilities(id, product_variant_id FK, start_on date, end_on date nullable)
+- bake_days(id, baked_on date unique, cut_off_at timestamptz)
+- customers(id, phone_e164 unique, first_name, last_name nullable, email nullable)
+- phone_verifications(id, phone_e164, code, expires_at)
+- orders(id, customer_id FK, bake_day_id FK, status enum[pending,paid,ready,picked_up,no_show,cancelled], total_cents, public_token unique)
+- order_items(id, order_id FK, product_variant_id FK, qty int, unit_price_cents)
+- payments(id, order_id FK unique, stripe_payment_intent_id unique, status enum[succeeded,failed,refunded])
+- sms_messages(id, direction enum[outbound,inbound], to_e164, from_e164, baked_on nullable, body, kind enum[confirmation,ready,refund,other], external_id)
+- admin_pages(id, slug unique, title, body)
 
-  * Stripe Connect per tenant; per‑tenant Telerivet credentials
-  * Advanced access control; richer reports; waitlists; low‑stock alerts
+# 5. Functional Rules (MVP)
 
-# Logical Dependency Chain
+## 5.1 Identifiers and Conventions
 
-1. **Platform & Tenant Foundation:** tenancy, routing, auth, settings.
-2. **Catalog & Bake Logic:** products, variants, availability, bake days, cut‑offs.
-3. **Payments:** Stripe integration and webhooks; order lifecycle.
-4. **Notifications:** SMS outbound/inbound; templates; ready events.
-5. **Admin Ops:** orders board, capacities, production sheets, CMS pages.
-6. **Standing Orders:** scheduling, priority allocation, D‑4 reminders.
-7. **Dashboards:** KPIs and forecasting.
-8. **Multi‑tenant Enhancements:** self‑service, branding, optional Connect.
+- Human order number: `TV-YYYYMMDD-XXXX` where `XXXX` is a zero‑padded daily counter. Example: `TV-20251101-0007`.
+- Public order token (`orders.public_token`): 24‑char Base58 url‑safe, cryptographically secure, non‑guessable, non‑expiring. Example shape: `6YqZQhP1r9aBd8KfX2NuSeDw`.
+- Idempotency: use `payment_[intent.id](http://intent.id)` as the app idempotency key for Order creation.
+- OTP: 6‑digit code, TTL 5 minutes, max 5 attempts, 60 s cooldown between attempts.
+- Currency: EUR, prices in integer cents (2 decimals), VAT 0%.
+- Cut‑offs: Tue ← Sun 18:00, Fri ← Wed 18:00 (Europe/Brussels). UI disables, server validates.
+- Public order link: `orders.public_token` non‑expiring.
+- Payment flow: Stripe Payment Element; create Order on `payment_intent.succeeded`.
+- Receipts: no app‑side customer receipts (Stripe receipts disabled from app perspective).
+- SMS: Confirmation after payment. “Ready” when moving to `ready`.
+    - “Ready” message: "Bonjour, votre commande est cuite, elle est disponible aux 4 Sources ! Les artisans de Tranche de Vie".
+    - Global STOP: implemented. If STOP received, mark customer opt‑out and do not send further SMS until manual admin re‑opt‑in.
+- Client auth: minimal SMS OTP (short TTL, attempt limits, simple error messages).
+- Admin: access protected by a session password (no user management).
+- Language: French only (phase 1).
 
-# Risks and Mitigations
+# 6. Status Transitions (allowed)
 
-* **Capacity race conditions:** use DB row‑level locks on availability checks; re‑quote cart on conflict.
-* **Shared Stripe/Telerivet in Phase 1:** reconciliation and branding risks → descriptor suffix and SMS prefix; plan migration to Connect/per‑tenant credentials.
-* **No rate limiting requirement:** OTP abuse risk → enforce OTP attempt caps and short code expiry.
-* **MVP creep:** lock scope per milestone; defer Connect and advanced reporting to Phase 2.
-* **Time‑zone errors:** centralize TZ handling to Europe/Brussels and test cut‑off boundaries.
+- `pending` → `paid` (successful Stripe webhook)
+- `paid` → `ready` (admin action) → sends “ready” SMS
+- `ready` → `picked_up` (admin action)
+- `ready` → `no_show` (admin action)
+- `paid` → `cancelled` (full refund before cut‑off) → sends “refund” SMS
+- Forbidden: reverse transitions except manual admin correction via console (out of UI flow)
 
-# Appendix
+# 7. Refund (before cut‑off)
 
-* **Business Rules:** Tue/Fri only; per‑date OFF; cut‑offs (Tue ← Sun 18:00, Fri ← Wed 18:00); pickup 24/7; full refund until cut‑off; no VAT/discounts/promos/fees; standing orders prioritized; SMS at 10:30.
-* **Environment Variables:** `STRIPE_PUBLIC_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, TELERIVET_API_KEY, TELERIVET_PROJECT_ID, TELERIVET_PHONE_ID, SENTRY_DSN, ACTIVE_STORAGE_SERVICE, TIME_ZONE=Europe/Brussels`.
-* **SMS Templates (EN; FR/NL via POEditor):**
+- Trigger: by admin from the order view.
+- Effects:
+    - Immediate full Stripe refund.
+    - Update Payment.status=refunded, Order.status=cancelled.
+    - Send refund SMS: "Votre commande a été remboursée intégralement car annulée avant l'heure limite."
 
-  * D‑4 reminder: "{tenant} — Reminder: your recurring order for {bake_date}: {items}. Reply PAUSE to skip. Reply STOP to suspend."
-  * Order confirmation: "{tenant} — Thank you {first_name}. Order {order_number} received for {bake_date}. Pickup 24/7 at {pickup}. We'll text when ready."
-  * Ready: "{tenant} — Order {order_number} is ready. Pickup 24/7 at {pickup}."
-* **Indexing Notes:** unique(customers.phone_e164); FKs; composites on orders(bake_day_id,status) and production_caps(baked_on,product_variant_id).
+# 8. Interfaces and APIs (MVP)
+
+- Stripe webhooks: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`.
+- Telerivet: Android app with Belgian number. Outbound via API. Inbound `/webhooks/telerivet` for global STOP.
+- Public read: `GET /orders/:token`.
+
+# 9. UI Library (MVP)
+
+- Framework: Tailwind CSS + Hotwire/Turbo.
+- UI library: Tailwind UI (Starter).
+- Components: simple navbar, footer, product grid, product cards, Cart page (no drawer), checkout form, alerts, toasts, spinners, admin table + badges + confirmation modal.
+- Branding: default palette (to define), no enforced brand guide.
+- A11y: Tailwind UI focus/ARIA patterns.
+
+# 10. Journeys and Acceptance Criteria (MVP)
+
+## 10.1 One‑off order
+
+- Filter by bake day. Add to cart. Stripe payment.
+- AC:
+    - Successful payment → Order.status=paid, confirmation SMS < 30s.
+    - `payment_failed` → clear UI error, retry possible.
+
+## 10.2 Admin
+
+- Orders list, allowed status changes.
+- AC:
+    - `paid`→`ready` sends the ready SMS with the defined text.
+    - Refund before cut‑off sets Order.status=cancelled and sends refund SMS.
+
+# 11. Non‑Functional
+
+- Timezone: centralized Europe/Brussels with boundary tests.
+- Security: signed webhooks, CSRF on non‑GET, rate‑limit OTP and checkout init.
+- Observability: Sentry, structured logs (mask phone PII).
+- Performance: catalog TTFB < 300 ms for ~100 variants.
+
+# 12. Tests
+
+- Cut‑off edges 17:59 vs 18:01.
+- `payment_failed` then success.
+- STOP inbound prevents future sends.
+- Refund before cut‑off updates states + SMS.
+
+# 13. Glossary
+
+- Bake day: target baking date. Cut‑off: last order time. Public token: non‑expiring public read identifier.
+
+# 14. Configuration
+
+- Required ENV: `STRIPE_PUBLIC_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, TELERIVET_API_KEY, TELERIVET_PROJECT_ID, TELERIVET_PHONE_ID, SENTRY_DSN, ACTIVE_STORAGE_SERVICE, TIME_ZONE=Europe/Brussels, ADMIN_PASSWORD`.
 
 </PRD>
-

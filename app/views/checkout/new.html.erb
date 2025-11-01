@@ -1,0 +1,168 @@
+<% content_for :title, "Paiement" %>
+
+<% content_for :head do %>
+  <script src="https://js.stripe.com/v3/"></script>
+<% end %>
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser votre commande</h1>
+
+  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <!-- Customer info form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
+
+      <%= form_with model: @customer, url: checkout_path, method: :post, local: false, id: "customer-form", data: { controller: "checkout" } do |f| %>
+        <% unless @otp_verified %>
+          <!-- Phone verification step -->
+          <div id="phone-verification-step">
+            <div class="mb-4">
+              <%= f.label :phone_e164, "Numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_field :phone_e164, 
+                  placeholder: "+32XXXXXXXXX", 
+                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                  required: true,
+                  pattern: "\\+[1-9]\\d{1,14}" %>
+              <p class="mt-1 text-sm text-gray-500">Format: +32XXXXXXXXX</p>
+            </div>
+
+            <button type="button" 
+                    id="send-otp-btn" 
+                    data-action="click->checkout#sendOTP"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              Envoyer le code de vérification
+            </button>
+
+            <div id="otp-input-section" class="hidden mt-4">
+              <div class="mb-4">
+                <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= text_field_tag :otp_code, nil, 
+                    maxlength: 6,
+                    pattern: "\\d{6}",
+                    class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                    placeholder: "123456" %>
+              </div>
+
+              <button type="button" 
+                      id="verify-otp-btn" 
+                      data-action="click->checkout#verifyOTP"
+                      class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                Vérifier le code
+              </button>
+            </div>
+
+            <div id="otp-message" class="mt-4 hidden"></div>
+          </div>
+        <% else %>
+          <!-- Customer details -->
+          <div id="customer-details">
+            <div class="mb-4">
+              <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_field :first_name, 
+                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                  required: true %>
+            </div>
+
+            <div class="mb-4">
+              <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_field :last_name, 
+                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+
+            <div class="mb-4">
+              <%= f.label :email, "Email (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.email_field :email, 
+                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Payment section -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Paiement</h2>
+
+      <div class="mb-4">
+        <p class="text-sm text-gray-600 mb-2">Résumé de la commande:</p>
+        <div class="space-y-2">
+          <% @cart.each do |item| %>
+            <% variant = ProductVariant.find(item['product_variant_id']) %>
+            <div class="flex justify-between text-sm">
+              <span><%= variant.name %> x <%= item['qty'] %></span>
+              <span><%= number_to_currency((item['qty'].to_i * variant.price_cents) / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+            </div>
+          <% end %>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between">
+          <span class="font-medium">Total</span>
+          <span class="font-bold"><%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+        </div>
+      </div>
+
+      <div id="payment-element" class="mb-4">
+        <!-- Stripe Payment Element will be mounted here -->
+      </div>
+
+      <button id="submit-payment" 
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled>
+        Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+      </button>
+
+      <div id="payment-message" class="mt-4 hidden"></div>
+    </div>
+  </div>
+</div>
+
+<%= javascript_tag do %>
+  const stripe = Stripe('<%= ENV['STRIPE_PUBLIC_KEY'] %>');
+  
+  // Initialize payment element when customer details are filled and OTP verified
+  <% if @otp_verified %>
+    initializePayment();
+  <% end %>
+
+  function initializePayment() {
+    fetch('<%= checkout_create_payment_intent_path %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': '<%= form_authenticity_token %>'
+      },
+      body: JSON.stringify({
+        first_name: document.getElementById('customer_first_name')?.value,
+        last_name: document.getElementById('customer_last_name')?.value,
+        email: document.getElementById('customer_email')?.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      const elements = stripe.elements({ clientSecret: data.client_secret });
+      const paymentElement = elements.create('payment');
+      paymentElement.mount('#payment-element');
+
+      document.getElementById('submit-payment').addEventListener('click', async () => {
+        const { error } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: '<%= checkout_success_url %>?payment_intent={PAYMENT_INTENT_ID}'
+          }
+        });
+
+        if (error) {
+          document.getElementById('payment-message').textContent = error.message;
+          document.getElementById('payment-message').classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('submit-payment').disabled = false;
+    });
+  }
+<% end %>
+

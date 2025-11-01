@@ -1,0 +1,40 @@
+<% content_for :title, "Produits" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-gray-900">Produits</h1>
+  <%= link_to "Nouveau produit", new_admin_product_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
+</div>
+
+<div class="bg-white shadow-sm rounded-lg border border-gray-200">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variantes</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      <% @products.each do |product| %>
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+            <%= product.name %>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+            <%= product.category.humanize %>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">
+            <%= product.product_variants.count %> variante(s)
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <%= link_to "Voir", admin_product_path(product), class: "text-blue-600 hover:text-blue-800 mr-3" %>
+            <%= link_to "Modifier", edit_admin_product_path(product), class: "text-blue-600 hover:text-blue-800" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

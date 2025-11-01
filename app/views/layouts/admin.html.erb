@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Admin - Tranches de Vie" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-gray-50">
+    <nav class="bg-white shadow-sm">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 justify-between items-center">
+          <div class="flex">
+            <%= link_to admin_orders_path, class: "flex items-center" do %>
+              <span class="text-xl font-bold text-gray-900">Admin - Tranches de Vie</span>
+            <% end %>
+          </div>
+          <div class="flex items-center space-x-4">
+            <%= link_to "Commandes", admin_orders_path, class: "text-gray-700 hover:text-gray-900" %>
+            <%= link_to "Produits", admin_products_path, class: "text-gray-700 hover:text-gray-900" %>
+            <%= link_to "Jours de cuisson", admin_bake_days_path, class: "text-gray-700 hover:text-gray-900" %>
+            <%= link_to "Déconnexion", admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "text-gray-700 hover:text-gray-900" %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <% if notice %>
+        <div class="rounded-md bg-green-50 p-4 mb-4">
+          <p class="text-sm font-medium text-green-800"><%= notice %></p>
+        </div>
+      <% end %>
+
+      <% if alert %>
+        <div class="rounded-md bg-red-50 p-4 mb-4">
+          <p class="text-sm font-medium text-red-800"><%= alert %></p>
+        </div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+  </body>
+</html>
+

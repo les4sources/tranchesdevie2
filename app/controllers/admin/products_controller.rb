@@ -1,0 +1,96 @@
+class Admin::ProductsController < Admin::BaseController
+  before_action :set_product, only: [:show, :edit, :update, :destroy]
+  before_action :set_product_variant, only: [:show_variant, :edit_variant, :update_variant, :destroy_variant]
+
+  def index
+    @products = Product.includes(:product_variants).ordered
+  end
+
+  def show
+    @variants = @product.product_variants.order(:name)
+  end
+
+  def new
+    @product = Product.new
+  end
+
+  def create
+    @product = Product.new(product_params)
+
+    if @product.save
+      redirect_to admin_product_path(@product), notice: 'Produit créé'
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def edit
+  end
+
+  def update
+    if @product.update(product_params)
+      redirect_to admin_product_path(@product), notice: 'Produit mis à jour'
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @product.destroy
+    redirect_to admin_products_path, notice: 'Produit supprimé'
+  end
+
+  def new_variant
+    @product = Product.find(params[:product_id])
+    @variant = @product.product_variants.build
+  end
+
+  def create_variant
+    @product = Product.find(params[:product_id])
+    @variant = @product.product_variants.build(variant_params)
+
+    if @variant.save
+      redirect_to admin_product_path(@product), notice: 'Variante créée'
+    else
+      render :new_variant, status: :unprocessable_entity
+    end
+  end
+
+  def show_variant
+  end
+
+  def edit_variant
+  end
+
+  def update_variant
+    if @variant.update(variant_params)
+      redirect_to admin_product_path(@variant.product), notice: 'Variante mise à jour'
+    else
+      render :edit_variant, status: :unprocessable_entity
+    end
+  end
+
+  def destroy_variant
+    @variant.destroy
+    redirect_to admin_product_path(@variant.product), notice: 'Variante supprimée'
+  end
+
+  private
+
+  def set_product
+    @product = Product.find(params[:id])
+  end
+
+  def set_product_variant
+    @variant = ProductVariant.find(params[:variant_id])
+  end
+
+  def product_params
+    params.require(:product).permit(:name, :description, :category, :position, :active)
+  end
+
+  def variant_params
+    params.require(:product_variant).permit(:name, :price_cents, :active, :image)
+  end
+end
+

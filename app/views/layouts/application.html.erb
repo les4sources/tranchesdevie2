@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Tranchesdevie2" %></title>
+    <title><%= content_for(:title) || "Tranches de Vie" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -10,21 +10,68 @@
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+  <body class="bg-gray-50">
+    <nav class="bg-white shadow-sm">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 justify-between items-center">
+          <div class="flex">
+            <%= link_to root_path, class: "flex items-center" do %>
+              <span class="text-xl font-bold text-gray-900">Tranches de Vie</span>
+            <% end %>
+          </div>
+          <div class="flex items-center space-x-4">
+            <%= link_to cart_path, class: "text-gray-700 hover:text-gray-900" do %>
+              <span class="sr-only">Panier</span>
+              Panier
+              <% if session[:cart].present? && session[:cart].any? %>
+                <span class="ml-1 inline-flex items-center rounded-full bg-blue-600 px-2 py-1 text-xs font-medium text-white">
+                  <%= session[:cart].sum { |item| item['qty'].to_i } %>
+                </span>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <% if notice %>
+        <div class="rounded-md bg-green-50 p-4 mb-4">
+          <div class="flex">
+            <div class="ml-3">
+              <p class="text-sm font-medium text-green-800"><%= notice %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <% if alert %>
+        <div class="rounded-md bg-red-50 p-4 mb-4">
+          <div class="flex">
+            <div class="ml-3">
+              <p class="text-sm font-medium text-red-800"><%= alert %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
       <%= yield %>
     </main>
+
+    <footer class="bg-white border-t mt-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <p class="text-center text-gray-600 text-sm">
+          © <%= Date.current.year %> Tranches de Vie - Boulangerie artisanale
+        </p>
+      </div>
+    </footer>
   </body>
 </html>

@@ -44,6 +44,9 @@ module Tranchesdevie2
     # ActiveJob configuration
     config.active_job.queue_adapter = :solid_queue
 
+    # Rack::Attack middleware for rate limiting
+    config.middleware.use Rack::Attack
+
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Don't generate system test files.

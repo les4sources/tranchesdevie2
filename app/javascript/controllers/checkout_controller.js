@@ -1,24 +1,20 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["phoneInput", "otpInput", "otpSection", "message", "sendOtpBtn", "verifyOtpBtn"]
-
-  connect() {
-    this.phoneInputTarget = document.getElementById('customer_phone_e164') || this.phoneInputTarget
-  }
-
   async sendOTP(event) {
     event.preventDefault()
     
-    const phone = this.phoneInputTarget?.value || document.getElementById('customer_phone_e164')?.value
+    const phoneInput = document.getElementById('customer_phone_e164')
+    const phone = phoneInput?.value
     if (!phone) {
       this.showMessage('Veuillez entrer un numéro de téléphone', 'error')
       return
     }
 
-    if (this.sendOtpBtnTarget) {
-      this.sendOtpBtnTarget.disabled = true
-      this.sendOtpBtnTarget.textContent = 'Envoi...'
+    const sendOtpBtn = document.getElementById('send-otp-btn')
+    if (sendOtpBtn) {
+      sendOtpBtn.disabled = true
+      sendOtpBtn.textContent = 'Envoi...'
     }
 
     try {
@@ -45,9 +41,10 @@ export default class extends Controller {
     } catch (error) {
       this.showMessage('Erreur de connexion', 'error')
     } finally {
-      if (this.sendOtpBtnTarget) {
-        this.sendOtpBtnTarget.disabled = false
-        this.sendOtpBtnTarget.textContent = 'Envoyer le code de vérification'
+      const sendOtpBtn = document.getElementById('send-otp-btn')
+      if (sendOtpBtn) {
+        sendOtpBtn.disabled = false
+        sendOtpBtn.textContent = 'Envoyer le code de vérification'
       }
     }
   }
@@ -61,9 +58,10 @@ export default class extends Controller {
       return
     }
 
-    if (this.verifyOtpBtnTarget) {
-      this.verifyOtpBtnTarget.disabled = true
-      this.verifyOtpBtnTarget.textContent = 'Vérification...'
+    const verifyOtpBtn = document.getElementById('verify-otp-btn')
+    if (verifyOtpBtn) {
+      verifyOtpBtn.disabled = true
+      verifyOtpBtn.textContent = 'Vérification...'
     }
 
     try {
@@ -89,9 +87,10 @@ export default class extends Controller {
     } catch (error) {
       this.showMessage('Erreur de connexion', 'error')
     } finally {
-      if (this.verifyOtpBtnTarget) {
-        this.verifyOtpBtnTarget.disabled = false
-        this.verifyOtpBtnTarget.textContent = 'Vérifier le code'
+      const verifyOtpBtn = document.getElementById('verify-otp-btn')
+      if (verifyOtpBtn) {
+        verifyOtpBtn.disabled = false
+        verifyOtpBtn.textContent = 'Vérifier le code'
       }
     }
   }

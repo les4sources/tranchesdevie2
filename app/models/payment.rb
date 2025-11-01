@@ -1,5 +1,5 @@
 class Payment < ApplicationRecord
-  enum status: {
+  enum :status, {
     succeeded: 0,
     failed: 1,
     refunded: 2

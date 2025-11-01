@@ -1,5 +1,5 @@
 class Order < ApplicationRecord
-  enum status: {
+  enum :status, {
     pending: 0,
     paid: 1,
     ready: 2,

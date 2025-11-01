@@ -1,5 +1,5 @@
 class Product < ApplicationRecord
-  enum category: { breads: 0, dough_balls: 1 }
+  enum :category, { breads: 0, dough_balls: 1 }
 
   has_many :product_variants, dependent: :destroy
   has_many :product_availabilities, through: :product_variants

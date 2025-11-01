@@ -89,14 +89,27 @@ class WebhooksController < ApplicationController
     order = Order.find_by(payment_intent_id: payment_intent_id)
 
     unless order
-      # Find customer from metadata
+      # Find customer from metadata (phone_e164 or customer_id)
+      phone_e164 = payment_intent.metadata&.phone_e164
       customer_id = payment_intent.metadata&.customer_id
       bake_day_id = payment_intent.metadata&.bake_day_id
 
-      return unless customer_id && bake_day_id
+      return unless bake_day_id
 
-      customer = Customer.find(customer_id)
-      bake_day = BakeDay.find(bake_day_id)
+      # Find or create customer
+      if customer_id.present?
+        customer = Customer.find_by(id: customer_id)
+      elsif phone_e164.present?
+        customer = Customer.find_or_create_by(phone_e164: phone_e164)
+      else
+        Rails.logger.error("No customer_id or phone_e164 in payment intent metadata")
+        return
+      end
+
+      return unless customer
+
+      bake_day = BakeDay.find_by(id: bake_day_id)
+      return unless bake_day
 
       # Reconstruct cart from session or metadata
       # For now, we'll need to store cart in order creation or retrieve from session

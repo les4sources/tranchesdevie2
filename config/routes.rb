@@ -9,13 +9,10 @@ Rails.application.routes.draw do
   root "catalog#index"
   get "catalog", to: "catalog#index"
 
-  resources :cart, only: [:show] do
-    collection do
-      post :add
-      patch :update, to: "cart#update"
-      delete :remove
-    end
-  end
+  get "cart", to: "cart#show", as: :cart
+  post "cart/add", to: "cart#add", as: :cart_add
+  patch "cart/update", to: "cart#update", as: :cart_update
+  delete "cart/remove/:id", to: "cart#remove", as: :cart_remove
 
   resources :checkout, only: [:new] do
     collection do

@@ -13,6 +13,9 @@ class ProductVariant < ApplicationRecord
   def available_on?(date)
     return false unless active?
 
+    # If no availabilities are defined, product is always available
+    return true if product_availabilities.empty?
+
     product_availabilities.where(
       'start_on <= ? AND (end_on IS NULL OR end_on >= ?)',
       date, date

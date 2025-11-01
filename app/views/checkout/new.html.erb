@@ -12,7 +12,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
 
-      <%= form_with model: @customer, url: checkout_path, method: :post, local: false, id: "customer-form", data: { controller: "checkout" } do |f| %>
+      <%= form_with model: @customer, url: "#", local: false, id: "customer-form", data: { controller: "checkout" } do |f| %>
         <% unless @otp_verified %>
           <!-- Phone verification step -->
           <div id="phone-verification-step">
@@ -118,51 +118,82 @@
 <%= javascript_tag do %>
   const stripe = Stripe('<%= ENV['STRIPE_PUBLIC_KEY'] %>');
   
-  // Initialize payment element when customer details are filled and OTP verified
+  // Initialize payment element when OTP is verified
+  // Customer info can be empty - customer will be created during order creation
   <% if @otp_verified %>
-    initializePayment();
+    // Wait a bit for DOM to be ready
+    setTimeout(initializePayment, 100);
   <% end %>
 
   function initializePayment() {
-    fetch('<%= checkout_create_payment_intent_path %>', {
+    fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-Token': '<%= form_authenticity_token %>'
       },
       body: JSON.stringify({
-        first_name: document.getElementById('customer_first_name')?.value,
-        last_name: document.getElementById('customer_last_name')?.value,
-        email: document.getElementById('customer_email')?.value
+        first_name: document.getElementById('customer_first_name')?.value || '',
+        last_name: document.getElementById('customer_last_name')?.value || '',
+        email: document.getElementById('customer_email')?.value || ''
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Error response:', text);
+          throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+        });
+      }
+      return response.json();
+    })
     .then(data => {
       if (data.error) {
-        alert(data.error);
+        console.error('Payment intent error:', data.error);
+        alert('Erreur: ' + data.error);
         return;
       }
 
       const elements = stripe.elements({ clientSecret: data.client_secret });
       const paymentElement = elements.create('payment');
+      
+      // Mount the payment element (synchronous operation)
       paymentElement.mount('#payment-element');
+      
+      // Enable button once Payment Element is mounted
+      const submitButton = document.getElementById('submit-payment');
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
 
-      document.getElementById('submit-payment').addEventListener('click', async () => {
+      // Add click handler for payment submission
+      submitButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        submitButton.disabled = true;
+        submitButton.textContent = 'Traitement...';
+
         const { error } = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: '<%= checkout_success_url %>?payment_intent={PAYMENT_INTENT_ID}'
+            return_url: '<%= success_checkout_index_url %>?payment_intent={PAYMENT_INTENT_ID}'
           }
         });
 
         if (error) {
           document.getElementById('payment-message').textContent = error.message;
           document.getElementById('payment-message').classList.remove('hidden');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
         }
       });
-
-      document.getElementById('submit-payment').disabled = false;
+    })
+    .catch(error => {
+      console.error('Payment initialization error:', error);
+      document.getElementById('payment-message').textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
+      document.getElementById('payment-message').classList.remove('hidden');
     });
   }
 <% end %>
+
 

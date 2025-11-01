@@ -1,10 +1,10 @@
 class SmsMessage < ApplicationRecord
-  enum direction: {
+  enum :direction, {
     outbound: 0,
     inbound: 1
   }
 
-  enum kind: {
+  enum :kind, {
     confirmation: 0,
     ready: 1,
     refund: 2,

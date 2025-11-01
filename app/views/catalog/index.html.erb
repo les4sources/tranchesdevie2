@@ -18,14 +18,16 @@
     <p class="text-gray-500">Aucun produit disponible pour cette date.</p>
   </div>
 <% else %>
-  <% @products.group_by { |p, _| p[0].category }.each do |category, products| %>
+  <% @products.group_by { |product, _variants| product.category }.each do |category, products| %>
     <div class="mb-12">
       <h2 class="text-2xl font-semibold text-gray-900 mb-6">
         <%= category == 'breads' ? 'Pains' : 'Boules de pâte' %>
       </h2>
       
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <% products.each do |product, variants| %>
+        <% products.each do |product_data| %>
+          <% product = product_data[0] %>
+          <% variants = product_data[1] %>
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-2">
               <%= product.name %>

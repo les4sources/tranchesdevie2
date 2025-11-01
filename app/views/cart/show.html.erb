@@ -36,9 +36,7 @@
                 <%= f.submit "Mettre à jour", class: "text-sm text-blue-600 hover:text-blue-800" %>
               <% end %>
               
-              <%= link_to cart_remove_path(id: item['product_variant_id']), method: :delete, data: { turbo_method: :delete, confirm: "Retirer cet article ?" }, class: "ml-4 text-red-600 hover:text-red-800" do %>
-                Retirer
-              <% end %>
+              <%= button_to "Retirer", cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "ml-4 text-red-600 hover:text-red-800" %>
             </div>
           </div>
         </li>
@@ -55,12 +53,12 @@
       
       <% if @bake_day %>
         <p class="mt-2 text-sm text-gray-600">
-          Livraison le: <strong><%= @bake_day.baked_on.strftime("%d/%m/%Y") %></strong>
+          Prêt le: <strong><%= @bake_day.baked_on.strftime("%d/%m/%Y") %></strong>
         </p>
       <% end %>
 
       <div class="mt-4">
-        <%= link_to "Passer commande", checkout_path, class: "w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
+        <%= link_to "Passer commande", new_checkout_path, class: "w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
       </div>
     </div>
   </div>

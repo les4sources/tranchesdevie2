@@ -7,7 +7,7 @@
 # Category: Breads
 breads = [
   {
-    name: "Spelt bread",
+    name: "Pain d'épeautre",
     description: "Pain d'épeautre",
     position: 1,
     variants: [
@@ -16,8 +16,8 @@ breads = [
     ]
   },
   {
-    name: "Wheat bread",
-    description: "Pain de blé",
+    name: "Pain au froment",
+    description: "Pain de froment",
     position: 2,
     variants: [
       { name: "1 kg", price_cents: 450 },
@@ -25,7 +25,7 @@ breads = [
     ]
   },
   {
-    name: "Ancient grains bread",
+    name: "Pain aux céréales anciennes",
     description: "Pain aux céréales anciennes",
     position: 3,
     variants: [
@@ -33,7 +33,7 @@ breads = [
     ]
   },
   {
-    name: "Walnut bread",
+    name: "Pain aux noix",
     description: "Pain aux noix",
     position: 4,
     variants: [
@@ -42,7 +42,7 @@ breads = [
     ]
   },
   {
-    name: "Seeded bread",
+    name: "Pain aux graines",
     description: "Pain aux graines",
     position: 5,
     variants: [
@@ -51,7 +51,7 @@ breads = [
     ]
   },
   {
-    name: "Walnut/fig bread",
+    name: "Pain aux noix/figues",
     description: "Pain noix/figues",
     position: 6,
     variants: [
@@ -59,7 +59,7 @@ breads = [
     ]
   },
   {
-    name: "Choco/sugar bread",
+    name: "Pain au chocolat/sucre",
     description: "Pain chocolat/sucre",
     position: 7,
     variants: [
@@ -71,7 +71,7 @@ breads = [
 # Category: Dough balls
 dough_balls = [
   {
-    name: "Take‑away pizza dough ball",
+    name: "Boule de pâte à pizza à emporter",
     description: "Boule de pâte à pizza à emporter",
     position: 1,
     variants: [
@@ -79,8 +79,8 @@ dough_balls = [
     ]
   },
   {
-    name: "Private Pizza Party dough ball",
-    description: "Boule de pâte à pizza pour fête privée",
+    name: "Boule de pâte à pizza pour Pizza Party privée",
+    description: "Boule de pâte à pizza pour Pizza Party privée",
     position: 2,
     variants: [
       { name: "Unité", price_cents: 500 }

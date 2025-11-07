@@ -53,7 +53,11 @@ class Order < ApplicationRecord
     return if public_token.present?
 
     loop do
-      self.public_token = Base58.encode(SecureRandom.random_bytes(16))[0..23]
+      # Generate 16 random bytes and convert to integer for Base58 encoding
+      bytes = SecureRandom.random_bytes(16)
+      # Convert bytes to integer (big-endian, treating as 128-bit number)
+      integer = bytes.unpack1('H*').to_i(16)
+      self.public_token = Base58.encode(integer)[0..23]
       break unless Order.exists?(public_token: public_token)
     end
   end

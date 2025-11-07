@@ -9,6 +9,10 @@ class OrderItem < ApplicationRecord
     qty * unit_price_cents
   end
 
+  def unit_price_euros
+    (unit_price_cents / 100.0).round(2)
+  end
+
   def subtotal_euros
     (subtotal_cents / 100.0).round(2)
   end

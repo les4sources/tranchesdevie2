@@ -14,6 +14,9 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
+    <!-- Load Stripe.js globally to avoid "Stripe is not defined" errors with Turbo -->
+    <script src="https://js.stripe.com/v3/"></script>
+
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>

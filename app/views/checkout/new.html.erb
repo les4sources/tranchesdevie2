@@ -1,8 +1,6 @@
 <% content_for :title, "Paiement" %>
 
-<% content_for :head do %>
-  <script src="https://js.stripe.com/v3/"></script>
-<% end %>
+<%# Stripe is loaded globally in the layout %>
 
 <div class="max-w-2xl mx-auto">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser votre commande</h1>
@@ -116,16 +114,63 @@
 </div>
 
 <%= javascript_tag do %>
-  const stripe = Stripe('<%= ENV['STRIPE_PUBLIC_KEY'] %>');
-  
-  // Initialize payment element when OTP is verified
-  // Customer info can be empty - customer will be created during order creation
-  <% if @otp_verified %>
-    // Wait a bit for DOM to be ready
-    setTimeout(initializePayment, 100);
-  <% end %>
+  // Wait for Stripe to be loaded before initializing
+  function waitForStripe(callback) {
+    if (typeof Stripe !== 'undefined') {
+      callback();
+    } else {
+      setTimeout(() => waitForStripe(callback), 50);
+    }
+  }
+
+  let stripe;
+  let paymentElement;
+  let elements;
+  let stripeInitialized = false;
+
+  // Initialize Stripe when loaded
+  function initStripe() {
+    // Avoid multiple initializations
+    if (stripeInitialized && stripe) {
+      return;
+    }
+
+    waitForStripe(function() {
+      if (!stripe) {
+        stripe = Stripe('<%= ENV['STRIPE_PUBLIC_KEY'] %>');
+        stripeInitialized = true;
+      }
+      
+      // Initialize payment element when OTP is verified
+      // Customer info can be empty - customer will be created during order creation
+      <% if @otp_verified %>
+        // Wait a bit for DOM to be ready
+        setTimeout(initializePayment, 100);
+      <% end %>
+    });
+  }
+
+  // Initialize on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStripe);
+  } else {
+    initStripe();
+  }
+
+  // Re-initialize on Turbo navigation (Turbo Drive)
+  document.addEventListener('turbo:load', function() {
+    // Only re-initialize if we're on the checkout page
+    if (window.location.pathname.includes('/checkout')) {
+      stripeInitialized = false; // Reset flag to allow re-initialization
+      initStripe();
+    }
+  });
 
   function initializePayment() {
+    if (!stripe) {
+      console.error('Stripe not initialized');
+      return;
+    }
     fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',
       headers: {
@@ -154,8 +199,13 @@
         return;
       }
 
-      const elements = stripe.elements({ clientSecret: data.client_secret });
-      const paymentElement = elements.create('payment');
+      // Clean up any existing payment element
+      if (paymentElement) {
+        paymentElement.unmount();
+      }
+
+      elements = stripe.elements({ clientSecret: data.client_secret });
+      paymentElement = elements.create('payment');
       
       // Mount the payment element (synchronous operation)
       paymentElement.mount('#payment-element');

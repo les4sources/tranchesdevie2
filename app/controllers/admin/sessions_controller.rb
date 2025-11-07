@@ -5,14 +5,6 @@ class Admin::SessionsController < ApplicationController
     redirect_to admin_orders_path if admin_authenticated?
   end
 
-  private
-
-  def admin_authenticated?
-    session[:admin_authenticated] == true &&
-      session[:admin_authenticated_at] &&
-      Time.current - Time.parse(session[:admin_authenticated_at]) < 24.hours
-  end
-
   def create
     password = params[:password]
 

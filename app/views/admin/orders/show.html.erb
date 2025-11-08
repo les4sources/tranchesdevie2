@@ -23,7 +23,7 @@
                 when 'cancelled' then 'bg-red-100 text-red-800'
                 else 'bg-gray-100 text-gray-800'
                 end %>">
-            <%= @order.status.humanize %>
+            <%= order_status_label(@order.status) %>
           </span>
         </dd>
       </div>
@@ -40,7 +40,7 @@
       <div>
         <dt class="text-sm font-medium text-gray-500">Jour de cuisson</dt>
         <dd class="mt-1 text-sm text-gray-900"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></dd>
-        <dd class="text-sm text-gray-600">Cut-off: <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <dd class="text-sm text-gray-600">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
       </div>
 
       <div>
@@ -57,7 +57,7 @@
 
     <div class="space-y-3">
       <% if @order.can_transition_to?(:ready) %>
-        <%= form_with url: admin_order_update_status_path(@order), method: :patch, local: true do |f| %>
+        <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
           <%= f.hidden_field :status, value: :ready %>
           <%= f.submit "Marquer comme prête", 
               class: "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700",
@@ -66,13 +66,13 @@
       <% end %>
 
       <% if @order.ready? %>
-        <%= form_with url: admin_order_update_status_path(@order), method: :patch, local: true, class: "space-y-2" do |f| %>
+        <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true, class: "space-y-2" do |f| %>
           <%= f.hidden_field :status, value: :picked_up %>
           <%= f.submit "Marquer comme récupérée", 
               class: "w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
         <% end %>
 
-        <%= form_with url: admin_order_update_status_path(@order), method: :patch, local: true do |f| %>
+        <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
           <%= f.hidden_field :status, value: :no_show %>
           <%= f.submit "Marquer comme non récupérée", 
               class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700",
@@ -81,7 +81,7 @@
       <% end %>
 
       <% if @order.paid? && !@order.bake_day.cut_off_passed? %>
-        <%= form_with url: admin_order_refund_path(@order), method: :post, local: true do |f| %>
+        <%= form_with url: refund_admin_order_path(@order), method: :post, local: true do |f| %>
           <%= f.submit "Rembourser", 
               class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700",
               data: { confirm: "Rembourser intégralement cette commande ?" } %>

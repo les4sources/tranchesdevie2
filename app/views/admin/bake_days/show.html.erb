@@ -1,0 +1,115 @@
+<% content_for :title, "Jour de cuisson #{@bake_day.baked_on.strftime('%d/%m/%Y')}" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">
+    Jour de cuisson du <%= @bake_day.baked_on.strftime("%d/%m/%Y") %>
+  </h1>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
+
+    <dl class="space-y-3">
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Date de cuisson</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <%= @bake_day.baked_on.strftime("%d/%m/%Y") %>
+        </dd>
+      </div>
+
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Date limite</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <%= @bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %>
+        </dd>
+        <dd class="text-sm <%= @bake_day.cut_off_passed? ? 'text-red-600' : 'text-green-600' %>">
+          <%= @bake_day.cut_off_passed? ? "Dépassée" : "Active" %>
+        </dd>
+      </div>
+
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Nombre de commandes</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <%= @bake_day.orders.count %>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Actions</h2>
+
+    <div class="space-y-3">
+      <%= link_to "Modifier", edit_admin_bake_day_path(@bake_day),
+          class: "w-full inline-flex justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
+
+      <%= button_to "Supprimer",
+          admin_bake_day_path(@bake_day),
+          method: :delete,
+          data: { confirm: "Supprimer ce jour de cuisson ?" },
+          class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700" %>
+    </div>
+  </div>
+</div>
+
+<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="p-6 border-b border-gray-200">
+    <h2 class="text-lg font-medium text-gray-900">Commandes</h2>
+    <p class="mt-1 text-sm text-gray-600">
+      <%= pluralize(@bake_day.orders.count, "commande") %> pour ce jour de cuisson.
+    </p>
+  </div>
+
+  <% if @bake_day.orders.exists? %>
+    <div class="divide-y divide-gray-200">
+      <% @bake_day.orders.includes(:customer).order(:created_at).each do |order| %>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4">
+          <div>
+            <p class="text-sm font-medium text-gray-900">
+              Commande <%= order.order_number %>
+            </p>
+            <p class="text-sm text-gray-600">
+              <% if order.customer.present? %>
+                <%= order.customer.full_name %>
+              <% else %>
+                Client inconnu
+              <% end %>
+            </p>
+            <p class="text-xs text-gray-500">
+              Créée le <%= order.created_at.strftime("%d/%m/%Y à %H:%M") %>
+            </p>
+          </div>
+
+          <div class="mt-3 md:mt-0 md:flex md:items-center md:space-x-6">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+              <%= case order.status
+                  when 'pending' then 'bg-yellow-100 text-yellow-800'
+                  when 'paid' then 'bg-blue-100 text-blue-800'
+                  when 'ready' then 'bg-green-100 text-green-800'
+                  when 'picked_up' then 'bg-gray-100 text-gray-800'
+                  when 'no_show' then 'bg-red-100 text-red-800'
+                  when 'cancelled' then 'bg-red-100 text-red-800'
+                  else 'bg-gray-100 text-gray-800'
+                  end %>">
+              <%= order_status_label(order.status) %>
+            </span>
+
+            <p class="mt-2 md:mt-0 text-sm font-medium text-gray-900">
+              <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+            </p>
+
+            <%= link_to "Voir", admin_order_path(order),
+                class: "mt-2 md:mt-0 inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="px-6 py-8 text-center text-sm text-gray-600">
+      Aucune commande pour ce jour de cuisson.
+    </div>
+  <% end %>
+</div>
+

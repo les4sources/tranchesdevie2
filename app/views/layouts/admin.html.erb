@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Admin - Tranches de Vie" %></title>
+    <title><%= content_for(:title) || "Administration - Tranches de Vie" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -16,7 +16,7 @@
         <div class="flex h-16 justify-between items-center">
           <div class="flex">
             <%= link_to admin_orders_path, class: "flex items-center" do %>
-              <span class="text-xl font-bold text-gray-900">Admin - Tranches de Vie</span>
+              <span class="text-xl font-bold text-gray-900">Administration - Tranches de Vie</span>
             <% end %>
           </div>
           <div class="flex items-center space-x-4">

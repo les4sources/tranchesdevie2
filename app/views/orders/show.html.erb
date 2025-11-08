@@ -21,7 +21,7 @@
             when 'cancelled' then 'bg-red-100 text-red-800'
             else 'bg-gray-100 text-gray-800'
             end %>">
-        <%= @order.status.humanize %>
+        <%= order_status_label(@order.status) %>
       </span>
     </div>
 

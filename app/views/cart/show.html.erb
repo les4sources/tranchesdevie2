@@ -1,66 +1,107 @@
 <% content_for :title, "Panier" %>
 
-<div class="mb-8">
-  <h1 class="text-3xl font-bold text-gray-900">Votre panier</h1>
-</div>
-
-<% if @cart.empty? %>
-  <div class="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
-    <p class="text-gray-500 mb-4">Votre panier est vide</p>
-    <%= link_to "Voir le catalogue", catalog_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
+<div class="max-w-5xl mx-auto py-6">
+  <div class="mb-8">
+    <p class="text-sm uppercase tracking-wide text-amber-600 font-semibold mb-2">Tranches de Vie</p>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Votre panier</h1>
+    <% if @bake_day %>
+      <p class="mt-2 text-sm text-gray-600">
+        Retrait le <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(@bake_day.baked_on, format: "%A %d %B %Y") } %></span>
+      </p>
+    <% end %>
   </div>
-<% else %>
-  <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-lg font-medium text-gray-900">Articles</h2>
-    </div>
 
-    <ul class="divide-y divide-gray-200">
-      <% @cart.each do |item| %>
-        <% variant = ProductVariant.find(item['product_variant_id']) %>
-        <li class="px-6 py-4">
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <p class="text-sm font-medium text-gray-900">
-                <%= variant.product.name %> - <%= variant.name %>
-              </p>
-              <p class="text-sm text-gray-500">
-                <%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %> / unité
-              </p>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-              <%= form_with url: cart_update_path, method: :patch, local: true, class: "flex items-center space-x-2" do |f| %>
-                <%= f.hidden_field :id, value: item['product_variant_id'] %>
-                <%= f.number_field :qty, value: item['qty'], min: 1, class: "w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
-                <%= f.submit "Mettre à jour", class: "text-sm text-blue-600 hover:text-blue-800" %>
-              <% end %>
-              
-              <%= button_to "Retirer", cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "ml-4 text-red-600 hover:text-red-800" %>
+  <% if @cart.empty? %>
+    <div class="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-200">
+      <div class="mx-auto h-14 w-14 flex items-center justify-center rounded-full bg-amber-100 text-amber-700 mb-6">
+        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-semibold text-gray-900 mb-3">Votre panier est vide</h2>
+      <p class="text-gray-500 mb-8">Découvrez nos pains et pâtisseries artisanales.</p>
+      <%= link_to "Voir le catalogue", catalog_path, class: "inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition" %>
+    </div>
+  <% else %>
+    <div class="grid lg:grid-cols-[2fr_1fr] gap-8">
+      <div class="space-y-4">
+        <% @cart.each do |item| %>
+          <% variant = ProductVariant.find(item['product_variant_id']) %>
+          <% product = variant.product %>
+          <% qty = item['qty'].to_i %>
+          <% line_total = qty * variant.price_cents %>
+          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div class="flex items-start gap-4">
+              <div class="h-20 w-20 rounded-xl bg-amber-100 flex items-center justify-center overflow-hidden">
+                <% image_url = product_background_image(product) %>
+                <% if image_url.present? %>
+                  <%= image_tag image_url, alt: product.name, class: "h-full w-full object-cover" %>
+                <% else %>
+                  <span class="text-amber-600 font-semibold text-sm">Artisan</span>
+                <% end %>
+              </div>
+
+              <div class="flex-1">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900"><%= product.name %></h3>
+                    <p class="text-sm text-gray-500"><%= variant.name %></p>
+                  </div>
+                  <span class="text-base font-semibold text-gray-900">
+                    <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+                  </span>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
+                      &minus;
+                    <% end %>
+                    <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
+                      <%= qty %>
+                    </span>
+                    <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
+                      +
+                    <% end %>
+                  </div>
+
+                  <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
+                    Retirer
+                  <% end %>
+                </div>
+              </div>
             </div>
           </div>
-        </li>
-      <% end %>
-    </ul>
-
-    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-      <div class="flex justify-between items-center">
-        <span class="text-lg font-medium text-gray-900">Total</span>
-        <span class="text-xl font-bold text-gray-900">
-          <%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %>
-        </span>
+        <% end %>
       </div>
-      
-      <% if @bake_day %>
-        <p class="mt-2 text-sm text-gray-600">
-          Prêt le: <strong><%= @bake_day.baked_on.strftime("%d/%m/%Y") %></strong>
-        </p>
-      <% end %>
 
-      <div class="mt-4">
-        <%= link_to "Passer commande", new_checkout_path, class: "w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
-      </div>
+      <aside class="lg:sticky lg:top-8 self-start">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <div class="pb-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Récapitulatif</h2>
+            <p class="text-sm text-gray-500 mt-1">Vérifiez vos articles avant de passer commande.</p>
+          </div>
+
+          <dl class="mt-4 space-y-2 text-sm text-gray-600">
+            <div class="flex justify-between">
+              <dt>Sous-total</dt>
+              <dd class="font-medium text-gray-900">
+                <%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="mt-6 flex items-center justify-between text-base font-semibold text-gray-900">
+            <span>Total</span>
+            <span>
+              <%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+            </span>
+          </div>
+
+          <%= link_to "Passer à la commande", new_checkout_path, class: "mt-6 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 transition" %>
+          <%= link_to "Continuer vos achats", catalog_path, class: "mt-3 inline-flex w-full items-center justify-center text-sm font-semibold text-amber-600 hover:text-amber-700" %>
+        </div>
+      </aside>
     </div>
-  </div>
-<% end %>
-
+  <% end %>
+</div>

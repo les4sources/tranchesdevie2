@@ -15,6 +15,7 @@
 
 - Vérifier que `config.time_zone = "Europe/Brussels"` est présent (déjà fait)
 - S'assurer que la locale FR est par défaut (déjà fait)
+- Pour les vues, tous les textes devront être en français
 
 ## Phase 2: Modèles de données et migrations
 

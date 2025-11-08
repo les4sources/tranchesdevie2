@@ -1,64 +1,155 @@
-<% content_for :title, "Catalogue" %>
+<% content_for :title, "Tranches de Vie - Les 4 Sources" %>
 
-<div class="mb-8">
-  <h1 class="text-3xl font-bold text-gray-900">Catalogue</h1>
-  
-  <% if @bake_day %>
-    <p class="mt-2 text-gray-600">
-      Jour de cuisson: <strong><%= @bake_day.baked_on.strftime("%d/%m/%Y") %></strong>
-      (commande avant <%= @bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %>)
-    </p>
-  <% else %>
-    <p class="mt-2 text-gray-600">Aucun jour de cuisson disponible</p>
-  <% end %>
+<div class="flex px-4 py-3">
+  <div class="flex h-12 flex-1 items-center justify-center rounded-lg bg-gray-200/60 p-1">
+    <% @available_bake_days.each do |bake_day_option| %>
+      <%= link_to bake_day_label(bake_day_option), catalog_path(bake_day: bake_day_option.baked_on), class: bake_day_toggle_classes(bake_day_option, @bake_day) %>
+    <% end %>
+  </div>
 </div>
 
-<% if @products.empty? %>
-  <div class="text-center py-12">
-    <p class="text-gray-500">Aucun produit disponible pour cette date.</p>
-  </div>
-<% else %>
-  <% @products.group_by { |product, _variants| product.category }.each do |category, products| %>
-    <div class="mb-12">
-      <h2 class="text-2xl font-semibold text-gray-900 mb-6">
-        <%= category == 'breads' ? 'Pains' : 'Boules de pâte' %>
+<div class="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+  <% if @bake_day.present? %>
+    <div class="flex flex-col gap-2">
+      <h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
+        <%= bake_day_date_heading(@bake_day) %>
       </h2>
-      
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <% products.each do |product_data| %>
-          <% product = product_data[0] %>
-          <% variants = product_data[1] %>
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">
-              <%= product.name %>
-            </h3>
-            
-            <% if product.description.present? %>
-              <p class="text-sm text-gray-600 mb-4"><%= product.description %></p>
-            <% end %>
-
-            <div class="space-y-3">
-              <% variants.each do |variant| %>
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-700"><%= variant.name %></span>
-                  <div class="flex items-center space-x-4">
-                    <span class="text-sm font-medium text-gray-900">
-                      <%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %>
-                    </span>
-                    <%= form_with url: cart_add_path, method: :post, local: true, class: "inline" do |f| %>
-                      <%= f.hidden_field :product_variant_id, value: variant.id %>
-                      <%= f.hidden_field :bake_day_id, value: @bake_day&.id %>
-                      <%= f.hidden_field :qty, value: 1 %>
-                      <%= f.submit "Ajouter", class: "ml-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
+      <div>
+        <%# 
+          Différence en jours entre aujourd'hui et la date de la fournée.
+          Affichage humain du délai restant.
+        %>
+        <% if @bake_day.present? %>
+          <% days_until = (@bake_day.baked_on.to_date - Date.current).to_i %>
+          <% message = case days_until
+            when 0
+              "aujourd'hui"
+            when 1
+              "demain"
+            when 2..6
+              "dans #{days_until} jours"
+            when 7
+              "dans 1 semaine"
+            when 8..13
+              "dans #{days_until} jours (#{(days_until/7).to_i} semaine)"
+            when 14..999
+              "dans #{days_until} jours (#{(days_until/7).to_i} semaines)"
+            else
+              "prochainement"
+            end
+          %>
+          <div class="text-sm font-medium text-gray-600">
+            <span class="inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-base align-middle">schedule</span>
+              <%= message %>
+            </span>
           </div>
         <% end %>
       </div>
     </div>
+    <% if (bake_day_picker = bake_day_picker_config(@available_bake_days, @bake_day)) %>
+      <%= form_with url: catalog_path,
+                    method: :get,
+                    local: true,
+                    data: { controller: "bake-day-picker" },
+                    html: { class: "flex-shrink-0" } do |f| %>
+        <%= f.label :bake_day, "Choisir une date de fournée", class: "sr-only" %>
+        <div class="relative inline-flex items-center">
+          <span class="pointer-events-none absolute left-3 text-base text-charcoal/70">
+            <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          </span>
+          <%= select_tag :bake_day,
+                         options_for_select(bake_day_picker[:options], bake_day_picker[:value]),
+                         include_blank: false,
+                         class: "appearance-none rounded-lg bg-gray-200/60 py-2 pl-10 pr-10 text-sm font-medium leading-normal text-charcoal hover:bg-gray-300/60 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-terracotta/60",
+                         data: { "bake-day-picker-target": "select", action: "change->bake-day-picker#submit" } %>
+          <span class="pointer-events-none absolute right-3 text-base text-charcoal/70">
+            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+          </span>
+        </div>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="flex flex-1 flex-col gap-2 rounded-lg bg-soft-cream px-4 py-6 text-center text-charcoal">
+      <p class="text-lg font-semibold">Aucune journee de cuisson disponible pour le moment</p>
+      <p class="text-sm text-gray-600">Revenez bientot pour notre prochain planning de cuisson.</p>
+    </div>
   <% end %>
+</div>
+
+<% if @seasonal_promotion.present? %>
+  <div class="px-4">
+    <div class="flex flex-col items-stretch justify-start overflow-hidden rounded-3xl bg-[#fcf8dc] xl:flex-row xl:items-center">
+      <div
+        class="aspect-[16/9] w-full bg-cover bg-center bg-no-repeat xl:h-full xl:w-2/5"
+        style='background-image: url("<%= @seasonal_promotion[:image_url] || "https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&w=1200&q=80" %>");'>
+      </div>
+
+      <div class="flex w-full min-w-72 grow flex-col items-start justify-center gap-4 p-8">
+        <div>
+          <p class="text-2xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
+            <%= @seasonal_promotion[:title] || "Taste of Autumn: Our Pumpkin Spice Sourdough is Back!" %>
+          </p>
+          <p class="mt-3 text-base font-normal leading-normal text-gray-600">
+            <%= @seasonal_promotion[:description] || "Limited time only. Pre-order now for a delicious seasonal treat." %>
+          </p>
+        </div>
+
+        <%= link_to(@seasonal_promotion[:cta_path] || catalog_path,
+                    class: "inline-flex h-11 items-center justify-center rounded-xl bg-black px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-terracotta/90",
+                    aria: { label: @seasonal_promotion[:cta_text] || "Shop Now" }) do %>
+          <%= @seasonal_promotion[:cta_text] || "Shop Now" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
 <% end %>
 
+<% if @bake_day.present? && @products.any? %>
+  <% @products.group_by { |product, _variants| product.category }.each do |category, grouped_products| %>
+    <div class="px-4 pt-6">
+      <h3 class="text-xl font-bold leading-tight tracking-[-0.015em] text-charcoal"><%= product_category_heading(category) %></h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 md:grid-cols-4">
+      <% grouped_products.each do |product_data| %>
+        <% product = product_data[0] %>
+        <% variants = product_data[1] %>
+        <% primary_variant = variants.min_by(&:price_cents) %>
+        <div class="group flex flex-col gap-3 pb-3">
+          <div class="overflow-hidden rounded-lg bg-cover bg-center" style="background-image: url('<%= product_background_image(product) %>');">
+            <div class="aspect-square w-full transform transition-transform duration-300 group-hover:scale-105"></div>
+          </div>
+          <div>
+            <p class="text-lg font-medium leading-normal text-charcoal"><%= product.name %></p>
+
+            <div class="mt-4 space-y-3">
+              <% variants.each do |variant| %>
+                <%= form_with url: cart_add_path, method: :post, local: true, data: { action: "submit->cart#add" }, class: "flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-terracotta/40" do |f| %>
+                  <%= f.hidden_field :product_variant_id, value: variant.id %>
+                  <%= f.hidden_field :bake_day_id, value: @bake_day&.id %>
+                  <%= f.hidden_field :qty, value: 1 %>
+
+                  <div class="flex items-center gap-3">
+                    <button type="submit" class="flex h-8 w-8 items-center justify-center rounded-full bg-lime-300 text-lg font-semibold leading-none text-charcoal shadow hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-400/60" data-cart-target="button">
+                      +
+                    </button>
+                    <span class="text-sm font-medium text-charcoal"><%= variant.name %></span>
+                  </div>
+
+                  <span class="inline-flex items-center rounded-lg bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">
+                    <%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %>
+                  </span>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% elsif @bake_day.present? %>
+  <div class="px-4 py-16 text-center">
+    <p class="text-base text-gray-500">Aucun produit disponible pour cette date.</p>
+  </div>
+<% end %>

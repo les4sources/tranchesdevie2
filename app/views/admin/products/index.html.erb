@@ -23,7 +23,7 @@
             <%= product.name %>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-            <%= product.category.humanize %>
+            <%= product_category_heading(product.category) %>
           </td>
           <td class="px-6 py-4 text-sm text-gray-600">
             <%= product.product_variants.count %> variante(s)

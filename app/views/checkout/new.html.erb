@@ -2,17 +2,17 @@
 
 <%# Stripe is loaded globally in the layout %>
 
-<div class="max-w-2xl mx-auto">
+<div class="w-full mx-auto">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser votre commande</h1>
 
-  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-    <!-- Customer info form -->
+  <div class="grid grid-cols-1 gap-8">
+    <!-- Formulaire informations client -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
 
       <%= form_with model: @customer, url: "#", local: false, id: "customer-form", data: { controller: "checkout" } do |f| %>
         <% unless @otp_verified %>
-          <!-- Phone verification step -->
+          <!-- Etape de verification du numero -->
           <div id="phone-verification-step">
             <div class="mb-4">
               <%= f.label :phone_e164, "Numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
@@ -28,7 +28,7 @@
                     id="send-otp-btn" 
                     data-action="click->checkout#sendOTP"
                     class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Envoyer le code de vérification
+              Me connecter
             </button>
 
             <div id="otp-input-section" class="hidden mt-4">
@@ -52,7 +52,7 @@
             <div id="otp-message" class="mt-4 hidden"></div>
           </div>
         <% else %>
-          <!-- Customer details -->
+          <!-- Details du client -->
           <div id="customer-details">
             <div class="mb-4">
               <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
@@ -77,7 +77,7 @@
       <% end %>
     </div>
 
-    <!-- Payment section -->
+    <!-- Section paiement -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">Paiement</h2>
 
@@ -87,7 +87,7 @@
           <% @cart.each do |item| %>
             <% variant = ProductVariant.find(item['product_variant_id']) %>
             <div class="flex justify-between text-sm">
-              <span><%= variant.name %> x <%= item['qty'] %></span>
+              <span><%= "#{variant.product.name} - #{variant.name}" %> x <%= item['qty'] %></span>
               <span><%= number_to_currency((item['qty'].to_i * variant.price_cents) / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
             </div>
           <% end %>
@@ -99,7 +99,7 @@
       </div>
 
       <div id="payment-element" class="mb-4">
-        <!-- Stripe Payment Element will be mounted here -->
+        <!-- L'element de paiement Stripe sera insere ici -->
       </div>
 
       <button id="submit-payment" 
@@ -114,7 +114,7 @@
 </div>
 
 <%= javascript_tag do %>
-  // Wait for Stripe to be loaded before initializing
+  // Attendre que Stripe soit charge avant l'initialisation
   function waitForStripe(callback) {
     if (typeof Stripe !== 'undefined') {
       callback();
@@ -128,9 +128,9 @@
   let elements;
   let stripeInitialized = false;
 
-  // Initialize Stripe when loaded
+  // Initialiser Stripe lorsqu'il est charge
   function initStripe() {
-    // Avoid multiple initializations
+    // Eviter les initialisations multiples
     if (stripeInitialized && stripe) {
       return;
     }
@@ -141,34 +141,34 @@
         stripeInitialized = true;
       }
       
-      // Initialize payment element when OTP is verified
-      // Customer info can be empty - customer will be created during order creation
+      // Initialiser l'element de paiement lorsque l'OTP est verifie
+      // Les informations client peuvent etre vides : le client sera cree lors de la commande
       <% if @otp_verified %>
-        // Wait a bit for DOM to be ready
+        // Attendre un court instant pour que le DOM soit pret
         setTimeout(initializePayment, 100);
       <% end %>
     });
   }
 
-  // Initialize on page load
+  // Initialiser au chargement de la page
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initStripe);
   } else {
     initStripe();
   }
 
-  // Re-initialize on Turbo navigation (Turbo Drive)
+  // Reinitialiser lors de la navigation Turbo (Turbo Drive)
   document.addEventListener('turbo:load', function() {
-    // Only re-initialize if we're on the checkout page
+    // Ne reinitialiser que si l'utilisateur est sur la page de paiement
     if (window.location.pathname.includes('/checkout')) {
-      stripeInitialized = false; // Reset flag to allow re-initialization
+      stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
       initStripe();
     }
   });
 
   function initializePayment() {
     if (!stripe) {
-      console.error('Stripe not initialized');
+      console.error('Stripe non initialise');
       return;
     }
     fetch('<%= create_payment_intent_checkout_index_path %>', {
@@ -186,7 +186,7 @@
     .then(response => {
       if (!response.ok) {
         return response.text().then(text => {
-          console.error('Error response:', text);
+          console.error("Reponse d'erreur :", text);
           throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
         });
       }
@@ -194,12 +194,12 @@
     })
     .then(data => {
       if (data.error) {
-        console.error('Payment intent error:', data.error);
+        console.error("Erreur d'intention de paiement :", data.error);
         alert('Erreur: ' + data.error);
         return;
       }
 
-      // Clean up any existing payment element
+      // Nettoyer tout element de paiement existant
       if (paymentElement) {
         paymentElement.unmount();
       }
@@ -207,16 +207,16 @@
       elements = stripe.elements({ clientSecret: data.client_secret });
       paymentElement = elements.create('payment');
       
-      // Mount the payment element (synchronous operation)
+      // Monter l'element de paiement (operation synchrone)
       paymentElement.mount('#payment-element');
       
-      // Enable button once Payment Element is mounted
+      // Activer le bouton lorsque l'element de paiement est monte
       const submitButton = document.getElementById('submit-payment');
       if (submitButton) {
         submitButton.disabled = false;
       }
 
-      // Add click handler for payment submission
+      // Ajouter un gestionnaire de clic pour la soumission du paiement
       submitButton.addEventListener('click', async (e) => {
         e.preventDefault();
         
@@ -239,7 +239,7 @@
       });
     })
     .catch(error => {
-      console.error('Payment initialization error:', error);
+      console.error("Erreur lors de l'initialisation du paiement :", error);
       document.getElementById('payment-message').textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
       document.getElementById('payment-message').classList.remove('hidden');
     });

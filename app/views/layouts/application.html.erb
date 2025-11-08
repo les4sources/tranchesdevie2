@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr" class="light">
   <head>
     <title><%= content_for(:title) || "Tranches de Vie" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,68 +13,118 @@
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
-    <!-- Load Stripe.js globally to avoid "Stripe is not defined" errors with Turbo -->
+    <!-- Charger Stripe.js globalement pour eviter les erreurs "Stripe is not defined" avec Turbo -->
     <script src="https://js.stripe.com/v3/"></script>
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="bg-gray-50">
-    <nav class="bg-white shadow-sm">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 justify-between items-center">
-          <div class="flex">
-            <%= link_to root_path, class: "flex items-center" do %>
-              <span class="text-xl font-bold text-gray-900">Tranches de Vie</span>
-            <% end %>
-          </div>
-          <div class="flex items-center space-x-4">
-            <%= link_to cart_path, class: "text-gray-700 hover:text-gray-900" do %>
-              <span class="sr-only">Panier</span>
-              Panier
-              <% if session[:cart].present? && session[:cart].any? %>
-                <span class="ml-1 inline-flex items-center rounded-full bg-blue-600 px-2 py-1 text-xs font-medium text-white">
-                  <%= session[:cart].sum { |item| item['qty'].to_i } %>
-                </span>
-              <% end %>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    </nav>
+  <body class="font-display bg-background-light bg-white text-charcoal" data-controller="cart">
+    <div data-controller="toast" class="pointer-events-none fixed inset-x-0 top-4 z-50 flex flex-col items-center px-4 sm:px-0">
+      <div data-toast-target="container" class="flex w-full max-w-sm flex-col gap-3"></div>
+    </div>
 
-    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      <% if notice %>
-        <div class="rounded-md bg-green-50 p-4 mb-4">
-          <div class="flex">
-            <div class="ml-3">
-              <p class="text-sm font-medium text-green-800"><%= notice %></p>
-            </div>
-          </div>
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+      <div class="flex h-full grow flex-col">
+        <div class="flex flex-1 justify-center px-4 py-5 sm:px-8 md:px-16 lg:px-24 xl:px-40">
+          <div class="flex w-full max-w-[960px] flex-1 flex-col">
+            <header class="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-10">
+              <div class="flex items-center gap-4 text-charcoal">
+                <div class="text-terracotta">
+                  <span class="material-symbols-outlined text-3xl">bakery_dining</span>
+                </div>
+                <h1 class="text-xl font-bold leading-tight tracking-[-0.015em]">Tranches de Vie</h1>
+              </div>
+              <% cart_count = current_cart_count %>
+              <div class="hidden flex-1 items-center justify-end gap-8 md:flex">
+                <div class="flex items-center gap-9">
+                  <%= link_to "Nos pains", catalog_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
+                  <a href="#about" class="text-sm font-medium leading-normal text-charcoal hover:text-terracotta">A propos</a>
+                  <a href="#contact" class="text-sm font-medium leading-normal text-charcoal hover:text-terracotta">Contact</a>
+                </div>
+                <div class="relative" data-cart-target="miniCartWrapper" data-action="mouseenter->cart#openMiniCart mouseleave->cart#scheduleMiniCartClose">
+                  <%= link_to cart_path,
+                              class: "flex h-10 items-center justify-center gap-2 rounded-lg bg-gray-200/50 px-2.5 text-sm font-bold leading-normal text-charcoal transition hover:bg-gray-300/60",
+                              data: { action: "focus->cart#openMiniCart blur->cart#scheduleMiniCartClose" } do %>
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    <span class="sr-only">Panier</span>
+                    <span data-cart-target="count" class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-black px-2 text-xs font-semibold text-white <%= 'hidden' if cart_count.zero? %>">
+                      <%= cart_count %>
+                    </span>
+                  <% end %>
+                  <div data-cart-target="miniCartPanel" class="cart-mini-panel absolute z-1000 right-0 mt-3 hidden w-80 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl" data-action="mouseenter->cart#cancelMiniCartClose mouseleave->cart#scheduleMiniCartClose">
+                    <div data-cart-target="miniCartContent">
+                      <%= render "cart/mini_cart", items: current_cart_items, total_cents: current_cart_total_cents, count: cart_count %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="flex h-10 max-w-[480px] items-center justify-center gap-2 rounded-lg bg-transparent px-2.5 text-sm font-bold leading-normal text-charcoal md:hidden">
+                <span class="material-symbols-outlined text-2xl">menu</span>
+                <span class="sr-only">Ouvrir la navigation</span>
+              </button>
+            </header>
+
+            <% if notice.present? %>
+              <div class="mx-4 mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 sm:mx-10">
+                <%= notice %>
+        </div>
+            <% end %>
+
+            <% if alert.present? %>
+              <div class="mx-4 mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 sm:mx-10">
+                <%= alert %>
         </div>
       <% end %>
 
-      <% if alert %>
-        <div class="rounded-md bg-red-50 p-4 mb-4">
-          <div class="flex">
-            <div class="ml-3">
-              <p class="text-sm font-medium text-red-800"><%= alert %></p>
+            <main class="flex flex-col gap-6 py-8 pb-24 md:pb-8">
+              <%= yield %>
+            </main>
+
+            <footer class="mt-10 border-t border-gray-200 px-5 py-10 text-center">
+              <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
+                <a href="/faqs" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta" id="faqs">Questions frequentes</a>
+                <a href="#contact" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">Contactez-nous</a>
+                <a href="/privacy" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">Politique de confidentialite</a>
+                <a href="/terms" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">Conditions d'utilisation</a>
+              </div>
+              <div class="mt-6 flex flex-wrap justify-center gap-4">
+                <a href="https://www.instagram.com" class="text-gray-600 hover:text-terracotta" aria-label="Instagram">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+                  </svg>
+                </a>
+                <a href="https://www.facebook.com" class="text-gray-600 hover:text-terracotta" aria-label="Facebook">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                  </svg>
+                </a>
             </div>
+              <p class="mt-6 text-base font-normal leading-normal text-gray-600">© <%= Date.current.year %> Tranches de Vie - Les 4 Sources. Prix indicatifs.</p>
+            </footer>
           </div>
         </div>
-      <% end %>
-
-      <%= yield %>
-    </main>
-
-    <footer class="bg-white border-t mt-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <p class="text-center text-gray-600 text-sm">
-          © <%= Date.current.year %> Tranches de Vie - par les Artisans des 4 Sources
-        </p>
       </div>
-    </footer>
+    </div>
+
+    <div class="md:hidden">
+      <%= link_to cart_path, class: "fixed inset-x-4 bottom-4 z-40 flex items-center justify-between rounded-full bg-terracotta px-5 py-3 text-white shadow-lg transition hover:bg-terracotta/90" do %>
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+          <span class="text-sm font-semibold uppercase tracking-wide">Voir le panier</span>
+        </div>
+        <span data-cart-target="count" class="inline-flex min-w-8 items-center justify-center rounded-full bg-white px-2 py-1 text-xs font-bold uppercase text-terracotta <%= 'hidden' if cart_count.zero? %>">
+          <%= cart_count %>
+        </span>
+      <% end %>
+    </div>
   </body>
 </html>

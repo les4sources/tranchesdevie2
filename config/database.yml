@@ -81,18 +81,18 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    database: tranchesdevie2_production
-    username: tranchesdevie2
-    password: <%= ENV["TRANCHESDEVIE2_DATABASE_PASSWORD"] %>
+    database: tranchesdevie_production
+    username: <%= ENV["DATABASE_USERNAME"] %>
+    password: <%= ENV["DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
-    database: tranchesdevie2_production_cache
+    database: tranchesdevie_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: tranchesdevie2_production_queue
+    database: tranchesdevie_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: tranchesdevie2_production_cable
+    database: tranchesdevie_production_cable
     migrations_paths: db/cable_migrate

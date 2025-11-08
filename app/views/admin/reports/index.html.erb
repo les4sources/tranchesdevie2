@@ -1,0 +1,145 @@
+<% content_for :title, "Reporting" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Reporting</h1>
+    <p class="text-sm text-gray-600">
+      Période du <%= l(@start_date) %> au <%= l(@end_date) %>
+    </p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <%= render "date_range_filter", start_date: @start_date, end_date: @end_date %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Chiffre d'affaires</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></p>
+    <p class="mt-1 text-sm text-gray-500">Commandes prises en compte : <%= @orders_count %></p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Panier moyen</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900">
+      <%= reports_currency(@average_order_value_cents) %>
+    </p>
+    <p class="mt-1 text-sm text-gray-500">Calculé sur les commandes payées, prêtes ou récupérées</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Produits suivis</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900"><%= @sales_by_product.size %></p>
+    <p class="mt-1 text-sm text-gray-500">Nombre de produits vendus sur la période</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par produit</h2>
+    <% if @sales_by_product.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50 text-left">
+            <tr>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Produit</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Quantité</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">CA</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Part</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @sales_by_product.each do |entry| %>
+              <tr>
+                <td class="px-4 py-2 text-gray-900"><%= entry[:product_name] %></td>
+                <td class="px-4 py-2 text-right text-gray-600"><%= entry[:total_quantity] %></td>
+                <td class="px-4 py-2 text-right text-gray-900"><%= reports_currency(entry[:total_cents]) %></td>
+                <td class="px-4 py-2 text-right text-gray-600">
+                  <%= revenue_share(entry[:total_cents], @revenue_cents) %> %
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucune vente enregistrée sur cette période.</p>
+    <% end %>
+  </section>
+
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Top 10 des clients</h2>
+    <% if @top_customers.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50 text-left">
+            <tr>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Client</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Commandes</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">CA</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @top_customers.each do |entry| %>
+              <tr>
+                <td class="px-4 py-2 text-gray-900"><%= entry[:customer_name].presence || "Client anonyme" %></td>
+                <td class="px-4 py-2 text-right text-gray-600"><%= entry[:orders_count] %></td>
+                <td class="px-4 py-2 text-right text-gray-900"><%= reports_currency(entry[:total_cents]) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucun client éligible pour cette période.</p>
+    <% end %>
+  </section>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Comparaison mardi vs vendredi</h2>
+    <% if @weekday_comparison.any? %>
+      <div class="mb-4 text-sm text-gray-600">
+        <% @weekday_comparison.each do |entry| %>
+          <p>
+            <span class="font-medium"><%= weekday_label(entry[:weekday]) %></span> :
+            <%= entry[:orders_count] %> commandes — <%= reports_currency(entry[:total_cents]) %>
+          </p>
+        <% end %>
+      </div>
+      <% weekday_config = weekday_sales_chart_config(@weekday_comparison) %>
+      <canvas
+        data-controller="reports"
+        data-reports-config-value="<%= chart_config_json(weekday_config) %>"
+        class="w-full h-64">
+      </canvas>
+    <% else %>
+      <p class="text-sm text-gray-500">Pas encore de ventes pour comparer ces deux jours.</p>
+    <% end %>
+  </section>
+
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par mois</h2>
+    <% if @monthly_sales.any? %>
+      <div class="mb-4 text-sm text-gray-600">
+        <ul class="space-y-1">
+          <% @monthly_sales.each do |entry| %>
+            <li>
+              <span class="font-medium"><%= month_label(entry[:month]) %></span> :
+              <%= entry[:orders_count] %> commandes — <%= reports_currency(entry[:total_cents]) %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+      <% monthly_config = monthly_sales_chart_config(@monthly_sales) %>
+      <canvas
+        data-controller="reports"
+        data-reports-config-value="<%= chart_config_json(monthly_config) %>"
+        class="w-full h-64">
+      </canvas>
+    <% else %>
+      <p class="text-sm text-gray-500">Pas encore de ventes pour cette période.</p>
+    <% end %>
+  </section>
+</div>
+

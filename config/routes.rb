@@ -35,6 +35,8 @@ Rails.application.routes.draw do
     post "login", to: "sessions#create"
     delete "logout", to: "sessions#destroy"
 
+    resources :reports, only: [:index]
+
     resources :orders, only: [:index, :show] do
       member do
         patch :update_status

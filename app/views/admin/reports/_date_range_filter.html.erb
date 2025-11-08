@@ -1,0 +1,16 @@
+<%= form_with url: admin_reports_path, method: :get, local: true, class: "flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0" do |f| %>
+  <div>
+    <%= f.label :start_date, "Date de début", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.date_field :start_date, value: start_date, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div>
+    <%= f.label :end_date, "Date de fin", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.date_field :end_date, value: end_date, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div>
+    <%= f.submit "Actualiser", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
+  </div>
+<% end %>
+

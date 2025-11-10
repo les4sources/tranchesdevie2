@@ -57,7 +57,7 @@
 
   <% if @bake_day.orders.exists? %>
     <div class="divide-y divide-gray-200">
-      <% @bake_day.orders.includes(:customer).order(:created_at).each do |order| %>
+      <% @bake_day.orders.includes(customer: [], order_items: { product_variant: { product: [] } }).order(:created_at).each do |order| %>
         <div class="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4">
           <div>
             <p class="text-sm font-medium text-gray-900">
@@ -76,11 +76,21 @@
             <div class="flex -space-x-2 overflow-hidden">
               <% order.order_items.each do |order_item| %>
                 <% variant = order_item.product_variant %>
-                <div class="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center"
+                <% product = variant.product %>
+                <% image = variant.image.attached? ? variant.image : (product.image.attached? ? product.image : nil) %>
+                <div class="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center overflow-hidden"
                      title="<%= variant.name || 'Variante' %> (×<%= order_item.qty %>)">
-                  <span class="text-xs text-gray-600 font-medium">
-                    <%= (variant.name.present? ? variant.name.first.upcase : '?') %>
-                  </span>
+                  <% if image.present? %>
+                    <% if image.variable? %>
+                      <%= image_tag image.variant(resize_to_limit: [40, 40]), alt: variant.name || 'Variante', class: "h-full w-full object-cover" %>
+                    <% else %>
+                      <%= image_tag image, alt: variant.name || 'Variante', class: "h-full w-full object-cover" %>
+                    <% end %>
+                  <% else %>
+                    <span class="text-xs text-gray-600 font-medium">
+                      <%= (variant.name.present? ? variant.name.first.upcase : '?') %>
+                    </span>
+                  <% end %>
                 </div>
               <% end %>
             </div>

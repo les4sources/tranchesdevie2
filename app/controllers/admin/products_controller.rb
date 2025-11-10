@@ -86,7 +86,7 @@ class Admin::ProductsController < Admin::BaseController
   end
 
   def product_params
-    params.require(:product).permit(:name, :description, :category, :position, :active)
+    params.require(:product).permit(:name, :description, :category, :position, :active, :image)
   end
 
   def variant_params

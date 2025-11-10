@@ -3,7 +3,7 @@
 
 <div class="mb-6">
   <h1 class="text-2xl font-bold text-gray-900">
-    Jour de cuisson du <%= @bake_day.baked_on.strftime("%d/%m/%Y") %>
+    Fournée du <%= @bake_day.baked_on.strftime("%d/%m/%Y") %>
   </h1>
 </div>
 
@@ -13,26 +13,19 @@
 
     <dl class="space-y-3">
       <div>
-        <dt class="text-sm font-medium text-gray-500">Date de cuisson</dt>
-        <dd class="mt-1 text-sm text-gray-900">
-          <%= @bake_day.baked_on.strftime("%d/%m/%Y") %>
-        </dd>
-      </div>
-
-      <div>
-        <dt class="text-sm font-medium text-gray-500">Date limite</dt>
+        <dt class="text-sm font-medium text-gray-500">Commandes jusqu'au</dt>
         <dd class="mt-1 text-sm text-gray-900">
           <%= @bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %>
         </dd>
         <dd class="text-sm <%= @bake_day.cut_off_passed? ? 'text-red-600' : 'text-green-600' %>">
-          <%= @bake_day.cut_off_passed? ? "Dépassée" : "Active" %>
+          <%= @bake_day.cut_off_passed? ? "Les commandes sont closes" : "Les commandes sont actuellement ouvertes" %>
         </dd>
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Nombre de commandes</dt>
+        <dt class="text-sm font-medium text-gray-500">Ventes totales</dt>
         <dd class="mt-1 text-sm text-gray-900">
-          <%= @bake_day.orders.count %>
+          <%= number_to_currency(@bake_day.orders.sum(:total_cents) / 100.0, unit: "€", separator: ",", delimiter: "") %>
         </dd>
       </div>
     </dl>
@@ -58,7 +51,7 @@
   <div class="p-6 border-b border-gray-200">
     <h2 class="text-lg font-medium text-gray-900">Commandes</h2>
     <p class="mt-1 text-sm text-gray-600">
-      <%= pluralize(@bake_day.orders.count, "commande") %> pour ce jour de cuisson.
+      <%= pluralize(@bake_day.orders.count, "commande") %> pour cette fournée
     </p>
   </div>
 
@@ -68,9 +61,6 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4">
           <div>
             <p class="text-sm font-medium text-gray-900">
-              Commande <%= order.order_number %>
-            </p>
-            <p class="text-sm text-gray-600">
               <% if order.customer.present? %>
                 <%= order.customer.full_name %>
               <% else %>
@@ -78,8 +68,22 @@
               <% end %>
             </p>
             <p class="text-xs text-gray-500">
-              Créée le <%= order.created_at.strftime("%d/%m/%Y à %H:%M") %>
+              Commandé le <%= order.created_at.strftime("%d/%m/%Y à %H:%M") %>
             </p>
+          </div>
+
+          <div>
+            <div class="flex -space-x-2 overflow-hidden">
+              <% order.order_items.each do |order_item| %>
+                <% variant = order_item.product_variant %>
+                <div class="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center"
+                     title="<%= variant.name || 'Variante' %> (×<%= order_item.qty %>)">
+                  <span class="text-xs text-gray-600 font-medium">
+                    <%= (variant.name.present? ? variant.name.first.upcase : '?') %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
           </div>
 
           <div class="mt-3 md:mt-0 md:flex md:items-center md:space-x-6">

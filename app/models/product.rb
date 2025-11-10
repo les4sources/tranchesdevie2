@@ -1,4 +1,6 @@
 class Product < ApplicationRecord
+  has_one_attached :image
+
   enum :category, { breads: 0, dough_balls: 1 }
 
   has_many :product_variants, dependent: :destroy

@@ -85,9 +85,6 @@ production:
   cache:
     <<: *primary_production
     url: <%= ENV['CACHE_DATABASE_URL'] %>
-  queue:
-    <<: *primary_production
-    url: <%= ENV['QUEUE_DATABASE_URL'] %>
   cable:
     <<: *primary_production
     url: <%= ENV['CABLE_DATABASE_URL'] %>

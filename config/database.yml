@@ -82,8 +82,8 @@ production:
   primary:
     <<: *default
   cache:
-    <<: *primary_production
+    <<: *default
     url: <%= ENV['CACHE_DATABASE_URL'] %>
   cable:
-    <<: *primary_production
+    <<: *default
     url: <%= ENV['CABLE_DATABASE_URL'] %>

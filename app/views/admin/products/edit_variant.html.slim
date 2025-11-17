@@ -1,0 +1,72 @@
+- content_for :title, "Modifier la variante"
+- content_for :layout, "admin"
+
+.mb-6.flex.justify-between.items-center
+  h1.text-2xl.font-bold.text-gray-900 Modifier la variante: #{@variant.name}
+  = link_to "Retour au produit", admin_product_path(@product), class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+
+= form_with model: [:admin, @product, @variant], url: variant_admin_product_path(@product, @variant), method: :patch, local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if @variant.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - @variant.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    .space-y-2
+      = f.label :price_cents, "Prix (en centimes)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :price_cents, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+
+  .space-y-3
+    span.block.text-sm.font-medium.text-gray-700 Statut
+    .flex.items-center.space-x-3
+      = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+      = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
+
+  .space-y-3
+    .flex.justify-between.items-center
+      label.block.text-sm.font-medium.text-gray-700 Images de la variante
+      button#add-image-btn type="button" class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700" Ajouter une image
+    - image_index = @variant.product_images.size
+    script type="application/json" id="variant-images-config"
+      | []
+    #variant-images.space-y-4 data-image-index=image_index
+      = f.fields_for :product_images do |image_form|
+        - product_image = image_form.object
+        - if product_image.persisted? || product_image.image.attached?
+          - if product_image.persisted?
+            = image_form.hidden_field :id
+          .product-image-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+            .flex.items-start.space-x-4
+              .flex-1.space-y-3
+                - if product_image.persisted? && product_image.image.attached?
+                  .flex.items-center.space-x-2.mb-2
+                    - if product_image.image.variable?
+                      = image_tag product_image.image.variant(resize_to_limit: [150, 150]), class: "rounded-md border border-gray-200"
+                    - else
+                      = link_to product_image.image.filename.to_s, rails_blob_path(product_image.image, disposition: "attachment"), class: "text-blue-600 hover:text-blue-800"
+                    span.text-sm.text-gray-500 Image existante
+                  = image_form.file_field :image, accept: "image/*", direct_upload: true, class: "block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                - else
+                  = image_form.file_field :image, accept: "image/*", direct_upload: true, class: "block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                = image_form.hidden_field :_destroy, value: false, class: "destroy-field"
+              .flex-shrink-0
+                button.remove-image-btn type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700" Supprimer
+      - if @variant.product_images.empty?
+        .text-sm.text-gray-500.text-center.py-4 Aucune image pour cette variante
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_product_path(@product), class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+
+script type="module"
+  | import { initProductImages } from "product_images"
+  | // Initialize after a short delay to ensure DOM is ready
+  | setTimeout(() => {
+  |   initProductImages();
+  | }, 100);
+

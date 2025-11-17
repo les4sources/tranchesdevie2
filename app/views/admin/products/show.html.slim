@@ -1,0 +1,77 @@
+- content_for :title, "Produit: #{@product.name}"
+- content_for :layout, "admin"
+
+.mb-6.flex.justify-between.items-center
+  h1.text-2xl.font-bold.text-gray-900 = @product.name
+  .flex.space-x-3
+    = link_to "Modifier", edit_admin_product_path(@product), class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    = link_to "Retour à la liste", admin_products_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+
+.bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-6.space-y-6
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Nom
+      p.text-sm.text-gray-900 = @product.name
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Catégorie
+      p.text-sm.text-gray-900 = product_category_heading(@product.category)
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Position
+      p.text-sm.text-gray-900 = @product.position
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Statut
+      - if @product.active?
+        span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif
+      - else
+        span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-red-100.text-red-800 Inactif
+
+  - if @product.description.present?
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Description
+      p.text-sm.text-gray-900 = simple_format(@product.description)
+
+  - if @product_images.any?
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Images
+      .grid.grid-cols-2.md:grid-cols-4.gap-4.mt-2
+        - @product_images.each do |product_image|
+          - if product_image.image.attached?
+            .relative.group
+              - if product_image.image.variable?
+                = image_tag product_image.image.variant(resize_to_limit: [200, 200]), class: "rounded-md border border-gray-200 w-full"
+              - else
+                = link_to product_image.image.filename.to_s, rails_blob_path(product_image.image, disposition: "attachment"), class: "text-blue-600 hover:text-blue-800"
+              - if product_image.product_variant.present?
+                .absolute.bottom-0.left-0.right-0.bg-black.bg-opacity-75.text-white.text-xs.px-2.py-1.rounded-b-md
+                  = product_image.product_variant.name
+
+  .space-y-4
+    .flex.justify-between.items-center
+      h2.text-lg.font-semibold.text-gray-900 Variantes
+      = link_to "Ajouter une variante", new_admin_product_variants_path(@product), class: "px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    
+    - if @variants.any?
+      .bg-gray-50.rounded-lg.border.border-gray-200.overflow-hidden
+        table.min-w-full.divide-y.divide-gray-200
+          thead.bg-gray-100
+            tr
+              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
+              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Prix
+              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Statut
+              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
+          tbody.divide-y.divide-gray-200
+            - @variants.each do |variant|
+              tr
+                td.px-4.py-3.text-sm.text-gray-900 = variant.name
+                td.px-4.py-3.text-sm.text-gray-600 = number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ")
+                td.px-4.py-3.text-sm
+                  - if variant.active?
+                    span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif
+                  - else
+                    span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-red-100.text-red-800 Inactif
+                td.px-4.py-3.text-sm
+                  = link_to "Modifier", edit_variant_admin_product_path(@product, variant), class: "text-blue-600 hover:text-blue-800 mr-3"
+                  = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { confirm: "Êtes-vous sûr ?" }, class: "text-red-600 hover:text-red-800 inline", form: { class: "inline" }
+    - else
+      p.text-sm.text-gray-500 Aucune variante pour ce produit
+

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_09_091250) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_17_230548) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -129,6 +129,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_091250) do
     t.datetime "updated_at", null: false
     t.index ["product_variant_id"], name: "index_product_availabilities_on_product_variant_id"
     t.index ["start_on", "end_on"], name: "index_product_availabilities_on_start_on_and_end_on"
+  end
+
+  create_table "product_images", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "product_variant_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_id"], name: "index_product_images_on_product_id"
+    t.index ["product_variant_id"], name: "index_product_images_on_product_variant_id"
   end
 
   create_table "product_variants", force: :cascade do |t|
@@ -331,6 +340,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_091250) do
   add_foreign_key "orders", "customers"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"
+  add_foreign_key "product_images", "product_variants"
+  add_foreign_key "product_images", "products"
   add_foreign_key "product_variants", "products"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

@@ -8,6 +8,7 @@ class Admin::ProductsController < Admin::BaseController
 
   def show
     @variants = @product.product_variants.order(:name)
+    @product_images = @product.product_images.includes(:image_attachment)
   end
 
   def new
@@ -25,12 +26,14 @@ class Admin::ProductsController < Admin::BaseController
   end
 
   def edit
+    @variants = @product.product_variants.order(:name)
   end
 
   def update
     if @product.update(product_params)
       redirect_to admin_product_path(@product), notice: 'Produit mis à jour'
     else
+      @variants = @product.product_variants.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -60,11 +63,13 @@ class Admin::ProductsController < Admin::BaseController
   end
 
   def edit_variant
+    @product = @variant.product
   end
 
   def update_variant
+    @product = @variant.product
     if @variant.update(variant_params)
-      redirect_to admin_product_path(@variant.product), notice: 'Variante mise à jour'
+      redirect_to admin_product_path(@product), notice: 'Variante mise à jour'
     else
       render :edit_variant, status: :unprocessable_entity
     end
@@ -86,11 +91,14 @@ class Admin::ProductsController < Admin::BaseController
   end
 
   def product_params
-    params.require(:product).permit(:name, :description, :category, :position, :active, :image)
+    params.require(:product).permit(:name, :description, :category, :position, :active)
   end
 
   def variant_params
-    params.require(:product_variant).permit(:name, :price_cents, :active, :image)
+    params.require(:product_variant).permit(
+      :name, :price_cents, :active,
+      product_images_attributes: [:id, :image, :_destroy]
+    )
   end
 end
 

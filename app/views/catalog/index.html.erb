@@ -41,10 +41,26 @@
         <% product = product_data[0] %>
         <% variants = product_data[1] %>
         <% primary_variant = variants.min_by(&:price_cents) %>
+        <% variant_images = variant_images_for_product(product, variants) %>
         <div class="group flex flex-col gap-3 pb-3">
-          <div class="overflow-hidden rounded-lg bg-cover bg-center" style="background-image: url('<%= product_background_image(product) %>');">
-            <div class="aspect-square w-full transform transition-transform duration-300 group-hover:scale-105"></div>
-          </div>
+          <% if variant_images.length > 1 %>
+            <div class="relative overflow-hidden rounded-lg group/carousel" data-controller="product-carousel" data-action="touchstart->product-carousel#touchStart touchmove->product-carousel#touchMove touchend->product-carousel#touchEnd">
+              <div class="carousel-container aspect-square w-full relative">
+                <% variant_images.each_with_index do |image_data, index| %>
+                  <div class="carousel-slide absolute inset-0 bg-cover bg-center transition-opacity duration-500" data-product-carousel-target="slide" style="background-image: url('<%= image_data[:url] %>'); opacity: <%= index == 0 ? '1' : '0' %>;"></div>
+                <% end %>
+              </div>
+              <div class="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5 z-10">
+                <% variant_images.each_with_index do |_, index| %>
+                  <button type="button" class="carousel-dot h-1.5 w-1.5 rounded-full transition-all <%= index == 0 ? 'bg-white' : 'bg-white/60' %>" data-product-carousel-target="dot" data-action="click->product-carousel#goToSlide" data-carousel-index="<%= index %>" aria-label="Image <%= index + 1 %>"></button>
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <div class="overflow-hidden rounded-lg bg-cover bg-center" style="background-image: url('<%= variant_images.first[:url] %>');">
+              <div class="aspect-square w-full transform transition-transform duration-300 group-hover:scale-105"></div>
+            </div>
+          <% end %>
           <div>
             <p class="text-lg font-medium leading-normal text-charcoal"><%= product.name %></p>
 

@@ -46,7 +46,47 @@ module CatalogHelper
   end
 
   def product_background_image(product)
-    PRODUCT_IMAGE_MAP.fetch(product.name, CATEGORY_IMAGE_FALLBACKS[product.category])
+    # Try to use the first product image if available
+    if product.product_images.any? && product.product_images.first.image.attached?
+      product_image = product.product_images.first.image
+      if product_image.variable?
+        rails_blob_url(product_image.variant(resize_to_limit: [800, 800]))
+      else
+        rails_blob_url(product_image)
+      end
+    else
+      # Fallback to static image map
+      PRODUCT_IMAGE_MAP.fetch(product.name, CATEGORY_IMAGE_FALLBACKS[product.category])
+    end
+  end
+
+  def variant_images_for_product(product, variants)
+    # Collect all images from variants
+    images = []
+    variants.each do |variant|
+      variant.product_images.each do |product_image|
+        next unless product_image.image.attached?
+        
+        image_url = if product_image.image.variable?
+          rails_blob_url(product_image.image.variant(resize_to_limit: [800, 800]))
+        else
+          rails_blob_url(product_image.image)
+        end
+        
+        images << {
+          url: image_url,
+          variant_name: variant.name
+        }
+      end
+    end
+    
+    # If no variant images, fallback to product image or static image
+    if images.empty?
+      fallback_url = product_background_image(product)
+      images << { url: fallback_url, variant_name: nil }
+    end
+    
+    images
   end
 
   def bake_day_picker_config(bake_days, current_bake_day)

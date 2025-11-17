@@ -27,17 +27,6 @@
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
     = f.text_area :description, rows: 4, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
 
-  .space-y-3
-    = f.label :image, "Image du produit", class: "block text-sm font-medium text-gray-700"
-    = f.file_field :image, accept: "image/*", direct_upload: true, class: "block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
-    - if @product.image.attached?
-      .mt-2
-        p.text-sm.text-gray-500 Image actuelle
-        - if @product.image.variable?
-          = image_tag @product.image.variant(resize_to_limit: [300, 300]), class: "mt-2 rounded-md border border-gray-200"
-        - else
-          = link_to @product.image.filename.to_s, rails_blob_path(@product.image, disposition: "attachment"), class: "text-blue-600 hover:text-blue-800"
-
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"

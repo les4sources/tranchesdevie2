@@ -77,7 +77,7 @@
               <% order.order_items.each do |order_item| %>
                 <% variant = order_item.product_variant %>
                 <% product = variant.product %>
-                <% image = variant.image.attached? ? variant.image : (product.image.attached? ? product.image : nil) %>
+                <% image = variant.image.attached? ? variant.image : (product.product_images.first&.image&.attached? ? product.product_images.first.image : nil) %>
                 <div class="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center overflow-hidden"
                      title="<%= variant.name || 'Variante' %> (×<%= order_item.qty %>)">
                   <% if image.present? %>

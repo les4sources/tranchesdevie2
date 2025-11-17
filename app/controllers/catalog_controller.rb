@@ -7,7 +7,10 @@ class CatalogController < ApplicationController
   private
 
   def load_all_active_products
-    Product.active.ordered.includes(:product_variants).map do |product|
+    Product.active.ordered.includes(
+      product_variants: { product_images: :image_attachment },
+      product_images: :image_attachment
+    ).map do |product|
       variants = product.product_variants.active
       [product, variants] if variants.any?
     end.compact

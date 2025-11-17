@@ -5,6 +5,7 @@ class CartController < ApplicationController
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
     @total = calculate_total
     @available_bake_days = load_next_available_bake_days
+    @phone_e164 = session[:phone_e164] if phone_verified?
     # Vérifier si le bake_day actuel est toujours disponible
     if @bake_day && !@bake_day.can_order?
       @bake_day = nil
@@ -95,6 +96,13 @@ class CartController < ApplicationController
         format.html { redirect_to cart_path, alert: 'Jour de cuisson non disponible' }
       end
     end
+  end
+
+  def logout
+    session[:phone_e164] = nil
+    session[:otp_verified] = false
+    session[:otp_verified_at] = nil
+    redirect_to cart_path, notice: 'Déconnexion réussie'
   end
 
   private

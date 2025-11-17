@@ -3,7 +3,7 @@
 <%# Stripe is loaded globally in the layout %>
 
 <div class="w-full mx-auto">
-  <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser votre commande</h1>
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser ta commande</h1>
 
   <div class="grid grid-cols-1 gap-8">
     <!-- Formulaire informations client -->
@@ -15,7 +15,7 @@
           <!-- Etape de verification du numero -->
           <div id="phone-verification-step">
             <div class="mb-4" data-controller="phone-input" data-phone-input-default-country-value="BE">
-              <%= f.label :phone_e164, "Votre numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.label :phone_e164, "Ton numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
               <div class="relative">
                 <%= f.text_field :phone_e164, 
                     data: { 
@@ -42,13 +42,15 @@
               Me connecter
             </button>
 
+            <p class="text-sm text-gray-500 mt-2">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="text-blue-600 hover:text-blue-700 hover:underline">Contacte-nous pour commander</a></p>
+
             <div id="otp-input-section" class="hidden mt-4">
               <div class="mb-4">
                 <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
                 <%= text_field_tag :otp_code, nil, 
                     maxlength: 6,
                     pattern: "\\d{6}",
-                    class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                    class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
                     placeholder: "123456" %>
               </div>
 
@@ -66,22 +68,22 @@
           <!-- Details du client -->
           <div id="customer-details">
             <div class="mb-4">
-              <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.label :first_name, "Ton prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
               <%= f.text_field :first_name, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                  class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
                   required: true %>
             </div>
 
             <div class="mb-4">
-              <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.label :last_name, "Ton nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
               <%= f.text_field :last_name, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+                  class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
             </div>
 
             <div class="mb-4">
-              <%= f.label :email, "Email (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.label :email, "Ton adresse e-mail (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
               <%= f.email_field :email, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+                  class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
             </div>
           </div>
         <% end %>

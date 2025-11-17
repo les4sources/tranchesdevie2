@@ -1,7 +1,7 @@
 class PhoneVerification < ApplicationRecord
   OTP_TTL = 5.minutes
   MAX_ATTEMPTS = 5
-  COOLDOWN_PERIOD = 60.seconds
+  COOLDOWN_PERIOD = 20.seconds
 
   validates :phone_e164, presence: true
   validates :code, presence: true, length: { is: 6 }, format: { with: /\A\d{6}\z/ }

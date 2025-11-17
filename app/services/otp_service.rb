@@ -4,7 +4,7 @@ class OtpService
 
     # Check cooldown
     unless PhoneVerification.can_send_new?(phone_e164)
-      return { success: false, error: 'Veuillez patienter 60 secondes avant de redemander un code' }
+      return { success: false, error: 'Veuillez patienter 20 secondes avant de redemander un code' }
     end
 
     verification = PhoneVerification.create_for_phone(phone_e164)

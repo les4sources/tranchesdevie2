@@ -8,7 +8,7 @@ class CheckoutController < ApplicationController
     @bake_day = BakeDay.find(session[:bake_day_id])
     @total_cents = calculate_total
     @customer = Customer.new
-    @otp_verified = session[:otp_verified] == true
+    @otp_verified = phone_verified?
   end
 
   def verify_phone
@@ -23,7 +23,7 @@ class CheckoutController < ApplicationController
 
     if result[:success]
       session[:phone_e164] = phone_e164
-      render json: { success: true, message: 'Code envoyé par SMS' }
+      render json: { success: true, message: 'Code envoyé par SMS à ' + Time.current.strftime('%H:%M') }
     else
       render json: { success: false, error: result[:error] }, status: :unprocessable_entity
     end
@@ -41,6 +41,7 @@ class CheckoutController < ApplicationController
 
     if result[:success]
       session[:otp_verified] = true
+      session[:otp_verified_at] = Time.current.to_i
       render json: { success: true }
     else
       render json: { success: false, error: result[:error] }, status: :unprocessable_entity
@@ -48,7 +49,7 @@ class CheckoutController < ApplicationController
   end
 
   def create_payment_intent
-    unless session[:otp_verified]
+    unless phone_verified?
       render json: { error: 'Phone verification required' }, status: :unauthorized
       return
     end
@@ -136,6 +137,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
+    session[:otp_verified_at] = nil
     session[:payment_intent_id] = nil
   end
 

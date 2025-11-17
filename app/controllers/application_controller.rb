@@ -2,7 +2,7 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty
+  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?
 
   private
 
@@ -45,5 +45,14 @@ class ApplicationController < ActionController::Base
         total_cents: variant.price_cents * qty
       }
     end
+  end
+
+  def phone_verified?
+    return false unless session[:otp_verified] == true
+    return false unless session[:otp_verified_at].present?
+    return false unless session[:phone_e164].present?
+    
+    verified_at = Time.at(session[:otp_verified_at])
+    verified_at > 1.year.ago
   end
 end

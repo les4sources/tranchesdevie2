@@ -34,7 +34,7 @@ export default class extends Controller {
         if (otpSection) {
           otpSection.classList.remove('hidden')
         }
-        this.showMessage('Code envoyé par SMS', 'success')
+        this.showMessage('Le code t\'a été envoyé par SMS', 'success')
       } else {
         this.showMessage(data.error || 'Erreur lors de l\'envoi', 'error')
       }

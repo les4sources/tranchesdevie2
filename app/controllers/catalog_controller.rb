@@ -1,32 +1,14 @@
 class CatalogController < ApplicationController
   def index
-    @bake_day = find_bake_day
-    @products = load_products_for_bake_day(@bake_day)
-    @available_bake_days = load_available_bake_days
-    @available_bake_days = (@available_bake_days + Array(@bake_day)).compact.uniq.sort_by(&:baked_on)
+    @products = load_all_active_products
     @seasonal_promotion = seasonal_promotion_content
   end
 
   private
 
-  def load_available_bake_days
-    BakeDay.future.ordered.limit(2)
-  end
-
-  def find_bake_day
-    if params[:bake_day].present?
-      date = Date.parse(params[:bake_day]) rescue nil
-      BakeDay.find_by(baked_on: date) if date
-    end || BakeDayService.next_available_bake_day
-  end
-
-  def load_products_for_bake_day(bake_day)
-    return [] unless bake_day
-
+  def load_all_active_products
     Product.active.ordered.includes(:product_variants).map do |product|
-      variants = product.product_variants.active.select do |variant|
-        variant.available_on?(bake_day.baked_on)
-      end
+      variants = product.product_variants.active
       [product, variants] if variants.any?
     end.compact
   end

@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   get "cart", to: "cart#show", as: :cart
   post "cart/add", to: "cart#add", as: :cart_add
   patch "cart/update", to: "cart#update", as: :cart_update
+  patch "cart/update_bake_day", to: "cart#update_bake_day", as: :cart_update_bake_day
   delete "cart/remove/:id", to: "cart#remove", as: :cart_remove
 
   resources :checkout, only: [:new] do

@@ -4,6 +4,13 @@ class CartController < ApplicationController
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
     @total = calculate_total
+    @available_bake_days = load_next_available_bake_days
+    # Vérifier si le bake_day actuel est toujours disponible
+    if @bake_day && !@bake_day.can_order?
+      @bake_day = nil
+      @bake_day_id = nil
+      session[:bake_day_id] = nil
+    end
   end
 
   def add
@@ -73,6 +80,23 @@ class CartController < ApplicationController
     redirect_to cart_path, notice: 'Produit retiré du panier'
   end
 
+  def update_bake_day
+    bake_day = BakeDay.find_by(id: params[:bake_day_id])
+    
+    if bake_day && bake_day.can_order?
+      session[:bake_day_id] = bake_day.id
+      respond_to do |format|
+        format.json { render json: { success: true, bake_day_id: bake_day.id } }
+        format.html { redirect_to cart_path }
+      end
+    else
+      respond_to do |format|
+        format.json { render json: { success: false, error: 'Jour de cuisson non disponible' }, status: :unprocessable_entity }
+        format.html { redirect_to cart_path, alert: 'Jour de cuisson non disponible' }
+      end
+    end
+  end
+
   private
 
   def calculate_total
@@ -97,6 +121,24 @@ class CartController < ApplicationController
     else
       "#{variant_name.presence || 'Produit'} ajouté à ton panier"
     end
+  end
+
+  def load_next_available_bake_days
+    # Récupérer tous les jours de cuisson futurs disponibles (mardis et vendredis)
+    available_bake_days = BakeDay.future
+                                  .where('cut_off_at > ?', Time.current)
+                                  .ordered
+                                  .select { |bd| bd.can_order? && [2, 5].include?(bd.baked_on.wday) }
+    
+    # Grouper par jour de la semaine et prendre le premier de chaque groupe
+    tuesday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 2 }
+    friday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 5 }
+    
+    result = []
+    result << tuesday_bake_days.first if tuesday_bake_days.any?
+    result << friday_bake_days.first if friday_bake_days.any?
+    
+    result.compact.sort_by(&:baked_on)
   end
 end
 

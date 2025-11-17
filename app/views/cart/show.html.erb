@@ -3,8 +3,30 @@
 <div class="max-w-5xl mx-auto py-6">
   <div class="mb-8">
     <p class="text-sm uppercase tracking-wide text-amber-600 font-semibold mb-2">Tranches de Vie</p>
-    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Votre panier</h1>
-    <% if @bake_day %>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Ton panier</h1>
+    
+    <% if @available_bake_days.any? %>
+      <div class="mt-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">Sélectionne ton jour de retrait aux 4 Sources :</p>
+        <div class="space-y-2">
+          <% @available_bake_days.each do |bake_day| %>
+            <label class="flex items-center p-3 rounded-lg border-2 cursor-pointer transition <%= 'border-amber-500 bg-amber-50' if @bake_day&.id == bake_day.id %> <%= 'border-gray-200 hover:border-gray-300' unless @bake_day&.id == bake_day.id %>">
+              <input 
+                type="radio" 
+                name="bake_day_id" 
+                value="<%= bake_day.id %>" 
+                class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300"
+                <%= 'checked' if @bake_day&.id == bake_day.id %>
+                data-bake-day-id="<%= bake_day.id %>"
+              >
+              <span class="ml-3 text-sm text-gray-900">
+                <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %d %B %Y") } %></span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    <% elsif @bake_day %>
       <p class="mt-2 text-sm text-gray-600">
         Retrait le <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(@bake_day.baked_on, format: "%A %d %B %Y") } %></span>
       </p>
@@ -18,8 +40,8 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
         </svg>
       </div>
-      <h2 class="text-2xl font-semibold text-gray-900 mb-3">Votre panier est vide</h2>
-      <p class="text-gray-500 mb-8">Découvrez nos pains et pâtisseries artisanales.</p>
+      <h2 class="text-2xl font-semibold text-gray-900 mb-3">Ton panier est vide</h2>
+      <p class="text-gray-500 mb-8">Découvre nos pains et pâtisseries artisanales.</p>
       <%= link_to "Voir le catalogue", catalog_path, class: "inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition" %>
     </div>
   <% else %>
@@ -79,7 +101,7 @@
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <div class="pb-4 border-b border-gray-200">
             <h2 class="text-xl font-semibold text-gray-900">Récapitulatif</h2>
-            <p class="text-sm text-gray-500 mt-1">Vérifiez vos articles avant de passer commande.</p>
+            <p class="text-sm text-gray-500 mt-1">Vérifie tes articles avant de passer commande.</p>
           </div>
 
           <dl class="mt-4 space-y-2 text-sm text-gray-600">
@@ -99,9 +121,96 @@
           </div>
 
           <%= link_to "Passer à la commande", new_checkout_path, class: "mt-6 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 transition" %>
-          <%= link_to "Continuer vos achats", catalog_path, class: "mt-3 inline-flex w-full items-center justify-center text-sm font-semibold text-amber-600 hover:text-amber-700" %>
+          <%= link_to "Continuer tes achats", catalog_path, class: "mt-3 inline-flex w-full items-center justify-center text-sm font-semibold text-amber-600 hover:text-amber-700" %>
         </div>
       </aside>
     </div>
   <% end %>
 </div>
+
+<script>
+  (function() {
+    // Fonction pour mettre à jour les styles en fonction de l'état des radio buttons
+    function updateStyles() {
+      const radioButtons = document.querySelectorAll('input[name="bake_day_id"]');
+      radioButtons.forEach(function(radio) {
+        const label = radio.closest('label');
+        if (!label) return;
+        
+        if (radio.checked) {
+          label.classList.remove('border-gray-200', 'hover:border-gray-300');
+          label.classList.add('border-amber-500', 'bg-amber-50');
+        } else {
+          label.classList.remove('border-amber-500', 'bg-amber-50');
+          label.classList.add('border-gray-200', 'hover:border-gray-300');
+        }
+      });
+    }
+    
+    // Fonction pour initialiser la sélection des jours de cuisson
+    function initializeBakeDaySelection() {
+      // Appliquer les styles initiaux
+      updateStyles();
+    }
+    
+    // Gestionnaire d'événement pour le changement de sélection (délégation d'événements)
+    function handleBakeDayChange(event) {
+      if (event.target && event.target.name === 'bake_day_id' && event.target.checked) {
+        const bakeDayId = event.target.value;
+        
+        // Mettre à jour visuellement les labels
+        updateStyles();
+        
+        // Envoyer la requête AJAX
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        
+        fetch('<%= cart_update_bake_day_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ bake_day_id: bakeDayId }),
+          credentials: 'same-origin'
+        })
+        .then(function(response) {
+          if (!response.ok) {
+            throw new Error('Erreur lors de la mise à jour');
+          }
+          return response.json();
+        })
+        .then(function(data) {
+          if (data.success) {
+            // Jour de cuisson mis à jour avec succès
+          } else {
+            throw new Error(data.error || 'Erreur inconnue');
+          }
+        })
+        .catch(function(error) {
+          console.error('Erreur:', error);
+          // Revenir à l'état précédent en cas d'erreur
+          location.reload();
+        });
+      }
+    }
+    
+    // Initialiser au chargement de la page
+    function init() {
+      initializeBakeDaySelection();
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    
+    // Utiliser la délégation d'événements au niveau du document (fonctionne avec Turbo)
+    document.addEventListener('change', handleBakeDayChange);
+    
+    // Réinitialiser les styles après chaque navigation Turbo
+    document.addEventListener('turbo:load', initializeBakeDaySelection);
+    document.addEventListener('turbo:frame-load', initializeBakeDaySelection);
+  })();
+</script>

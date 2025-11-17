@@ -53,7 +53,11 @@ export default class extends Controller {
           this.refreshMiniCart(data.mini_cart_html)
         }
 
-        this.showTemporaryLabel(submitButton, "✔")
+        if (data?.variant_qty !== undefined) {
+          this.updateButtonQuantity(submitButton, data.variant_qty)
+        } else {
+          this.showTemporaryLabel(submitButton, "✔")
+        }
         this.notifySuccess(data?.message)
         this.openMiniCartTemporarily()
       })
@@ -187,8 +191,22 @@ export default class extends Controller {
     this.closeMiniCart()
   }
 
+  updateButtonQuantity(button, qty) {
+    button.innerHTML = qty > 0 ? qty : "+"
+    button.dataset.cartCurrentQty = qty
+    button.disabled = false
+    button.dataset.cartBusy = "false"
+    
+    // Clear any pending timer
+    if (this.buttonTimers.has(button)) {
+      clearTimeout(this.buttonTimers.get(button))
+      this.buttonTimers.delete(button)
+    }
+  }
+
   showTemporaryLabel(button, label) {
-    const originalLabel = button.dataset.cartOriginalLabel || "+"
+    const currentQty = parseInt(button.dataset.cartCurrentQty || "0", 10)
+    const originalLabel = currentQty > 0 ? currentQty : "+"
 
     button.innerHTML = label
 

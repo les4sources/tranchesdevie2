@@ -95,10 +95,12 @@
           </p>
         </div>
 
-        <%= link_to(@seasonal_promotion[:cta_path] || catalog_path,
-                    class: "inline-flex h-11 items-center justify-center rounded-xl bg-black px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-terracotta/90",
-                    aria: { label: @seasonal_promotion[:cta_text] || "Shop Now" }) do %>
-          <%= @seasonal_promotion[:cta_text] || "Shop Now" %>
+        <% if @seasonal_promotion[:cta_path].present? %>
+          <%= link_to(@seasonal_promotion[:cta_path] || catalog_path,
+                      class: "inline-flex h-11 items-center justify-center rounded-xl bg-black px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-terracotta/90",
+                      aria: { label: @seasonal_promotion[:cta_text] || "Shop Now" }) do %>
+            <%= @seasonal_promotion[:cta_text] || "Shop Now" %>
+          <% end %>
         <% end %>
       </div>
     </div>
@@ -131,8 +133,9 @@
                   <%= f.hidden_field :qty, value: 1 %>
 
                   <div class="flex items-center gap-3">
-                    <button type="submit" class="flex h-8 w-8 items-center justify-center rounded-full bg-lime-300 text-lg font-semibold leading-none text-charcoal shadow hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-400/60" data-cart-target="button">
-                      +
+                    <% variant_qty = current_cart_variant_qty(variant.id) %>
+                    <button type="submit" class="flex h-8 w-8 items-center justify-center rounded-full bg-lime-300 text-lg font-semibold leading-none text-charcoal shadow hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-400/60" data-cart-target="button" data-cart-variant-id="<%= variant.id %>" data-cart-current-qty="<%= variant_qty %>">
+                      <%= variant_qty > 0 ? variant_qty : "+" %>
                     </button>
                     <span class="text-sm font-medium text-charcoal"><%= variant.name %></span>
                   </div>

@@ -39,6 +39,7 @@ class CartController < ApplicationController
       format.json do
         render json: {
           cart_count: current_cart_count,
+          variant_qty: current_cart_variant_qty(variant.id),
           message: success_message(variant),
           mini_cart_html: render_to_string(
             partial: 'cart/mini_cart',

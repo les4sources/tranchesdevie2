@@ -2,7 +2,7 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count
+  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty
 
   private
 
@@ -16,6 +16,12 @@ class ApplicationController < ActionController::Base
 
   def current_cart_count
     (session[:cart] || []).sum { |item| item['qty'].to_i }
+  end
+
+  def current_cart_variant_qty(variant_id)
+    cart = session[:cart] || []
+    item = cart.find { |i| i['product_variant_id'] == variant_id.to_s }
+    item ? item['qty'].to_i : 0
   end
 
   def build_cart_items(cart)

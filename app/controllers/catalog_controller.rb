@@ -35,8 +35,8 @@ class CatalogController < ApplicationController
     {
       title: "Ça y est, on cuit le mardi !",
       description: "Le four à pain des 4 Sources va désormais chauffer pour vous les mardis et vendredis. Commandez dès maintenant vos pains pour la semaine prochaine.",
-      cta_text: "C'est parti",
-      cta_path: catalog_path
+      cta_text: "",
+      cta_path: nil
     }
   end
 end

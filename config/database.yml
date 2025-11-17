@@ -79,12 +79,11 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
-  primary: &primary_production
+  primary:
     <<: *default
-    url: <%= ENV.fetch('DATABASE_URL') { raise 'DATABASE_URL environment variable is not set' } %>
   cache:
     <<: *primary_production
-    url: <%= ENV.fetch('CACHE_DATABASE_URL', ENV.fetch('DATABASE_URL') { raise 'DATABASE_URL environment variable is not set' }) %>
+    url: <%= ENV['CACHE_DATABASE_URL'] %>
   cable:
     <<: *primary_production
-    url: <%= ENV.fetch('CABLE_DATABASE_URL', ENV.fetch('DATABASE_URL') { raise 'DATABASE_URL environment variable is not set' }) %>
+    url: <%= ENV['CABLE_DATABASE_URL'] %>

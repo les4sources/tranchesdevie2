@@ -1,6 +1,14 @@
 class Admin::SessionsController < ApplicationController
   layout 'admin'
 
+  def index
+    if admin_authenticated?
+      redirect_to admin_orders_path
+    else
+      redirect_to admin_login_path
+    end
+  end
+
   def new
     redirect_to admin_orders_path if admin_authenticated?
   end

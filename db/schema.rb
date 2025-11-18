@@ -312,26 +312,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_230548) do
     t.index ["tenant_id"], name: "index_stripe_events_on_tenant_id"
   end
 
-  create_table "tenants", force: :cascade do |t|
-    t.string "subdomain", null: false
-    t.string "custom_domain"
-    t.string "name", null: false
-    t.text "pickup_address"
-    t.string "timezone", default: "Europe/Brussels"
-    t.string "logo_url"
-    t.string "primary_color", limit: 7
-    t.string "telerivet_project_id"
-    t.string "telerivet_phone_id"
-    t.string "telerivet_api_key"
-    t.string "stripe_account_id"
-    t.jsonb "production_defaults"
-    t.string "status", default: "active"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["custom_domain"], name: "index_tenants_on_custom_domain", unique: true
-    t.index ["subdomain"], name: "index_tenants_on_subdomain", unique: true
-  end
-
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "order_items", "orders"
@@ -349,5 +329,4 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_230548) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "stripe_events", "tenants"
 end

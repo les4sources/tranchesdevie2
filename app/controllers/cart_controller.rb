@@ -105,6 +105,8 @@ class CartController < ApplicationController
   end
 
   def logout
+    session[:customer_id] = nil
+    session[:customer_authenticated_at] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil

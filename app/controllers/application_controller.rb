@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
-  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  # Browser restriction removed to support a wider range of client browsers
+  # The application uses import maps, Tailwind CSS, and Stimulus which are compatible with most modern browsers
+  # allow_browser versions: :modern  # Commented out to allow older browsers
 
   include CustomerAuthentication
 

@@ -54,6 +54,14 @@ class CheckoutController < ApplicationController
     result = OtpService.verify_otp(phone_e164, params[:code])
 
     if result[:success]
+      # Trouver ou créer le client
+      customer = Customer.find_or_create_by(phone_e164: phone_e164) do |c|
+        c.first_name = 'Client' # Valeur par défaut, sera mis à jour dans le profil
+      end
+
+      # Créer la session client complète
+      session[:customer_id] = customer.id
+      session[:customer_authenticated_at] = Time.current.to_i
       session[:otp_verified] = true
       session[:otp_verified_at] = Time.current.to_i
       render json: { success: true }

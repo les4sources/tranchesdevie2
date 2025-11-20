@@ -1,0 +1,59 @@
+<% content_for :title, "Nouveau client" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Nouveau client</h1>
+  <p class="mt-1 text-sm text-gray-600">Ajoutez un client pour pouvoir créer une commande en son nom.</p>
+</div>
+
+<% if @customer.errors.any? %>
+  <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+    <h2 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h2>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
+      <% @customer.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+  <%= form_with model: @customer, url: admin_customers_path, local: true do |f| %>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div>
+        <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.text_field :first_name,
+                         required: true,
+                         class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      </div>
+
+      <div>
+        <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.text_field :last_name,
+                         class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      </div>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div>
+        <%= f.label :phone_e164, "Téléphone (format E.164)", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.telephone_field :phone_e164,
+                              required: true,
+                              placeholder: "+33612345678",
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      </div>
+
+      <div>
+        <%= f.label :email, "Email", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.email_field :email,
+                          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end space-x-3">
+      <%= link_to "Annuler", admin_orders_path, class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+      <%= f.submit "Créer le client", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    </div>
+  <% end %>
+</div>
+

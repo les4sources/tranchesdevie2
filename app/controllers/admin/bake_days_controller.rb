@@ -6,6 +6,7 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def show
+    @dashboard = Admin::BakeDayDashboard.new(@bake_day)
   end
 
   def new
@@ -31,10 +32,14 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def update
-    if @bake_day.update(bake_day_params)
-      redirect_to admin_bake_day_path(@bake_day), notice: 'Jour de cuisson mis à jour'
-    else
-      render :edit, status: :unprocessable_entity
+    respond_to do |format|
+      if @bake_day.update(bake_day_params)
+        format.html { redirect_to admin_bake_day_path(@bake_day), notice: 'Jour de cuisson mis à jour' }
+        format.json { render json: { success: true, bake_day: { internal_note: @bake_day.internal_note } }, status: :ok }
+      else
+        format.html { render :edit, status: :unprocessable_entity }
+        format.json { render json: { success: false, errors: @bake_day.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -50,7 +55,7 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def bake_day_params
-    params.require(:bake_day).permit(:baked_on, :cut_off_at)
+    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note)
   end
 end
 

@@ -9,6 +9,41 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
+@import url("https://unpkg.com/trix@2.1.7/dist/trix.css");
+
+.trix-content {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #111827;
+  min-height: 6rem;
+}
+
+.trix-button-group--file-tools {
+  display: none !important;
+}
+
+.trix-toolbar {
+  border-radius: 0.75rem 0.75rem 0 0;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.trix-button {
+  color: #1f2937;
+}
+
+.trix-button.trix-active {
+  background-color: #e0e7ff;
+  color: #312e81;
+}
+
+.trix-editor {
+  border: 1px solid #e5e7eb;
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding: 1rem;
+  background: #fff;
+}
+
 @keyframes cart-bounce {
   0%,
   100% {

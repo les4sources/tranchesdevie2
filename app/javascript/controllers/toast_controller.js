@@ -11,11 +11,13 @@ export default class extends Controller {
 
     window.addEventListener("cart:add:success", this.handleSuccess)
     window.addEventListener("cart:add:error", this.handleError)
+    window.addEventListener("dashboard:toast", this.handleCustomToast)
   }
 
   disconnect() {
     window.removeEventListener("cart:add:success", this.handleSuccess)
     window.removeEventListener("cart:add:error", this.handleError)
+    window.removeEventListener("dashboard:toast", this.handleCustomToast)
   }
 
   handleSuccess(event) {
@@ -28,6 +30,12 @@ export default class extends Controller {
     const message =
       event?.detail?.message || "Une erreur est survenue. Veuillez réessayer."
     this.show(message, "error")
+  }
+
+  handleCustomToast = (event) => {
+    const { message, kind } = event.detail || {}
+    if (!message) return
+    this.show(message, kind || "info")
   }
 
   show(message, type = "info", duration = DEFAULT_DURATION) {

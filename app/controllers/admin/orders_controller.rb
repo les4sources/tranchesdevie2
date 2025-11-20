@@ -12,7 +12,7 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def new
-    @order = Order.new(status: :unpaid)
+    @order = Order.new(status: :unpaid, customer_id: params[:customer_id])
     @selected_quantities = {}
     @calculated_total_cents = 0
   end

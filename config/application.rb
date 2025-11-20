@@ -47,7 +47,8 @@ module Tranchesdevie2
     # Rack::Attack middleware for rate limiting
     config.middleware.use Rack::Attack
 
-    # config.eager_load_paths << Rails.root.join("extras")
+    config.autoload_paths << Rails.root.join("app/presenters")
+    config.eager_load_paths << Rails.root.join("app/presenters")
 
     # Don't generate system test files.
     config.generators.system_tests = nil

@@ -232,9 +232,6 @@ class CheckoutController < ApplicationController
       return
     end
 
-    # Send confirmation SMS (same process as for paid orders)
-    SmsService.send_confirmation(order) rescue nil
-
     # Clear cart and session data
     session[:cart] = []
     session[:bake_day_id] = nil
@@ -460,9 +457,6 @@ class CheckoutController < ApplicationController
         payment.stripe_payment_intent_id = payment_intent_id
         payment.status = :succeeded
       end
-
-      # Send confirmation SMS
-      SmsService.send_confirmation(order) rescue nil
     end
 
     order

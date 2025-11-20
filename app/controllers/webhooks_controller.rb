@@ -134,9 +134,6 @@ class WebhooksController < ApplicationController
         payment.stripe_payment_intent_id = payment_intent_id
         payment.status = :succeeded
       end
-
-      # Send confirmation SMS
-      SmsService.send_confirmation(order)
     end
   end
 

@@ -4,7 +4,7 @@ class SmsService
   def self.send_confirmation(order)
     return false unless order.customer.sms_enabled?
 
-    message = "Votre commande #{order.order_number} a été confirmée. Merci !"
+    message = "Ta commande chez Tranches de Vie est confirmée. Merci !"
     send_sms(
       to: order.customer.phone_e164,
       body: message,
@@ -17,7 +17,7 @@ class SmsService
   def self.send_ready(order)
     return false unless order.customer.sms_enabled?
 
-    message = "Bonjour, votre commande est cuite, elle est disponible aux 4 Sources ! Les artisans de Tranche de Vie"
+    message = "Bonjour, ta commande est cuite, elle est disponible aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Les artisans de Tranche de Vie"
     send_sms(
       to: order.customer.phone_e164,
       body: message,
@@ -30,7 +30,7 @@ class SmsService
   def self.send_refund(order)
     return false unless order.customer.sms_enabled?
 
-    message = "Votre commande a été remboursée intégralement car annulée avant l'heure limite."
+    message = "Ta commande a été remboursée intégralement car annulée avant l'heure limite."
     send_sms(
       to: order.customer.phone_e164,
       body: message,

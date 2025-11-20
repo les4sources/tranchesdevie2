@@ -53,6 +53,9 @@ class Customers::SessionsController < ApplicationController
   def destroy
     session[:customer_id] = nil
     session[:customer_authenticated_at] = nil
+    session[:phone_e164] = nil
+    session[:otp_verified] = false
+    session[:otp_verified_at] = nil
     redirect_to root_path, notice: 'Déconnexion réussie'
   end
 

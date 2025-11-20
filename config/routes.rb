@@ -22,6 +22,7 @@ Rails.application.routes.draw do
       post :verify_phone
       post :verify_otp
       post :create_payment_intent
+      post :create_cash_order
       get :success
     end
   end
@@ -66,6 +67,8 @@ Rails.application.routes.draw do
       end
       resources :sms_messages, only: [:show], controller: "sms_messages"
     end
+
+    resources :groups, only: [:index, :new, :create, :edit, :update]
 
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do

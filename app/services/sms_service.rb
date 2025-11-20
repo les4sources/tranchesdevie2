@@ -57,6 +57,23 @@ class SmsService
   def self.send_sms(to:, body:, kind:, baked_on: nil, customer_id: nil)
     return false unless api_key && project_id && phone_id
 
+    # Don't send SMS in development, only log it
+    unless Rails.env.production?
+      Rails.logger.info("SMS (not sent in #{Rails.env}): To: #{to}, Body: #{body}")
+      SmsMessage.create!(
+        direction: :outbound,
+        to_e164: to,
+        from_e164: phone_number,
+        body: body,
+        kind: kind,
+        baked_on: baked_on,
+        external_id: nil,
+        customer_id: customer_id,
+        sent_at: Time.current
+      )
+      return true
+    end
+
     response = HTTParty.post(
       "#{TELERIVET_API_URL}/projects/#{project_id}/messages/send",
       headers: {

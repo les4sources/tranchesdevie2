@@ -51,6 +51,14 @@
     </div>
 
     <div class="mt-6">
+      <%= f.label :group_id, "Groupe", class: "block text-sm font-medium text-gray-700" %>
+      <%= f.select :group_id,
+                   options_from_collection_for_select(@groups, :id, :name, @customer.group_id),
+                   { include_blank: "Aucun groupe" },
+                   { class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" } %>
+    </div>
+
+    <div class="mt-6">
       <div class="flex items-center">
         <%= f.check_box :sms_opt_out, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
         <%= f.label :sms_opt_out, "Désactiver les SMS", class: "ml-2 block text-sm text-gray-900" %>

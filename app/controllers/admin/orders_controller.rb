@@ -57,8 +57,8 @@ class Admin::OrdersController < Admin::BaseController
 
     @order.transition_to!(new_status)
 
-    # Send ready SMS if status changed to ready
-    if @order.ready? && @order.saved_change_to_status? && @order.status_before_last_save == 'paid'
+    # Send ready SMS if status changed to ready (from paid or unpaid)
+    if @order.ready? && @order.saved_change_to_status? && ['paid', 'unpaid'].include?(@order.status_before_last_save)
       SmsService.send_ready(@order)
     end
 

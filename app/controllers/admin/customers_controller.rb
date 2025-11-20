@@ -20,6 +20,7 @@ class Admin::CustomersController < Admin::BaseController
 
   def new
     @customer = Customer.new
+    @groups = Group.order(:name)
   end
 
   def create
@@ -30,17 +31,20 @@ class Admin::CustomersController < Admin::BaseController
     elsif (existing_customer = Customer.find_by(phone_e164: @customer.phone_e164))
       redirect_to admin_customer_path(existing_customer), alert: 'Ce mangeur existe déjà. Redirection vers sa page.'
     else
+      @groups = Group.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    @groups = Group.order(:name)
   end
 
   def update
     if @customer.update(customer_params)
       redirect_to admin_customer_path(@customer), notice: 'Mangeur mis à jour avec succès'
     else
+      @groups = Group.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -75,7 +79,7 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   def customer_params
-    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out)
+    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :group_id)
   end
 end
 

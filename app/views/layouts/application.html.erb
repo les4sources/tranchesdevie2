@@ -69,7 +69,7 @@
                   <% end %>
                   <div data-cart-target="miniCartPanel" class="cart-mini-panel absolute z-1000 right-0 mt-3 hidden w-80 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl" data-action="mouseenter->cart#cancelMiniCartClose mouseleave->cart#scheduleMiniCartClose">
                     <div data-cart-target="miniCartContent">
-                      <%= render "cart/mini_cart", items: current_cart_items, total_cents: current_cart_total_cents, count: cart_count %>
+                      <%= render "cart/mini_cart", items: current_cart_items, total_cents: current_cart_total_cents, subtotal_cents: current_cart_subtotal_cents, discount_cents: current_cart_discount_cents, customer: current_customer_for_cart, count: current_cart_count %>
                     </div>
                   </div>
                 </div>

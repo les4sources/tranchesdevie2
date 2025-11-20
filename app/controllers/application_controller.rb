@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
 
   include CustomerAuthentication
 
-  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?
+  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?, :current_cart_subtotal_cents, :current_cart_discount_cents, :current_customer_for_cart
 
   private
 
@@ -12,8 +12,27 @@ class ApplicationController < ActionController::Base
     @current_cart_items = build_cart_items(session[:cart] || [])
   end
 
-  def current_cart_total_cents
+  def current_cart_subtotal_cents
     current_cart_items.sum { |item| item[:total_cents] }
+  end
+
+  def current_cart_discount_cents
+    customer = current_customer_for_cart
+    return 0 unless customer&.group&.discount_percent
+
+    subtotal = current_cart_subtotal_cents
+    (subtotal * customer.group.discount_percent / 100.0).round
+  end
+
+  def current_cart_total_cents
+    current_cart_subtotal_cents - current_cart_discount_cents
+  end
+
+  def current_customer_for_cart
+    return current_customer if customer_signed_in?
+    return nil unless session[:phone_e164]
+
+    Customer.find_by(phone_e164: session[:phone_e164])
   end
 
   def current_cart_count

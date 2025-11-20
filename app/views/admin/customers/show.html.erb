@@ -60,6 +60,17 @@
         <dt class="text-sm font-medium text-gray-500">Date d'inscription</dt>
         <dd class="mt-1 text-sm text-gray-900"><%= @customer.created_at.strftime("%d/%m/%Y à %H:%M") %></dd>
       </div>
+
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Groupe</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <% if @customer.group %>
+            <%= @customer.group.name %> (<%= @customer.group.discount_percent %>%)
+          <% else %>
+            <span class="text-gray-400">Aucun groupe</span>
+          <% end %>
+        </dd>
+      </div>
     </dl>
   </div>
 

@@ -129,9 +129,17 @@
             <div class="flex justify-between">
               <dt>Sous-total</dt>
               <dd class="font-medium text-gray-900">
-                <%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+                <%= number_to_currency(@subtotal / 100.0, unit: "€", separator: ",", delimiter: "") %>
               </dd>
             </div>
+            <% if @discount_cents > 0 && @customer&.group %>
+              <div class="flex justify-between text-green-600">
+                <dt>Remise (<%= @customer.group.name %> - <%= @customer.group.discount_percent %>%)</dt>
+                <dd class="font-medium">
+                  -<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+                </dd>
+              </div>
+            <% end %>
           </dl>
 
           <div class="mt-6 flex items-center justify-between text-base font-semibold text-gray-900">

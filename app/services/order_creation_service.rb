@@ -1,23 +1,26 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil)
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: 'online')
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
     @payment_intent_id = payment_intent_id
+    @payment_method = payment_method
     @errors = []
   end
 
   def call
     return false unless valid?
 
+    initial_status = @payment_method == 'cash' ? :unpaid : :pending
+
     @order = Order.create!(
       customer: @customer,
       bake_day: @bake_day,
       total_cents: calculate_total,
       payment_intent_id: @payment_intent_id,
-      status: :pending
+      status: initial_status
     )
 
     create_order_items
@@ -34,7 +37,8 @@ class OrderCreationService
     @errors << 'Customer is required' unless @customer
 
     # Check if order with same payment_intent_id already exists (idempotency)
-    if @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
+    # Only check for online payments (cash orders don't have payment_intent_id)
+    if @payment_method == 'online' && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
       @errors << 'Order already exists for this payment intent'
       return false
     end
@@ -43,10 +47,20 @@ class OrderCreationService
   end
 
   def calculate_total
-    @cart_items.sum do |item|
+    subtotal = @cart_items.sum do |item|
       variant = ProductVariant.find(item['product_variant_id'])
       item['qty'].to_i * variant.price_cents
     end
+
+    # Appliquer la remise du groupe si le client en a un
+    discount_cents = calculate_discount(subtotal)
+    subtotal - discount_cents
+  end
+
+  def calculate_discount(subtotal)
+    return 0 unless @customer&.group&.discount_percent
+
+    (subtotal * @customer.group.discount_percent / 100.0).round
   end
 
   def create_order_items

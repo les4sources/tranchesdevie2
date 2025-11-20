@@ -15,6 +15,12 @@
         Votre commande <strong><%= @order.order_number %></strong> a été confirmée.
       </p>
       
+      <% if @order.unpaid? %>
+        <p class="text-gray-600 mb-4">
+          Vous paierez en liquide lors du retrait de votre commande.
+        </p>
+      <% end %>
+      
       <p class="text-gray-600 mb-6">
         Vous recevrez un SMS de confirmation sous peu.
       </p>

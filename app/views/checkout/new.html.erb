@@ -109,23 +109,62 @@
             </div>
           <% end %>
         </div>
-        <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between">
-          <span class="font-medium">Total</span>
-          <span class="font-bold"><%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+        <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span>Sous-total</span>
+            <span><%= number_to_currency(@subtotal_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+          </div>
+          <% if @discount_cents > 0 && @customer&.group %>
+            <div class="flex justify-between text-sm text-green-600">
+              <span>Remise (<%= @customer.group.name %> - <%= @customer.group.discount_percent %>%)</span>
+              <span>-<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+            </div>
+          <% end %>
+          <div class="flex justify-between pt-2 border-t border-gray-200">
+            <span class="font-medium">Total</span>
+            <span class="font-bold"><%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+          </div>
         </div>
       </div>
 
-      <div id="payment-element" class="mb-4">
-        <!-- L'element de paiement Stripe sera insere ici -->
+      <!-- Sélecteur de méthode de paiement -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3">Méthode de paiement</label>
+        <div class="space-y-3">
+          <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="cash">
+            <input type="radio" name="payment_method" value="cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+            <span class="ml-3 text-sm font-medium text-gray-700">Payer ma commande en liquide au retrait</span>
+          </label>
+          <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="online">
+            <input type="radio" name="payment_method" value="online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+            <span class="ml-3 text-sm font-medium text-gray-700">Payer en ligne avec Bancontact ou autre</span>
+          </label>
+        </div>
       </div>
 
-      <button id="submit-payment" 
-              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled>
-        Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
-      </button>
+      <!-- Section paiement Stripe (masquée par défaut) -->
+      <div id="stripe-payment-section" class="hidden">
+        <div id="payment-element" class="mb-4">
+          <!-- L'element de paiement Stripe sera insere ici -->
+        </div>
 
-      <div id="payment-message" class="mt-4 hidden"></div>
+        <button id="submit-payment" 
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+          Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+        </button>
+
+        <div id="payment-message" class="mt-4 hidden"></div>
+      </div>
+
+      <!-- Bouton pour commande cash -->
+      <div id="cash-order-section">
+        <button id="submit-cash-order" 
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+          Confirmer la commande
+        </button>
+        <p class="mt-2 text-sm text-gray-500 text-center">Vous paierez en liquide lors du retrait de votre commande</p>
+      </div>
     </div>
     <% end %>
   </div>
@@ -145,6 +184,66 @@
   let paymentElement;
   let elements;
   let stripeInitialized = false;
+  let currentPaymentMethod = 'cash'; // Par défaut, paiement cash
+
+  // Initialiser l'état de la méthode de paiement
+  function initializePaymentMethodState() {
+    const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
+    const stripeSection = document.getElementById('stripe-payment-section');
+    const cashSection = document.getElementById('cash-order-section');
+    
+    // Trouver le radio button sélectionné
+    const selectedRadio = Array.from(paymentMethodRadios).find(radio => radio.checked);
+    if (selectedRadio) {
+      currentPaymentMethod = selectedRadio.value;
+    }
+    
+    // Ajuster l'affichage selon la méthode sélectionnée
+    if (currentPaymentMethod === 'online') {
+      if (stripeSection) stripeSection.classList.remove('hidden');
+      if (cashSection) cashSection.classList.add('hidden');
+    } else {
+      if (stripeSection) stripeSection.classList.add('hidden');
+      if (cashSection) cashSection.classList.remove('hidden');
+    }
+  }
+
+  // Gérer le changement de méthode de paiement
+  function handlePaymentMethodChange() {
+    const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
+    const stripeSection = document.getElementById('stripe-payment-section');
+    const cashSection = document.getElementById('cash-order-section');
+
+    paymentMethodRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        currentPaymentMethod = this.value;
+        
+        if (this.value === 'online') {
+          // Afficher la section Stripe et masquer le bouton cash
+          if (stripeSection) stripeSection.classList.remove('hidden');
+          if (cashSection) cashSection.classList.add('hidden');
+          
+          // Initialiser Stripe si pas déjà fait
+          if (!stripeInitialized) {
+            initStripe();
+          } else {
+            // Réinitialiser le paiement Stripe
+            initializePayment();
+          }
+        } else {
+          // Masquer la section Stripe et afficher le bouton cash
+          if (stripeSection) stripeSection.classList.add('hidden');
+          if (cashSection) cashSection.classList.remove('hidden');
+          
+          // Démontrer l'élément Stripe si présent
+          if (paymentElement) {
+            paymentElement.unmount();
+            paymentElement = null;
+          }
+        }
+      });
+    });
+  }
 
   // Initialiser Stripe lorsqu'il est charge
   function initStripe() {
@@ -159,19 +258,28 @@
         stripeInitialized = true;
       }
       
-      // Initialiser l'element de paiement lorsque l'OTP est verifie
-      // Les informations client peuvent etre vides : le client sera cree lors de la commande
+      // Initialiser l'element de paiement lorsque l'OTP est verifie et que le paiement en ligne est choisi
       <% if @otp_verified %>
         // Attendre un court instant pour que le DOM soit pret
-        setTimeout(initializePayment, 100);
+        setTimeout(() => {
+          if (currentPaymentMethod === 'online') {
+            initializePayment();
+          }
+        }, 100);
       <% end %>
     });
   }
 
   // Initialiser au chargement de la page
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initStripe);
+    document.addEventListener('DOMContentLoaded', function() {
+      initializePaymentMethodState();
+      handlePaymentMethodChange();
+      initStripe();
+    });
   } else {
+    initializePaymentMethodState();
+    handlePaymentMethodChange();
     initStripe();
   }
 
@@ -180,6 +288,8 @@
     // Ne reinitialiser que si l'utilisateur est sur la page de paiement
     if (window.location.pathname.includes('/checkout')) {
       stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
+      initializePaymentMethodState();
+      handlePaymentMethodChange();
       initStripe();
     }
   });
@@ -189,6 +299,12 @@
       console.error('Stripe non initialise');
       return;
     }
+    
+    // Ne pas initialiser si le paiement cash est sélectionné
+    if (currentPaymentMethod !== 'online') {
+      return;
+    }
+    
     fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',
       headers: {
@@ -234,12 +350,16 @@
         submitButton.disabled = false;
       }
 
+      // Retirer les anciens gestionnaires d'événements pour éviter les doublons
+      const newSubmitButton = submitButton.cloneNode(true);
+      submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
+
       // Ajouter un gestionnaire de clic pour la soumission du paiement
-      submitButton.addEventListener('click', async (e) => {
+      newSubmitButton.addEventListener('click', async (e) => {
         e.preventDefault();
         
-        submitButton.disabled = true;
-        submitButton.textContent = 'Traitement...';
+        newSubmitButton.disabled = true;
+        newSubmitButton.textContent = 'Traitement...';
 
         const { error } = await stripe.confirmPayment({
           elements,
@@ -249,18 +369,82 @@
         });
 
         if (error) {
-          document.getElementById('payment-message').textContent = error.message;
-          document.getElementById('payment-message').classList.remove('hidden');
-          submitButton.disabled = false;
-          submitButton.textContent = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
+          const paymentMessage = document.getElementById('payment-message');
+          if (paymentMessage) {
+            paymentMessage.textContent = error.message;
+            paymentMessage.classList.remove('hidden');
+          }
+          newSubmitButton.disabled = false;
+          newSubmitButton.textContent = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
         }
       });
     })
     .catch(error => {
       console.error("Erreur lors de l'initialisation du paiement :", error);
-      document.getElementById('payment-message').textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
-      document.getElementById('payment-message').classList.remove('hidden');
+      const paymentMessage = document.getElementById('payment-message');
+      if (paymentMessage) {
+        paymentMessage.textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
+        paymentMessage.classList.remove('hidden');
+      }
     });
+  }
+
+  // Gérer la soumission de commande cash
+  function handleCashOrderSubmission() {
+    const submitCashButton = document.getElementById('submit-cash-order');
+    if (!submitCashButton) return;
+
+    submitCashButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      
+      // Vérifier que les informations client sont remplies
+      const firstName = document.getElementById('customer_first_name')?.value;
+      if (!firstName || firstName.trim() === '') {
+        alert('Veuillez remplir votre prénom');
+        return;
+      }
+
+      submitCashButton.disabled = true;
+      submitCashButton.textContent = 'Traitement...';
+
+      try {
+        const response = await fetch('<%= create_cash_order_checkout_index_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<%= form_authenticity_token %>'
+          },
+          body: JSON.stringify({
+            first_name: document.getElementById('customer_first_name')?.value || '',
+            last_name: document.getElementById('customer_last_name')?.value || '',
+            email: document.getElementById('customer_email')?.value || ''
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Rediriger vers la page de succès
+          window.location.href = '<%= success_checkout_index_url %>?order_token=' + data.order_token;
+        } else {
+          alert(data.error || 'Erreur lors de la création de la commande');
+          submitCashButton.disabled = false;
+          submitCashButton.textContent = 'Confirmer la commande';
+        }
+      } catch (error) {
+        console.error("Erreur lors de la création de la commande cash :", error);
+        alert('Erreur de connexion. Veuillez réessayer.');
+        submitCashButton.disabled = false;
+        submitCashButton.textContent = 'Confirmer la commande';
+      }
+    });
+  }
+
+  // Initialiser la gestion de la commande cash
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handleCashOrderSubmission);
+  } else {
+    handleCashOrderSubmission();
   }
 <% end %>
 

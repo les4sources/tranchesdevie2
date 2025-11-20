@@ -3,7 +3,10 @@ class CartController < ApplicationController
     @cart = session[:cart] || []
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
-    @total = calculate_total
+    @subtotal = calculate_subtotal
+    @customer = current_customer_for_cart
+    @discount_cents = calculate_discount(@subtotal, @customer)
+    @total = @subtotal - @discount_cents
     @available_bake_days = load_next_available_bake_days
     @phone_e164 = session[:phone_e164] if phone_verified?
     # Vérifier si le bake_day actuel est toujours disponible
@@ -55,6 +58,9 @@ class CartController < ApplicationController
             locals: {
               items: current_cart_items,
               total_cents: current_cart_total_cents,
+              subtotal_cents: current_cart_subtotal_cents,
+              discount_cents: current_cart_discount_cents,
+              customer: current_customer_for_cart,
               count: current_cart_count
             }
           )
@@ -107,10 +113,16 @@ class CartController < ApplicationController
 
   private
 
-  def calculate_total
+  def calculate_subtotal
     (session[:cart] || []).sum do |item|
       item['qty'].to_i * item['price_cents'].to_i
     end
+  end
+
+  def calculate_discount(subtotal, customer)
+    return 0 unless customer&.group&.discount_percent
+
+    (subtotal * customer.group.discount_percent / 100.0).round
   end
 
   def requested_quantity

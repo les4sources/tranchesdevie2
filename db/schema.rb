@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_20_110000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_20_110002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -149,6 +149,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_110000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "flour_quantity"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
   end
 
@@ -160,6 +161,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_110000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "flour_quantity"
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
   end

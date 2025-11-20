@@ -1,0 +1,81 @@
+<% content_for :title, "Mangeurs" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+  <h1 class="text-2xl font-bold text-gray-900">Mangeurs</h1>
+  <%= link_to "Nouveau mangeur",
+              new_admin_customer_path,
+              class: "inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
+</div>
+
+<div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <div class="flex justify-between items-center">
+      <h2 class="text-lg font-medium text-gray-900">Tous les mangeurs</h2>
+      
+      <%= form_with url: admin_customers_path, method: :get, local: true, class: "flex space-x-2" do |f| %>
+        <%= f.text_field :search, 
+            value: params[:search],
+            placeholder: "Rechercher par nom, téléphone ou email...",
+            class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        <%= f.submit "Rechercher", class: "px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700" %>
+        <% if params[:search].present? %>
+          <%= link_to "Effacer", admin_customers_path, class: "px-3 py-1 bg-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-400" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SMS</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commandes</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      <% if @customers.any? %>
+        <% @customers.each do |customer| %>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <%= customer.full_name %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              <%= customer.phone_e164 %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              <%= customer.email.presence || "-" %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= customer.sms_enabled? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                <%= customer.sms_enabled? ? 'Activé' : 'Désactivé' %>
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              <%= customer.orders.count %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <%= link_to "Voir", admin_customer_path(customer), class: "text-blue-600 hover:text-blue-800 mr-3" %>
+              <%= link_to "Modifier", edit_admin_customer_path(customer), class: "text-blue-600 hover:text-blue-800" %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+            <% if params[:search].present? %>
+              Aucun mangeur trouvé pour cette recherche.
+            <% else %>
+              Aucun mangeur enregistré.
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

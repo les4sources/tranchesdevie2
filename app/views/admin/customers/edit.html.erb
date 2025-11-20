@@ -1,9 +1,9 @@
-<% content_for :title, "Nouveau mangeur" %>
+<% content_for :title, "Modifier le mangeur" %>
 <% content_for :layout, "admin" %>
 
 <div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-900">Nouveau mangeur</h1>
-  <p class="mt-1 text-sm text-gray-600">Ajoutez un mangeur pour pouvoir créer une commande en son nom.</p>
+  <h1 class="text-2xl font-bold text-gray-900">Modifier le mangeur</h1>
+  <p class="mt-1 text-sm text-gray-600">Mettez à jour les informations du mangeur.</p>
 </div>
 
 <% if @customer.errors.any? %>
@@ -18,7 +18,7 @@
 <% end %>
 
 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-  <%= form_with model: @customer, url: admin_customers_path, local: true do |f| %>
+  <%= form_with model: @customer, url: admin_customer_path(@customer), local: true do |f| %>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div>
         <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700" %>
@@ -50,9 +50,17 @@
       </div>
     </div>
 
+    <div class="mt-6">
+      <div class="flex items-center">
+        <%= f.check_box :sms_opt_out, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+        <%= f.label :sms_opt_out, "Désactiver les SMS", class: "ml-2 block text-sm text-gray-900" %>
+      </div>
+      <p class="mt-1 text-sm text-gray-500">Cochez cette case si le mangeur ne souhaite plus recevoir de SMS.</p>
+    </div>
+
     <div class="mt-8 flex justify-end space-x-3">
-      <%= link_to "Annuler", admin_customers_path, class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
-      <%= f.submit "Créer le mangeur", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+      <%= link_to "Annuler", admin_customer_path(@customer), class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+      <%= f.submit "Mettre à jour", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
     </div>
   <% end %>
 </div>

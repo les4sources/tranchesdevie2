@@ -106,6 +106,16 @@ module Admin
       orders.any?(&:unpaid?)
     end
 
+    def total_flour_quantity
+      confirmed_orders = orders.select { |order| order.paid? || order.ready? || order.picked_up? }
+      confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+
+      confirmed_order_items.sum do |item|
+        flour_qty = item.product_variant.flour_quantity || 0
+        item.qty * flour_qty
+      end
+    end
+
     private
 
     def detect_mold_size(product, variant)

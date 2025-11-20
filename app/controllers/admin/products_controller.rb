@@ -96,7 +96,7 @@ class Admin::ProductsController < Admin::BaseController
 
   def variant_params
     params.require(:product_variant).permit(
-      :name, :price_cents, :active,
+      :name, :price_cents, :active, :flour_quantity,
       product_images_attributes: [:id, :image, :_destroy]
     )
   end

@@ -144,10 +144,12 @@
         </p>
       </div>
     </div>
-    <div class="mt-6 grid gap-4 md:grid-cols-3">
+    <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <% large_status = mold_requirements[:large].positive? ? "Ready" : "To confirm" %>
       <% small_status = mold_requirements[:small].positive? ? "Ready" : "To confirm" %>
       <% unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify" %>
+      <% total_flour = @dashboard.total_flour_quantity %>
+      <% flour_status = total_flour.positive? ? "Ready" : "To confirm" %>
 
       <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow">
         <p class="text-sm font-semibold text-indigo-900">Grands moules (1 kg)</p>
@@ -170,6 +172,14 @@
         <p class="mt-2 text-3xl font-bold text-indigo-950"><%= mold_requirements[:unspecified] %></p>
         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold <%= mold_requirements[:unspecified].zero? ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>">
           <%= unspecified_status %>
+        </span>
+      </div>
+
+      <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow">
+        <p class="text-sm font-semibold text-indigo-900">Quantité de farine</p>
+        <p class="mt-2 text-3xl font-bold text-indigo-950"><%= total_flour %> g</p>
+        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold <%= total_flour.positive? ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>">
+          <%= flour_status %>
         </span>
       </div>
     </div>

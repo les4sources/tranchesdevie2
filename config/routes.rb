@@ -48,7 +48,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :customers, only: [:new, :create]
+    resources :customers, only: [:index, :show, :new, :create, :edit, :update]
 
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do

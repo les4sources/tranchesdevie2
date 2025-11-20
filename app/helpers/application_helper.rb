@@ -2,6 +2,7 @@ module ApplicationHelper
   def order_status_label(status)
     labels = {
       "pending" => "En attente",
+      "unpaid" => "Non payée",
       "paid" => "Payée",
       "ready" => "Prête",
       "picked_up" => "Récupérée",

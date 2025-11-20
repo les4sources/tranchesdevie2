@@ -41,7 +41,7 @@ Rails.application.routes.draw do
 
     resources :reports, only: [:index]
 
-    resources :orders, only: [:index, :show] do
+    resources :orders, only: [:index, :show, :new, :create] do
       member do
         patch :update_status
         post :refund

@@ -5,7 +5,8 @@ class Order < ApplicationRecord
     ready: 2,
     picked_up: 3,
     no_show: 4,
-    cancelled: 5
+    cancelled: 5,
+    unpaid: 6
   }
 
   belongs_to :customer
@@ -17,6 +18,7 @@ class Order < ApplicationRecord
   validates :public_token, presence: true, uniqueness: true
   validates :order_number, presence: true, uniqueness: true
   validates :status, presence: true
+  validates :requires_invoice, inclusion: { in: [true, false] }
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
 
@@ -38,7 +40,7 @@ class Order < ApplicationRecord
     case status.to_sym
     when :pending
       new_status.to_sym == :paid
-    when :paid
+    when :paid, :unpaid
       [:ready, :cancelled].include?(new_status.to_sym)
     when :ready
       [:picked_up, :no_show].include?(new_status.to_sym)

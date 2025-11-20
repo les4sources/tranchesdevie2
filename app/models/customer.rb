@@ -1,6 +1,7 @@
 class Customer < ApplicationRecord
   has_many :orders, dependent: :restrict_with_error
   has_many :phone_verifications, dependent: :destroy
+  has_many :sms_messages, dependent: :nullify
 
   validates :phone_e164, presence: true, uniqueness: true
   validates :first_name, presence: true

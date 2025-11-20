@@ -50,6 +50,16 @@ class ApplicationController < ActionController::Base
   end
 
   def phone_verified?
+    # Si le client est connecté, considérer le téléphone comme vérifié
+    if customer_signed_in?
+      # Synchroniser la session avec les données du client connecté
+      session[:phone_e164] = current_customer.phone_e164
+      session[:otp_verified] = true
+      session[:otp_verified_at] = Time.current.to_i
+      return true
+    end
+    
+    # Sinon, vérifier la session OTP classique
     return false unless session[:otp_verified] == true
     return false unless session[:otp_verified_at].present?
     return false unless session[:phone_e164].present?

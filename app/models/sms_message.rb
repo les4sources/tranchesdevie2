@@ -8,8 +8,11 @@ class SmsMessage < ApplicationRecord
     confirmation: 0,
     ready: 1,
     refund: 2,
-    other: 3
+    otp: 3,
+    other: 4
   }
+
+  belongs_to :customer, optional: true
 
   validates :to_e164, presence: true
   validates :from_e164, presence: true
@@ -19,6 +22,8 @@ class SmsMessage < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc) }
   scope :for_phone, ->(phone) { where(to_e164: phone) }
+  scope :for_customer, ->(customer) { where(customer_id: customer.id) }
+  scope :ordered_by_sent_at, -> { order(sent_at: :desc, created_at: :desc) }
 
   def self.create_inbound(from, to, body)
     kind = if body.upcase.strip == 'STOP'

@@ -1,11 +1,20 @@
 <% content_for :title, "Mangeur - #{@customer.full_name}" %>
 <% content_for :layout, "admin" %>
 
+<div data-controller="sms-modal">
 <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
   <h1 class="text-2xl font-bold text-gray-900">Mangeur : <%= @customer.full_name %></h1>
   <div class="flex space-x-3">
     <%= link_to "Modifier", edit_admin_customer_path(@customer), class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50" %>
     <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: "inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700" %>
+    <% if @customer.sms_enabled? %>
+      <button
+        type="button"
+        data-action="click->sms-modal#open"
+        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700">
+        Envoyer un SMS
+      </button>
+    <% end %>
   </div>
 </div>
 
@@ -133,7 +142,138 @@
   <% end %>
 </div>
 
+<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-4">Messages SMS</h2>
+  
+  <% if @sms_messages.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'envoi</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenu</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @sms_messages.each do |sms| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <%= (sms.sent_at || sms.created_at).strftime("%d/%m/%Y à %H:%M") %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  <%= case sms.kind
+                      when 'confirmation' then 'bg-blue-100 text-blue-800'
+                      when 'ready' then 'bg-green-100 text-green-800'
+                      when 'refund' then 'bg-red-100 text-red-800'
+                      when 'otp' then 'bg-purple-100 text-purple-800'
+                      else 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= case sms.kind
+                      when 'confirmation' then 'Confirmation'
+                      when 'ready' then 'Prêt'
+                      when 'refund' then 'Remboursement'
+                      when 'otp' then 'OTP'
+                      else 'Autre'
+                      end %>
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <%= truncate(sms.body, length: 60) %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <%= link_to "Détails", admin_customer_sms_message_path(@customer, sms), class: "text-blue-600 hover:text-blue-800" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-sm text-gray-500">Aucun message SMS pour ce mangeur.</p>
+  <% end %>
+</div>
+
 <div class="mt-6">
   <%= link_to "← Retour à la liste des mangeurs", admin_customers_path, class: "text-blue-600 hover:text-blue-800" %>
+</div>
+
+<!-- Modal pour envoyer un SMS -->
+<div
+  id="sms-modal"
+  class="hidden fixed inset-0 z-50 overflow-y-auto"
+  data-sms-modal-target="modal"
+  data-action="keydown@window->sms-modal#closeWithEscape"
+  data-turbo-permanent>
+  <div
+    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+    data-sms-modal-target="overlay"
+    data-action="click->sms-modal#closeBackground">
+  </div>
+
+  <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+      <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+        <button
+          type="button"
+          data-action="click->sms-modal#close"
+          class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+          <span class="sr-only">Fermer</span>
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="sm:flex sm:items-start">
+        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+          <h3 class="text-base font-semibold leading-6 text-gray-900 mb-4">
+            Envoyer un SMS à <%= @customer.full_name %>
+          </h3>
+          
+          <div class="mt-2">
+            <p class="text-sm text-gray-500 mb-4">
+              Destinataire : <%= @customer.phone_e164 %>
+            </p>
+
+            <div id="sms-error" class="hidden mb-4 rounded-md bg-red-50 p-4" data-sms-modal-target="error">
+              <div class="flex">
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-red-800"></p>
+                </div>
+              </div>
+            </div>
+
+            <%= form_with url: send_sms_admin_customer_path(@customer), method: :post, local: false, class: "space-y-4", data: { controller: "sms-modal", sms_modal_target: "form", action: "submit->sms-modal#submit", turbo: "false" } do |f| %>
+              <div>
+                <%= f.label :body, "Message", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.text_area :body, rows: 5, required: true, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", placeholder: "Entrez votre message..." %>
+                <p class="mt-2 text-sm text-gray-500">
+                  Le message sera envoyé via Telerivet.
+                </p>
+              </div>
+
+              <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="submit"
+                  class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                  Envoyer
+                </button>
+                <button
+                  type="button"
+                  data-action="click->sms-modal#close"
+                  class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                  Annuler
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </div>
 

@@ -46,7 +46,6 @@
                 <div class="flex items-center gap-9">
                   <%= link_to "Nos pains et compagnie", catalog_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <%= link_to "À propos", a_propos_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
-                  <a href="mailto:boulangerie@les4sources.be" class="text-sm font-medium leading-normal text-charcoal hover:text-terracotta">Contact</a>
                   <% if customer_signed_in? %>
                     <%= link_to "Mon compte", customers_account_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                     <%= button_to "Déconnexion",

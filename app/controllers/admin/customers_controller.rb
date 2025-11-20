@@ -1,5 +1,5 @@
 class Admin::CustomersController < Admin::BaseController
-  before_action :set_customer, only: [:show, :edit, :update]
+  before_action :set_customer, only: [:show, :edit, :update, :send_sms]
 
   def index
     @customers = Customer.order(created_at: :desc).includes(:orders)
@@ -15,6 +15,7 @@ class Admin::CustomersController < Admin::BaseController
 
   def show
     @orders = @customer.orders.includes(:bake_day).order(created_at: :desc)
+    @sms_messages = @customer.sms_messages.ordered_by_sent_at
   end
 
   def new
@@ -42,6 +43,29 @@ class Admin::CustomersController < Admin::BaseController
     else
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  def send_sms
+    body = params[:body]
+    
+    if body.blank?
+      render json: { success: false, error: 'Le message ne peut pas être vide' }, status: :unprocessable_entity
+      return
+    end
+
+    unless @customer.sms_enabled?
+      render json: { success: false, error: 'Les SMS sont désactivés pour ce client' }, status: :unprocessable_entity
+      return
+    end
+
+    if SmsService.send_custom(@customer, body)
+      render json: { success: true, message: 'SMS envoyé avec succès' }
+    else
+      render json: { success: false, error: 'Erreur lors de l\'envoi du SMS' }, status: :unprocessable_entity
+    end
+  rescue StandardError => e
+    Rails.logger.error("Error sending SMS: #{e.message}")
+    render json: { success: false, error: 'Une erreur est survenue' }, status: :unprocessable_entity
   end
 
   private

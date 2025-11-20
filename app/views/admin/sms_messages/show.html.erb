@@ -1,0 +1,95 @@
+<% content_for :title, "Détails du SMS - #{@customer.full_name}" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Détails du message SMS</h1>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
+  
+  <dl class="space-y-3">
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Client</dt>
+      <dd class="mt-1 text-sm text-gray-900">
+        <%= link_to @customer.full_name, admin_customer_path(@customer), class: "text-blue-600 hover:text-blue-800" %>
+      </dd>
+      <dd class="text-sm text-gray-600"><%= @customer.phone_e164 %></dd>
+    </div>
+
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Date d'envoi</dt>
+      <dd class="mt-1 text-sm text-gray-900">
+        <%= (@sms_message.sent_at || @sms_message.created_at).strftime("%d/%m/%Y à %H:%M:%S") %>
+      </dd>
+    </div>
+
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Type</dt>
+      <dd class="mt-1">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+          <%= case @sms_message.kind
+              when 'confirmation' then 'bg-blue-100 text-blue-800'
+              when 'ready' then 'bg-green-100 text-green-800'
+              when 'refund' then 'bg-red-100 text-red-800'
+              when 'otp' then 'bg-purple-100 text-purple-800'
+              else 'bg-gray-100 text-gray-800'
+              end %>">
+          <%= case @sms_message.kind
+              when 'confirmation' then 'Confirmation'
+              when 'ready' then 'Prêt'
+              when 'refund' then 'Remboursement'
+              when 'otp' then 'OTP'
+              else 'Autre'
+              end %>
+        </span>
+      </dd>
+    </div>
+
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Direction</dt>
+      <dd class="mt-1">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+          <%= @sms_message.outbound? ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' %>">
+          <%= @sms_message.outbound? ? 'Sortant' : 'Entrant' %>
+        </span>
+      </dd>
+    </div>
+
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Destinataire</dt>
+      <dd class="mt-1 text-sm text-gray-900"><%= @sms_message.to_e164 %></dd>
+    </div>
+
+    <div>
+      <dt class="text-sm font-medium text-gray-500">Expéditeur</dt>
+      <dd class="mt-1 text-sm text-gray-900"><%= @sms_message.from_e164 %></dd>
+    </div>
+
+    <% if @sms_message.external_id.present? %>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">ID externe (Telerivet)</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @sms_message.external_id %></dd>
+      </div>
+    <% end %>
+
+    <% if @sms_message.baked_on.present? %>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Jour de cuisson</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @sms_message.baked_on.strftime("%d/%m/%Y") %></dd>
+      </div>
+    <% end %>
+  </dl>
+</div>
+
+<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-4">Contenu du message</h2>
+  <div class="bg-gray-50 rounded-md p-4">
+    <p class="text-sm text-gray-900 whitespace-pre-wrap"><%= @sms_message.body %></p>
+  </div>
+</div>
+
+<div class="mt-6">
+  <%= link_to "← Retour au mangeur", admin_customer_path(@customer), class: "text-blue-600 hover:text-blue-800" %>
+</div>
+

@@ -9,7 +9,8 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :confirmation,
-      baked_on: order.bake_day.baked_on
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
     )
   end
 
@@ -21,7 +22,8 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :ready,
-      baked_on: order.bake_day.baked_on
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
     )
   end
 
@@ -33,13 +35,26 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :refund,
-      baked_on: order.bake_day.baked_on
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
+    )
+  end
+
+  def self.send_custom(customer, body)
+    return false unless customer.sms_enabled?
+    return false if body.blank?
+
+    send_sms(
+      to: customer.phone_e164,
+      body: body,
+      kind: :other,
+      customer_id: customer.id
     )
   end
 
   private
 
-  def self.send_sms(to:, body:, kind:, baked_on: nil)
+  def self.send_sms(to:, body:, kind:, baked_on: nil, customer_id: nil)
     return false unless api_key && project_id && phone_id
 
     response = HTTParty.post(
@@ -57,6 +72,7 @@ class SmsService
 
     if response.success?
       external_id = response['id']
+      sent_at = Time.current
       SmsMessage.create!(
         direction: :outbound,
         to_e164: to,
@@ -64,7 +80,9 @@ class SmsService
         body: body,
         kind: kind,
         baked_on: baked_on,
-        external_id: external_id
+        external_id: external_id,
+        customer_id: customer_id,
+        sent_at: sent_at
       )
       true
     else

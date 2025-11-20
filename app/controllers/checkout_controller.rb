@@ -11,11 +11,16 @@ class CheckoutController < ApplicationController
     # Utiliser le client connecté s'il existe, sinon créer un nouveau client
     if customer_signed_in?
       @customer = current_customer
+      # Mettre à jour la session avec les données du client connecté
+      # (phone_verified? le fait déjà, mais on s'assure que tout est synchronisé)
+      session[:phone_e164] = current_customer.phone_e164
+      session[:otp_verified] = true
+      session[:otp_verified_at] = Time.current.to_i
     else
       @customer = Customer.new
     end
     
-    @otp_verified = phone_verified? || customer_signed_in?
+    @otp_verified = phone_verified?
   end
 
   def verify_phone
@@ -56,7 +61,7 @@ class CheckoutController < ApplicationController
   end
 
   def create_payment_intent
-    unless phone_verified?
+    unless phone_verified? || customer_signed_in?
       render json: { error: 'Phone verification required' }, status: :unauthorized
       return
     end
@@ -84,8 +89,12 @@ class CheckoutController < ApplicationController
     @cart = session[:cart] || []
     total_cents = calculate_total
 
-    # Customer will be created during order creation, not here
-    phone_e164 = session[:phone_e164]
+    # Utiliser le phone_e164 du client connecté si disponible, sinon celui de la session
+    phone_e164 = if customer_signed_in?
+                   current_customer.phone_e164
+                 else
+                   session[:phone_e164]
+                 end
 
     payment_intent = Stripe::PaymentIntent.create({
       amount: total_cents,
@@ -182,25 +191,38 @@ class CheckoutController < ApplicationController
   end
 
   def find_or_create_customer(json_params = {})
-    phone_e164 = session[:phone_e164]
-    customer = Customer.find_or_initialize_by(phone_e164: phone_e164)
+    # Utiliser le client connecté si disponible
+    if customer_signed_in?
+      customer = current_customer
+      
+      # Mettre à jour les informations si fournies
+      update_attrs = {}
+      update_attrs[:first_name] = json_params['first_name'] if json_params['first_name'].present?
+      update_attrs[:last_name] = json_params['last_name'] if json_params['last_name'].present?
+      update_attrs[:email] = json_params['email'] if json_params['email'].present?
+      
+      customer.update(update_attrs) if update_attrs.any?
+    else
+      phone_e164 = session[:phone_e164]
+      customer = Customer.find_or_initialize_by(phone_e164: phone_e164)
 
-    if customer.new_record?
-      customer.assign_attributes(
-        first_name: json_params['first_name'] || params[:first_name] || session[:first_name],
-        last_name: json_params['last_name'] || params[:last_name] || session[:last_name],
-        email: json_params['email'] || params[:email] || session[:email]
-      )
-      customer.save!
-    end
+      if customer.new_record?
+        customer.assign_attributes(
+          first_name: json_params['first_name'] || params[:first_name] || session[:first_name],
+          last_name: json_params['last_name'] || params[:last_name] || session[:last_name],
+          email: json_params['email'] || params[:email] || session[:email]
+        )
+        customer.save!
+      end
 
-    # Update customer info if provided
-    if json_params['first_name'].present? || json_params['last_name'].present? || json_params['email'].present?
-      customer.update(
-        first_name: json_params['first_name'] || customer.first_name,
-        last_name: json_params['last_name'] || customer.last_name,
-        email: json_params['email'] || customer.email
-      ) if json_params.any?
+      # Update customer info if provided
+      if json_params['first_name'].present? || json_params['last_name'].present? || json_params['email'].present?
+        customer.update(
+          first_name: json_params['first_name'] || customer.first_name,
+          last_name: json_params['last_name'] || customer.last_name,
+          email: json_params['email'] || customer.email
+        ) if json_params.any?
+      end
     end
 
     session[:first_name] = customer.first_name
@@ -211,7 +233,14 @@ class CheckoutController < ApplicationController
   end
 
   def create_order_from_session(payment_intent_id)
-    return nil unless session[:phone_e164] && session[:bake_day_id] && session[:cart]&.any?
+    # Vérifier que nous avons les informations nécessaires
+    phone_e164 = if customer_signed_in?
+                   current_customer.phone_e164
+                 else
+                   session[:phone_e164]
+                 end
+    
+    return nil unless phone_e164 && session[:bake_day_id] && session[:cart]&.any?
 
     # Verify payment intent exists and is succeeded
     begin
@@ -222,24 +251,37 @@ class CheckoutController < ApplicationController
       return nil
     end
 
-    # Find or create customer
-    customer = Customer.find_or_create_by(phone_e164: session[:phone_e164])
-    
-    if customer.new_record?
-      # Use session data or default values (first_name is required)
-      customer.assign_attributes(
-        first_name: session[:first_name].presence || 'Client',
-        last_name: session[:last_name].presence,
-        email: session[:email].presence
-      )
-      customer.save!
-    elsif session[:first_name].present? || session[:last_name].present? || session[:email].present?
-      # Update customer info if provided in session
-      customer.update(
-        first_name: session[:first_name].presence || customer.first_name,
-        last_name: session[:last_name].presence || customer.last_name,
-        email: session[:email].presence || customer.email
-      )
+    # Utiliser le client connecté si disponible, sinon trouver ou créer
+    if customer_signed_in?
+      customer = current_customer
+      
+      # Mettre à jour les informations du client si elles ont été modifiées dans le formulaire
+      update_attrs = {}
+      update_attrs[:first_name] = session[:first_name] if session[:first_name].present?
+      update_attrs[:last_name] = session[:last_name] if session[:last_name].present?
+      update_attrs[:email] = session[:email] if session[:email].present?
+      
+      customer.update(update_attrs) if update_attrs.any?
+    else
+      # Find or create customer
+      customer = Customer.find_or_create_by(phone_e164: phone_e164)
+      
+      if customer.new_record?
+        # Use session data or default values (first_name is required)
+        customer.assign_attributes(
+          first_name: session[:first_name].presence || 'Client',
+          last_name: session[:last_name].presence,
+          email: session[:email].presence
+        )
+        customer.save!
+      elsif session[:first_name].present? || session[:last_name].present? || session[:email].present?
+        # Update customer info if provided in session
+        customer.update(
+          first_name: session[:first_name].presence || customer.first_name,
+          last_name: session[:last_name].presence || customer.last_name,
+          email: session[:email].presence || customer.email
+        )
+      end
     end
 
     bake_day = BakeDay.find_by(id: session[:bake_day_id])

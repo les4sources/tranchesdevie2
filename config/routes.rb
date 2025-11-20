@@ -60,7 +60,12 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :customers, only: [:index, :show, :new, :create, :edit, :update]
+    resources :customers, only: [:index, :show, :new, :create, :edit, :update] do
+      member do
+        post :send_sms
+      end
+      resources :sms_messages, only: [:show], controller: "sms_messages"
+    end
 
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do

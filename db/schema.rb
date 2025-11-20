@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_20_110002) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_20_124000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -176,6 +176,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_110002) do
     t.string "external_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "customer_id"
+    t.datetime "sent_at"
+    t.index ["customer_id"], name: "index_sms_messages_on_customer_id"
     t.index ["direction"], name: "index_sms_messages_on_direction"
     t.index ["external_id"], name: "index_sms_messages_on_external_id"
     t.index ["kind"], name: "index_sms_messages_on_kind"
@@ -347,6 +350,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_110002) do
   add_foreign_key "product_images", "product_variants"
   add_foreign_key "product_images", "products"
   add_foreign_key "product_variants", "products"
+  add_foreign_key "sms_messages", "customers"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

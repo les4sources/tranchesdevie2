@@ -36,6 +36,10 @@ class Order < ApplicationRecord
     (total_cents / 100.0).round(2)
   end
 
+  def can_be_cancelled_by_customer?
+    !bake_day.cut_off_passed? && (paid? || unpaid?)
+  end
+
   def can_transition_to?(new_status)
     case status.to_sym
     when :pending

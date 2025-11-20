@@ -28,6 +28,18 @@ Rails.application.routes.draw do
 
   resources :orders, only: [:show], param: :token
 
+  # Customer authentication and account
+  get "connexion", to: "customers/sessions#new", as: :customer_login
+  post "connexion", to: "customers/sessions#create"
+  delete "deconnexion", to: "customers/sessions#destroy", as: :customer_logout
+
+  namespace :customers do
+    get "mon-compte", to: "account#show", as: :account
+    get "mon-compte/edit", to: "account#edit", as: :edit_account
+    patch "mon-compte", to: "account#update"
+    delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
+  end
+
   # Webhooks
   post "/webhooks/stripe", to: "webhooks#stripe"
   post "/webhooks/telerivet", to: "webhooks#telerivet"

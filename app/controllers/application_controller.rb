@@ -2,6 +2,8 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
+  include CustomerAuthentication
+
   helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?
 
   private

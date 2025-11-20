@@ -1,0 +1,74 @@
+<% content_for :title, "Modifier mon profil" %>
+
+<div class="w-full mx-auto max-w-2xl">
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">Modifier mon profil</h1>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <%= form_with model: @customer, url: customers_account_path, local: true do |f| %>
+      <% if @customer.errors.any? %>
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+          <ul class="list-disc list-inside text-sm text-red-800">
+            <% @customer.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="space-y-4">
+        <div>
+          <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.text_field :first_name, 
+              class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
+              required: true %>
+        </div>
+
+        <div>
+          <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.text_field :last_name, 
+              class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
+        </div>
+
+        <div data-controller="phone-input" data-phone-input-default-country-value="BE">
+          <%= f.label :phone_e164, "Numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <%= f.text_field :phone_e164, 
+                data: { 
+                  phone_input_target: "input"
+                },
+                class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-lg pr-24",
+                required: true,
+                pattern: "\\+[1-9]\\d{1,14}",
+                autocomplete: "tel" %>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <span 
+                data-phone-input-target="flag"
+                class="text-xl">
+                🇧🇪
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <%= f.label :email, "Adresse e-mail", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.email_field :email, 
+              class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= f.check_box :sms_opt_out, 
+              class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+          <%= f.label :sms_opt_out, "Désactiver les notifications par SMS", class: "ml-2 block text-sm text-gray-700" %>
+        </div>
+        <p class="text-sm text-gray-500">Décochez cette case pour recevoir des notifications par SMS concernant vos commandes.</p>
+      </div>
+
+      <div class="mt-6 flex gap-4">
+        <%= f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+        <%= link_to "Annuler", customers_account_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+

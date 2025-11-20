@@ -1,12 +1,12 @@
 <% content_for :title, "Tranches de Vie - Les 4 Sources" %>
 
-<% if @seasonal_promotion.present? && false %>
+<% if @seasonal_promotion.present? %>
   <div class="px-4">
     <div class="flex flex-col items-stretch justify-start overflow-hidden rounded-3xl bg-[#fcf8dc] xl:flex-row xl:items-center">
-      <div
-        class="aspect-[16/9] w-full bg-cover bg-center bg-no-repeat xl:h-full xl:w-2/5"
+      <!--div
+        class="aspect-[16/9] w-full bg-cover bg-center bg-no-repeat md:h-full md:w-1/3"
         style='background-image: url("<%= @seasonal_promotion[:image_url] || "https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&w=1200&q=80" %>");'>
-      </div>
+      </div-->
 
       <div class="flex w-full min-w-72 grow flex-col items-start justify-center gap-4 p-8">
         <div>

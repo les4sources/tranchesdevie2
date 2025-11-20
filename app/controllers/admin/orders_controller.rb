@@ -14,7 +14,16 @@ class Admin::OrdersController < Admin::BaseController
   def new
     @order = Order.new(status: :unpaid, customer_id: params[:customer_id])
     @selected_quantities = {}
-    @calculated_total_cents = 0
+    subtotal_cents = calculate_total_from_quantities(@selected_quantities)
+    
+    # Calculer la remise si un client est sélectionné
+    if @order.customer_id.present?
+      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      discount_cents = calculate_discount(subtotal_cents, customer)
+      @calculated_total_cents = subtotal_cents - discount_cents
+    else
+      @calculated_total_cents = subtotal_cents
+    end
   end
 
   def show
@@ -27,7 +36,16 @@ class Admin::OrdersController < Admin::BaseController
     @final_total_input = permitted_params.delete(:final_total_euros)
 
     @order = Order.new(permitted_params)
-    @calculated_total_cents = calculate_total_from_quantities(@selected_quantities)
+    subtotal_cents = calculate_total_from_quantities(@selected_quantities)
+    
+    # Calculer la remise si un client est sélectionné
+    if @order.customer_id.present?
+      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      discount_cents = calculate_discount(subtotal_cents, customer)
+      @calculated_total_cents = subtotal_cents - discount_cents
+    else
+      @calculated_total_cents = subtotal_cents
+    end
 
     assign_total_cents!(@final_total_input)
     ensure_order_has_items!
@@ -82,7 +100,7 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def load_form_dependencies
-    @customers = Customer.order(:last_name, :first_name)
+    @customers = Customer.includes(:group).order(:last_name, :first_name)
     @bake_days = BakeDay.future.ordered
     @products = Product.active.includes(:product_variants).ordered
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
@@ -119,6 +137,12 @@ class Admin::OrdersController < Admin::BaseController
 
       qty * variant.price_cents
     end
+  end
+
+  def calculate_discount(subtotal, customer)
+    return 0 unless customer&.group&.discount_percent
+
+    (subtotal * customer.group.discount_percent / 100.0).round
   end
 
   def assign_total_cents!(amount_input)

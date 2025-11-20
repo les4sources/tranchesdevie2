@@ -18,7 +18,7 @@
 <% end %>
 
 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-  <%= form_with model: @order, url: admin_orders_path, local: true, data: { controller: "order-calculator" } do |f| %>
+  <%= form_with model: @order, url: admin_orders_path, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customers.map { |c| { id: c.id, discount_percent: c.group&.discount_percent || 0 } }.to_json } do |f| %>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div>
         <%= f.label :customer_id, "Client", class: "block text-sm font-medium text-gray-700" %>
@@ -29,7 +29,8 @@
         <%= f.select :customer_id,
                      options_for_select(customer_options, @order.customer_id),
                      { include_blank: "Sélectionner un client" },
-                     class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                     class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+                     data: { order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
       </div>
 
       <div>
@@ -117,14 +118,23 @@
         </table>
       </div>
 
-      <div class="mt-4 flex items-center justify-between rounded-md bg-gray-50 p-4">
-        <div>
-          <p class="text-sm font-medium text-gray-900">Montant indicatif (calcul automatique)</p>
-          <p class="text-xs text-gray-600">Ce montant est calculé à partir des quantités saisies.</p>
+      <div class="mt-4 rounded-md bg-gray-50 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900">Montant indicatif (calcul automatique)</p>
+            <p class="text-xs text-gray-600" data-order-calculator-target="discountInfo">
+              Ce montant est calculé à partir des quantités saisies.
+            </p>
+          </div>
+          <p class="text-lg font-semibold text-indigo-600" data-order-calculator-target="totalAmount">
+            <%= number_to_currency(@calculated_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+          </p>
         </div>
-        <p class="text-lg font-semibold text-indigo-600" data-order-calculator-target="totalAmount">
-          <%= number_to_currency(@calculated_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
-        </p>
+        <div class="mt-2 hidden" data-order-calculator-target="discountMessage">
+          <p class="text-xs text-green-600 font-medium">
+            <span data-order-calculator-target="discountText"></span>
+          </p>
+        </div>
       </div>
     </div>
 

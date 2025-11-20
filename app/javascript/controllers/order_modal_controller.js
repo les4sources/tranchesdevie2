@@ -111,6 +111,18 @@ export default class extends Controller {
     const now = new Date()
     const canCancel = cutOffAt && now < cutOffAt && (order.status === 'paid' || order.status === 'unpaid')
 
+    // Calculer le sous-total à partir des order_items
+    const subtotalCents = orderItems.reduce((sum, item) => {
+      return sum + (item.qty * item.unit_price_cents)
+    }, 0)
+
+    // Calculer la remise si le client a un groupe avec discount_percent
+    const customer = order.customer
+    const discountPercent = customer?.group?.discount_percent || 0
+    const discountCents = discountPercent > 0 
+      ? Math.round(subtotalCents * discountPercent / 100)
+      : 0
+
     // Déterminer la couleur du statut
     const statusColors = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -177,8 +189,22 @@ export default class extends Controller {
           </div>
         </div>
 
-        <div class="pt-4 border-t border-gray-200">
+        <div class="pt-4 border-t border-gray-200 space-y-2">
           <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Sous-total</span>
+            <span class="text-sm text-gray-900">
+              ${(subtotalCents / 100).toFixed(2)}€
+            </span>
+          </div>
+          ${discountCents > 0 ? `
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Remise (${discountPercent}%)</span>
+              <span class="text-sm text-green-600 font-medium">
+                -${(discountCents / 100).toFixed(2)}€
+              </span>
+            </div>
+          ` : ''}
+          <div class="flex justify-between items-center pt-2 border-t border-gray-200">
             <span class="text-lg font-medium text-gray-900">Total</span>
             <span class="text-xl font-bold text-gray-900">
               ${(order.total_cents / 100).toFixed(2)}€

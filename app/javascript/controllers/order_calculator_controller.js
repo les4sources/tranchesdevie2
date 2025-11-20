@@ -1,9 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["quantity", "rowSubtotal", "totalAmount"]
+  static targets = ["quantity", "rowSubtotal", "totalAmount", "customerSelect", "discountInfo", "discountMessage", "discountText"]
+  static values = {
+    customers: Array
+  }
 
   connect() {
+    this.recalculate()
+    this.updateDiscountInfo()
+  }
+
+  onCustomerChange() {
+    this.updateDiscountInfo()
     this.recalculate()
   }
 
@@ -24,18 +33,50 @@ export default class extends Controller {
       subtotalByProduct[productId] += qty * priceCents
     })
 
-    let totalCents = 0
+    let subtotalCents = 0
 
     this.rowSubtotalTargets.forEach((target) => {
       const productId = target.dataset.productId
       const cents = subtotalByProduct[productId] || 0
-      totalCents += cents
+      subtotalCents += cents
       target.textContent = this.formatCurrency(cents)
     })
+
+    // Calculer la remise si un client est sélectionné
+    const selectedCustomerId = this.getSelectedCustomerId()
+    const discountPercent = this.getDiscountPercent(selectedCustomerId)
+    const discountCents = discountPercent > 0 
+      ? Math.round(subtotalCents * discountPercent / 100)
+      : 0
+    const totalCents = subtotalCents - discountCents
 
     if (this.hasTotalAmountTarget) {
       this.totalAmountTarget.textContent = this.formatCurrency(totalCents)
     }
+  }
+
+  updateDiscountInfo() {
+    const selectedCustomerId = this.getSelectedCustomerId()
+    const discountPercent = this.getDiscountPercent(selectedCustomerId)
+
+    if (discountPercent > 0 && this.hasDiscountMessageTarget && this.hasDiscountTextTarget) {
+      this.discountMessageTarget.classList.remove('hidden')
+      this.discountTextTarget.textContent = `Ce montant tient compte d'une remise de ${discountPercent}% appliquée au client sélectionné.`
+    } else if (this.hasDiscountMessageTarget) {
+      this.discountMessageTarget.classList.add('hidden')
+    }
+  }
+
+  getSelectedCustomerId() {
+    if (!this.hasCustomerSelectTarget) return null
+    const value = this.customerSelectTarget.value
+    return value ? parseInt(value, 10) : null
+  }
+
+  getDiscountPercent(customerId) {
+    if (!customerId || !this.customersValue) return 0
+    const customer = this.customersValue.find(c => c.id === customerId)
+    return customer?.discount_percent || 0
   }
 
   resetQuantities(event) {

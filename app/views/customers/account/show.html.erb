@@ -51,7 +51,7 @@
             <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition"
                  data-action="click->order-modal#open"
                  data-order-modal-order-id-value="<%= order.id %>"
-                 data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [:id, :baked_on, :cut_off_at] }, order_items: { include: { product_variant: { include: :product } } } }) %>">
+                 data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [:id, :baked_on, :cut_off_at] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [:id, :name, :discount_percent] } } } }) %>">
               <div class="flex justify-between items-start">
                 <div>
                   <p class="font-medium text-gray-900">Commande <%= order.order_number %></p>

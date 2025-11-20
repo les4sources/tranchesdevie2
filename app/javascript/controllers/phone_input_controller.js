@@ -23,10 +23,15 @@ export default class extends Controller {
   }
 
   handleFocus() {
-    if (!this.inputTarget.value || this.inputTarget.value.trim() === "") {
-      this.inputTarget.value = "+32"
-      this.currentCountry = "BE"
-      this.updateFlag()
+    // Ne pas réinitialiser si le champ a déjà une valeur (même partielle)
+    const currentValue = this.inputTarget.value || ""
+    if (currentValue.trim() === "" || currentValue === "+32") {
+      // Seulement si vraiment vide ou juste le préfixe, pré-remplir avec +32
+      if (currentValue.trim() === "") {
+        this.inputTarget.value = "+32"
+        this.currentCountry = "BE"
+        this.updateFlag()
+      }
     }
   }
 

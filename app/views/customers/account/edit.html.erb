@@ -19,6 +19,7 @@
         <div>
           <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.text_field :first_name, 
+              value: @customer.first_name,
               class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
               required: true %>
         </div>
@@ -26,6 +27,7 @@
         <div>
           <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.text_field :last_name, 
+              value: @customer.last_name,
               class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
         </div>
 
@@ -33,6 +35,7 @@
           <%= f.label :phone_e164, "Numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <div class="relative">
             <%= f.text_field :phone_e164, 
+                value: @customer.phone_e164,
                 data: { 
                   phone_input_target: "input"
                 },
@@ -53,11 +56,13 @@
         <div>
           <%= f.label :email, "Adresse e-mail", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.email_field :email, 
+              value: @customer.email,
               class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
         </div>
 
         <div class="flex items-center">
           <%= f.check_box :sms_opt_out, 
+              checked: @customer.sms_opt_out,
               class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
           <%= f.label :sms_opt_out, "Désactiver les notifications par SMS", class: "ml-2 block text-sm text-gray-700" %>
         </div>

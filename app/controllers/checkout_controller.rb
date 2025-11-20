@@ -7,8 +7,15 @@ class CheckoutController < ApplicationController
     @cart = session[:cart] || []
     @bake_day = BakeDay.find(session[:bake_day_id])
     @total_cents = calculate_total
-    @customer = Customer.new
-    @otp_verified = phone_verified?
+    
+    # Utiliser le client connecté s'il existe, sinon créer un nouveau client
+    if customer_signed_in?
+      @customer = current_customer
+    else
+      @customer = Customer.new
+    end
+    
+    @otp_verified = phone_verified? || customer_signed_in?
   end
 
   def verify_phone

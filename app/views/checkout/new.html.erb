@@ -69,20 +69,23 @@
           <div id="customer-details">
             <div class="mb-4">
               <%= f.label :first_name, "Ton prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.text_field :first_name, 
+              <%= f.text_field :first_name,
+                  value: @customer.first_name,
                   class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
                   required: true %>
             </div>
 
             <div class="mb-4">
               <%= f.label :last_name, "Ton nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.text_field :last_name, 
+              <%= f.text_field :last_name,
+                  value: @customer.last_name,
                   class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
             </div>
 
             <div class="mb-4">
               <%= f.label :email, "Ton adresse e-mail (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.email_field :email, 
+              <%= f.email_field :email,
+                  value: @customer.email,
                   class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
             </div>
           </div>

@@ -133,11 +133,11 @@
         <div class="space-y-3">
           <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="cash">
             <input type="radio" name="payment_method" value="cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
-            <span class="ml-3 text-sm font-medium text-gray-700">Payer ma commande en liquide au retrait</span>
+            <span class="ml-3 font-medium text-gray-700">Payer ma commande en liquide au retrait</span>
           </label>
           <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="online">
             <input type="radio" name="payment_method" value="online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-            <span class="ml-3 text-sm font-medium text-gray-700">Payer en ligne avec Bancontact ou autre</span>
+            <span class="ml-3 font-medium text-gray-700">Payer en ligne avec Bancontact ou autre</span>
           </label>
         </div>
       </div>
@@ -354,6 +354,9 @@
       const newSubmitButton = submitButton.cloneNode(true);
       submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
 
+      const paymentIntentId = data.payment_intent_id;
+      const successUrl = '<%= success_checkout_index_url %>';
+
       // Ajouter un gestionnaire de clic pour la soumission du paiement
       newSubmitButton.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -361,10 +364,14 @@
         newSubmitButton.disabled = true;
         newSubmitButton.textContent = 'Traitement...';
 
+        const returnUrl = paymentIntentId
+          ? `${successUrl}?payment_intent=${encodeURIComponent(paymentIntentId)}`
+          : successUrl;
+
         const { error } = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: '<%= success_checkout_index_url %>?payment_intent={PAYMENT_INTENT_ID}'
+            return_url: returnUrl
           }
         });
 

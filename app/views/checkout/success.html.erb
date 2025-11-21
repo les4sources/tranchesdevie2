@@ -12,23 +12,23 @@
     
     <% if @order %>
       <p class="text-gray-600 mb-4">
-        Votre commande <strong><%= @order.order_number %></strong> a été confirmée.
+        Ta commande <strong><%= @order.order_number %></strong> a été confirmée.
       </p>
       
       <% if @order.unpaid? %>
         <p class="text-gray-600 mb-4">
-          Vous paierez en liquide lors du retrait de votre commande.
+          Tu paieras en liquide lors du retrait de ta commande.
         </p>
       <% end %>
       
       <p class="text-gray-600 mb-6">
-        Vous recevrez un SMS de confirmation sous peu.
+        Tu recevras un SMS de confirmation lorsque ta commande est cuite.
       </p>
 
       <%= link_to "Voir ma commande", order_path(@order.public_token), class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
     <% else %>
       <p class="text-gray-600 mb-6">
-        Votre paiement a été traité avec succès.
+        Ton paiement a été traité avec succès.
       </p>
     <% end %>
 

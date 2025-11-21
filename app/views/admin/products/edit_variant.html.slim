@@ -37,14 +37,23 @@
     - image_index = @variant.product_images.size
     script type="application/json" id="variant-images-config"
       | []
-    #variant-images.space-y-4 data-image-index=image_index
+    .mb-2.text-sm.text-gray-600.flex.items-center.space-x-2
+      svg.w-4.h-4 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+      span Glissez-déposez les images pour réorganiser leur ordre d'affichage
+    #variant-images.space-y-4 data-image-index=image_index data-variant-id=@variant.id data-reorder-url=reorder_variant_images_admin_product_path(@product, @variant)
       = f.fields_for :product_images do |image_form|
         - product_image = image_form.object
         - if product_image.persisted? || product_image.image.attached?
           - if product_image.persisted?
             = image_form.hidden_field :id
-          .product-image-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+          - draggable_classes = product_image.persisted? ? "draggable-item cursor-move hover:border-blue-400 transition-colors" : ""
+          - image_data_attr = product_image.persisted? ? { "data-image-id": product_image.id } : {}
+          .product-image-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50 class=draggable_classes *image_data_attr
             .flex.items-start.space-x-4
+              .flex-shrink-0.flex.items-center.justify-center.w-8.h-8.text-gray-400
+                svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"
               .flex-1.space-y-3
                 - if product_image.persisted? && product_image.image.attached?
                   .flex.items-center.space-x-2.mb-2

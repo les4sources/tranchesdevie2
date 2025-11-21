@@ -25,7 +25,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="font-display bg-background-light bg-white text-charcoal" data-controller="cart">
+  <body class="font-display bg-background-light bg-white text-charcoal" data-controller="cart mobile-menu">
     <div data-controller="toast" class="pointer-events-none fixed inset-x-0 top-4 z-50 flex flex-col items-center px-4 sm:px-0">
       <div data-toast-target="container" class="flex w-full max-w-sm flex-col gap-3"></div>
     </div>
@@ -74,11 +74,50 @@
                   </div>
                 </div>
               </div>
-              <button class="flex h-10 max-w-[480px] items-center justify-center gap-2 rounded-lg bg-transparent px-2.5 text-sm font-bold leading-normal text-charcoal md:hidden">
+              <button type="button" data-mobile-menu-target="button" data-action="click->mobile-menu#toggle" class="flex h-10 max-w-[480px] items-center justify-center gap-2 rounded-lg bg-transparent px-2.5 text-sm font-bold leading-normal text-charcoal md:hidden">
                 <span class="material-symbols-outlined text-2xl">menu</span>
                 <span class="sr-only">Ouvrir la navigation</span>
               </button>
             </header>
+
+            <!-- Menu mobile -->
+            <div data-mobile-menu-target="menu" class="fixed inset-0 z-50 hidden bg-white md:hidden">
+              <div class="flex h-full flex-col">
+                <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                  <h2 class="text-lg font-semibold text-charcoal">Menu</h2>
+                  <button type="button" data-action="click->mobile-menu#close" class="flex h-10 items-center justify-center rounded-lg bg-transparent px-2.5 text-charcoal">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                    <span class="sr-only">Fermer la navigation</span>
+                  </button>
+                </div>
+                <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-4">
+                  <%= link_to "Nos pains et compagnie", catalog_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                  <%= link_to "À propos", a_propos_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                  <% if customer_signed_in? %>
+                    <%= link_to "Mon compte", customers_account_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                    <%= button_to "Déconnexion",
+                          customer_logout_path,
+                          method: :delete,
+                          form: { class: "inline" },
+                          class: "w-full rounded-lg px-4 py-3 text-left text-base font-medium text-charcoal hover:bg-gray-100 bg-transparent border-0 cursor-pointer",
+                          data: { action: "click->mobile-menu#close" } %>
+                  <% else %>
+                    <%= link_to "Connexion", customer_login_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                  <% end %>
+                  <div class="mt-4 border-t border-gray-200 pt-4">
+                    <%= link_to cart_path, class: "flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } do %>
+                      <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined">shopping_cart</span>
+                        <span>Panier</span>
+                      </div>
+                      <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#224246] px-2 text-xs font-semibold text-white <%= 'hidden' if cart_count.zero? %>">
+                        <%= cart_count %>
+                      </span>
+                    <% end %>
+                  </div>
+                </nav>
+              </div>
+            </div>
 
             <% if notice.present? %>
               <div class="mx-4 mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 sm:mx-10">
@@ -124,16 +163,18 @@
       </div>
     </div>
 
-    <div class="md:hidden">
-      <%= link_to cart_path, class: "fixed inset-x-4 bottom-4 z-40 flex items-center justify-between rounded-full bg-terracotta px-5 py-3 text-white shadow-lg transition hover:bg-terracotta/90" do %>
-        <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-          <span class="text-sm font-semibold uppercase tracking-wide">Voir le panier</span>
-        </div>
-        <span data-cart-target="count" class="inline-flex min-w-8 items-center justify-center rounded-full bg-white px-2 py-1 text-xs font-bold uppercase text-terracotta <%= 'hidden' if cart_count.zero? %>">
-          <%= cart_count %>
-        </span>
-      <% end %>
-    </div>
+    <% unless controller_name == 'cart' && action_name == 'show' || controller_name == 'checkout' %>
+      <div class="md:hidden">
+        <%= link_to cart_path, class: "fixed inset-x-4 bottom-4 z-40 flex items-center justify-between rounded-full bg-[#224246] px-5 py-3 text-white shadow-lg transition hover:bg-[#224246]/90" do %>
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+            <span class="text-sm font-semibold uppercase tracking-wide">Voir le panier</span>
+          </div>
+          <span data-cart-target="count" class="inline-flex min-w-8 items-center justify-center rounded-full bg-white px-2 py-1 text-xs font-bold uppercase text-[#224246] <%= 'hidden' if cart_count.zero? %>">
+            <%= cart_count %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
   </body>
 </html>

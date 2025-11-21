@@ -1,6 +1,6 @@
 class Admin::ProductsController < Admin::BaseController
   before_action :set_product, only: [:show, :edit, :update, :destroy]
-  before_action :set_product_variant, only: [:show_variant, :edit_variant, :update_variant, :destroy_variant]
+  before_action :set_product_variant, only: [:show_variant, :edit_variant, :update_variant, :destroy_variant, :reorder_variant_images]
 
   def index
     @products = Product.includes(:product_variants).ordered
@@ -64,6 +64,7 @@ class Admin::ProductsController < Admin::BaseController
 
   def edit_variant
     @product = @variant.product
+    @variant.product_images.load # Ensure images are loaded and ordered
   end
 
   def update_variant
@@ -78,6 +79,20 @@ class Admin::ProductsController < Admin::BaseController
   def destroy_variant
     @variant.destroy
     redirect_to admin_product_path(@variant.product), notice: 'Variante supprimée'
+  end
+
+  def reorder_variant_images
+    @variant = ProductVariant.find(params[:variant_id])
+    @product = @variant.product
+    
+    image_positions = params[:image_positions] || []
+    
+    image_positions.each_with_index do |image_id, index|
+      image = @variant.product_images.find_by(id: image_id)
+      image&.update_column(:position, index + 1)
+    end
+    
+    head :ok
   end
 
   private
@@ -97,7 +112,7 @@ class Admin::ProductsController < Admin::BaseController
   def variant_params
     params.require(:product_variant).permit(
       :name, :price_cents, :active, :flour_quantity,
-      product_images_attributes: [:id, :image, :_destroy]
+      product_images_attributes: [:id, :image, :_destroy, :position]
     )
   end
 end

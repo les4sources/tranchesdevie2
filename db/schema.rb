@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_20_164310) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_21_201759) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -147,7 +147,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_164310) do
     t.bigint "product_variant_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "position"
     t.index ["product_id"], name: "index_product_images_on_product_id"
+    t.index ["product_variant_id", "position"], name: "index_product_images_on_variant_and_position"
     t.index ["product_variant_id"], name: "index_product_images_on_product_variant_id"
   end
 

@@ -2,7 +2,7 @@ class ProductVariant < ApplicationRecord
   belongs_to :product
   has_many :product_availabilities, dependent: :destroy
   has_many :order_items, dependent: :restrict_with_error
-  has_many :product_images, dependent: :destroy
+  has_many :product_images, -> { ordered }, dependent: :destroy
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
 

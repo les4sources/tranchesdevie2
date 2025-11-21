@@ -83,6 +83,7 @@ Rails.application.routes.draw do
         get "variants/:variant_id/edit", to: "products#edit_variant", as: :edit_variant
         patch "variants/:variant_id", to: "products#update_variant"
         delete "variants/:variant_id", to: "products#destroy_variant"
+        patch "variants/:variant_id/reorder_images", to: "products#reorder_variant_images", as: :reorder_variant_images
       end
     end
 

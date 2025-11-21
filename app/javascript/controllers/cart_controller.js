@@ -59,7 +59,16 @@ export default class extends Controller {
           this.showTemporaryLabel(submitButton, "✔")
         }
         this.notifySuccess(data?.message)
-        this.openMiniCartTemporarily()
+        
+        // Redirect to catalog if on product page
+        const isProductPage = window.location.pathname.includes('/productions/')
+        if (isProductPage) {
+          setTimeout(() => {
+            window.location.href = '/catalogue'
+          }, 500)
+        } else {
+          this.openMiniCartTemporarily()
+        }
       })
       .catch((error) => {
         console.error("Impossible d'ajouter le produit au panier :", error)

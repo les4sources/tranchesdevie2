@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="product-carousel"
 export default class extends Controller {
-  static targets = ["slide", "dot"]
+  static targets = ["slide", "dot", "thumbnail"]
   static values = { currentIndex: { type: Number, default: 0 } }
 
   connect() {
@@ -39,6 +39,19 @@ export default class extends Controller {
       }
     })
 
+    // Update thumbnails if they exist
+    if (this.hasThumbnailTarget) {
+      this.thumbnailTargets.forEach((thumbnail, i) => {
+        if (i === index) {
+          thumbnail.classList.add("ring-2", "ring-terracotta")
+          thumbnail.classList.remove("ring-0")
+        } else {
+          thumbnail.classList.remove("ring-2", "ring-terracotta")
+          thumbnail.classList.add("ring-0")
+        }
+      })
+    }
+
     this.currentIndexValue = index
   }
 
@@ -51,8 +64,17 @@ export default class extends Controller {
   }
 
   goToSlide(event) {
+    event.stopPropagation()
+    event.preventDefault()
     const index = parseInt(event.currentTarget.dataset.carouselIndex)
     this.showSlide(index)
+  }
+
+  stopPropagation(event) {
+    // Stop propagation for carousel container clicks to prevent navigation
+    if (event.target.closest('button')) {
+      event.stopPropagation()
+    }
   }
 
   // Touch event handlers for swipe detection

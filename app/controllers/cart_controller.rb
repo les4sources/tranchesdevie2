@@ -46,7 +46,7 @@ class CartController < ApplicationController
     end
 
     respond_to do |format|
-      format.html { redirect_to cart_path, notice: 'Produit ajouté au panier' }
+      format.html { redirect_to catalog_path, notice: 'Produit ajouté au panier' }
       format.json do
         render json: {
           cart_count: current_cart_count,

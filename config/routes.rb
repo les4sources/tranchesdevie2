@@ -7,10 +7,11 @@ Rails.application.routes.draw do
 
   # Public routes
   root "catalog#index"
-  get "catalog", to: "catalog#index"
+  get "catalogue", to: "catalog#index", as: :catalog
+  get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
 
-  get "cart", to: "cart#show", as: :cart
+  get "panier", to: "cart#show", as: :cart
   post "cart/add", to: "cart#add", as: :cart_add
   patch "cart/update", to: "cart#update", as: :cart_update
   patch "cart/update_bake_day", to: "cart#update_bake_day", as: :cart_update_bake_day

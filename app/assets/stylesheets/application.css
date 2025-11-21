@@ -63,3 +63,22 @@
 .cart-bounce {
   animation: cart-bounce 0.6s ease;
 }
+
+.link {
+  color: #2563eb;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.link:visited {
+  color: #7c3aed;
+}
+
+.link:active {
+  color: #1e40af;
+}

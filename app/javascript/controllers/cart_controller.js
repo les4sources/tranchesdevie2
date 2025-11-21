@@ -66,9 +66,8 @@ export default class extends Controller {
           setTimeout(() => {
             window.location.href = '/catalogue'
           }, 500)
-        } else {
-          this.openMiniCartTemporarily()
         }
+        // Don't open mini-cart when adding from catalog page
       })
       .catch((error) => {
         console.error("Impossible d'ajouter le produit au panier :", error)

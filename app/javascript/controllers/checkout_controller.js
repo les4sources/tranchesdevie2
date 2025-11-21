@@ -7,7 +7,7 @@ export default class extends Controller {
     const phoneInput = document.getElementById('customer_phone_e164')
     const phone = phoneInput?.value
     if (!phone) {
-      this.showMessage('Veuillez entrer un numéro de téléphone', 'error')
+      this.showMessage('Veuillez entrer un numéro de GSM', 'error')
       return
     }
 

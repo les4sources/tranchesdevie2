@@ -48,11 +48,6 @@
                   <%= link_to "À propos", a_propos_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% if customer_signed_in? %>
                     <%= link_to "Mon compte", customers_account_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
-                    <%= button_to "Déconnexion",
-                          customer_logout_path,
-                          method: :delete,
-                          form: { class: "inline" },
-                          class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta bg-transparent border-0 p-0 cursor-pointer" %>
                   <% else %>
                     <%= link_to "Connexion", customer_login_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% end %>

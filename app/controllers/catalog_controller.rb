@@ -19,7 +19,7 @@ class CatalogController < ApplicationController
   def seasonal_promotion_content
     {
       title: "Ça y est, on cuit le mardi, et on a un site !",
-      description: "Hourra, le four à pain des 4 Sources va désormais chauffer pour vous les mardis et vendredis 🎉 Commandez dès maintenant vos pains pour la semaine prochaine.",
+      description: "Hourra, le four à pain des 4 Sources va désormais chauffer pour vous les mardis et vendredis ! 🎉 Commande dès maintenant tes pains pour la semaine prochaine.",
       cta_text: "",
       cta_path: nil
     }

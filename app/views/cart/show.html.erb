@@ -7,7 +7,7 @@
     
     <% if @available_bake_days.any? %>
       <div class="mt-4">
-        <p class="text-sm font-medium text-gray-700 mb-3">Sélectionne ton jour de retrait aux 4 Sources :</p>
+        <p class="font-medium text-gray-700 mb-3">Sélectionne ton jour de retrait aux 4 Sources :</p>
         <div class="space-y-2">
           <% @available_bake_days.each do |bake_day| %>
             <label class="flex items-center p-3 rounded-lg border-2 cursor-pointer transition <%= 'border-amber-500 bg-amber-50' if @bake_day&.id == bake_day.id %> <%= 'border-gray-200 hover:border-gray-300' unless @bake_day&.id == bake_day.id %>">
@@ -19,8 +19,8 @@
                 <%= 'checked' if @bake_day&.id == bake_day.id %>
                 data-bake-day-id="<%= bake_day.id %>"
               >
-              <span class="ml-3 text-sm text-gray-900">
-                <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %d %B %Y") } %></span>
+              <span class="ml-3 text-gray-900">
+                <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %d %B") } %> (commandes jusqu'au <%= I18n.with_locale(:fr) { I18n.l(bake_day.cut_off_at, format: "%A à %H:%M") } %>)</span>
               </span>
             </label>
           <% end %>

@@ -3,11 +3,23 @@
 <div class="w-full mx-auto max-w-md">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">Connexion</h1>
 
+  <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+    <div class="flex gap-3">
+      <div class="flex-shrink-0">
+        <span class="material-symbols-outlined text-blue-600">info</span>
+      </div>
+      <p class="text-sm text-blue-900">
+        Chaque mangeur.se est désormais identifié par un numéro de téléphone mobile, ce qui nous
+        permet de te contacter en cas de besoin, et de t'envoyer un SMS lorsque tes commandes sont prêtes.
+      </p>
+    </div>
+  </div>
+
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <%= form_with url: customer_login_path, local: true, data: { controller: "customer-session" } do |f| %>
       <div id="phone-verification-step">
         <div class="mb-4" data-controller="phone-input" data-phone-input-default-country-value="BE">
-          <%= f.label :phone_e164, "Ton numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.label :phone_e164, "Ton numéro de GSM", class: "block text-md font-medium text-gray-700 mb-2" %>
           <div class="relative">
             <%= f.text_field :phone_e164, 
                 value: @phone_e164,
@@ -15,7 +27,7 @@
                   customer_session_target: "phoneInput",
                   phone_input_target: "input"
                 },
-                class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-lg pr-24",
+                class: "w-full rounded-md border-1 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-lg pr-24",
                 required: true,
                 pattern: "\\+[1-9]\\d{1,14}",
                 autocomplete: "tel" %>

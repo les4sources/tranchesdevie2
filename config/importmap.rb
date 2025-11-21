@@ -9,3 +9,4 @@ pin "chart.js", to: "https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.esm.
 pin "libphonenumber-js", to: "https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.0/+esm"
 pin "product_images", to: "product_images.js"
 pin "trix", to: "https://ga.jspm.io/npm:trix@2.1.7/dist/trix.esm.js"
+pin "canvas-confetti", to: "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"

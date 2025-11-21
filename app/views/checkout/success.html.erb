@@ -1,6 +1,6 @@
 <% content_for :title, "Commande confirmée" %>
 
-<div class="max-w-2xl mx-auto text-center">
+<div class="max-w-2xl mx-auto text-center" data-checkout-success-page>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
     <div class="mb-4">
       <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,3 +38,75 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+  // Fonction pour lancer l'effet confetti
+  function launchConfetti() {
+    if (typeof confetti === 'undefined') {
+      console.error('canvas-confetti n\'est pas chargé');
+      return;
+    }
+
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    function randomInRange(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  }
+
+  // Vérifier si on est sur la page de succès
+  function isCheckoutSuccessPage() {
+    return document.querySelector('[data-checkout-success-page]') !== null;
+  }
+
+  // Fonction pour initialiser le confetti une fois la bibliothèque chargée
+  function initConfetti() {
+    if (!isCheckoutSuccessPage()) {
+      return; // Ne pas lancer si on n'est pas sur la page de succès
+    }
+    
+    if (typeof confetti !== 'undefined') {
+      launchConfetti();
+    } else {
+      // Attendre que le script soit chargé
+      setTimeout(initConfetti, 100);
+    }
+  }
+
+  // Lancer l'effet au chargement de la page (compatible avec Turbo)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initConfetti);
+  } else {
+    initConfetti();
+  }
+  
+  // Écouter les événements Turbo pour les navigations (uniquement si on est sur la page de succès)
+  document.addEventListener('turbo:load', function() {
+    if (isCheckoutSuccessPage() && typeof confetti !== 'undefined') {
+      launchConfetti();
+    }
+  });
+</script>

@@ -32,8 +32,15 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def update
+    @bake_day.assign_attributes(bake_day_params)
+
+    # Auto-calculate cut_off_at if baked_on changed and cut_off_at is blank
+    if @bake_day.baked_on.present? && @bake_day.cut_off_at.blank?
+      @bake_day.cut_off_at = BakeDay.calculate_cut_off_for(@bake_day.baked_on)
+    end
+
     respond_to do |format|
-      if @bake_day.update(bake_day_params)
+      if @bake_day.save
         format.html { redirect_to admin_bake_day_path(@bake_day), notice: 'Jour de cuisson mis à jour' }
         format.json { render json: { success: true, bake_day: { internal_note: @bake_day.internal_note } }, status: :ok }
       else

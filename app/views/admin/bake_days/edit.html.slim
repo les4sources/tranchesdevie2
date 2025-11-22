@@ -1,0 +1,32 @@
+- content_for :title, "Modifier le jour de cuisson"
+- content_for :layout, "admin"
+
+h1.text-2xl.font-bold.mb-6 Modifier le jour de cuisson
+
+= form_with model: @bake_day, url: admin_bake_day_path(@bake_day), local: true, class: "space-y-6" do |f|
+  .mb-4
+    = f.label :baked_on, "Date de cuisson", class: "block text-gray-700 font-medium mb-2"
+    = f.date_field :baked_on, class: "border rounded px-3 py-2 w-full", required: true
+
+  .mb-4
+    = f.label :cut_off_at, "Date limite de commande", class: "block text-gray-700 font-medium mb-2"
+    = f.datetime_local_field :cut_off_at, class: "border rounded px-3 py-2 w-full", required: true
+
+  - note_input_id = dom_id(@bake_day, :internal_note)
+  .mb-4
+    = f.label :internal_note, "Note interne du jour", class: "block text-gray-700 font-medium mb-2"
+    = f.hidden_field :internal_note, id: note_input_id
+    trix-editor class="trix-content rounded-lg border border-gray-200 bg-white" input=note_input_id
+    p.mt-2.text-xs.text-gray-500 Ajoutez des consignes pour l'équipe (pâte en retard, allergies, etc.).
+
+  .flex.gap-3
+    = f.submit "Mettre à jour le jour de cuisson", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    = link_to "Annuler", admin_bake_day_path(@bake_day), class: "inline-block text-gray-600 hover:underline py-2 px-4"
+
+- if @bake_day.errors.any?
+  .mt-6.bg-red-100.border.border-red-400.text-red-700.px-4.py-3.rounded
+    strong Erreurs&nbsp;:
+    ul.list-disc.ml-5
+      - @bake_day.errors.full_messages.each do |msg|
+        li = msg
+

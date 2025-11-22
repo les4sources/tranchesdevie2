@@ -17,6 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 
     <!-- Charger Stripe.js globalement pour eviter les erreurs "Stripe is not defined" avec Turbo -->
     <script src="https://js.stripe.com/v3/"></script>
@@ -35,10 +36,7 @@
         <div class="flex flex-1 justify-center px-4 py-5 sm:px-8 md:px-16 lg:px-24 xl:px-40">
           <div class="flex w-full max-w-[960px] flex-1 flex-col">
             <header class="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-10">
-              <div class="flex items-center gap-4 text-charcoal">
-                <div class="text-terracotta">
-                  <a href="/" class="text-charcoal hover:text-terracotta"><span class="material-symbols-outlined text-3xl">bakery_dining</span></a>
-                </div>
+              <div class="flex items-center gap-4 color-primary">
                 <h1 class="text-xl font-bold leading-tight tracking-[-0.015em]"><a href="/" class="text-charcoal hover:text-terracotta">Tranches de Vie</a></h1>
               </div>
               <% cart_count = current_cart_count %>

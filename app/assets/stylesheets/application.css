@@ -82,3 +82,15 @@
 .link:active {
   color: #1e40af;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Pacifico", cursive;
+}
+
+.color-primary {
+  color: #224246;
+}
+
+.color-production {
+  color: #acc037;
+}

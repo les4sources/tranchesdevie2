@@ -116,6 +116,32 @@ module Admin
       end
     end
 
+    def product_flour_stats
+      @product_flour_stats ||= begin
+        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
+        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+
+        # Group by product_id to ensure proper grouping
+        grouped_by_product_id = confirmed_order_items.group_by { |item| item.product_variant.product_id }
+
+        grouped_by_product_id.map do |product_id, items|
+          # Get the product from the first item (all items in this group have the same product)
+          product = items.first.product_variant.product
+          
+          total_flour = items.sum do |item|
+            flour_qty = item.product_variant.flour_quantity || 0
+            item.qty * flour_qty
+          end
+
+          {
+            product: product,
+            flour_quantity: total_flour
+          }
+        end.select { |stat| stat[:flour_quantity].positive? }
+           .sort_by { |stat| stat[:product].name.downcase }
+      end
+    end
+
     private
 
     def detect_mold_size(product, variant)

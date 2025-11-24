@@ -108,14 +108,11 @@
             <% end %>
           </dd>
         </div>
-        <% if @dashboard.unpaid_orders? %>
-          <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Relancer les paiements en attente avant la mise au four.
-          </div>
-        <% end %>
       </dl>
     </div>
   </div>
+
+  
 
   <% kpi_cards = [
     { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
@@ -180,6 +177,54 @@
         <p class="text-sm font-semibold text-indigo-900">Quantité de pâte</p>
         <p class="mt-2 text-3xl font-bold text-indigo-950"><%= total_flour %> g</p>
       </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Farine · besoins par produit</p>
+        <h2 class="text-xl font-semibold text-slate-900">Quantités de farine requises</h2>
+        <p class="text-sm text-slate-500">
+          Totaux calculés sur les commandes confirmées pour cette fournée.
+        </p>
+      </div>
+    </div>
+    <div class="mt-6 overflow-x-auto rounded-xl border border-slate-100">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 text-left">Produit</th>
+            <th class="px-4 py-3 text-right">Quantité de farine</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 bg-white">
+          <% if @dashboard.product_flour_stats.any? %>
+            <% @dashboard.product_flour_stats.each do |stat| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3">
+                  <p class="font-semibold text-slate-900"><%= stat[:product].name %></p>
+                </td>
+                <td class="px-4 py-3 text-right font-semibold text-slate-900">
+                  <%= stat[:flour_quantity] %> g
+                </td>
+              </tr>
+            <% end %>
+            <tr class="bg-slate-50 font-semibold">
+              <td class="px-4 py-3 text-slate-900">Total</td>
+              <td class="px-4 py-3 text-right text-slate-900">
+                <%= @dashboard.total_flour_quantity %> g
+              </td>
+            </tr>
+          <% else %>
+            <tr>
+              <td colspan="2" class="px-4 py-6 text-center text-sm text-slate-500">
+                Aucune quantité de farine requise pour l'instant.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
 

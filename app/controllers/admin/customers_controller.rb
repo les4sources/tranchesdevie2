@@ -82,7 +82,10 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   def customer_params
-    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :group_id)
+    permitted = params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :group_id)
+    # Convertir les chaînes vides en nil pour phone_e164
+    permitted[:phone_e164] = nil if permitted[:phone_e164].blank?
+    permitted
   end
 end
 

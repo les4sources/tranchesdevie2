@@ -1,11 +1,11 @@
-- content_for :title, "Modifier le produit"
+- content_for :title, "Nouveau produit"
 - content_for :layout, "admin"
 
 - category_options = Product.categories.keys.map { |key| [product_category_heading(key), key] }
 
 .mb-6.flex.justify-between.items-center
-  h1.text-2xl.font-bold.text-gray-900 Modifier le produit
-  = link_to "Retour au produit", admin_product_path(@product), class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+  h1.text-2xl.font-bold.text-gray-900 Nouveau produit
+  = link_to "Retour aux produits", admin_products_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
 
 = form_with model: [:admin, @product], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
   - if @product.errors.any?
@@ -38,9 +38,10 @@
     .space-y-3
       span.block.text-sm.font-medium.text-gray-700 Statut du produit
       .flex.items-center.space-x-3
-        = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500", checked: true
         = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
 
   .flex.justify-end.space-x-3
-    = link_to "Annuler", admin_product_path(@product), class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    = link_to "Annuler", admin_products_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Créer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+

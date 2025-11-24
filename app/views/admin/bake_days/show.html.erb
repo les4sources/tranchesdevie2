@@ -7,7 +7,7 @@
 <% note_input_id = dom_id(@bake_day, :internal_note) %>
 
 <div class="space-y-8">
-  <div class="sticky top-16 z-20 border-b border-slate-200 bg-slate-50/95 px-6 py-4 backdrop-blur">
+  <div class="border-b border-slate-200 bg-slate-50/95 px-6 py-4 backdrop-blur">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Jour de cuisson</p>
@@ -133,42 +133,31 @@
   <div class="rounded-2xl border border-indigo-100 bg-indigo-50 p-6 shadow-sm">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Pains · besoins en moules</p>
-        <h2 class="text-xl font-semibold text-indigo-950">Anticipez les préparations lourdes</h2>
+        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Moules et pâte</p>
+        <h2 class="text-xl font-semibold text-indigo-950">Préparez vos moules et la pâte requise</h2>
         <p class="text-sm text-indigo-900/80">
           Totaux calculés sur les commandes confirmées pour cette fournée.
         </p>
       </div>
     </div>
     <div class="mt-6 grid gap-4 md:grid-cols-2 <%= mold_requirements[:unspecified].positive? ? 'lg:grid-cols-4' : 'lg:grid-cols-3' %>">
-      <% large_status = mold_requirements[:large].positive? ? "Ready" : "To confirm" %>
-      <% small_status = mold_requirements[:small].positive? ? "Ready" : "To confirm" %>
       <% unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify" %>
       <% total_flour = @dashboard.total_flour_quantity %>
 
       <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow">
         <p class="text-sm font-semibold text-indigo-900">Grands moules (1 kg)</p>
         <p class="mt-2 text-3xl font-bold text-indigo-950"><%= mold_requirements[:large] %></p>
-        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold <%= mold_requirements[:large].positive? ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>">
-          <%= large_status %>
-        </span>
       </div>
 
       <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow">
         <p class="text-sm font-semibold text-indigo-900">Petits moules (600 g)</p>
         <p class="mt-2 text-3xl font-bold text-indigo-950"><%= mold_requirements[:small] %></p>
-        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold <%= mold_requirements[:small].positive? ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>">
-          <%= small_status %>
-        </span>
       </div>
 
       <% if mold_requirements[:unspecified].positive? %>
         <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow">
           <p class="text-sm font-semibold text-indigo-900">À clarifier</p>
           <p class="mt-2 text-3xl font-bold text-indigo-950"><%= mold_requirements[:unspecified] %></p>
-          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700">
-            <%= unspecified_status %>
-          </span>
         </div>
       <% end %>
 
@@ -210,8 +199,8 @@
               </tr>
             <% end %>
             <tr class="bg-slate-50 font-semibold">
-              <td class="px-4 py-3 text-slate-900">Total</td>
-              <td class="px-4 py-3 text-right text-slate-900">
+              <td class="px-4 py-3 text-slate-900 border-t border-gray-600">Quantité totale de pâte</td>
+              <td class="px-4 py-3 text-right text-slate-900 border-t border-gray-600">
                 <%= @dashboard.total_flour_quantity %> g
               </td>
             </tr>
@@ -227,21 +216,21 @@
     </div>
   </div>
 
-  <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" data-controller="dashboard-tabs" data-dashboard-tabs-active-value="products">
+  <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" data-controller="dashboard-tabs" data-dashboard-tabs-active-value="clients">
     <div class="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-4">
       <button type="button"
               class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow"
               data-dashboard-tabs-target="tab"
-              data-tab="products"
+              data-tab="clients"
               data-action="dashboard-tabs#show">
-        Articles & variantes
+        Commandes par client
       </button>
       <button type="button"
               class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-slate-600"
               data-dashboard-tabs-target="tab"
-              data-tab="clients"
+              data-tab="products"
               data-action="dashboard-tabs#show">
-        Commandes par client
+        Articles & variantes
       </button>
       <button type="button"
               class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-slate-600"
@@ -252,7 +241,7 @@
       </button>
     </div>
 
-    <div class="mt-6" data-dashboard-tabs-target="panel" data-panel="products">
+    <div class="mt-6 hidden" data-dashboard-tabs-target="panel" data-panel="products">
       <div class="flex flex-wrap items-center justify-between gap-3" data-controller="dashboard-filter">
         <div class="flex flex-wrap items-center gap-2" data-filter-group>
           <button type="button"
@@ -308,7 +297,7 @@
                             </div>
                           <% end %>
                         </div>
-          <div>
+                        <div>
                           <p class="font-semibold text-slate-900"><%= product.name %> (<%= variant.name %>)</p>
                         </div>
                       </div>
@@ -345,62 +334,103 @@
       </div>
     </div>
 
-    <div class="mt-6 hidden" data-dashboard-tabs-target="panel" data-panel="clients">
+    <div class="mt-6" data-dashboard-tabs-target="panel" data-panel="clients">
       <% if @dashboard.customer_breakdown.any? %>
-        <div class="grid gap-4 md:grid-cols-2">
-          <% @dashboard.customer_breakdown.each do |entry| %>
-            <div class="rounded-2xl border border-slate-200 p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-base font-semibold text-slate-900"><%= entry[:customer].full_name %></p>
-                  <p class="text-xs text-slate-500">
-                    <%= pluralize(entry[:orders].size, "commande") %> ·
-                    <%= number_to_currency(entry[:total_cents] / 100.0, unit: "€", separator: ",", delimiter: " ") %>
-                  </p>
-                </div>
-                <div class="text-right">
-                  <p class="text-xs uppercase text-slate-500">Statuts</p>
-                  <div class="mt-1 flex flex-wrap justify-end gap-1">
-                    <% entry[:statuses].each do |status, count| %>
-                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold <%= status_pill_classes(status) %>">
-                        <%= order_status_label(status) %> · <%= count %>
-                      </span>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-4 divide-y divide-slate-100 text-sm text-slate-600">
-                <% entry[:orders].each do |customer_order| %>
-                  <% order = customer_order[:order] %>
-                  <div class="py-3">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <p class="font-semibold text-slate-900">Commande <%= order.order_number %></p>
-                        <p class="text-xs text-slate-500">
-                          Créée le <%= order.created_at.strftime("%d/%m/%Y à %H:%M") %>
-                        </p>
-                      </div>
-                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold <%= status_pill_classes(order.status) %>">
-                        <%= order_status_label(order.status) %>
-                      </span>
+        <% 
+          # Grouper les variantes par produit, triées : pains en premier, puis les autres
+          variants_by_product = @dashboard.variant_stats.sort_by do |stat|
+            [
+              stat[:product].breads? ? 0 : 1,  # Pains en premier (0), autres ensuite (1)
+              stat[:product].name.downcase,
+              stat[:variant].name.downcase
+            ]
+          end.group_by { |stat| stat[:product] }
+          
+          # Récupérer toutes les variantes dans l'ordre (pour les colonnes du tableau)
+          all_variants = variants_by_product.flat_map { |product, stats| stats.map { |stat| stat[:variant] } }
+          
+          # Préparer les données pour chaque client : variant_id => quantité totale
+          customer_variant_quantities = {}
+          @dashboard.customer_breakdown.each do |entry|
+            customer = entry[:customer]
+            quantities = {}
+            entry[:orders].each do |customer_order|
+              customer_order[:items].each do |item|
+                variant_id = item[:variant].id
+                quantities[variant_id] ||= 0
+                quantities[variant_id] += item[:qty]
+              end
+            end
+            customer_variant_quantities[customer.id] = quantities
+          end
+        %>
+        <div class="overflow-x-auto rounded-xl border border-slate-100" style="max-height: 80vh; overflow-y: auto;">
+          <table class="min-w-full divide-y divide-slate-100 text-sm">
+            <thead class="bg-slate-50 sticky top-0 z-20">
+              <tr>
+                <th class="sticky left-0 z-30 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200" rowspan="2" style="position: sticky; left: 0;">Client</th>
+                <% variants_by_product.each do |product, stats| %>
+                  <th class="relative px-1 py-3 align-bottom border border-slate-400 bg-slate-50" colspan="<%= stats.size %>" title="<%= product.name %>">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-900 leading-snug"><%= product.short_name %></p>
                     </div>
-                    <ul class="mt-2 space-y-1">
-                      <% customer_order[:items].each do |item| %>
-                        <li class="flex items-center justify-between">
-                          <span><%= item[:variant].name %></span>
-                          <span class="font-semibold text-slate-900">×<%= item[:qty] %></span>
-                        </li>
-                      <% end %>
-                    </ul>
-                  </div>
+                  </th>
                 <% end %>
-              </div>
-            </div>
-          <% end %>
+                <th class="sticky right-0 z-30 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200" rowspan="2" style="position: sticky; right: 0;">Total</th>
+              </tr>
+              <tr>
+                <% variants_by_product.each do |product, stats| %>
+                  <% stats.each do |stat| %>
+                    <th class="relative px-1 py-3 align-bottom border border-slate-400 bg-slate-50" style="width: 100px"  title="<%= stat[:variant].name %>">
+                      <div>
+                        <p class="text-xs text-slate-600 leading-snug"><%= stat[:variant].name %></p>
+                      </div>
+                    </th>
+                  <% end %>
+                <% end %>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 bg-white">
+              <% @dashboard.customer_breakdown.each do |entry| %>
+                <% customer = entry[:customer] %>
+                <% quantities = customer_variant_quantities[customer.id] %>
+                <% row_total = quantities.values.sum %>
+                <tr class="hover:bg-slate-50">
+                  <td class="sticky left-0 z-10 bg-white px-4 py-3 font-semibold text-slate-900" style="position: sticky; left: 0;">
+                    <%= customer.full_name %>
+                  </td>
+                  <% all_variants.each do |variant| %>
+                    <% qty = quantities[variant.id] || 0 %>
+                    <td class="px-1 py-3 border border-slate-400 text-center text-slate-900" style="width: 50px;">
+                      <% if qty > 0 %>
+                        <span class="font-semibold"><%= qty %></span>
+                      <% else %>
+                        <span class="text-slate-300">—</span>
+                      <% end %>
+                    </td>
+                  <% end %>
+                  <td class="px-4 py-3 text-right font-semibold text-slate-900">
+                    <%= row_total %>
+                  </td>
+                </tr>
+              <% end %>
+              <tr class="bg-slate-50 font-semibold opacity-50">
+                <td class="sticky left-0 z-10 bg-slate-50 px-4 py-3 text-slate-900 border-t border-slate-400" style="position: sticky; left: 0;">Total</td>
+                <% all_variants.each do |variant| %>
+                  <% column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 } %>
+                  <td class="px-1 py-3 text-center text-slate-900 border-t border-slate-300" style="width: 50px;">
+                    <%= column_total %>
+                  </td>
+                <% end %>
+                <td class="px-4 py-3 text-right text-slate-900 border-t border-slate-400">
+                  <%= customer_variant_quantities.values.sum { |q| q.values.sum } %>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       <% else %>
-        <p class="text-center text-sm text-slate-500">Aucun client n’a encore passé commande.</p>
+        <p class="text-center text-sm text-slate-500">Aucun client n'a encore passé commande.</p>
       <% end %>
     </div>
 

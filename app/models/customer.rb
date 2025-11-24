@@ -4,14 +4,17 @@ class Customer < ApplicationRecord
   has_many :phone_verifications, dependent: :destroy
   has_many :sms_messages, dependent: :nullify
 
-  validates :phone_e164, presence: true, uniqueness: true
+  # Attribut virtuel pour permettre de sauter la validation du téléphone (utilisé par l'admin)
+  attr_accessor :skip_phone_validation
+
   validates :first_name, presence: true
-  validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: 'must be in E.164 format' }
+  validates :phone_e164, presence: true, uniqueness: { allow_nil: true }, unless: :skip_phone_validation
+  validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: 'must be in E.164 format' }, if: -> { phone_e164.present? }
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
 
   def sms_enabled?
-    !sms_opt_out?
+    phone_e164.present? && !sms_opt_out?
   end
 
   def full_name

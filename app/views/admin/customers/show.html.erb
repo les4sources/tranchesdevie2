@@ -35,10 +35,12 @@
         </div>
       <% end %>
 
-      <div>
-        <dt class="text-sm font-medium text-gray-500">Téléphone</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @customer.phone_e164 %></dd>
-      </div>
+      <% if @customer.phone_e164.present? %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Téléphone</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @customer.phone_e164 %></dd>
+        </div>
+      <% end %>
 
       <% if @customer.email.present? %>
         <div>
@@ -246,7 +248,7 @@
           
           <div class="mt-2">
             <p class="text-sm text-gray-500 mb-4">
-              Destinataire : <%= @customer.phone_e164 %>
+              Destinataire : <%= @customer.phone_e164.presence || 'Non renseigné' %>
             </p>
 
             <div id="sms-error" class="hidden mb-4 rounded-md bg-red-50 p-4" data-sms-modal-target="error">

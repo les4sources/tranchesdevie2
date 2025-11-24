@@ -14,7 +14,11 @@
       <dd class="mt-1 text-sm text-gray-900">
         <%= link_to @customer.full_name, admin_customer_path(@customer), class: "text-blue-600 hover:text-blue-800" %>
       </dd>
-      <dd class="text-sm text-gray-600"><%= @customer.phone_e164 %></dd>
+      <% if @customer.phone_e164.present? %>
+        <dd class="text-sm text-gray-600"><%= @customer.phone_e164 %></dd>
+      <% else %>
+        <dd class="text-sm text-gray-500 italic">Non renseigné</dd>
+      <% end %>
     </div>
 
     <div>

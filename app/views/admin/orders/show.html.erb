@@ -31,7 +31,9 @@
       <div>
         <dt class="text-sm font-medium text-gray-500">Client</dt>
         <dd class="mt-1 text-sm text-gray-900"><%= @order.customer.full_name %></dd>
-        <dd class="text-sm text-gray-600"><%= @order.customer.phone_e164 %></dd>
+        <% if @order.customer.phone_e164.present? %>
+          <dd class="text-sm text-gray-600"><%= @order.customer.phone_e164 %></dd>
+        <% end %>
         <% if @order.customer.email.present? %>
           <dd class="text-sm text-gray-600"><%= @order.customer.email %></dd>
         <% end %>

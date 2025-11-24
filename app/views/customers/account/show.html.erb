@@ -28,10 +28,12 @@
             <p class="text-gray-900"><%= @customer.last_name %></p>
           </div>
         <% end %>
-        <div>
-          <span class="text-sm font-medium text-gray-500">Téléphone</span>
-          <p class="text-gray-900"><%= @customer.phone_e164 %></p>
-        </div>
+        <% if @customer.phone_e164.present? %>
+          <div>
+            <span class="text-sm font-medium text-gray-500">Téléphone</span>
+            <p class="text-gray-900"><%= @customer.phone_e164 %></p>
+          </div>
+        <% end %>
         <% if @customer.email.present? %>
           <div>
             <span class="text-sm font-medium text-gray-500">Email</span>

@@ -25,10 +25,11 @@ class Admin::CustomersController < Admin::BaseController
 
   def create
     @customer = Customer.new(customer_params)
+    @customer.skip_phone_validation = true if @customer.phone_e164.blank?
 
     if @customer.save
       redirect_to admin_customers_path, notice: 'Mangeur créé avec succès'
-    elsif (existing_customer = Customer.find_by(phone_e164: @customer.phone_e164))
+    elsif @customer.phone_e164.present? && (existing_customer = Customer.find_by(phone_e164: @customer.phone_e164))
       redirect_to admin_customer_path(existing_customer), alert: 'Ce mangeur existe déjà. Redirection vers sa page.'
     else
       @groups = Group.order(:name)
@@ -41,6 +42,8 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   def update
+    @customer.skip_phone_validation = true if customer_params[:phone_e164].blank?
+    
     if @customer.update(customer_params)
       redirect_to admin_customer_path(@customer), notice: 'Mangeur mis à jour avec succès'
     else

@@ -38,9 +38,9 @@
       <div>
         <%= f.label :phone_e164, "Téléphone (format E.164)", class: "block text-sm font-medium text-gray-700" %>
         <%= f.telephone_field :phone_e164,
-                              required: true,
                               placeholder: "+33612345678",
                               class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        <p class="mt-1 text-sm text-gray-500">Optionnel. Laissez vide pour les mangeurs sans téléphone.</p>
       </div>
 
       <div>

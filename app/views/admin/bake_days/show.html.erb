@@ -112,7 +112,6 @@
     </div>
   </div>
 
-  
 
   <% kpi_cards = [
     { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
@@ -184,7 +183,7 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Farine · besoins par produit</p>
-        <h2 class="text-xl font-semibold text-slate-900">Quantités de farine requises</h2>
+        <h2 class="text-xl font-semibold text-slate-900">Quantités de pâte requises</h2>
         <p class="text-sm text-slate-500">
           Totaux calculés sur les commandes confirmées pour cette fournée.
         </p>
@@ -195,7 +194,7 @@
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 text-left">Produit</th>
-            <th class="px-4 py-3 text-right">Quantité de farine</th>
+            <th class="px-4 py-3 text-right">Quantité de pâte</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-50 bg-white">

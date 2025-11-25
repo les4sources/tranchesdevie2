@@ -21,7 +21,7 @@ class CartController < ApplicationController
     variant = ProductVariant.find(params[:product_variant_id])
     bake_day_id = params[:bake_day_id]
 
-    unless variant.active?
+    unless variant.active? && variant.product.channel == 'store' && variant.channel == 'store'
       respond_to do |format|
         format.html { redirect_to catalog_path, alert: 'Ce produit n\'est pas disponible' }
         format.json { render json: { error: 'Ce produit n\'est pas disponible' }, status: :unprocessable_entity }

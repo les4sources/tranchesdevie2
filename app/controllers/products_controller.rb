@@ -1,7 +1,7 @@
 class ProductsController < ApplicationController
   def show
-    @product = Product.active.find(params[:id])
-    @variants = @product.product_variants.active.order(:name)
+    @product = Product.active.store_channel.find(params[:id])
+    @variants = @product.product_variants.active.store_channel.order(:name)
     
     # Collect all images from product and variants
     @product_images = []

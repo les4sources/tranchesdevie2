@@ -10,9 +10,11 @@ class Product < ApplicationRecord
   validates :name, presence: true
   validates :category, presence: true
   validates :position, presence: true, numericality: { only_integer: true }
+  validates :channel, presence: true, inclusion: { in: %w[store admin] }
 
   scope :active, -> { where(active: true) }
   scope :ordered, -> { order(category: :asc, position: :asc, name: :asc) }
+  scope :store_channel, -> { where(channel: 'store') }
 
   def display_name
     name

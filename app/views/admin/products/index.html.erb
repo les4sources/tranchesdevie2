@@ -12,6 +12,7 @@
       <tr>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Canal de vente</th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variantes</th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
       </tr>
@@ -24,6 +25,9 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
             <%= product_category_heading(product.category) %>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+            <%= ProductDecorator.decorate(product).channel_label %>
           </td>
           <td class="px-6 py-4 text-sm text-gray-600">
             <%= product.product_variants.count %> variante(s)

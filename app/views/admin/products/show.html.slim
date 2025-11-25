@@ -27,6 +27,9 @@
         span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif
       - else
         span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-red-100.text-red-800 Inactif
+    .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Canal de vente
+      p.text-sm.text-gray-900 = ProductDecorator.decorate(@product).channel_label
 
   - if @product.description.present?
     .space-y-2
@@ -60,6 +63,7 @@
             tr
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Prix
+              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Canal de vente
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Statut
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
           tbody.divide-y.divide-gray-200
@@ -67,6 +71,7 @@
               tr
                 td.px-4.py-3.text-sm.text-gray-900 = variant.name
                 td.px-4.py-3.text-sm.text-gray-600 = number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ")
+                td.px-4.py-3.text-sm.text-gray-600 = ProductVariantDecorator.decorate(variant).channel_label
                 td.px-4.py-3.text-sm
                   - if variant.active?
                     span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif

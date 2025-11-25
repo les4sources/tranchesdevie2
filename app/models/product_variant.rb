@@ -10,8 +10,10 @@ class ProductVariant < ApplicationRecord
 
   validates :name, presence: true
   validates :price_cents, presence: true, numericality: { greater_than: 0 }
+  validates :channel, presence: true, inclusion: { in: %w[store admin] }
 
   scope :active, -> { where(active: true) }
+  scope :store_channel, -> { where(channel: 'store') }
 
   def available_on?(date)
     return false unless active?

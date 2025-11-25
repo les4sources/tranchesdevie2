@@ -49,6 +49,8 @@ module Tranchesdevie2
 
     config.autoload_paths << Rails.root.join("app/presenters")
     config.eager_load_paths << Rails.root.join("app/presenters")
+    config.autoload_paths << Rails.root.join("app/decorators")
+    config.eager_load_paths << Rails.root.join("app/decorators")
 
     # Don't generate system test files.
     config.generators.system_tests = nil

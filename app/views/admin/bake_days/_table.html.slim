@@ -1,0 +1,36 @@
+.bg-white.shadow-sm.rounded-lg.border.border-gray-200
+  table.min-w-full.divide-y.divide-gray-200
+    thead.bg-gray-50
+      tr
+        th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase = show_future ? "Jour" : "Date"
+        - if show_future
+          th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Date limite de commande
+        th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Commandes
+        th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase @nbsp;
+    tbody.bg-white.divide-y.divide-gray-200
+      - bake_days.each do |bake_day|
+        tr
+          td.px-6.py-4.whitespace-nowrap.font-medium.text-gray-900
+            = link_to bake_day.baked_on.strftime("%d/%m/%Y"),
+                      admin_bake_day_path(bake_day), 
+                      class: "text-blue-600 hover:text-blue-800 hover:underline"
+            - if bake_day.baked_on == Date.current
+              span.ml-2.inline-flex.items-center.rounded-md.bg-green-50.px-2.py-1.text-xs.font-medium.text-green-700.ring-1.ring-inset.ring-green-600/20
+                | Aujourd'hui
+            - elsif bake_day.baked_on == Date.tomorrow
+              span.ml-2.inline-flex.items-center.rounded-md.bg-yellow-50.px-2.py-1.text-xs.font-medium.text-yellow-700.ring-1.ring-inset.ring-yellow-600/20
+                | Demain
+          - if show_future
+            td.px-6.py-4.whitespace-nowrap.text-gray-600
+              = bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")
+              - if bake_day.cut_off_passed?
+                span.ml-2.text-xs.text-red-600 commandes closes
+              - else
+                span.ml-2.text-xs.text-green-600 commandes ouvertes
+          td.px-6.py-4.whitespace-nowrap.text-gray-600
+            = link_to bake_day.orders.count, 
+                      admin_orders_path(bake_day_id: bake_day.id), 
+                      class: "text-blue-600 hover:text-blue-800 hover:underline"
+          td.px-6.py-4.whitespace-nowrap
+            = link_to "Tableau de bord", admin_bake_day_path(bake_day), class: "text-blue-600 hover:text-blue-800 hover:underline mr-3"
+            = link_to "Modifier", edit_admin_bake_day_path(bake_day), class: "text-blue-600 hover:text-blue-800 hover:underline"

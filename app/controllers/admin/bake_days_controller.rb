@@ -2,7 +2,39 @@ class Admin::BakeDaysController < Admin::BaseController
   before_action :set_bake_day, only: [:show, :edit, :update, :destroy]
 
   def index
-    @bake_days = BakeDay.order(:baked_on).reverse_order
+    # Jours futurs (aujourd'hui et futurs)
+    @future_bake_days = BakeDay.future.order(:baked_on)
+
+    # Jours passés avec pagination par année et filtre par mois
+    past_bake_days = BakeDay.past
+    
+    # Récupérer l'année sélectionnée (par défaut: année la plus récente)
+    @selected_year = params[:year]&.to_i
+    if @selected_year.nil?
+      most_recent_year = BakeDay.past.order(baked_on: :desc).limit(1).pluck(Arel.sql("EXTRACT(YEAR FROM baked_on)::integer")).first
+      @selected_year = most_recent_year if most_recent_year
+    end
+    
+    # Filtrer par année
+    if @selected_year
+      past_bake_days = past_bake_days.where("EXTRACT(YEAR FROM baked_on) = ?", @selected_year)
+    end
+    
+    # Récupérer le mois sélectionné (optionnel)
+    @selected_month = params[:month]&.to_i
+    
+    # Filtrer par mois si sélectionné
+    if @selected_month && @selected_month.between?(1, 12)
+      past_bake_days = past_bake_days.where("EXTRACT(MONTH FROM baked_on) = ?", @selected_month)
+    end
+    
+    @past_bake_days = past_bake_days.order(:baked_on)
+    
+    # Liste des années disponibles pour le filtre
+    @available_years = BakeDay.past
+                               .pluck(Arel.sql("DISTINCT EXTRACT(YEAR FROM baked_on)::integer"))
+                               .sort
+                               .reverse
   end
 
   def show

@@ -45,6 +45,17 @@ module CatalogHelper
     end
   end
 
+  def product_flour_label(flour)
+    return "Aucune" if flour.blank?
+
+    case flour
+    when "wheat" then "Froment"
+    when "spelled" then "Épeautre"
+    when "ancien_wheat" then "Blé ancien"
+    else flour.to_s.tr("_", " ").capitalize
+    end
+  end
+
   def product_background_image(product)
     # Try to use the first product image if available
     if product.product_images.any? && product.product_images.first.image.attached?

@@ -15,7 +15,7 @@ class OtpService
     customer = Customer.find_by(phone_e164: phone_e164)
 
     # Send SMS via Telerivet
-    message = "Salut, c'est Tranches de Vie ! Voici votre code de connexion : #{verification.code}"
+    message = "Salut, c'est Tranches de Vie ! Voici ton code de connexion pour passer ta commande : #{verification.code}"
     sms_sent = send_otp_sms(
       to: phone_e164,
       body: message,

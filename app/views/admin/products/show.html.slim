@@ -19,6 +19,9 @@
       label.block.text-sm.font-medium.text-gray-700 Position
       p.text-sm.text-gray-900 = @product.position
     .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Farine
+      p.text-sm.text-gray-900 = product_flour_label(@product.flour)
+    .space-y-2
       label.block.text-sm.font-medium.text-gray-700 Statut
       - if @product.active?
         span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif

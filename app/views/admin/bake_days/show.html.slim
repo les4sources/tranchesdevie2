@@ -1,0 +1,295 @@
+- content_for :title, "Jour de cuisson #{@bake_day.baked_on.strftime('%d/%m/%Y')}"
+- content_for :layout, "admin"
+
+- kpis = @dashboard.kpis
+- mold_requirements = @dashboard.breads_mold_requirements
+- status_distribution = @dashboard.status_distribution
+- note_input_id = dom_id(@bake_day, :internal_note)
+
+.space-y-8
+  .border-b.border-slate-200.px-6.py-4.backdrop-blur
+    .flex.flex-col.gap-4.lg:flex-row.lg:items-center.lg:justify-between
+      div
+        p.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500 Jour de cuisson
+        .mt-1.flex.flex-wrap.items-center.gap-3
+          h1.text-2xl.font-semibold.text-slate-900
+            | Fournée du #{@bake_day.baked_on.strftime("%d/%m/%Y")}
+          span.inline-flex.items-center.rounded-full.px-3.py-1.text-xs.font-semibold class=("#{@bake_day.cut_off_passed? ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}")
+            = @bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes"
+        p.text-slate-500
+          | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
+      .flex.flex-wrap.gap-3 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
+        = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: "inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
+        button.inline-flex.items-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white type="button" data-action="dashboard-export#print"
+          | Imprimer la feuille
+        = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, data: { confirm: "Supprimer ce jour de cuisson ?" }, class: "inline-flex items-center gap-2 rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+
+  .grid.gap-6.lg:grid-cols-3
+    .lg:col-span-2.rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+      .flex.items-center.justify-between
+        div
+          h2.text-lg.font-semibold.text-slate-900 Consignes du jour
+        p.text-xs.text-slate-500 data-bake-day-note-target="status"
+          | Dernière mise à jour #{l(@bake_day.updated_at, format: :short)}
+      .mt-4
+        = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, html: { class: "space-y-4", data: { controller: "bake-day-note", turbo: false, "bake-day-note-url-value": admin_bake_day_path(@bake_day), "bake-day-note-target": "form" } } do |form|
+          = form.hidden_field :internal_note, id: note_input_id
+          trix-editor.trix-content.border-0.shadow-none.ring-1.ring-slate-200 input=note_input_id data-action="trix-change->bake-day-note#queueSave"
+          .flex.items-center.justify-between.text-xs.text-slate-500.mt-2
+            span Partagez les consignes d'approvisionnement, allergies, retards, etc.
+            button.inline-flex.items-center.gap-2.rounded-full.border.border-slate-300.px-3.py-1.5.text-xs.font-semibold.text-slate-700.hover:bg-slate-50 type="button" data-action="bake-day-note#save"
+              | Enregistrer maintenant
+
+    .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+      h2.text-lg.font-semibold.text-slate-900 Statut des commandes
+      dl.mt-4.space-y-4
+        .flex.items-center.justify-between
+          dt.text-sm.text-slate-500 Commandes en attente
+          dd.text-base.font-semibold.text-amber-600 = kpis[:open_orders]
+        .flex.items-center.justify-between
+          dt.text-sm.text-slate-500 Commandes prêtes / récupérées
+          dd.text-base.font-semibold.text-emerald-600 = kpis[:ready_orders]
+        div
+          dt.text-sm.text-slate-500 Répartition des statuts
+          dd.mt-2.space-y-1
+            - status_distribution.each do |status, count|
+              .flex.items-center.justify-between.text-sm
+                span = order_status_label(status)
+                span.font-semibold.text-slate-900 = count
+
+  - kpi_cards = [ \
+      { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
+      { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },
+      { label: "Revenus attendus", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC prévu" },
+      { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
+    ]
+
+  .grid.gap-4.md:grid-cols-2.xl:grid-cols-4
+    - kpi_cards.each do |card|
+      .rounded-2xl.border.border-slate-200.bg-white.p-5.shadow-sm
+        p.text-sm.text-slate-500 = card[:label]
+        p.mt-2.text-3xl.font-semibold.text-slate-900 = card[:value]
+        p.text-sm.text-slate-500 = card[:meta]
+
+  .rounded-2xl.border.border-indigo-100.bg-indigo-50.p-6.shadow-sm
+    .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
+      div
+        h2.text-xl.font-semibold.text-indigo-950 Préparez vos moules et la pâte requise
+    .mt-6.grid.gap-4.md:grid-cols-2 class=("#{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}")
+      - unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify"
+      - total_flour = @dashboard.total_flour_quantity
+
+      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        p.text-sm.font-semibold.text-indigo-900 Grands moules (1 kg)
+        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:large]
+
+      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        p.text-sm.font-semibold.text-indigo-900 Petits moules (600 g)
+        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:small]
+
+      - if mold_requirements[:unspecified].positive?
+        .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+          p.text-sm.font-semibold.text-indigo-900 À clarifier
+          p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:unspecified]
+
+      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        p.text-sm.font-semibold.text-indigo-900 Quantité de pâte
+        p.mt-2.text-3xl.font-bold.text-indigo-950
+          | #{total_flour} g
+
+  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+    .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
+      div
+        h2.text-xl.font-semibold.text-slate-900 Quantités de pâte requises par type de farine
+    .mt-6.overflow-x-auto.rounded-xl.border.border-slate-100
+      table.min-w-full.divide-y.divide-slate-100.text-sm
+        thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
+          tr
+            th.px-4.py-3.text-left Type de farine
+            th.px-4.py-3.text-right Quantité de pâte
+        tbody.divide-y.divide-slate-50.bg-white
+          - if @dashboard.flour_type_stats.any?
+            - @dashboard.flour_type_stats.each do |stat|
+              - next if stat[:flour_type] == "none"
+              tr.hover:bg-slate-50
+                td.px-4.py-3
+                  p.font-semibold.text-slate-900 = product_flour_label(stat[:flour_type])
+                td.px-4.py-3.text-right.font-semibold.text-slate-900
+                  | #{stat[:flour_quantity]} g
+            tr.bg-slate-50.font-semibold
+              td.px-4.py-3.text-slate-900.border-t.border-gray-600 Quantité totale de pâte
+              td.px-4.py-3.text-right.text-slate-900.border-t.border-gray-600
+                | #{@dashboard.total_flour_quantity} g
+          - else
+            tr
+              td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="2"
+                | Aucune quantité de farine requise pour l'instant.
+
+  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm data-controller="dashboard-tabs" data-dashboard-tabs-active-value="clients"
+    .flex.flex-wrap.items-center.gap-3.border-b.border-slate-200.pb-4
+      button.rounded-full.bg-white.px-4.py-2.text-sm.font-semibold.text-slate-900.shadow type="button" data-dashboard-tabs-target="tab" data-tab="clients" data-action="dashboard-tabs#show"
+        | Commandes par client
+      button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="products" data-action="dashboard-tabs#show"
+        | Articles & variantes
+      button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="timeline" data-action="dashboard-tabs#show"
+        | Flux des commandes
+
+    .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="products"
+      .flex.flex-wrap.items-center.justify-between.gap-3 data-controller="dashboard-filter"
+        .flex.flex-wrap.items-center.gap-2 data-filter-group
+          button.rounded-full.border.border-indigo-600.bg-indigo-600.px-3.py-1.5.text-xs.font-semibold.text-white type="button" data-filter="all" data-action="dashboard-filter#change"
+            | Tous les produits
+          button.rounded-full.border.border-slate-300.px-3.py-1.5.text-xs.font-semibold.text-slate-600.hover:border-indigo-300.hover:text-indigo-600 type="button" data-filter="breads" data-action="dashboard-filter#change"
+            | Pains uniquement
+          button.rounded-full.border.border-slate-300.px-3.py-1.5.text-xs.font-semibold.text-slate-600.hover:border-indigo-300.hover:text-indigo-600 type="button" data-filter="dough_balls" data-action="dashboard-filter#change"
+            | Autres catégories
+        p.text-xs.text-slate-500
+          | #{pluralize(kpis[:variants_count], "variante")} présentes dans les commandes.
+        .w-full.overflow-x-auto.rounded-xl.border.border-slate-100 data-dashboard-filter-target="container"
+          table.min-w-full.divide-y.divide-slate-100.text-sm
+            thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
+              tr
+                th.px-4.py-3.text-left Article
+                th.px-4.py-3.text-left Quantité
+                th.px-4.py-3.text-left Notes
+            tbody.divide-y.divide-slate-50.bg-white
+              - if @dashboard.variant_stats.any?
+                - @dashboard.variant_stats.each do |stat|
+                  - variant = stat[:variant]
+                  - product = stat[:product]
+                  - attachment = variant_image_attachment(variant)
+                  tr.hover:bg-slate-50 data-dashboard-filter-target="row" data-category="#{product.category}"
+                    td.px-4.py-3
+                      .flex.items-center.gap-3
+                        .h-12.w-12.overflow-hidden.rounded-xl.bg-slate-100.ring-1.ring-slate-200
+                          - if attachment.present?
+                            - if attachment.variable?
+                              = image_tag attachment.variant(resize_to_limit: [48, 48]), class: "h-full w-full object-cover", alt: variant.name
+                            - else
+                              = image_tag attachment, class: "h-full w-full object-cover", alt: variant.name
+                          - else
+                            .flex.h-full.w-full.items-center.justify-center.text-xs.font-semibold.text-slate-500
+                              = product.name.first.upcase
+                        div
+                          p.font-semibold.text-slate-900
+                            | #{product.name} (#{variant.name})
+                    td.px-4.py-3.font-semibold.text-slate-900
+                      = stat[:units_count]
+                    td.px-4.py-3.text-xs.text-slate-500
+                      - if product.breads?
+                        - case stat[:mold_size]
+                        - when :large
+                          | Grand moule requis
+                        - when :small
+                          | Petit moule requis
+                        - else
+                          | Moule à confirmer
+                      - else
+                        | —
+              - else
+                tr
+                  td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="4"
+                    | Aucun article commandé pour l'instant.
+
+    .mt-6 data-dashboard-tabs-target="panel" data-panel="clients"
+      - if @dashboard.customer_breakdown.any?
+        - variants_by_product = @dashboard.variant_stats.sort_by do |stat| \
+            [ \
+              stat[:product].breads? ? 0 : 1,
+              stat[:product].name.downcase,
+              stat[:variant].name.downcase \
+            ] \
+          end.group_by { |stat| stat[:product] }
+        - all_variants = variants_by_product.flat_map { |product, stats| stats.map { |stat| stat[:variant] } }
+        - customer_variant_quantities = {}
+        - @dashboard.customer_breakdown.each do |entry|
+          - customer = entry[:customer]
+          - quantities = {}
+          - entry[:orders].each do |customer_order|
+            - customer_order[:items].each do |item|
+              - variant_id = item[:variant].id
+              - quantities[variant_id] ||= 0
+              - quantities[variant_id] += item[:qty]
+          - customer_variant_quantities[customer.id] = quantities
+        .overflow-x-auto.rounded-xl.border.border-slate-100
+          table.min-w-full.divide-y.divide-slate-100.text-sm
+            thead.bg-slate-50.sticky.top-0.z-20
+              tr
+                th.sticky.left-0.z-30.bg-slate-50.px-4.py-3.text-left.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500.border-b.border-slate-200 rowspan=2 style="position: sticky; left: 0;" Client
+                - variants_by_product.each do |product, stats|
+                  th.relative.px-1.py-3.align-bottom.border.border-slate-400.bg-slate-50 colspan=stats.size title=product.name
+                    div
+                      p.text-sm.font-semibold.text-slate-900.leading-snug = product.short_name
+                th.sticky.right-0.z-30.bg-slate-50.px-4.py-3.text-right.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500.border-b.border-slate-200 rowspan=2 style="position: sticky; right: 0;" Total
+              tr
+                - variants_by_product.each do |product, stats|
+                  - stats.each do |stat|
+                    th.relative.px-1.py-3.align-bottom.border.border-slate-400.bg-slate-50 style="width: 100px" title=stat[:variant].name
+                      div
+                        p.text-xs.text-slate-600.leading-snug = stat[:variant].name
+            tbody.divide-y.divide-slate-50.bg-white
+              - @dashboard.customer_breakdown.each do |entry|
+                - customer = entry[:customer]
+                - quantities = customer_variant_quantities[customer.id]
+                - row_total = quantities.values.sum
+                tr.hover:bg-slate-50
+                  td.sticky.left-0.z-10.bg-white.px-4.py-3.font-semibold.text-slate-900 style="position: sticky; left: 0;"
+                    = customer.full_name
+                  - all_variants.each do |variant|
+                    - qty = quantities[variant.id] || 0
+                    td.px-1.py-3.border.border-slate-400.text-center.text-slate-900 style="width: 50px;"
+                      - if qty > 0
+                        span.font-semibold = qty
+                      - else
+                        span.text-slate-300 —
+                  td.px-4.py-3.text-right.font-semibold.text-slate-900
+                    = row_total
+              tr.bg-slate-50.font-semibold.opacity-50
+                td.sticky.left-0.z-10.bg-slate-50.px-4.py-3.text-slate-900.border-t.border-slate-400 style="position: sticky; left: 0;" Total
+                - all_variants.each do |variant|
+                  - column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 }
+                  td.px-1.py-3.text-center.text-slate-900.border-t.border-slate-300 style="width: 50px;"
+                    = column_total
+                td.px-4.py-3.text-right.text-slate-900.border-t.border-slate-400
+                  = customer_variant_quantities.values.sum { |q| q.values.sum }
+      - else
+        p.text-center.text-sm.text-slate-500 Aucun client n'a encore passé commande.
+
+    .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="timeline"
+      - if @dashboard.orders.any?
+        .space-y-4 data-controller="dashboard-filter"
+          .flex.flex-wrap.items-center.gap-2 data-filter-group
+            button.rounded-full.border.border-indigo-600.bg-indigo-600.px-3.py-1.5.text-xs.font-semibold.text-white type="button" data-filter="all" data-action="dashboard-filter#change"
+              | Toutes
+            - ['pending', 'unpaid', 'paid', 'ready', 'picked_up', 'cancelled', 'no_show'].each do |order_status|
+              button.rounded-full.border.border-slate-300.px-3.py-1.5.text-md.font-semibold.text-slate-600.hover:border-indigo-300.hover:text-indigo-600 type="button" data-filter=order_status data-action="dashboard-filter#change"
+                = order_status_label(order_status)
+          .divide-y.divide-slate-100.overflow-hidden.rounded-2xl.border.border-slate-100
+            - @dashboard.orders.each do |order|
+              .flex.flex-col.gap-4.px-6.py-4.lg:flex-row.lg:items-center.lg:justify-between data-dashboard-filter-target="row" data-category="#{order.status}"
+                div
+                  p.text-sm.font-semibold.text-slate-900 = order.customer.full_name
+                  p.text-xs.text-slate-500
+                    | Commande #{order.order_number} · #{order.created_at.strftime("%d/%m/%Y à %H:%M")}
+                .flex.-space-x-2
+                  - order.order_items.each do |order_item|
+                    - variant = order_item.product_variant
+                    - product = variant.product
+                    - attachment = variant_image_attachment(variant)
+                    .inline-flex.h-10.w-10.items-center.justify-center.rounded-full.ring-2.ring-white.bg-slate-100.text-xs.font-semibold.text-slate-600 title="#{variant.name} (×#{order_item.qty})"
+                      - if attachment.present?
+                        - if attachment.variable?
+                          = image_tag attachment.variant(resize_to_limit: [40, 40]), class: "h-full w-full rounded-full object-cover", alt: variant.name
+                        - else
+                          = image_tag attachment, class: "h-full w-full rounded-full object-cover", alt: variant.name
+                      - else
+                        span = product.name.first.upcase
+                .flex.flex-col.items-start.gap-2.text-sm.text-slate-900.lg:flex-row.lg:items-center.lg:gap-6
+                  span.inline-flex.items-center.rounded-full.px-2.py-0.5.text-\[11px\].font-semibold class=status_pill_classes(order.status)
+                    = order_status_label(order.status)
+                  p.font-semibold
+                    = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: " ")
+                  = link_to "Voir la commande", admin_order_path(order), class: "text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+      - else
+        p.text-center.text-sm.text-slate-500 Pas encore de flux pour cette journée.
+

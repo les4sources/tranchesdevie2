@@ -107,7 +107,7 @@ module Admin
     end
 
     def total_flour_quantity
-      confirmed_orders = orders.select { |order| order.paid? || order.ready? || order.picked_up? }
+      confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
       confirmed_order_items = confirmed_orders.flat_map(&:order_items)
 
       confirmed_order_items.sum do |item|
@@ -139,6 +139,31 @@ module Admin
           }
         end.select { |stat| stat[:flour_quantity].positive? }
            .sort_by { |stat| stat[:product].name.downcase }
+      end
+    end
+
+    def flour_type_stats
+      @flour_type_stats ||= begin
+        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
+        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+
+        # Group by flour type
+        grouped_by_flour = confirmed_order_items.group_by do |item|
+          item.product_variant.product.flour.presence || "none"
+        end
+
+        grouped_by_flour.map do |flour_type, items|
+          total_flour = items.sum do |item|
+            flour_qty = item.product_variant.flour_quantity || 0
+            item.qty * flour_qty
+          end
+
+          {
+            flour_type: flour_type,
+            flour_quantity: total_flour
+          }
+        end.select { |stat| stat[:flour_quantity].positive? }
+           .sort_by { |stat| stat[:flour_type] }
       end
     end
 

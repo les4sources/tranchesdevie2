@@ -26,6 +26,21 @@
     .space-y-2
       = f.label :category, "Catégorie", class: "block text-sm font-medium text-gray-700"
       = f.select :category, options_for_select(category_options, @product.category), {}, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    .space-y-2
+      span.block.text-sm.font-medium.text-gray-700 Farine
+      .space-y-2.mt-2
+        .flex.items-center
+          = f.radio_button :flour, "wheat", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+          = f.label :flour, "Froment", value: "wheat", class: "ml-2 text-sm font-medium text-gray-700"
+        .flex.items-center
+          = f.radio_button :flour, "spelled", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+          = f.label :flour, "Épeautre", value: "spelled", class: "ml-2 text-sm font-medium text-gray-700"
+        .flex.items-center
+          = f.radio_button :flour, "ancien_wheat", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+          = f.label :flour, "Blé ancien", value: "ancien_wheat", class: "ml-2 text-sm font-medium text-gray-700"
+        .flex.items-center
+          = f.radio_button :flour, "", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+          = f.label :flour, "Aucune", value: "", class: "ml-2 text-sm font-medium text-gray-700"
 
   .space-y-2
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"

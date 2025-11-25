@@ -19,9 +19,7 @@ class Customers::SessionsController < ApplicationController
 
       if result[:success]
         # Trouver ou créer le client
-        customer = Customer.find_or_create_by(phone_e164: phone_e164) do |c|
-          c.first_name = 'Client' # Valeur par défaut, sera mis à jour dans le profil
-        end
+        customer = Customer.find_or_create_by(phone_e164: phone_e164)
 
         # Créer la session
         session[:customer_id] = customer.id

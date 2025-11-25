@@ -55,9 +55,7 @@ class CheckoutController < ApplicationController
 
     if result[:success]
       # Trouver ou créer le client
-      customer = Customer.find_or_create_by(phone_e164: phone_e164) do |c|
-        c.first_name = 'Client' # Valeur par défaut, sera mis à jour dans le profil
-      end
+      customer = Customer.find_or_create_by(phone_e164: phone_e164)
 
       # Créer la session client complète
       session[:customer_id] = customer.id
@@ -194,7 +192,7 @@ class CheckoutController < ApplicationController
       if customer.new_record?
         # Use session data or default values (first_name is required)
         customer.assign_attributes(
-          first_name: session[:first_name].presence || 'Client',
+          first_name: session[:first_name].presence,
           last_name: session[:last_name].presence,
           email: session[:email].presence
         )
@@ -501,7 +499,7 @@ class CheckoutController < ApplicationController
                  Customer.find_or_create_by(phone_e164: phone_e164).tap do |c|
                    if c.new_record?
                      c.assign_attributes(
-                       first_name: session[:first_name].presence || 'Client',
+                       first_name: session[:first_name].presence,
                        last_name: session[:last_name].presence,
                        email: session[:email].presence
                      )

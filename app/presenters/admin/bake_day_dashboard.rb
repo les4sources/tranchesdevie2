@@ -153,14 +153,29 @@ module Admin
         end
 
         grouped_by_flour.map do |flour_type, items|
-          total_flour = items.sum do |item|
-            flour_qty = item.product_variant.flour_quantity || 0
-            item.qty * flour_qty
-          end
+          # Group items by product to get product-level stats
+          grouped_by_product = items.group_by { |item| item.product_variant.product_id }
+          
+          product_details = grouped_by_product.map do |product_id, product_items|
+            product = product_items.first.product_variant.product
+            product_flour = product_items.sum do |item|
+              flour_qty = item.product_variant.flour_quantity || 0
+              item.qty * flour_qty
+            end
+            
+            {
+              product: product,
+              flour_quantity: product_flour
+            }
+          end.select { |detail| detail[:flour_quantity].positive? }
+             .sort_by { |detail| detail[:product].name.downcase }
+          
+          total_flour = product_details.sum { |detail| detail[:flour_quantity] }
 
           {
             flour_type: flour_type,
-            flour_quantity: total_flour
+            flour_quantity: total_flour,
+            products: product_details
           }
         end.select { |stat| stat[:flour_quantity].positive? }
            .sort_by { |stat| stat[:flour_type] }

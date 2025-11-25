@@ -100,17 +100,25 @@
       table.min-w-full.divide-y.divide-slate-100.text-sm
         thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
           tr
-            th.px-4.py-3.text-left Type de farine
+            th.px-4.py-3.text-left Type de farine / Produit
             th.px-4.py-3.text-right Quantité de pâte
         tbody.divide-y.divide-slate-50.bg-white
           - if @dashboard.flour_type_stats.any?
             - @dashboard.flour_type_stats.each do |stat|
               - next if stat[:flour_type] == "none"
-              tr.hover:bg-slate-50
+              - products = stat[:products] || []
+              tr.hover:bg-slate-50.bg-slate-50
                 td.px-4.py-3
                   p.font-semibold.text-slate-900 = product_flour_label(stat[:flour_type])
                 td.px-4.py-3.text-right.font-semibold.text-slate-900
                   | #{stat[:flour_quantity]} g
+              - if products.any?
+                - products.each do |product_detail|
+                  tr.hover:bg-slate-50
+                    td.px-4.py-3.pl-8
+                      p.text-sm.text-slate-700 = product_detail[:product].name
+                    td.px-4.py-3.text-right.text-sm.text-slate-700
+                      | #{product_detail[:flour_quantity]} g
             tr.bg-slate-50.font-semibold
               td.px-4.py-3.text-slate-900.border-t.border-gray-600 Quantité totale de pâte
               td.px-4.py-3.text-right.text-slate-900.border-t.border-gray-600

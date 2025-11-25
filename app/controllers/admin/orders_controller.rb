@@ -1,6 +1,6 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [:show, :update_status, :refund]
-  before_action :load_form_dependencies, only: [:new, :create]
+  before_action :set_order, only: [:show, :edit, :update, :update_status, :refund]
+  before_action :load_form_dependencies, only: [:new, :create, :edit, :update]
 
   def index
     @orders = Order.includes(:customer, :bake_day).recent
@@ -27,6 +27,60 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def show
+  end
+
+  def edit
+    @selected_quantities = {}
+    @order.order_items.each do |item|
+      @selected_quantities[item.product_variant_id] = item.qty
+    end
+    
+    subtotal_cents = calculate_total_from_quantities(@selected_quantities)
+    
+    # Calculer la remise si un client est sélectionné
+    if @order.customer_id.present?
+      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      discount_cents = calculate_discount(subtotal_cents, customer)
+      @calculated_total_cents = subtotal_cents - discount_cents
+    else
+      @calculated_total_cents = subtotal_cents
+    end
+  end
+
+  def update
+    permitted_params = order_form_params
+    raw_quantities = permitted_params.delete(:variant_quantities) || {}
+    @selected_quantities = normalize_variant_quantities(raw_quantities)
+    @final_total_input = permitted_params.delete(:final_total_euros)
+
+    subtotal_cents = calculate_total_from_quantities(@selected_quantities)
+    
+    # Calculer la remise si un client est sélectionné
+    if permitted_params[:customer_id].present?
+      customer = Customer.includes(:group).find_by(id: permitted_params[:customer_id])
+      discount_cents = calculate_discount(subtotal_cents, customer)
+      @calculated_total_cents = subtotal_cents - discount_cents
+    else
+      @calculated_total_cents = subtotal_cents
+    end
+
+    assign_total_cents!(@final_total_input)
+    ensure_order_has_items!
+
+    if @order.errors.any?
+      render :edit, status: :unprocessable_entity
+      return
+    end
+
+    ActiveRecord::Base.transaction do
+      @order.update!(permitted_params)
+      @order.order_items.destroy_all
+      create_order_items!
+    end
+
+    redirect_to admin_order_path(@order), notice: 'Commande modifiée'
+  rescue ActiveRecord::RecordInvalid
+    render :edit, status: :unprocessable_entity
   end
 
   def create
@@ -101,7 +155,12 @@ class Admin::OrdersController < Admin::BaseController
 
   def load_form_dependencies
     @customers = Customer.includes(:group).order(:last_name, :first_name)
-    @bake_days = BakeDay.future.ordered
+    # Pour l'édition, permettre tous les jours de cuisson, pas seulement les futurs
+    @bake_days = if action_name == 'edit' || action_name == 'update'
+                   BakeDay.ordered
+                 else
+                   BakeDay.future.ordered
+                 end
     @products = Product.active.includes(:product_variants).ordered
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
     @variant_lookup = @products.each_with_object({}) do |product, hash|

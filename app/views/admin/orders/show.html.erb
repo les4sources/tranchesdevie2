@@ -1,8 +1,9 @@
 <% content_for :title, "Commande #{@order.order_number}" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6">
+<div class="mb-6 flex justify-between items-center">
   <h1 class="text-2xl font-bold text-gray-900">Commande <%= @order.order_number %></h1>
+  <%= link_to "Modifier", edit_admin_order_path(@order), class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700" %>
 </div>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -89,6 +90,7 @@
               data: { confirm: "Rembourser intégralement cette commande ?" } %>
         <% end %>
       <% end %>
+      </div>
     </div>
   </div>
 </div>

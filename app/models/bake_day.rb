@@ -16,6 +16,20 @@ class BakeDay < ApplicationRecord
     !can_order?
   end
 
+  def total_breads_count
+    orders
+      .joins(order_items: { product_variant: :product })
+      .where(products: { category: :breads })
+      .where.not(orders: { status: :cancelled })
+      .sum('order_items.qty')
+  end
+
+  def total_sales_euros
+    orders
+      .where(status: Order::COMPLETED_STATUSES)
+      .sum(:total_cents) / 100.0
+  end
+
   class << self
     def next_available
       future.ordered.first

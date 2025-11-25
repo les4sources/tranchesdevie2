@@ -424,6 +424,7 @@ DEPENDENCIES
   bootsnap
   brakeman
   debug
+  dotenv
   draper
   httparty
   image_processing (~> 1.2)

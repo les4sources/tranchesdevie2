@@ -66,7 +66,7 @@ module Admin
 
       {
         large: stats.select { |stat| stat[:mold_size] == :large }.sum { |stat| stat[:units_count] },
-        middle: stats.select { |stat| stat[:mold_size] == :middle }.sum { |stat| stat[units_count] },
+        middle: stats.select { |stat| stat[:mold_size] == :middle }.sum { |stat| stat[:units_count] },
         small: stats.select { |stat| stat[:mold_size] == :small }.sum { |stat| stat[:units_count] },
         unspecified: stats.select { |stat| stat[:mold_size].nil? }.sum { |stat| stat[:units_count] }
       }

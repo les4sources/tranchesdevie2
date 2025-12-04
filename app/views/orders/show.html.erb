@@ -37,7 +37,11 @@
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <div>
               <p class="font-medium text-gray-900"><%= item.product_variant.name %></p>
-              <p class="text-sm text-gray-600"><%= item.product_variant.product.name %></p>
+              <% if item.product_variant.product %>
+                <p class="text-sm text-gray-600"><%= item.product_variant.product.name %></p>
+              <% else %>
+                <p class="text-sm text-gray-500 italic">Produit supprimé</p>
+              <% end %>
             </div>
             <div class="text-right">
               <p class="text-sm text-gray-600"><%= item.qty %> x <%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %></p>

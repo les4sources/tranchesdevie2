@@ -105,7 +105,7 @@
           <% @cart.each do |item| %>
             <% variant = ProductVariant.find(item['product_variant_id']) %>
             <div class="flex justify-between text-sm">
-              <span><%= "#{variant.product.name} - #{variant.name}" %> x <%= item['qty'] %></span>
+              <span><%= "#{variant.product&.name || 'Produit supprimé'} - #{variant.name}" %> x <%= item['qty'] %></span>
               <span><%= number_to_currency((item['qty'].to_i * variant.price_cents) / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
             </div>
           <% end %>

@@ -7,7 +7,7 @@ class CatalogController < ApplicationController
   private
 
   def load_all_active_products
-    Product.active.store_channel.ordered.includes(
+    Product.not_deleted.active.store_channel.ordered.includes(
       product_variants: { product_images: :image_attachment },
       product_images: :image_attachment
     ).map do |product|

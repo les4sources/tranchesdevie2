@@ -1,4 +1,6 @@
 class Product < ApplicationRecord
+  has_soft_deletion
+
   enum :category, { breads: 0, dough_balls: 1 }
 
   has_many :product_variants, dependent: :destroy
@@ -15,6 +17,7 @@ class Product < ApplicationRecord
   scope :active, -> { where(active: true) }
   scope :ordered, -> { order(category: :asc, position: :asc, name: :asc) }
   scope :store_channel, -> { where(channel: 'store') }
+  scope :not_deleted, -> { where(deleted_at: nil) }
 
   def display_name
     name

@@ -3,7 +3,7 @@ class Admin::ProductsController < Admin::BaseController
   before_action :set_product_variant, only: [:show_variant, :edit_variant, :update_variant, :destroy_variant, :reorder_variant_images]
 
   def index
-    @products = Product.includes(:product_variants).ordered
+    @products = Product.not_deleted.includes(:product_variants).ordered
   end
 
   def show
@@ -39,7 +39,7 @@ class Admin::ProductsController < Admin::BaseController
   end
 
   def destroy
-    @product.destroy
+    @product.soft_delete!
     redirect_to admin_products_path, notice: 'Produit supprimé'
   end
 

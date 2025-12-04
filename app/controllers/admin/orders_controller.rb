@@ -161,7 +161,7 @@ class Admin::OrdersController < Admin::BaseController
                  else
                    BakeDay.future.ordered
                  end
-    @products = Product.active.includes(:product_variants).ordered
+    @products = Product.not_deleted.active.includes(:product_variants).ordered
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
     @variant_lookup = @products.each_with_object({}) do |product, hash|
       product.product_variants.active.each do |variant|

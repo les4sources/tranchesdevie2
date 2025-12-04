@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_25_205528) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_04_070521) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -177,8 +177,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_205528) do
     t.string "short_name"
     t.string "flour"
     t.string "channel", default: "store", null: false
+    t.datetime "deleted_at"
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
+    t.index ["deleted_at"], name: "index_products_on_deleted_at"
   end
 
   create_table "sms_messages", force: :cascade do |t|

@@ -5,6 +5,8 @@
   h1.text-2xl.font-bold.text-gray-900 = @product.name
   .flex.space-x-3
     = link_to "Modifier", edit_admin_product_path(@product), class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    = form_with url: admin_product_path(@product), method: :delete, local: true, data: { controller: "confirmation", action: "submit->confirmation#confirm", confirmation_message_value: "Etes-vous certain·e de vouloir supprimer ce produit ?" } do |f|
+      = f.submit "Supprimer", class: "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
     = link_to "Retour à la liste", admin_products_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
 
 .bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-6.space-y-6

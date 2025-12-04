@@ -66,6 +66,9 @@ gem "image_processing", "~> 1.2"
 # Decorator pattern for Rails models
 gem "draper"
 
+# Soft deletion for models
+gem "soft_deletion"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri mingw mswin x64_mingw ], require: "debug/prelude"

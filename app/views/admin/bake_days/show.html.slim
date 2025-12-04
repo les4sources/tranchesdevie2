@@ -80,11 +80,15 @@
       - total_flour = @dashboard.total_flour_quantity
 
       .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
-        p.text-sm.font-semibold.text-indigo-900 Grands moules (1 kg)
+        p.text-sm.font-semibold.text-indigo-900 Grands (1 kg)
         p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:large]
 
       .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
-        p.text-sm.font-semibold.text-indigo-900 Petits moules (600 g)
+        p.text-sm.font-semibold.text-indigo-900 Moyens (800 g)
+        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:middle]
+
+      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        p.text-sm.font-semibold.text-indigo-900 Petits (600 g)
         p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:small]
 
       - if mold_requirements[:unspecified].positive?

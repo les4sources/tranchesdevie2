@@ -75,7 +75,7 @@
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
         h2.text-xl.font-semibold.text-indigo-950 Préparez vos moules et la pâte requise
-    .mt-6.grid.gap-4.md:grid-cols-2 class=("#{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}")
+    .mt-6.grid.gap-4.grid-cols-2.md:grid-cols-4 class=("#{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}")
       - unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify"
       - total_flour = @dashboard.total_flour_quantity
 

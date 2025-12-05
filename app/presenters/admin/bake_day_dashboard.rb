@@ -1,7 +1,7 @@
 module Admin
   class BakeDayDashboard
     XXL_MOLD_PATTERNS = [
-      /1400/
+      /xxl/i
     ].freeze
 
     LARGE_MOLD_PATTERNS = [

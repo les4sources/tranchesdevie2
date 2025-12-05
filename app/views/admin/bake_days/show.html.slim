@@ -80,6 +80,10 @@
       - total_flour = @dashboard.total_flour_quantity
 
       .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        p.text-sm.font-semibold.text-indigo-900 XXL (1,4 kg)
+        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:xxl]
+
+      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
         p.text-sm.font-semibold.text-indigo-900 Grands (1 kg)
         p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:large]
 

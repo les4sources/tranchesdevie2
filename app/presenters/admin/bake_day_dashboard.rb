@@ -1,5 +1,9 @@
 module Admin
   class BakeDayDashboard
+    XXL_MOLD_PATTERNS = [
+      /1400/
+    ].freeze
+
     LARGE_MOLD_PATTERNS = [
       /1\s?kg/i,
       /1000/,
@@ -65,6 +69,7 @@ module Admin
       stats = variant_stats.select { |stat| stat[:product].breads? }
 
       {
+        xxl: stats.select { |stat| stat[:mold_size] == :xxl }.sum { |stat| stat[:units_count] },
         large: stats.select { |stat| stat[:mold_size] == :large }.sum { |stat| stat[:units_count] },
         middle: stats.select { |stat| stat[:mold_size] == :middle }.sum { |stat| stat[:units_count] },
         small: stats.select { |stat| stat[:mold_size] == :small }.sum { |stat| stat[:units_count] },
@@ -195,6 +200,7 @@ module Admin
     def detect_mold_size(product, variant)
       label = "#{product.name} #{variant.name}".downcase
 
+      return :xxl if XXL_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
       return :large if LARGE_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
       return :middle if MIDDLE_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
       return :small if SMALL_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }

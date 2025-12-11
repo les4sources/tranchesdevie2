@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
+  get "drapeaux", to: "flags#index", as: :flags
 
   get "panier", to: "cart#show", as: :cart
   post "cart/add", to: "cart#add", as: :cart_add

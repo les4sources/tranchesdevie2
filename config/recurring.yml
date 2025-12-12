@@ -17,3 +17,7 @@ production:
     class: BakeDaySlackNotificationJob
     schedule: at 6:30 am every day
     description: "Send Slack notification for bake day at 6:30am"
+  mark_orders_ready:
+    class: MarkOrdersReadyJob
+    schedule: at 6:15 pm every day
+    description: "Mark orders as ready and send SMS notifications at 6:15pm"

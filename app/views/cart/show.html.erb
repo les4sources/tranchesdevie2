@@ -80,29 +80,30 @@
                   <div class="flex items-start justify-between gap-4">
                     <div>
                       <h3 class="text-lg font-semibold text-gray-900"><%= product.name %></h3>
-                    <p class="text-sm text-gray-500"><%= variant.name %></p>
-                  </div>
-                  <span class="text-base font-semibold text-gray-900">
-                    <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
-                  </span>
-                </div>
-
-                <div class="mt-4 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
-                      &minus;
-                    <% end %>
-                    <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
-                      <%= qty %>
+                      <p class="text-sm text-gray-500"><%= variant.name %></p>
+                    </div>
+                    <span class="text-base font-semibold text-gray-900">
+                      <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
                     </span>
-                    <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
-                      +
-                    <% end %>
                   </div>
 
-                  <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
-                    Retirer
-                  <% end %>
+                  <div class="mt-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
+                        &minus;
+                      <% end %>
+                      <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
+                        <%= qty %>
+                      </span>
+                      <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
+                        +
+                      <% end %>
+                    </div>
+
+                    <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
+                      Retirer
+                    <% end %>
+                  </div>
                 </div>
               </div>
             </div>

@@ -55,7 +55,10 @@ class SmsService
   private
 
   def self.send_sms(to:, body:, kind:, baked_on: nil, customer_id: nil)
-    return false unless client_id && client_secret && sender
+    unless client_id.present? && client_secret.present? && sender.present?
+      Rails.logger.error("SMS Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
+      return false
+    end
 
     # Format phone number: remove + if present (Smstools expects international format without +)
     formatted_to = to.to_s.gsub(/^\+/, '')
@@ -63,9 +66,16 @@ class SmsService
     # Use test mode in development (validates parameters but doesn't send SMS or consume credits)
     test_mode = !Rails.env.production?
 
-    if test_mode
-      Rails.logger.info("SMS (test mode in #{Rails.env}): To: #{formatted_to}, Body: #{body}")
-    end
+    # Log request details
+    Rails.logger.info("SMS Service (#{Rails.env}): To: #{formatted_to}, Sender: #{sender}, Test: #{test_mode}, Kind: #{kind}")
+    Rails.logger.debug("SMS Service - Client ID present: #{client_id.present?}, Client Secret present: #{client_secret.present?}, Sender present: #{sender.present?}")
+
+    request_body = {
+      message: body,
+      to: formatted_to,
+      sender: sender,
+      test: test_mode
+    }
 
     response = HTTParty.post(
       SMSTOOLS_API_URL,
@@ -74,13 +84,11 @@ class SmsService
         'X-Client-Id' => client_id,
         'X-Client-Secret' => client_secret
       },
-      body: {
-        message: body,
-        to: formatted_to,
-        sender: sender,
-        test: test_mode
-      }.to_json
+      body: request_body.to_json
     )
+
+    Rails.logger.info("SMS Service - Response status: #{response.code}, Success: #{response.success?}")
+    Rails.logger.debug("SMS Service - Response body: #{response.body}")
 
     if response.success?
       # Smstools returns {"messageid": "..."} for single recipient
@@ -97,13 +105,15 @@ class SmsService
         customer_id: customer_id,
         sent_at: sent_at
       )
+      Rails.logger.info("SMS Service - SMS sent successfully. External ID: #{external_id}")
       true
     else
-      Rails.logger.error("Failed to send SMS: #{response.body}")
+      Rails.logger.error("Failed to send SMS - Status: #{response.code}, Body: #{response.body}, Request: #{request_body.inspect}")
       false
     end
   rescue StandardError => e
-    Rails.logger.error("SMS Service Error: #{e.message}")
+    Rails.logger.error("SMS Service Error: #{e.class} - #{e.message}")
+    Rails.logger.error("SMS Service Error Backtrace: #{e.backtrace.first(5).join("\n")}")
     Sentry.capture_exception(e) if defined?(Sentry)
     false
   end

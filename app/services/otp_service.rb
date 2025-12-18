@@ -60,7 +60,10 @@ class OtpService
   private
 
   def self.send_otp_sms(to:, body:, customer_id: nil)
-    return false unless client_id && client_secret && sender
+    unless client_id.present? && client_secret.present? && sender.present?
+      Rails.logger.error("OTP Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
+      return false
+    end
 
     # Format phone number: remove + if present (Smstools expects international format without +)
     formatted_to = to.to_s.gsub(/^\+/, '')
@@ -68,9 +71,16 @@ class OtpService
     # Use test mode in development (validates parameters but doesn't send SMS or consume credits)
     test_mode = !Rails.env.production?
 
-    if test_mode
-      Rails.logger.info("OTP SMS (test mode in #{Rails.env}): To: #{formatted_to}, Body: #{body}")
-    end
+    # Log request details
+    Rails.logger.info("OTP Service (#{Rails.env}): To: #{formatted_to}, Sender: #{sender}, Test: #{test_mode}")
+    Rails.logger.debug("OTP Service - Client ID present: #{client_id.present?}, Client Secret present: #{client_secret.present?}, Sender present: #{sender.present?}")
+
+    request_body = {
+      message: body,
+      to: formatted_to,
+      sender: sender,
+      test: test_mode
+    }
 
     response = HTTParty.post(
       SMSTOOLS_API_URL,
@@ -79,13 +89,11 @@ class OtpService
         'X-Client-Id' => client_id,
         'X-Client-Secret' => client_secret
       },
-      body: {
-        message: body,
-        to: formatted_to,
-        sender: sender,
-        test: test_mode
-      }.to_json
+      body: request_body.to_json
     )
+
+    Rails.logger.info("OTP Service - Response status: #{response.code}, Success: #{response.success?}")
+    Rails.logger.debug("OTP Service - Response body: #{response.body}")
 
     if response.success?
       # Smstools returns {"messageid": "..."} for single recipient
@@ -101,13 +109,15 @@ class OtpService
         customer_id: customer_id,
         sent_at: sent_at
       )
+      Rails.logger.info("OTP Service - SMS sent successfully. External ID: #{external_id}")
       true
     else
-      Rails.logger.error("Failed to send OTP SMS: #{response.body}")
+      Rails.logger.error("Failed to send OTP SMS - Status: #{response.code}, Body: #{response.body}, Request: #{request_body.inspect}")
       false
     end
   rescue StandardError => e
-    Rails.logger.error("OTP SMS Service Error: #{e.message}")
+    Rails.logger.error("OTP SMS Service Error: #{e.class} - #{e.message}")
+    Rails.logger.error("OTP SMS Service Error Backtrace: #{e.backtrace.first(5).join("\n")}")
     Sentry.capture_exception(e) if defined?(Sentry)
     false
   end

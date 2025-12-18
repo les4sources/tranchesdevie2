@@ -1,5 +1,5 @@
 class SmsService
-  TELERIVET_API_URL = 'https://api.telerivet.com/v1'
+  SMSTOOLS_API_URL = 'https://api.smsgatewayapi.com/v1/message/send'
 
   def self.send_confirmation(order)
     return false unless order.customer.sms_enabled?
@@ -55,45 +55,41 @@ class SmsService
   private
 
   def self.send_sms(to:, body:, kind:, baked_on: nil, customer_id: nil)
-    return false unless api_key && project_id && phone_id
+    return false unless client_id && client_secret && sender
 
-    # Don't send SMS in development, only log it
-    unless Rails.env.production?
-      Rails.logger.info("SMS (not sent in #{Rails.env}): To: #{to}, Body: #{body}")
-      SmsMessage.create!(
-        direction: :outbound,
-        to_e164: to,
-        from_e164: phone_number,
-        body: body,
-        kind: kind,
-        baked_on: baked_on,
-        external_id: nil,
-        customer_id: customer_id,
-        sent_at: Time.current
-      )
-      return true
+    # Format phone number: remove + if present (Smstools expects international format without +)
+    formatted_to = to.to_s.gsub(/^\+/, '')
+
+    # Use test mode in development (validates parameters but doesn't send SMS or consume credits)
+    test_mode = !Rails.env.production?
+
+    if test_mode
+      Rails.logger.info("SMS (test mode in #{Rails.env}): To: #{formatted_to}, Body: #{body}")
     end
 
     response = HTTParty.post(
-      "#{TELERIVET_API_URL}/projects/#{project_id}/messages/send",
+      SMSTOOLS_API_URL,
       headers: {
         'Content-Type' => 'application/json',
-        'Authorization' => "Basic #{Base64.strict_encode64("#{api_key}:")}"
+        'X-Client-Id' => client_id,
+        'X-Client-Secret' => client_secret
       },
       body: {
-        to_number: to,
-        content: body,
-        phone_id: phone_id
+        message: body,
+        to: formatted_to,
+        sender: sender,
+        test: test_mode
       }.to_json
     )
 
     if response.success?
-      external_id = response['id']
+      # Smstools returns {"messageid": "..."} for single recipient
+      external_id = response['messageid'] || (response['messageids']&.first)
       sent_at = Time.current
       SmsMessage.create!(
         direction: :outbound,
         to_e164: to,
-        from_e164: phone_number,
+        from_e164: sender,
         body: body,
         kind: kind,
         baked_on: baked_on,
@@ -112,20 +108,16 @@ class SmsService
     false
   end
 
-  def self.api_key
-    ENV['TELERIVET_API_KEY']
+  def self.client_id
+    ENV['SMSTOOLS_CLIENT_ID']
   end
 
-  def self.project_id
-    ENV['TELERIVET_PROJECT_ID']
+  def self.client_secret
+    ENV['SMSTOOLS_CLIENT_SECRET']
   end
 
-  def self.phone_id
-    ENV['TELERIVET_PHONE_ID']
-  end
-
-  def self.phone_number
-    ENV['TELERIVET_PHONE_NUMBER'] || '+32XXXXXXXXX' # Should be set in ENV
+  def self.sender
+    ENV['SMSTOOLS_SENDER']
   end
 end
 

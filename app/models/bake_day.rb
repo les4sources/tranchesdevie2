@@ -26,7 +26,6 @@ class BakeDay < ApplicationRecord
 
   def total_sales_euros
     orders
-      .where(status: Order::COMPLETED_STATUSES)
       .sum(:total_cents) / 100.0
   end
 

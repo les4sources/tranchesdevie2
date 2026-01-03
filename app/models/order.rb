@@ -28,6 +28,7 @@ class Order < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :by_bake_day, ->(bake_day) { where(bake_day: bake_day) }
   scope :completed, -> { where(status: COMPLETED_STATUSES) }
+  scope :ready_unpaid, -> { ready.left_joins(:payment).where(payments: { id: nil }) }
   scope :in_bake_day_range, lambda { |start_date, end_date|
     joins(:bake_day).where(bake_days: { baked_on: start_date..end_date })
   }
@@ -38,6 +39,10 @@ class Order < ApplicationRecord
 
   def can_be_cancelled_by_customer?
     !bake_day.cut_off_passed? && (paid? || unpaid?)
+  end
+
+  def unpaid_ready?
+    ready? && payment.nil?
   end
 
   def can_transition_to?(new_status)

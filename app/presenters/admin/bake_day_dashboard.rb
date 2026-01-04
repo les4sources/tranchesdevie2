@@ -85,7 +85,7 @@ module Admin
         items_count: order_items.sum(&:qty),
         revenue_cents: total_cents,
         variants_count: variant_stats.size,
-        open_orders: orders.count { |order| order.pending? || order.unpaid? },
+        open_orders: orders.count { |order| order.unpaid? },
         ready_orders: orders.count { |order| order.ready? || order.picked_up? }
       }
     end

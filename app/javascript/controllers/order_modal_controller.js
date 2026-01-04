@@ -125,7 +125,7 @@ export default class extends Controller {
 
     // Déterminer la couleur du statut
     const statusColors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
+      'unpaid': 'bg-orange-100 text-orange-800',
       'paid': 'bg-blue-100 text-blue-800',
       'ready': 'bg-green-100 text-green-800',
       'picked_up': 'bg-gray-100 text-gray-800',
@@ -134,7 +134,6 @@ export default class extends Controller {
     }
 
     const statusLabels = {
-      'pending': 'En attente',
       'unpaid': 'Non payée',
       'paid': 'Payée',
       'ready': 'Prête',

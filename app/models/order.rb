@@ -1,6 +1,5 @@
 class Order < ApplicationRecord
   enum :status, {
-    pending: 0,
     paid: 1,
     ready: 2,
     picked_up: 3,
@@ -47,8 +46,6 @@ class Order < ApplicationRecord
 
   def can_transition_to?(new_status)
     case status.to_sym
-    when :pending
-      new_status.to_sym == :paid
     when :paid, :unpaid
       [:ready, :cancelled].include?(new_status.to_sym)
     when :ready

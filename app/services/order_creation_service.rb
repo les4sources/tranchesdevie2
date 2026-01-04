@@ -13,7 +13,7 @@ class OrderCreationService
   def call
     return false unless valid?
 
-    initial_status = @payment_method == 'cash' ? :unpaid : :pending
+    initial_status = @payment_method == 'cash' ? :unpaid : :paid
 
     @order = Order.create!(
       customer: @customer,

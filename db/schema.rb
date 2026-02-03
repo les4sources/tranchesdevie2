@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_04_070521) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_03_054854) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,6 +78,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_070521) do
     t.integer "discount_percent", null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "ingredients", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "unit_type", default: 0, null: false
+    t.integer "position", default: 0
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
+    t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
 
   create_table "order_items", force: :cascade do |t|
@@ -336,6 +347,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_070521) do
     t.index ["tenant_id"], name: "index_stripe_events_on_tenant_id"
   end
 
+  create_table "variant_ingredients", force: :cascade do |t|
+    t.bigint "product_variant_id", null: false
+    t.bigint "ingredient_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ingredient_id"], name: "index_variant_ingredients_on_ingredient_id"
+    t.index ["product_variant_id", "ingredient_id"], name: "index_variant_ingredients_on_variant_and_ingredient", unique: true
+    t.index ["product_variant_id"], name: "index_variant_ingredients_on_product_variant_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id", name: "active_storage_attachments_blob_id_fkey"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id", name: "active_storage_variant_records_blob_id_fkey"
   add_foreign_key "customers", "groups", name: "customers_group_id_fkey"
@@ -355,4 +377,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_070521) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_ready_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_recurring_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_scheduled_executions_job_id_fkey", on_delete: :cascade
+  add_foreign_key "variant_ingredients", "ingredients"
+  add_foreign_key "variant_ingredients", "product_variants"
 end

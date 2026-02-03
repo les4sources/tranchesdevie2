@@ -1,0 +1,29 @@
+= form_with model: [:admin, ingredient], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if ingredient.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - ingredient.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    .space-y-2
+      = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :position, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+
+  .space-y-2
+    span.block.text-sm.font-medium.text-gray-700 Type d'unité
+    .space-y-2.mt-2
+      .flex.items-center
+        = f.radio_button :unit_type, "weight", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+        = f.label :unit_type, "Poids (grammes)", value: "weight", class: "ml-2 text-sm font-medium text-gray-700"
+      .flex.items-center
+        = f.radio_button :unit_type, "piece", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+        = f.label :unit_type, "Pièces", value: "piece", class: "ml-2 text-sm font-medium text-gray-700"
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_ingredients_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

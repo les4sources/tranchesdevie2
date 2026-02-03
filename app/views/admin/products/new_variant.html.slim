@@ -39,6 +39,31 @@
         = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
         = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
 
+  .space-y-3 data-controller="variant-ingredients"
+    .flex.justify-between.items-center
+      label.block.text-sm.font-medium.text-gray-700 Ingrédients
+      button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700" data-action="variant-ingredients#add" Ajouter un ingrédient
+
+    #variant-ingredients.space-y-3 data-variant-ingredients-target="container"
+      = f.fields_for :variant_ingredients do |vi_form|
+        - variant_ingredient = vi_form.object
+        .variant-ingredient-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.items-center.gap-4 data-variant-ingredients-target="item"
+          = vi_form.hidden_field :id if variant_ingredient.persisted?
+          .flex-1
+            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", data: { action: "change->variant-ingredients#updateUnit" }
+          .w-40
+            .flex.items-center.gap-2
+              = vi_form.number_field :quantity, step: 0.01, min: 0, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", placeholder: "Quantité"
+              span.text-sm.text-gray-500.unit-label.w-16 = variant_ingredient.ingredient&.unit_label || "g"
+          .flex-shrink-0
+            = vi_form.hidden_field :_destroy, value: false, class: "destroy-field"
+            button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700" data-action="variant-ingredients#remove" Supprimer
+
+      .text-sm.text-gray-500.text-center.py-4 data-variant-ingredients-target="empty" Aucun ingrédient assigné
+
+    script type="application/json" data-variant-ingredients-target="ingredientsData"
+      = raw Ingredient.not_deleted.ordered.map { |i| { id: i.id, name: i.name, unit_label: i.unit_label } }.to_json
+
   .space-y-3
     .flex.justify-between.items-center
       label.block.text-sm.font-medium.text-gray-700 Images de la variante

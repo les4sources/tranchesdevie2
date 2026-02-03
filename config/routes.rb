@@ -72,6 +72,8 @@ Rails.application.routes.draw do
 
     resources :groups, only: [:index, :new, :create, :edit, :update]
 
+    resources :ingredients, except: [:show]
+
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do
         collection do

@@ -23,13 +23,14 @@
               <span class="text-xl font-bold text-gray-900">Administration - Tranches de Vie</span>
             <% end %>
           </div>
-          <div class="flex items-center space-x-4">
-            <%= link_to "Commandes", admin_orders_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Mangeurs", admin_customers_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Produits", admin_products_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Jours de cuisson", admin_bake_days_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Reporting", admin_reports_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Déconnexion", admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "text-gray-700 hover:text-gray-900" %>
+          <div class="flex items-center space-x-2">
+            <%= link_to "Commandes", admin_orders_path, class: admin_nav_link_class("orders") %>
+            <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
+            <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
+            <%= link_to "Ingrédients", admin_ingredients_path, class: admin_nav_link_class("ingredients") %>
+            <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_nav_link_class("bake_days") %>
+            <%= link_to "Reporting", admin_reports_path, class: admin_nav_link_class("reports") %>
+            <%= link_to "Déconnexion", admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "px-2 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" %>
           </div>
         </div>
       </div>

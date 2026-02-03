@@ -168,21 +168,21 @@ module Admin
         grouped_by_flour.map do |flour_type, items|
           # Group items by product to get product-level stats
           grouped_by_product = items.group_by { |item| item.product_variant.product_id }
-          
+
           product_details = grouped_by_product.map do |product_id, product_items|
             product = product_items.first.product_variant.product
             product_flour = product_items.sum do |item|
               flour_qty = item.product_variant.flour_quantity || 0
               item.qty * flour_qty
             end
-            
+
             {
               product: product,
               flour_quantity: product_flour
             }
           end.select { |detail| detail[:flour_quantity].positive? }
              .sort_by { |detail| detail[:product].name.downcase }
-          
+
           total_flour = product_details.sum { |detail| detail[:flour_quantity] }
 
           {
@@ -192,6 +192,28 @@ module Admin
           }
         end.select { |stat| stat[:flour_quantity].positive? }
            .sort_by { |stat| stat[:flour_type] }
+      end
+    end
+
+    def ingredient_stats
+      @ingredient_stats ||= begin
+        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
+        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+
+        ingredient_totals = Hash.new { |h, k| h[k] = { ingredient: nil, total: BigDecimal("0") } }
+
+        confirmed_order_items.each do |item|
+          variant = item.product_variant
+          variant.variant_ingredients.includes(:ingredient).each do |vi|
+            ingredient = vi.ingredient
+            ingredient_totals[ingredient.id][:ingredient] = ingredient
+            ingredient_totals[ingredient.id][:total] += vi.quantity * item.qty
+          end
+        end
+
+        ingredient_totals.values
+          .select { |stat| stat[:total].positive? }
+          .sort_by { |stat| stat[:ingredient].name.downcase }
       end
     end
 

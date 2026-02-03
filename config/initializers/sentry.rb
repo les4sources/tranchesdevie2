@@ -16,5 +16,5 @@ Sentry.init do |config|
 
   # Environment
   config.environment = Rails.env
-end if ENV['SENTRY_DSN'].present?
+end if ENV['SENTRY_DSN'].present? && Rails.env.production?
 

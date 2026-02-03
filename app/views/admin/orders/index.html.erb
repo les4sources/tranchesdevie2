@@ -28,11 +28,11 @@
             ['Récupérées', 'picked_up'],
             ['Non récupérées', 'no_show'],
             ['Annulées', 'cancelled']
-          ], params[:status]), {}, { class: "rounded-md border-gray-300" } %>
+          ], params[:status]), {}, { class: "rounded-md border border-gray-300" } %>
           
           <%= f.select :bake_day_id, options_from_collection_for_select(@bake_days, :id, :baked_on, params[:bake_day_id]), 
               { include_blank: 'Tous les jours' }, 
-              { class: "rounded-md border-gray-300" } %>
+              { class: "rounded-md border border-gray-300" } %>
           
           <%= f.submit "Filtrer", class: "px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700" %>
         <% end %>

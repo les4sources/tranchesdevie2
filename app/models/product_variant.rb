@@ -5,6 +5,16 @@ class ProductVariant < ApplicationRecord
   has_many :product_images, -> { ordered }, dependent: :destroy
   has_many :variant_ingredients, dependent: :destroy
   has_many :ingredients, through: :variant_ingredients
+  has_many :variant_group_restrictions, dependent: :destroy
+  has_many :restricted_groups, through: :variant_group_restrictions, source: :group
+
+  def group_ids
+    restricted_group_ids
+  end
+
+  def group_ids=(ids)
+    self.restricted_group_ids = ids
+  end
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
   accepts_nested_attributes_for :variant_ingredients, allow_destroy: true, reject_if: :reject_blank_ingredient?
@@ -17,6 +27,21 @@ class ProductVariant < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :store_channel, -> { where(channel: 'store') }
+
+  scope :unrestricted, -> {
+    where.not(id: VariantGroupRestriction.select(:product_variant_id))
+  }
+
+  scope :visible_to_customer, ->(customer) {
+    if customer.nil? || customer.group_id.nil?
+      unrestricted
+    else
+      restricted_variant_ids = VariantGroupRestriction.select(:product_variant_id)
+      allowed_variant_ids = VariantGroupRestriction.where(group_id: customer.group_id).select(:product_variant_id)
+
+      where.not(id: restricted_variant_ids).or(where(id: allowed_variant_ids))
+    end
+  }
 
   def available_on?(date)
     return false unless active?
@@ -32,6 +57,17 @@ class ProductVariant < ApplicationRecord
 
   def price_euros
     (price_cents / 100.0).round(2)
+  end
+
+  def restricted?
+    variant_group_restrictions.any?
+  end
+
+  def visible_to?(customer)
+    return true unless restricted?
+    return false if customer.nil? || customer.group_id.nil?
+
+    restricted_groups.exists?(id: customer.group_id)
   end
 
   private

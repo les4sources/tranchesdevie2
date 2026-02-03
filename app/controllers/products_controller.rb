@@ -1,7 +1,12 @@
 class ProductsController < ApplicationController
   def show
     @product = Product.not_deleted.active.store_channel.find(params[:id])
-    @variants = @product.product_variants.active.store_channel.order(:name)
+    @variants = @product.product_variants.active.store_channel.visible_to_customer(current_customer).order(:name)
+
+    if @variants.empty?
+      redirect_to catalog_path, alert: 'Produit non disponible'
+      return
+    end
     
     # Collect all images from product and variants
     @product_images = []

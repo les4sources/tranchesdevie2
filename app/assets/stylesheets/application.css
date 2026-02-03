@@ -94,3 +94,26 @@ h1, h2, h3, h4, h5, h6 {
 .color-production {
   color: #acc037;
 }
+
+/* Development warning border - travaux style */
+.dev-warning-border {
+  position: relative;
+}
+
+.dev-warning-border::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #fbbf24,
+    #fbbf24 10px,
+    #f59e0b 10px,
+    #f59e0b 20px
+  );
+  background-size: 28px 28px;
+  z-index: 9999;
+}

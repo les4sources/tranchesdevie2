@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_03_054854) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -347,6 +347,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_054854) do
     t.index ["tenant_id"], name: "index_stripe_events_on_tenant_id"
   end
 
+  create_table "variant_group_restrictions", force: :cascade do |t|
+    t.bigint "product_variant_id", null: false
+    t.bigint "group_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_id"], name: "index_variant_group_restrictions_on_group_id"
+    t.index ["product_variant_id", "group_id"], name: "idx_variant_group_restrictions_unique", unique: true
+    t.index ["product_variant_id"], name: "index_variant_group_restrictions_on_product_variant_id"
+  end
+
   create_table "variant_ingredients", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
     t.bigint "ingredient_id", null: false
@@ -377,6 +387,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_054854) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_ready_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_recurring_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_scheduled_executions_job_id_fkey", on_delete: :cascade
+  add_foreign_key "variant_group_restrictions", "groups"
+  add_foreign_key "variant_group_restrictions", "product_variants"
   add_foreign_key "variant_ingredients", "ingredients"
   add_foreign_key "variant_ingredients", "product_variants"
 end

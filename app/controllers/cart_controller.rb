@@ -22,10 +22,12 @@ class CartController < ApplicationController
     bake_day_id = params[:bake_day_id]
 
     unless variant.active? && variant.product.channel == 'store' && variant.channel == 'store'
-      respond_to do |format|
-        format.html { redirect_to catalog_path, alert: 'Ce produit n\'est pas disponible' }
-        format.json { render json: { error: 'Ce produit n\'est pas disponible' }, status: :unprocessable_entity }
-      end
+      respond_to_unavailable
+      return
+    end
+
+    unless variant.visible_to?(current_customer)
+      respond_to_unavailable
       return
     end
 
@@ -151,16 +153,23 @@ class CartController < ApplicationController
                                   .where('cut_off_at > ?', Time.current)
                                   .ordered
                                   .select { |bd| bd.can_order? && [2, 5].include?(bd.baked_on.wday) }
-    
+
     # Grouper par jour de la semaine et prendre le premier de chaque groupe
     tuesday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 2 }
     friday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 5 }
-    
+
     result = []
     result << tuesday_bake_days.first if tuesday_bake_days.any?
     result << friday_bake_days.first if friday_bake_days.any?
-    
+
     result.compact.sort_by(&:baked_on)
+  end
+
+  def respond_to_unavailable
+    respond_to do |format|
+      format.html { redirect_to catalog_path, alert: 'Ce produit n\'est pas disponible' }
+      format.json { render json: { error: 'Ce produit n\'est pas disponible' }, status: :unprocessable_entity }
+    end
   end
 end
 

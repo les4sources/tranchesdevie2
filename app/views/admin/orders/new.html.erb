@@ -29,7 +29,7 @@
         <%= f.select :customer_id,
                      options_for_select(customer_options, @order.customer_id),
                      { include_blank: "Sélectionner un client" },
-                     class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+                     class: "mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
                      data: { order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
       </div>
 
@@ -42,7 +42,7 @@
         <%= f.select :bake_day_id,
                      options_for_select(bake_day_options, @order.bake_day_id),
                      { include_blank: "Sélectionner un jour" },
-                     class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                     class: "mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
       </div>
     </div>
 

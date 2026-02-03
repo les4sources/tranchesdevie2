@@ -39,6 +39,24 @@
         = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
         = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
 
+  .space-y-3
+    span.block.text-sm.font-medium.text-gray-700 Restrictions par groupe
+    p.text-sm.text-gray-500.mb-2 Laissez vide pour rendre cette variante visible à tous. Sélectionnez un ou plusieurs groupes pour restreindre l'accès.
+    .border.border-gray-200.rounded-lg.p-4.bg-gray-50
+      - groups = Group.order(:name)
+      - if groups.any?
+        - groups.each do |group|
+          .flex.items-center.mb-2
+            = check_box_tag "product_variant[group_ids][]", group.id, @variant.restricted_groups.include?(group), id: "group_#{group.id}", class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            = label_tag "group_#{group.id}", class: "ml-2 text-sm font-medium text-gray-700" do
+              = group.name
+              span.text-gray-500.text-xs.ml-1 = "(#{group.discount_percent}% de remise)"
+        = hidden_field_tag "product_variant[group_ids][]", ""
+      - else
+        p.text-sm.text-gray-500.italic
+          | Aucun groupe créé.
+          = link_to "Créer un groupe", new_admin_group_path, class: "text-blue-600 hover:underline ml-1"
+
   .space-y-3 data-controller="variant-ingredients"
     .flex.justify-between.items-center
       label.block.text-sm.font-medium.text-gray-700 Ingrédients
@@ -50,7 +68,7 @@
         .variant-ingredient-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.items-center.gap-4 data-variant-ingredients-target="item"
           = vi_form.hidden_field :id if variant_ingredient.persisted?
           .flex-1
-            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", data: { action: "change->variant-ingredients#updateUnit" }
+            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", data: { action: "change->variant-ingredients#updateUnit" }
           .w-40
             .flex.items-center.gap-2
               = vi_form.number_field :quantity, step: 0.01, min: 0, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", placeholder: "Quantité"

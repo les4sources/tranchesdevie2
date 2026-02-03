@@ -18,10 +18,10 @@ class CatalogController < ApplicationController
 
   def seasonal_promotion_content
     {
-      title: "Ça y est, on cuit le mardi, et on a un site !",
-      description: "Hourra, le four à pain des 4 Sources va désormais chauffer pour vous les mardis et vendredis ! 🎉 Commande dès maintenant tes pains pour la semaine prochaine.",
-      cta_text: "",
-      cta_path: nil
+      title: "🧀 Bientôt la première Camembert Party de 2026 !",
+      description: "Viens aux 4 Sources ce 13 février pour déguster une \"mini-fondue\" en trempant du pain frais dans ton fromage tout juste sorti du four et dégoulinant à point ! 😋 Le tout accompagné de tes petits légumes préférés ! ",
+      cta_text: "Infos et réservations",
+      cta_path: "https://www.les4sources.be/evenements/camembert-party-10-octobre-2025"
     }
   end
 end

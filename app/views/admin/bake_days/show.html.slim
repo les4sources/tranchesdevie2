@@ -103,6 +103,42 @@
   .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
+        h2.text-xl.font-semibold.text-slate-900 Quantités de pâte requises par type de farine
+    .mt-6.overflow-x-auto.rounded-xl.border.border-slate-100
+      table.min-w-full.divide-y.divide-slate-100.text-sm
+        thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
+          tr
+            th.px-4.py-3.text-left Type de farine / Produit
+            th.px-4.py-3.text-right Quantité de pâte
+        tbody.divide-y.divide-slate-50.bg-white
+          - if @dashboard.flour_type_stats.any?
+            - @dashboard.flour_type_stats.each do |stat|
+              - next if stat[:flour_type] == "none"
+              - products = stat[:products] || []
+              tr.hover:bg-slate-50.bg-slate-50
+                td.px-4.py-3
+                  p.font-semibold.text-slate-900 = product_flour_label(stat[:flour_type])
+                td.px-4.py-3.text-right.font-semibold.text-slate-900
+                  | #{stat[:flour_quantity]} g
+              - if products.any?
+                - products.each do |product_detail|
+                  tr.hover:bg-slate-50
+                    td.px-4.py-3.pl-8
+                      p.text-sm.text-slate-700 = product_detail[:product].name
+                    td.px-4.py-3.text-right.text-sm.text-slate-700
+                      | #{product_detail[:flour_quantity]} g
+            tr.bg-slate-50.font-semibold
+              td.px-4.py-3.text-slate-900.border-t.border-gray-600 Quantité totale de pâte
+              td.px-4.py-3.text-right.text-slate-900.border-t.border-gray-600
+                | #{@dashboard.total_flour_quantity} g
+          - else
+            tr
+              td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="2"
+                | Aucune quantité de farine requise pour l'instant.
+
+  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+    .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
+      div
         h2.text-xl.font-semibold.text-slate-900 Ingrédients requis
     .mt-6.overflow-x-auto.rounded-xl.border.border-slate-100
       table.min-w-full.divide-y.divide-slate-100.text-sm

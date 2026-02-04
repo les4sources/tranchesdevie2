@@ -1,0 +1,63 @@
+<% content_for :title, "Mon portefeuille" %>
+
+<div class="w-full mx-auto">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Mon portefeuille</h1>
+    <div class="flex gap-3">
+      <%= link_to "Mon compte", customers_account_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200" %>
+      <%= link_to "Recharger", customers_wallet_reload_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
+    </div>
+  </div>
+
+  <!-- Solde -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+    <div class="text-center">
+      <p class="text-sm font-medium text-gray-500 mb-1">Solde disponible</p>
+      <p class="text-4xl font-bold <%= @wallet.balance_cents >= 0 ? 'text-green-600' : 'text-red-600' %>">
+        <%= number_to_currency(@wallet.balance_euros, unit: '€', format: '%n %u') %>
+      </p>
+      <% if @wallet.low_balance? %>
+        <p class="text-sm text-orange-600 mt-2">
+          Solde bas - pensez à recharger
+        </p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Historique des transactions -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Historique des transactions</h2>
+
+    <% if @transactions.any? %>
+      <div class="divide-y divide-gray-200">
+        <% @transactions.each do |transaction| %>
+          <div class="py-4 flex justify-between items-center">
+            <div>
+              <p class="font-medium text-gray-900">
+                <% case transaction.transaction_type %>
+                <% when 'top_up' %>
+                  Recharge
+                <% when 'order_debit' %>
+                  Commande
+                <% when 'order_refund' %>
+                  Remboursement
+                <% end %>
+              </p>
+              <p class="text-sm text-gray-500">
+                <%= l(transaction.created_at, format: :long) %>
+              </p>
+              <% if transaction.description.present? %>
+                <p class="text-sm text-gray-400"><%= transaction.description %></p>
+              <% end %>
+            </div>
+            <p class="font-semibold <%= transaction.amount_cents >= 0 ? 'text-green-600' : 'text-red-600' %>">
+              <%= transaction.amount_cents >= 0 ? '+' : '' %><%= number_to_currency(transaction.amount_euros, unit: '€', format: '%n %u') %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-gray-500 text-center py-8">Aucune transaction pour le moment</p>
+    <% end %>
+  </div>
+</div>

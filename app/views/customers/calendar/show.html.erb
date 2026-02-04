@@ -1,0 +1,219 @@
+<% content_for :title, "Mon calendrier" %>
+
+<div class="w-full mx-auto" data-controller="calendar">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Mon calendrier</h1>
+    <div class="flex gap-3">
+      <%= link_to "Mon compte", customers_account_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200" %>
+      <%= link_to "Portefeuille", customers_wallet_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
+    </div>
+  </div>
+
+  <!-- Solde du portefeuille -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+    <div class="flex items-center justify-between">
+      <span class="text-gray-600">Solde disponible:</span>
+      <span class="text-xl font-bold <%= @wallet.balance_cents >= 0 ? 'text-green-600' : 'text-red-600' %>">
+        <%= number_to_currency(@wallet.balance_euros, unit: '€', format: '%n %u') %>
+      </span>
+    </div>
+  </div>
+
+  <% if @bake_days.empty? %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+      <p class="text-gray-600">Aucune date de cuisson disponible pour le moment.</p>
+    </div>
+  <% else %>
+    <!-- Calendrier Desktop -->
+    <div class="hidden lg:flex gap-6">
+      <!-- Grille calendrier -->
+      <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Prochaines dates de cuisson</h2>
+
+        <div class="space-y-2">
+          <% @bake_days.each do |bake_day| %>
+            <% order = @planned_orders[bake_day.id] %>
+            <% cut_off_passed = bake_day.cut_off_passed? %>
+            <% can_order = !cut_off_passed %>
+
+            <div class="flex items-center justify-between p-3 rounded-lg border transition-all <%= cut_off_passed ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200 hover:border-green-300' %>"
+                 data-bake-day-id="<%= bake_day.id %>"
+                 data-can-order="<%= can_order %>"
+                 <% if can_order %>
+                 data-action="dragover->calendar#dragOver dragleave->calendar#dragLeave drop->calendar#drop"
+                 <% end %>>
+              <div>
+                <p class="font-medium text-gray-900">
+                  <%= l(bake_day.baked_on, format: :long_with_day).capitalize %>
+                </p>
+                <% if cut_off_passed %>
+                  <p class="text-xs text-yellow-600">Cut-off passé</p>
+                <% end %>
+              </div>
+
+              <% if order %>
+                <div class="flex items-center gap-3">
+                  <div class="text-right">
+                    <p class="text-sm text-gray-600">
+                      <%= order.order_items.sum(&:qty) %> article(s)
+                    </p>
+                    <p class="font-semibold text-green-600">
+                      <%= number_to_currency(order.total_cents / 100.0, unit: '€', format: '%n %u') %>
+                    </p>
+                  </div>
+                  <% if can_order %>
+                    <button type="button"
+                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                            data-action="calendar#openDayModal"
+                            data-bake-day-id="<%= bake_day.id %>">
+                      Modifier
+                    </button>
+                  <% end %>
+                </div>
+              <% elsif can_order %>
+                <button type="button"
+                        class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
+                        data-action="calendar#openDayModal"
+                        data-bake-day-id="<%= bake_day.id %>">
+                  + Ajouter
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Sidebar produits (draggable) -->
+      <div class="w-80 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-2">Produits disponibles</h2>
+        <p class="text-sm text-gray-500 mb-4">Glissez un produit sur une date ou cliquez sur "Ajouter"</p>
+
+        <div class="space-y-3">
+          <% @product_variants.each do |variant| %>
+            <div class="flex items-center justify-between p-2 rounded border border-gray-200 cursor-move hover:border-green-300 hover:bg-green-50 transition-all"
+                 draggable="true"
+                 data-variant-id="<%= variant.id %>"
+                 data-price="<%= variant.price_cents %>"
+                 data-action="dragstart->calendar#dragStart dragend->calendar#dragEnd">
+              <div class="flex items-center gap-2">
+                <% first_image = variant.product_images.first&.image %>
+                <% if first_image&.attached? %>
+                  <%= image_tag first_image.variant(resize_to_limit: [40, 40]), class: "w-10 h-10 rounded object-cover" %>
+                <% end %>
+                <div>
+                  <p class="text-sm font-medium"><%= variant.product.name %></p>
+                  <p class="text-xs text-gray-500"><%= variant.name %></p>
+                </div>
+              </div>
+              <p class="text-sm font-semibold text-gray-700">
+                <%= number_to_currency(variant.price_cents / 100.0, unit: '€', format: '%n %u') %>
+              </p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue mobile (liste) -->
+    <div class="lg:hidden space-y-4">
+      <% @bake_days.each do |bake_day| %>
+        <% order = @planned_orders[bake_day.id] %>
+        <% cut_off_passed = bake_day.cut_off_passed? %>
+        <% can_order = !cut_off_passed %>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+             data-bake-day-id="<%= bake_day.id %>"
+             data-can-order="<%= can_order %>">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">
+                <%= l(bake_day.baked_on, format: :long_with_day).capitalize %>
+              </p>
+              <% if cut_off_passed %>
+                <p class="text-xs text-yellow-600 mt-1">Cut-off passé</p>
+              <% end %>
+            </div>
+
+            <% if can_order %>
+              <button type="button"
+                      class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                      data-action="calendar#openDayModal"
+                      data-bake-day-id="<%= bake_day.id %>">
+                <%= order ? 'Modifier' : 'Commander' %>
+              </button>
+            <% end %>
+          </div>
+
+          <% if order %>
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <% order.order_items.each do |item| %>
+                <div class="flex justify-between text-sm">
+                  <span><%= item.product_variant.product.name %> (<%= item.qty %>)</span>
+                  <span class="text-gray-600"><%= number_to_currency(item.qty * item.unit_price_cents / 100.0, unit: '€', format: '%n %u') %></span>
+                </div>
+              <% end %>
+              <div class="flex justify-between font-semibold mt-2 pt-2 border-t border-gray-100">
+                <span>Total</span>
+                <span class="text-green-600"><%= number_to_currency(order.total_cents / 100.0, unit: '€', format: '%n %u') %></span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Modal pour ajouter/modifier une commande -->
+  <div data-calendar-target="modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <!-- Overlay -->
+      <div class="fixed inset-0 bg-black bg-opacity-50" data-action="click->calendar#closeModal"></div>
+
+      <!-- Modal content -->
+      <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900" data-calendar-target="modalTitle">Planifier ma commande</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-600" data-action="click->calendar#closeModal">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Product list -->
+          <div class="space-y-3 max-h-[50vh] overflow-y-auto" data-calendar-target="productList">
+            <!-- Products will be rendered here by Stimulus -->
+          </div>
+
+          <!-- Total -->
+          <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+            <span class="font-semibold text-gray-900">Total:</span>
+            <span class="text-xl font-bold text-green-600" data-calendar-target="modalTotal">0,00 €</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 flex justify-between">
+          <button type="button"
+                  class="px-4 py-2 text-red-600 hover:text-red-700"
+                  data-action="click->calendar#deleteOrder">
+            Supprimer
+          </button>
+          <div class="flex gap-2">
+            <button type="button"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    data-action="click->calendar#closeModal">
+              Annuler
+            </button>
+            <button type="button"
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    data-action="click->calendar#saveOrder">
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -58,8 +58,14 @@ class WebhooksController < ApplicationController
   def handle_payment_intent_succeeded(event)
     payment_intent = event.data.object
     payment_intent_id = payment_intent.id
+    metadata = payment_intent.metadata || {}
 
     Rails.logger.info("Processing payment_intent.succeeded webhook for: #{payment_intent_id}")
+
+    # Check if this is a wallet reload
+    if metadata['type'] == 'wallet_reload'
+      return handle_wallet_reload(payment_intent)
+    end
 
     # Find or create order (idempotency check)
     order = Order.uncached { Order.find_by(payment_intent_id: payment_intent_id) }
@@ -181,6 +187,41 @@ class WebhooksController < ApplicationController
 
     order.payment&.update!(status: :refunded)
     order.transition_to!(:cancelled) unless order.cancelled?
+  end
+
+  def handle_wallet_reload(payment_intent)
+    payment_intent_id = payment_intent.id
+    metadata = payment_intent.metadata || {}
+    customer_id = metadata['customer_id']
+
+    Rails.logger.info("Processing wallet reload for customer #{customer_id}, amount: #{payment_intent.amount}")
+
+    customer = Customer.find_by(id: customer_id)
+    unless customer
+      Rails.logger.error("Customer not found for wallet reload: #{customer_id}")
+      return false
+    end
+
+    wallet = customer.wallet || customer.create_wallet!
+
+    # Idempotency check
+    if wallet.wallet_transactions.exists?(stripe_payment_intent_id: payment_intent_id)
+      Rails.logger.info("Wallet reload already processed: #{payment_intent_id}")
+      return true
+    end
+
+    WalletService.top_up(
+      wallet: wallet,
+      amount_cents: payment_intent.amount,
+      stripe_payment_intent_id: payment_intent_id
+    )
+
+    Rails.logger.info("Wallet reload successful: #{payment_intent.amount} cents for customer #{customer_id}")
+    true
+  rescue StandardError => e
+    Rails.logger.error("Error processing wallet reload: #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
   end
 end
 

@@ -36,11 +36,22 @@ Rails.application.routes.draw do
   post "connexion", to: "customers/sessions#create"
   delete "deconnexion", to: "customers/sessions#destroy", as: :customer_logout
 
+  # Customer calendar (root level for cleaner URLs)
+  get "calendrier", to: "customers/calendar#show", as: :calendar
+  patch "calendrier/update_day", to: "customers/calendar#update_day", as: :calendar_update_day
+
   namespace :customers do
     get "mon-compte", to: "account#show", as: :account
     get "mon-compte/edit", to: "account#edit", as: :edit_account
     patch "mon-compte", to: "account#update"
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
+
+    # Wallet routes
+    get "portefeuille", to: "wallets#show", as: :wallet
+    get "portefeuille/recharger", to: "wallets#reload", as: :wallet_reload
+    post "portefeuille/recharger", to: "wallets#create_reload", as: :wallet_create_reload
+    get "portefeuille/success", to: "wallets#reload_success", as: :wallet_reload_success
+
   end
 
   # Webhooks

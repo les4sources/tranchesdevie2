@@ -17,3 +17,23 @@ production:
     class: MarkOrdersReadyJob
     schedule: at 6:15 pm every day
     description: "Mark orders as ready and send SMS notifications at 6:15pm"
+
+  # Process planned orders after cut-offs (Sunday 18:05 for Tuesday, Wednesday 18:05 for Friday)
+  process_planned_orders_sunday:
+    class: ProcessPlannedOrdersJob
+    schedule: every sunday at 6:05 pm Europe/Brussels
+    description: "Process planned orders and debit wallets after Sunday cut-off"
+  process_planned_orders_wednesday:
+    class: ProcessPlannedOrdersJob
+    schedule: every wednesday at 6:05 pm Europe/Brussels
+    description: "Process planned orders and debit wallets after Wednesday cut-off"
+
+  # Check insufficient balance warnings (6 hours before cut-off)
+  check_balance_sunday:
+    class: CheckInsufficientBalanceJob
+    schedule: every sunday at 12:00 pm Europe/Brussels
+    description: "Warn customers with insufficient balance before Sunday cut-off"
+  check_balance_wednesday:
+    class: CheckInsufficientBalanceJob
+    schedule: every wednesday at 12:00 pm Europe/Brussels
+    description: "Warn customers with insufficient balance before Wednesday cut-off"

@@ -59,6 +59,72 @@ class SmsService
     )
   end
 
+  def self.send_planned_order_confirmed(order)
+    return false unless order.customer.sms_enabled?
+
+    amount = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "").gsub(",00", "")
+    bake_date = I18n.l(order.bake_day.baked_on, format: :long)
+
+    message = "Ta commande planifiée pour le #{bake_date} a été validée (#{amount} débité de ton portefeuille). Merci ! Les artisans de Tranche de Vie"
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :confirmation,
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
+    )
+  end
+
+  def self.send_planned_order_cancelled(order)
+    return false unless order.customer.sms_enabled?
+
+    bake_date = I18n.l(order.bake_day.baked_on, format: :long)
+
+    message = "Ta commande planifiée pour le #{bake_date} a été annulée car ton solde était insuffisant. Pense à recharger ton portefeuille ! Les artisans de Tranche de Vie"
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :other,
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
+    )
+  end
+
+  def self.send_low_balance_alert(customer)
+    return false unless customer.sms_enabled?
+
+    wallet = customer.wallet
+    return false unless wallet
+
+    balance = number_to_currency(wallet.balance_euros, unit: "€", separator: ",", delimiter: "").gsub(",00", "")
+
+    message = "Ton solde de portefeuille est bas (#{balance}). Pense à le recharger pour tes prochaines commandes ! Les artisans de Tranche de Vie"
+    send_sms(
+      to: customer.phone_e164,
+      body: message,
+      kind: :other,
+      customer_id: customer.id
+    )
+  end
+
+  def self.send_insufficient_balance_warning(order)
+    return false unless order.customer.sms_enabled?
+
+    wallet = order.customer.wallet
+    amount_needed = order.total_cents - (wallet&.balance_cents || 0)
+    amount_needed_euros = number_to_currency(amount_needed / 100.0, unit: "€", separator: ",", delimiter: "").gsub(",00", "")
+    bake_date = I18n.l(order.bake_day.baked_on, format: :long)
+
+    message = "Attention ! Il te manque #{amount_needed_euros} sur ton portefeuille pour ta commande du #{bake_date}. Recharge avant 18h sinon ta commande sera annulée. Les artisans de Tranche de Vie"
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :other,
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
+    )
+  end
+
   private
 
   def self.send_sms(to:, body:, kind:, baked_on: nil, customer_id: nil)

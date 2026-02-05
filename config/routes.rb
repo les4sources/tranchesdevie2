@@ -45,7 +45,6 @@ Rails.application.routes.draw do
 
   # Webhooks
   post "/webhooks/stripe", to: "webhooks#stripe"
-  post "/webhooks/telerivet", to: "webhooks#telerivet"
 
   # Admin routes
   namespace :admin do

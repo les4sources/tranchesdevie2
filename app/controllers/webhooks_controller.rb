@@ -53,35 +53,6 @@ class WebhooksController < ApplicationController
     render json: { error: e.message }, status: :internal_server_error
   end
 
-  def telerivet
-    body_text = params[:content] || params[:body] || request.body.read
-
-    # Parse for STOP keyword
-    if body_text.to_s.upcase.strip == 'STOP'
-      phone_e164 = params[:from_number] || params[:from]
-      
-      if phone_e164.present?
-        customer = Customer.find_by(phone_e164: phone_e164)
-        if customer
-          customer.opt_out_sms!
-        end
-      end
-    end
-
-    # Store inbound message
-    SmsMessage.create_inbound(
-      params[:from_number] || params[:from] || 'unknown',
-      params[:to_number] || params[:to] || ENV['TELERIVET_PHONE_NUMBER'] || 'unknown',
-      body_text
-    )
-
-    render json: { received: true }
-  rescue StandardError => e
-    Rails.logger.error("Telerivet webhook error: #{e.message}")
-    Sentry.capture_exception(e) if defined?(Sentry)
-    render json: { error: e.message }, status: :internal_server_error
-  end
-
   private
 
   def handle_payment_intent_succeeded(event)

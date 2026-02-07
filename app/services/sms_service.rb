@@ -21,7 +21,7 @@ class SmsService
     # si la commande n'est pas payée, on envoie un message différent
     if order.unpaid_ready?
       amount_formatted = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "").gsub(",00", "")
-      message = "Bonjour, ta commande de pains est prête, elle est disponible dans l'épicerie aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Si tu paies sur place (#{amount_formatted}), merci de la noter dans le carnet prêt du rack. Les artisans de Tranche de Vie"
+      message = "Bonjour, ta commande de pains est prête, elle est disponible dans l'épicerie aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Si tu paies sur place (#{amount_formatted}), merci de la noter dans le carnet près du rack. Les artisans de Tranche de Vie"
     else
       message = "Bonjour, ta commande de pains est prête, elle est disponible dans l'épicerie aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Les artisans de Tranche de Vie"
     end

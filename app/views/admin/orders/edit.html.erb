@@ -18,7 +18,7 @@
 <% end %>
 
 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-  <%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customers.map { |c| { id: c.id, discount_percent: c.group&.discount_percent || 0 } }.to_json } do |f| %>
+  <%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customers.map { |c| { id: c.id, discount_percent: c.effective_discount_percent } }.to_json } do |f| %>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div>
         <%= f.label :customer_id, "Client", class: "block text-sm font-medium text-gray-700" %>

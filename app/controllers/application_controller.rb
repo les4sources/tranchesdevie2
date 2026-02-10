@@ -19,10 +19,10 @@ class ApplicationController < ActionController::Base
 
   def current_cart_discount_cents
     customer = current_customer_for_cart
-    return 0 unless customer&.group&.discount_percent
+    return 0 unless customer&.effective_discount_percent&.positive?
 
     subtotal = current_cart_subtotal_cents
-    (subtotal * customer.group.discount_percent / 100.0).round
+    (subtotal * customer.effective_discount_percent / 100.0).round
   end
 
   def current_cart_total_cents

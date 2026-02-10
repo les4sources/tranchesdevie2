@@ -1,5 +1,6 @@
 class Group < ApplicationRecord
-  has_many :customers, dependent: :nullify
+  has_many :customer_groups, dependent: :destroy
+  has_many :customers, through: :customer_groups
   has_many :variant_group_restrictions, dependent: :destroy
   has_many :restricted_variants, through: :variant_group_restrictions, source: :product_variant
 

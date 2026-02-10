@@ -148,7 +148,7 @@
             </div>
             <% if @discount_cents > 0 && @customer&.group %>
               <div class="flex justify-between text-green-600">
-                <dt>Remise (<%= @customer.group.name %> - <%= @customer.group.discount_percent %>%)</dt>
+                <dt>Remise (<%= @customer.group.name %> - <%= @customer.effective_discount_percent %>%)</dt>
                 <dd class="font-medium">
                   -<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
                 </dd>

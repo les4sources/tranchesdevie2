@@ -58,9 +58,9 @@ class OrderCreationService
   end
 
   def calculate_discount(subtotal)
-    return 0 unless @customer&.group&.discount_percent
+    return 0 unless @customer&.effective_discount_percent&.positive?
 
-    (subtotal * @customer.group.discount_percent / 100.0).round
+    (subtotal * @customer.effective_discount_percent / 100.0).round
   end
 
   def create_order_items

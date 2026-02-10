@@ -124,9 +124,9 @@ class CartController < ApplicationController
   end
 
   def calculate_discount(subtotal, customer)
-    return 0 unless customer&.group&.discount_percent
+    return 0 unless customer&.effective_discount_percent&.positive?
 
-    (subtotal * customer.group.discount_percent / 100.0).round
+    (subtotal * customer.effective_discount_percent / 100.0).round
   end
 
   def requested_quantity

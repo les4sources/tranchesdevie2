@@ -64,10 +64,13 @@
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Groupe</dt>
+        <dt class="text-sm font-medium text-gray-500">Groupes</dt>
         <dd class="mt-1 text-sm text-gray-900">
-          <% if @customer.group %>
-            <%= @customer.group.name %> (<%= @customer.group.discount_percent %>%)
+          <% if @customer.groups.any? %>
+            <%= @customer.groups.map { |g| "#{g.name} (#{g.discount_percent}%)" }.join(", ") %>
+            <% if @customer.effective_discount_percent > 0 %>
+              <span class="text-gray-500 text-xs block mt-1">Remise appliquée : <%= @customer.effective_discount_percent %>%</span>
+            <% end %>
           <% else %>
             <span class="text-gray-400">Aucun groupe</span>
           <% end %>

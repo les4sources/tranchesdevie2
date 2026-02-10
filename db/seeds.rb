@@ -276,3 +276,12 @@ sample_orders.each do |order_data|
 end
 
 puts "✅ Sample orders created"
+
+# Artisan-boulangers (Stéphanie, Romane, Thomas)
+%w[Stéphanie Romane Thomas].each do |name|
+  Artisan.find_or_create_by!(name: name) do |a|
+    a.active = true
+  end
+end
+
+puts "✅ Artisans created"

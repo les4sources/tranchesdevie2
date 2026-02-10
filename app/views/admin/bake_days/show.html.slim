@@ -57,6 +57,17 @@
                 span = order_status_label(status)
                 span.font-semibold.text-slate-900 = count
 
+  .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
+    h2.text-lg.font-semibold.text-slate-900 Qui cuit aujourd'hui ?
+    = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, local: true, class: "mt-4 space-y-3" do |form|
+      .flex.flex-wrap.gap-4
+        = form.collection_check_boxes :baking_artisan_ids, Artisan.active.order(:name), :id, :name do |b|
+          label.inline-flex.items-center.gap-2.cursor-pointer class="block"
+            = b.check_box class: "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            span.text-sm.font-medium.text-slate-700 = b.text
+      button.inline-flex.items-center.justify-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white type="submit"
+        | Enregistrer
+
   - kpi_cards = [ \
       { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
       { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },

@@ -1,0 +1,45 @@
+<% content_for :title, "Modifier l'artisan" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Modifier l'artisan</h1>
+  <p class="mt-1 text-sm text-gray-600">Mettez à jour les informations de l'artisan. Décochez « Actif » pour le retirer des choix sans le supprimer.</p>
+</div>
+
+<% if @artisan.errors.any? %>
+  <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+    <h2 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h2>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
+      <% @artisan.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+  <%= form_with model: @artisan, url: admin_artisan_path(@artisan), local: true do |f| %>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div>
+        <%= f.label :name, "Nom", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.text_field :name,
+                         required: true,
+                         class: "mt-1 #{admin_input_class}" %>
+      </div>
+
+      <div class="flex items-center">
+        <div class="flex items-center h-5">
+          <%= f.check_box :active, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+        </div>
+        <div class="ml-3 text-sm">
+          <%= f.label :active, "Artisan actif (apparaît dans les choix des jours de cuisson)", class: "font-medium text-gray-700" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end space-x-3">
+      <%= link_to "Annuler", admin_artisans_path, class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+      <%= f.submit "Mettre à jour", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    </div>
+  <% end %>
+</div>

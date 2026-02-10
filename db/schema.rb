@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_10_144644) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,6 +49,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_144644) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["slug"], name: "index_admin_pages_on_slug", unique: true
+  end
+
+  create_table "artisans", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "bake_day_artisans", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.bigint "artisan_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id"], name: "index_bake_day_artisans_on_artisan_id"
+    t.index ["bake_day_id", "artisan_id"], name: "index_bake_day_artisans_on_bake_day_id_and_artisan_id", unique: true
+    t.index ["bake_day_id"], name: "index_bake_day_artisans_on_bake_day_id"
   end
 
   create_table "bake_days", force: :cascade do |t|
@@ -403,6 +420,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_144644) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id", name: "active_storage_attachments_blob_id_fkey"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id", name: "active_storage_variant_records_blob_id_fkey"
+  add_foreign_key "bake_day_artisans", "artisans"
+  add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
   add_foreign_key "order_items", "orders", name: "order_items_order_id_fkey"

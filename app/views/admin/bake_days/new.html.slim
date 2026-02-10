@@ -3,11 +3,11 @@ h1.text-2xl.font-bold.mb-6 Nouveau jour de cuisson
 = form_with model: @bake_day, url: admin_bake_days_path, local: true, class: "space-y-6" do |f|
   .mb-4
     = f.label :baked_on, "Date de cuisson", class: "block text-gray-700 font-medium mb-2"
-    = f.date_field :baked_on, class: "border rounded px-3 py-2 w-full", required: true
+    = f.date_field :baked_on, class: admin_input_class, required: true
 
   .mb-4
     = f.label :cut_off_at, "Date limite de commande", class: "block text-gray-700 font-medium mb-2"
-    = f.datetime_local_field :cut_off_at, class: "border rounded px-3 py-2 w-full", required: true
+    = f.datetime_local_field :cut_off_at, class: admin_input_class, required: true
 
   - note_input_id = dom_id(@bake_day, :internal_note)
   .mb-4

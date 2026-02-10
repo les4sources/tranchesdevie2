@@ -6,26 +6,26 @@
 - status_distribution = @dashboard.status_distribution
 - note_input_id = dom_id(@bake_day, :internal_note)
 
-.space-y-8
-  .border-b.border-slate-200.px-6.py-4.backdrop-blur
+.space-y-6.sm:space-y-8
+  .border-b.border-slate-200.px-4.py-4.sm:px-6.backdrop-blur
     .flex.flex-col.gap-4.lg:flex-row.lg:items-center.lg:justify-between
-      div
+      div.min-w-0
         p.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500 Jour de cuisson
-        .mt-1.flex.flex-wrap.items-center.gap-3
-          h1.text-2xl.font-semibold.text-slate-900
+        .mt-1.flex.flex-wrap.items-center.gap-2.sm:gap-3
+          h1.text-xl.font-semibold.text-slate-900.break-words.sm:text-2xl
             | Fournée du #{@bake_day.baked_on.strftime("%d/%m/%Y")}
-          span.inline-flex.items-center.rounded-full.px-3.py-1.text-xs.font-semibold class=("#{@bake_day.cut_off_passed? ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}")
+          span.inline-flex.items-center.rounded-full.px-3.py-1.text-xs.font-semibold.shrink-0 class=("#{@bake_day.cut_off_passed? ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}")
             = @bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes"
-        p.text-slate-500
+        p.text-slate-500.text-sm.mt-1
           | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
-      .flex.flex-wrap.gap-3 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
-        = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: "inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
-        button.inline-flex.items-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white type="button" data-action="dashboard-export#print"
+      .flex.flex-wrap.gap-2.sm:gap-3.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
+        = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white whitespace-nowrap"
+        button.inline-flex.items-center.justify-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white.whitespace-nowrap type="button" data-action="dashboard-export#print"
           | Imprimer la feuille
-        = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, data: { confirm: "Supprimer ce jour de cuisson ?" }, class: "inline-flex items-center gap-2 rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+        = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, data: { confirm: "Supprimer ce jour de cuisson ?" }, class: "inline-flex items-center justify-center gap-2 rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 whitespace-nowrap"
 
-  .grid.gap-6.lg:grid-cols-3
-    .lg:col-span-2.rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+  .grid.gap-4.sm:gap-6.lg:grid-cols-3
+    .lg:col-span-2.rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
       .flex.items-center.justify-between
         div
           h2.text-lg.font-semibold.text-slate-900 Consignes du jour
@@ -40,7 +40,7 @@
             button.inline-flex.items-center.gap-2.rounded-full.border.border-slate-300.px-3.py-1.5.text-xs.font-semibold.text-slate-700.hover:bg-slate-50 type="button" data-action="bake-day-note#save"
               | Enregistrer maintenant
 
-    .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+    .lg:col-span-1.min-w-0.rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
       h2.text-lg.font-semibold.text-slate-900 Statut des commandes
       dl.mt-4.space-y-4
         .flex.items-center.justify-between
@@ -64,47 +64,47 @@
       { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
     ]
 
-  .grid.gap-4.md:grid-cols-2.xl:grid-cols-4
+  .grid.gap-4.grid-cols-1.sm:grid-cols-2.xl:grid-cols-4
     - kpi_cards.each do |card|
-      .rounded-2xl.border.border-slate-200.bg-white.p-5.shadow-sm
+      .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-5
         p.text-sm.text-slate-500 = card[:label]
-        p.mt-2.text-3xl.font-semibold.text-slate-900 = card[:value]
+        p.mt-2.text-2xl.font-semibold.text-slate-900.sm:text-3xl = card[:value]
         p.text-sm.text-slate-500 = card[:meta]
 
-  .rounded-2xl.border.border-indigo-100.bg-indigo-50.p-6.shadow-sm
+  .rounded-2xl.border.border-indigo-100.bg-indigo-50.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
         h2.text-xl.font-semibold.text-indigo-950 Préparez vos moules et la pâte requise
-    .mt-6.grid.gap-4.grid-cols-2.md:grid-cols-4 class=("#{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}")
+    .mt-4.grid.gap-3.sm:mt-6.sm:gap-4.grid-cols-2.sm:grid-cols-2 class=("md:grid-cols-4 #{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}")
       - unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify"
       - total_flour = @dashboard.total_flour_quantity
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
         p.text-sm.font-semibold.text-indigo-900 XXL (1,4 kg)
-        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:xxl]
+        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:xxl]
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
         p.text-sm.font-semibold.text-indigo-900 Grands (1 kg)
-        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:large]
+        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:large]
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
         p.text-sm.font-semibold.text-indigo-900 Moyens (800 g)
-        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:middle]
+        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:middle]
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
         p.text-sm.font-semibold.text-indigo-900 Petits (600 g)
-        p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:small]
+        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:small]
 
       - if mold_requirements[:unspecified].positive?
-        .rounded-2xl.border.border-white/60.bg-white/80.p-5.shadow
+        .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
           p.text-sm.font-semibold.text-indigo-900 À clarifier
-          p.mt-2.text-3xl.font-bold.text-indigo-950 = mold_requirements[:unspecified]
+          p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:unspecified]
 
-  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+  .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
         h2.text-xl.font-semibold.text-slate-900 Quantités de pâte requises par type de farine
-    .mt-6.overflow-x-auto.rounded-xl.border.border-slate-100
+    .mt-4.overflow-x-auto.rounded-xl.border.border-slate-100.sm:mt-6
       table.min-w-full.divide-y.divide-slate-100.text-sm
         thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
           tr
@@ -136,11 +136,11 @@
               td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="2"
                 | Aucune quantité de farine requise pour l'instant.
 
-  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm
+  .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
         h2.text-xl.font-semibold.text-slate-900 Ingrédients requis
-    .mt-6.overflow-x-auto.rounded-xl.border.border-slate-100
+    .mt-4.overflow-x-auto.rounded-xl.border.border-slate-100.sm:mt-6
       table.min-w-full.divide-y.divide-slate-100.text-sm
         thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
           tr
@@ -167,8 +167,9 @@
               td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="2"
                 | Aucun ingrédient requis pour l'instant.
 
-  .rounded-2xl.border.border-slate-200.bg-white.p-6.shadow-sm data-controller="dashboard-tabs" data-dashboard-tabs-active-value="clients"
-    .flex.flex-wrap.items-center.gap-3.border-b.border-slate-200.pb-4
+  .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6 data-controller="dashboard-tabs" data-dashboard-tabs-active-value="clients"
+    .overflow-x-auto
+      .flex.flex-nowrap.items-center.gap-2.border-b.border-slate-200.pb-4.sm:flex-wrap.sm:gap-3.min-w-max.sm:min-w-0
       button.rounded-full.bg-white.px-4.py-2.text-sm.font-semibold.text-slate-900.shadow type="button" data-dashboard-tabs-target="tab" data-tab="clients" data-action="dashboard-tabs#show"
         | Commandes par client
       button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="products" data-action="dashboard-tabs#show"
@@ -235,7 +236,7 @@
                   td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="4"
                     | Aucun article commandé pour l'instant.
 
-    .mt-6 data-dashboard-tabs-target="panel" data-panel="clients"
+    .mt-4.sm:mt-6 data-dashboard-tabs-target="panel" data-panel="clients"
       - if @dashboard.customer_breakdown.any?
         - variants_by_product = @dashboard.variant_stats.sort_by do |stat| \
             [ \
@@ -310,7 +311,7 @@
                 = order_status_label(order_status)
           .divide-y.divide-slate-100.overflow-hidden.rounded-2xl.border.border-slate-100
             - @dashboard.orders.each do |order|
-              .flex.flex-col.gap-4.px-6.py-4.lg:flex-row.lg:items-center.lg:justify-between data-dashboard-filter-target="row" data-category="#{order.status}"
+              .flex.flex-col.gap-4.px-4.py-4.sm:px-6.lg:flex-row.lg:items-center.lg:justify-between data-dashboard-filter-target="row" data-category="#{order.status}"
                 div
                   p.font-semibold.text-slate-900 = order.customer.full_name
                   p.text-slate-500
@@ -350,7 +351,7 @@
                 - key = "#{product.name} #{variant.name}"
                 - customer_items[key] ||= 0
                 - customer_items[key] += item[:qty]
-            .rounded-xl.border.border-slate-200.bg-white.p-5.shadow-sm
+            .rounded-xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-5
               h3.text-lg.font-semibold.text-slate-900.mb-3 = customer.full_name
               ul.space-y-1.5
                 - customer_items.sort_by { |k, v| k.downcase }.each do |product_label, qty|

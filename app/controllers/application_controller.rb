@@ -5,9 +5,15 @@ class ApplicationController < ActionController::Base
 
   include CustomerAuthentication
 
-  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?, :current_cart_subtotal_cents, :current_cart_discount_cents, :current_customer_for_cart
+  helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?, :current_cart_subtotal_cents, :current_cart_discount_cents, :current_customer_for_cart, :admin_authenticated?
 
   private
+
+  def admin_authenticated?
+    session[:admin_authenticated] == true &&
+      session[:admin_authenticated_at].present? &&
+      Time.current - Time.parse(session[:admin_authenticated_at]) < 24.hours
+  end
 
   def current_cart_items
     @current_cart_items = build_cart_items(session[:cart] || [])

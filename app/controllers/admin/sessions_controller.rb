@@ -1,5 +1,6 @@
 class Admin::SessionsController < ApplicationController
-  layout 'admin'
+  layout "admin"
+  helper Admin::FormHelper
 
   def index
     if admin_authenticated?
@@ -38,12 +39,6 @@ class Admin::SessionsController < ApplicationController
     return false if expected_password.blank?
 
     ActiveSupport::SecurityUtils.secure_compare(password, expected_password)
-  end
-
-  def admin_authenticated?
-    session[:admin_authenticated] == true &&
-      session[:admin_authenticated_at] &&
-      Time.current - Time.parse(session[:admin_authenticated_at]) < 24.hours
   end
 end
 

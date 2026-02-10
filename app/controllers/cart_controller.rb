@@ -1,5 +1,6 @@
 class CartController < ApplicationController
   def show
+    remove_unavailable_cart_items!
     @cart = session[:cart] || []
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
@@ -169,6 +170,21 @@ class CartController < ApplicationController
     respond_to do |format|
       format.html { redirect_to catalog_path, alert: 'Ce produit n\'est pas disponible' }
       format.json { render json: { error: 'Ce produit n\'est pas disponible' }, status: :unprocessable_entity }
+    end
+  end
+
+  def remove_unavailable_cart_items!
+    cart = session[:cart] || []
+    return if cart.empty?
+
+    available = cart.select do |item|
+      variant = ProductVariant.find_by(id: item['product_variant_id'])
+      variant.present? && variant.active? && variant.channel == 'store' && variant.product.present?
+    end
+    removed_count = cart.size - available.size
+    if removed_count.positive?
+      session[:cart] = available
+      flash.now[:notice] = "#{removed_count} article(s) ont été retirés de ton panier car ils ne sont plus disponibles."
     end
   end
 end

@@ -43,6 +43,14 @@ class OrderCreationService
       return false
     end
 
+    # Ensure each variant is still available for online sale
+    @cart_items.each do |item|
+      variant = ProductVariant.find(item['product_variant_id'])
+      unless variant.active? && variant.channel == 'store'
+        @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est plus disponible"
+      end
+    end
+
     @errors.empty?
   end
 

@@ -58,7 +58,7 @@
                 span.font-semibold.text-slate-900 = count
 
   .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
-    h2.text-lg.font-semibold.text-slate-900 Qui cuit aujourd'hui ?
+    h2.text-lg.font-semibold.text-slate-900 Qui boulange aujourd'hui ?
     = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, local: true, class: "mt-4 space-y-3" do |form|
       .flex.flex-wrap.gap-4
         = form.collection_check_boxes :baking_artisan_ids, Artisan.active.order(:name), :id, :name do |b|

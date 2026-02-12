@@ -18,6 +18,7 @@ class CatalogController < ApplicationController
 
   def seasonal_promotion_content
     {
+      active: false,
       title: "🧀 Bientôt la première Camembert Party de 2026 !",
       description: "Viens aux 4 Sources ce 13 février pour déguster une \"mini-fondue\" en trempant du pain frais dans ton fromage tout juste sorti du four et dégoulinant à point ! 😋 Le tout accompagné de tes petits légumes préférés ! ",
       cta_text: "Infos et réservations",

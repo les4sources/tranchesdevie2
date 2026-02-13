@@ -1,5 +1,6 @@
 class Customer < ApplicationRecord
-  belongs_to :group, optional: true
+  has_many :customer_groups, dependent: :destroy
+  has_many :groups, through: :customer_groups
   has_many :orders, dependent: :restrict_with_error
   has_many :phone_verifications, dependent: :destroy
   has_many :sms_messages, dependent: :nullify
@@ -19,6 +20,24 @@ class Customer < ApplicationRecord
 
   def full_name
     [first_name, last_name].compact.join(' ')
+  end
+
+  # Returns the highest discount percent among all groups the customer belongs to.
+  # Used when a customer has multiple groups with discounts: apply the best one.
+  def effective_discount_percent
+    groups.maximum(:discount_percent) || 0
+  end
+
+  # Returns the group with the highest discount (for display purposes).
+  # When multiple groups have discounts, this is the one that determines the applied rate.
+  def best_discount_group
+    groups.order(discount_percent: :desc).first
+  end
+
+  # Backward compatibility: returns best_discount_group for JSON serialization and views
+  # that expect customer.group (e.g. order modal, cart display).
+  def group
+    best_discount_group
   end
 
   def opt_out_sms!

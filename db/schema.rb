@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
     t.index ["slug"], name: "index_admin_pages_on_slug", unique: true
   end
 
+  create_table "artisans", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "bake_day_artisans", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.bigint "artisan_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id"], name: "index_bake_day_artisans_on_artisan_id"
+    t.index ["bake_day_id", "artisan_id"], name: "index_bake_day_artisans_on_bake_day_id_and_artisan_id", unique: true
+    t.index ["bake_day_id"], name: "index_bake_day_artisans_on_bake_day_id"
+  end
+
   create_table "bake_days", force: :cascade do |t|
     t.date "baked_on", null: false
     t.timestamptz "cut_off_at", null: false
@@ -58,6 +75,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
     t.datetime "updated_at", precision: nil, null: false
     t.text "internal_note"
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
+  end
+
+  create_table "customer_groups", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.bigint "group_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id", "group_id"], name: "idx_customer_groups_unique", unique: true
+    t.index ["customer_id"], name: "index_customer_groups_on_customer_id"
+    t.index ["group_id"], name: "index_customer_groups_on_group_id"
   end
 
   create_table "customers", force: :cascade do |t|
@@ -68,8 +95,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
     t.boolean "sms_opt_out", default: false, null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.bigint "group_id"
-    t.index ["group_id"], name: "index_customers_on_group_id"
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
@@ -113,11 +138,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.boolean "requires_invoice", default: false, null: false
+    t.integer "source", default: 0, null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
+    t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
   end
 
@@ -368,9 +395,35 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
     t.index ["product_variant_id"], name: "index_variant_ingredients_on_product_variant_id"
   end
 
+  create_table "wallet_transactions", force: :cascade do |t|
+    t.bigint "wallet_id", null: false
+    t.integer "amount_cents", null: false
+    t.integer "transaction_type", null: false
+    t.bigint "order_id"
+    t.string "stripe_payment_intent_id"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_wallet_transactions_on_created_at"
+    t.index ["order_id"], name: "index_wallet_transactions_on_order_id"
+    t.index ["wallet_id"], name: "index_wallet_transactions_on_wallet_id"
+  end
+
+  create_table "wallets", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.integer "balance_cents", default: 0, null: false
+    t.integer "low_balance_threshold_cents", default: 1000, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_wallets_on_customer_id", unique: true
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id", name: "active_storage_attachments_blob_id_fkey"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id", name: "active_storage_variant_records_blob_id_fkey"
-  add_foreign_key "customers", "groups", name: "customers_group_id_fkey"
+  add_foreign_key "bake_day_artisans", "artisans"
+  add_foreign_key "bake_day_artisans", "bake_days"
+  add_foreign_key "customer_groups", "customers"
+  add_foreign_key "customer_groups", "groups"
   add_foreign_key "order_items", "orders", name: "order_items_order_id_fkey"
   add_foreign_key "order_items", "product_variants", name: "order_items_product_variant_id_fkey"
   add_foreign_key "orders", "bake_days", name: "orders_bake_day_id_fkey"
@@ -391,4 +444,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_03_062411) do
   add_foreign_key "variant_group_restrictions", "product_variants"
   add_foreign_key "variant_ingredients", "ingredients"
   add_foreign_key "variant_ingredients", "product_variants"
+  add_foreign_key "wallet_transactions", "orders"
+  add_foreign_key "wallet_transactions", "wallets"
+  add_foreign_key "wallets", "customers"
 end

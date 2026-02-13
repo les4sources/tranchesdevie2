@@ -18,14 +18,14 @@
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.text_field :name, class: admin_input_class
     .space-y-2
       = f.label :short_name, "Nom court", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :short_name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.text_field :short_name, class: admin_input_class
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :category, "Catégorie", class: "block text-sm font-medium text-gray-700"
-      = f.select :category, options_for_select(category_options, @product.category), {}, class: "block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.select :category, options_for_select(category_options, @product.category), {}, class: admin_input_class
     .space-y-2
       span.block.text-sm.font-medium.text-gray-700 Farine
       .space-y-2.mt-2
@@ -44,12 +44,12 @@
 
   .space-y-2
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
-    = f.text_area :description, rows: 4, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    = f.text_area :description, rows: 4, class: admin_input_class
 
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :position, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.number_field :position, class: admin_input_class
     .space-y-3
       span.block.text-sm.font-medium.text-gray-700 Statut du produit
       .flex.items-center.space-x-3

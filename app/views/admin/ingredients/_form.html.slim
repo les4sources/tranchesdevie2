@@ -9,10 +9,10 @@
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.text_field :name, class: admin_input_class
     .space-y-2
       = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :position, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.number_field :position, class: admin_input_class
 
   .space-y-2
     span.block.text-sm.font-medium.text-gray-700 Type d'unité

@@ -1,5 +1,7 @@
 class BakeDay < ApplicationRecord
   has_many :orders, dependent: :restrict_with_error
+  has_many :bake_day_artisans, dependent: :destroy
+  has_many :baking_artisans, through: :bake_day_artisans, source: :artisan
 
   validates :baked_on, presence: true, uniqueness: true
   validates :cut_off_at, presence: true

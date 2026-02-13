@@ -16,13 +16,13 @@
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.text_field :name, class: admin_input_class
     .space-y-2
       = f.label :price_euros, "Prix (€)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :price_euros, step: 0.01, min: 0, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.number_field :price_euros, step: 0.01, min: 0, class: admin_input_class
     .space-y-2
       = f.label :flour_quantity, "Quantité de pâte requise", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :flour_quantity, min: 0, step: 1, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.number_field :flour_quantity, min: 0, step: 1, class: admin_input_class
 
   .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
     span.block.text-sm.font-medium.text-gray-700 En vente en ligne
@@ -60,24 +60,24 @@
           = link_to "Créer un groupe", new_admin_group_path, class: "text-blue-600 hover:underline ml-1"
 
   .space-y-3 data-controller="variant-ingredients"
-    .flex.justify-between.items-center
+    .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
       label.block.text-sm.font-medium.text-gray-700 Ingrédients
-      button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700" data-action="variant-ingredients#add" Ajouter un ingrédient
+      button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap w-fit" data-action="variant-ingredients#add" Ajouter un ingrédient
 
     #variant-ingredients.space-y-3 data-variant-ingredients-target="container"
       = f.fields_for :variant_ingredients do |vi_form|
         - variant_ingredient = vi_form.object
-        .variant-ingredient-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.items-center.gap-4 data-variant-ingredients-target="item"
+        .variant-ingredient-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.flex-col.gap-4.sm:flex-row.sm:items-center.sm:gap-4 data-variant-ingredients-target="item"
           = vi_form.hidden_field :id if variant_ingredient.persisted?
-          .flex-1
-            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", data: { action: "change->variant-ingredients#updateUnit" }
-          .w-40
-            .flex.items-center.gap-2
-              = vi_form.number_field :quantity, step: 0.01, min: 0, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", placeholder: "Quantité"
-              span.text-sm.text-gray-500.unit-label.w-16 = variant_ingredient.ingredient&.unit_label || "g"
-          .flex-shrink-0
-            = vi_form.hidden_field :_destroy, value: false, class: "destroy-field"
-            button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700" data-action="variant-ingredients#remove" Supprimer
+          .flex-1.min-w-0
+            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select #{admin_input_class}", data: { action: "change->variant-ingredients#updateUnit" }
+          .flex.flex-col.gap-2.sm:flex-row.sm:items-center.sm:gap-2.sm:w-40
+            .flex.items-center.gap-2.flex-1.sm:flex-initial
+              = vi_form.number_field :quantity, step: 0.01, min: 0, class: admin_input_class, placeholder: "Quantité"
+              span.text-sm.text-gray-500.unit-label.whitespace-nowrap = variant_ingredient.ingredient&.unit_label || "g"
+            .flex-shrink-0
+              = vi_form.hidden_field :_destroy, value: false, class: "destroy-field"
+              button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="variant-ingredients#remove" Supprimer
 
       - if @variant.variant_ingredients.empty?
         .text-sm.text-gray-500.text-center.py-4 data-variant-ingredients-target="empty" Aucun ingrédient assigné

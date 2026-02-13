@@ -33,7 +33,7 @@
       </div>
       <% if discount_cents.to_i > 0 && customer&.group %>
         <div class="flex items-center justify-between text-sm text-green-600">
-          <span>Remise (<%= customer.group.discount_percent %>%)</span>
+          <span>Remise (<%= customer.effective_discount_percent %>%)</span>
           <span>-<%= number_to_currency(discount_cents.to_f / 100, unit: "€", separator: ",", delimiter: "") %></span>
         </div>
       <% end %>

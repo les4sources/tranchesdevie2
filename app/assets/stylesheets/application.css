@@ -117,3 +117,55 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 28px 28px;
   z-index: 9999;
 }
+
+/* Public footer - artisanal editorial */
+@keyframes footer-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.footer-reveal-item {
+  animation: footer-reveal 0.6s ease-out both;
+}
+
+.footer-reveal-item:nth-child(1) { animation-delay: 0.05s; }
+.footer-reveal-item:nth-child(2) { animation-delay: 0.12s; }
+.footer-reveal-item:nth-child(3) { animation-delay: 0.19s; }
+.footer-reveal-item:nth-child(4) { animation-delay: 0.26s; }
+.footer-reveal-item:nth-child(5) { animation-delay: 0.33s; }
+.footer-reveal-item:nth-child(6) { animation-delay: 0.4s; }
+
+.footer-email-link {
+  position: relative;
+  transition: color 0.25s ease;
+}
+
+.footer-email-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+.footer-email-link:hover::after,
+.footer-email-link:focus-visible::after {
+  width: 100%;
+}
+
+.footer-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

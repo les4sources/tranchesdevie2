@@ -18,7 +18,7 @@ class Admin::OrdersController < Admin::BaseController
     
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
-      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      customer = Customer.includes(:groups).find_by(id: @order.customer_id)
       discount_cents = calculate_discount(subtotal_cents, customer)
       @calculated_total_cents = subtotal_cents - discount_cents
     else
@@ -39,7 +39,7 @@ class Admin::OrdersController < Admin::BaseController
     
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
-      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      customer = Customer.includes(:groups).find_by(id: @order.customer_id)
       discount_cents = calculate_discount(subtotal_cents, customer)
       @calculated_total_cents = subtotal_cents - discount_cents
     else
@@ -57,7 +57,7 @@ class Admin::OrdersController < Admin::BaseController
     
     # Calculer la remise si un client est sélectionné
     if permitted_params[:customer_id].present?
-      customer = Customer.includes(:group).find_by(id: permitted_params[:customer_id])
+      customer = Customer.includes(:groups).find_by(id: permitted_params[:customer_id])
       discount_cents = calculate_discount(subtotal_cents, customer)
       @calculated_total_cents = subtotal_cents - discount_cents
     else
@@ -94,7 +94,7 @@ class Admin::OrdersController < Admin::BaseController
     
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
-      customer = Customer.includes(:group).find_by(id: @order.customer_id)
+      customer = Customer.includes(:groups).find_by(id: @order.customer_id)
       discount_cents = calculate_discount(subtotal_cents, customer)
       @calculated_total_cents = subtotal_cents - discount_cents
     else
@@ -154,7 +154,7 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def load_form_dependencies
-    @customers = Customer.includes(:group).order(:last_name, :first_name)
+    @customers = Customer.includes(:groups).order(:last_name, :first_name)
     # Pour l'édition, permettre tous les jours de cuisson, pas seulement les futurs
     @bake_days = if action_name == 'edit' || action_name == 'update'
                    BakeDay.ordered
@@ -199,9 +199,9 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def calculate_discount(subtotal, customer)
-    return 0 unless customer&.group&.discount_percent
+    return 0 unless customer&.effective_discount_percent&.positive?
 
-    (subtotal * customer.group.discount_percent / 100.0).round
+    (subtotal * customer.effective_discount_percent / 100.0).round
   end
 
   def assign_total_cents!(amount_input)

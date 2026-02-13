@@ -24,13 +24,13 @@
         <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700" %>
         <%= f.text_field :first_name,
                          required: true,
-                         class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                         class: "mt-1 #{admin_input_class}" %>
       </div>
 
       <div>
         <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700" %>
         <%= f.text_field :last_name,
-                         class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                         class: "mt-1 #{admin_input_class}" %>
       </div>
     </div>
 
@@ -39,23 +39,34 @@
         <%= f.label :phone_e164, "Téléphone (format E.164)", class: "block text-sm font-medium text-gray-700" %>
         <%= f.telephone_field :phone_e164,
                               placeholder: "+33612345678",
-                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                              class: "mt-1 #{admin_input_class}" %>
         <p class="mt-1 text-sm text-gray-500">Optionnel. Laissez vide pour les mangeurs sans téléphone.</p>
       </div>
 
       <div>
         <%= f.label :email, "Email", class: "block text-sm font-medium text-gray-700" %>
         <%= f.email_field :email,
-                          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+                          class: "mt-1 #{admin_input_class}" %>
       </div>
     </div>
 
     <div class="mt-6">
-      <%= f.label :group_id, "Groupe", class: "block text-sm font-medium text-gray-700" %>
-      <%= f.select :group_id,
-                   options_from_collection_for_select(@groups, :id, :name, @customer.group_id),
-                   { include_blank: "Aucun groupe" },
-                   { class: "mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" } %>
+      <%= f.label :group_ids, "Groupes", class: "block text-sm font-medium text-gray-700" %>
+      <p class="mt-1 text-sm text-gray-500 mb-2">Un mangeur peut appartenir à plusieurs groupes. La remise la plus élevée sera appliquée.</p>
+      <div class="space-y-2">
+        <%= f.collection_check_boxes :group_ids, @groups, :id, :name do |b| %>
+          <div class="flex items-center">
+            <%= b.check_box class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+            <%= b.label class: "ml-2 block text-sm text-gray-900" do %>
+              <%= b.text %>
+              <span class="text-gray-500 text-xs ml-1">(<%= b.object.discount_percent %>% de remise)</span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <% if @groups.empty? %>
+        <p class="text-sm text-gray-500">Aucun groupe créé.</p>
+      <% end %>
     </div>
 
     <div class="mt-8 flex justify-end space-x-3">

@@ -63,23 +63,25 @@ export default class extends Controller {
       .map(i => `<option value="${i.id}">${i.name}</option>`)
       .join("")
 
+    const inputClass = "block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+
     return `
-      <div class="variant-ingredient-item border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-center gap-4" data-variant-ingredients-target="item">
-        <div class="flex-1">
-          <select name="product_variant[variant_ingredients_attributes][${index}][ingredient_id]" class="ingredient-select block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-action="change->variant-ingredients#updateUnit">
+      <div class="variant-ingredient-item border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4" data-variant-ingredients-target="item">
+        <div class="flex-1 min-w-0">
+          <select name="product_variant[variant_ingredients_attributes][${index}][ingredient_id]" class="ingredient-select ${inputClass}" data-action="change->variant-ingredients#updateUnit">
             <option value="">Sélectionner un ingrédient</option>
             ${optionsHtml}
           </select>
         </div>
-        <div class="w-40">
-          <div class="flex items-center gap-2">
-            <input type="number" step="0.01" min="0" name="product_variant[variant_ingredients_attributes][${index}][quantity]" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Quantité">
-            <span class="text-sm text-gray-500 unit-label w-16">g</span>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:w-40">
+          <div class="flex items-center gap-2 flex-1 sm:flex-initial">
+            <input type="number" step="0.01" min="0" name="product_variant[variant_ingredients_attributes][${index}][quantity]" class="${inputClass}" placeholder="Quantité">
+            <span class="text-sm text-gray-500 unit-label whitespace-nowrap">g</span>
           </div>
-        </div>
-        <div class="flex-shrink-0">
-          <input type="hidden" name="product_variant[variant_ingredients_attributes][${index}][_destroy]" value="false" class="destroy-field">
-          <button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700" data-action="variant-ingredients#remove">Supprimer</button>
+          <div class="flex-shrink-0">
+            <input type="hidden" name="product_variant[variant_ingredients_attributes][${index}][_destroy]" value="false" class="destroy-field">
+            <button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="variant-ingredients#remove">Supprimer</button>
+          </div>
         </div>
       </div>
     `

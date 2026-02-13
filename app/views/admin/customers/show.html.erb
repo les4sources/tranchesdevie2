@@ -64,10 +64,13 @@
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Groupe</dt>
+        <dt class="text-sm font-medium text-gray-500">Groupes</dt>
         <dd class="mt-1 text-sm text-gray-900">
-          <% if @customer.group %>
-            <%= @customer.group.name %> (<%= @customer.group.discount_percent %>%)
+          <% if @customer.groups.any? %>
+            <%= @customer.groups.map { |g| "#{g.name} (#{g.discount_percent}%)" }.join(", ") %>
+            <% if @customer.effective_discount_percent > 0 %>
+              <span class="text-gray-500 text-xs block mt-1">Remise appliquée : <%= @customer.effective_discount_percent %>%</span>
+            <% end %>
           <% else %>
             <span class="text-gray-400">Aucun groupe</span>
           <% end %>
@@ -262,7 +265,7 @@
             <%= form_with url: send_sms_admin_customer_path(@customer), method: :post, local: false, class: "space-y-4", data: { controller: "sms-modal", sms_modal_target: "form", action: "submit->sms-modal#submit", turbo: "false" } do |f| %>
               <div>
                 <%= f.label :body, "Message", class: "block text-sm font-medium text-gray-700 mb-2" %>
-                <%= f.text_area :body, rows: 5, required: true, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", placeholder: "Entrez votre message..." %>
+                <%= f.text_area :body, rows: 5, required: true, class: admin_input_class("sm:text-sm"), placeholder: "Entrez votre message..." %>
                 <p class="mt-2 text-sm text-gray-500">
                   Le message sera envoyé via Smstools.
                 </p>

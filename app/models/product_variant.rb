@@ -33,11 +33,11 @@ class ProductVariant < ApplicationRecord
   }
 
   scope :visible_to_customer, ->(customer) {
-    if customer.nil? || customer.group_id.nil?
+    if customer.nil? || customer.group_ids.empty?
       unrestricted
     else
       restricted_variant_ids = VariantGroupRestriction.select(:product_variant_id)
-      allowed_variant_ids = VariantGroupRestriction.where(group_id: customer.group_id).select(:product_variant_id)
+      allowed_variant_ids = VariantGroupRestriction.where(group_id: customer.group_ids).select(:product_variant_id)
 
       where.not(id: restricted_variant_ids).or(where(id: allowed_variant_ids))
     end
@@ -70,9 +70,9 @@ class ProductVariant < ApplicationRecord
 
   def visible_to?(customer)
     return true unless restricted?
-    return false if customer.nil? || customer.group_id.nil?
+    return false if customer.nil? || customer.group_ids.empty?
 
-    restricted_groups.exists?(id: customer.group_id)
+    restricted_groups.where(id: customer.group_ids).exists?
   end
 
   private

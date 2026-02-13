@@ -3,7 +3,7 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def index
     # Jours futurs (aujourd'hui et futurs)
-    @future_bake_days = BakeDay.future.order(:baked_on)
+    @future_bake_days = BakeDay.future.includes(:baking_artisans).order(:baked_on)
 
     # Jours passés avec pagination par année et filtre par mois
     past_bake_days = BakeDay.past
@@ -28,7 +28,7 @@ class Admin::BakeDaysController < Admin::BaseController
       past_bake_days = past_bake_days.where("EXTRACT(MONTH FROM baked_on) = ?", @selected_month)
     end
     
-    @past_bake_days = past_bake_days.order(:baked_on)
+    @past_bake_days = past_bake_days.includes(:baking_artisans).order(:baked_on)
     
     # Liste des années disponibles pour le filtre
     @available_years = BakeDay.past
@@ -64,7 +64,9 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def update
-    @bake_day.assign_attributes(bake_day_params)
+    attrs = bake_day_params
+    attrs[:baking_artisan_ids] = attrs[:baking_artisan_ids].reject(&:blank?) if attrs[:baking_artisan_ids]
+    @bake_day.assign_attributes(attrs)
 
     # Auto-calculate cut_off_at if baked_on changed and cut_off_at is blank
     if @bake_day.baked_on.present? && @bake_day.cut_off_at.blank?
@@ -94,7 +96,7 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def bake_day_params
-    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note)
+    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, baking_artisan_ids: [])
   end
 end
 

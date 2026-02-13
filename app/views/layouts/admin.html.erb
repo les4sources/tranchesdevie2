@@ -14,7 +14,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="bg-gray-50 <%= 'dev-warning-border' if Rails.env.development? %>">
+  <body class="bg-gray-50 <%= 'dev-warning-border' if Rails.env.development? %>" <%= ' data-controller="mobile-menu"'.html_safe if admin_authenticated? %>>
     <nav class="bg-white shadow-sm">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 justify-between items-center">
@@ -23,22 +23,67 @@
               <span class="text-xl font-bold text-gray-900">Tranches de Vie</span>
             <% end %>
           </div>
-          <div class="flex items-center space-x-2">
-            <%= link_to "Commandes", admin_orders_path, class: admin_nav_link_class("orders") %>
-            <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
-            <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
-            <%= link_to "Ingrédients", admin_ingredients_path, class: admin_nav_link_class("ingredients") %>
-            <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_nav_link_class("bake_days") %>
-            <%= link_to "Reporting", admin_reports_path, class: admin_nav_link_class("reports") %>
-            <%= link_to admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors", title: "Déconnexion", aria: { label: "Déconnexion" } do %>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+
+          <% if admin_authenticated? %>
+            <%# Desktop navigation - hidden on mobile %>
+            <div class="hidden md:flex items-center space-x-2">
+              <%= link_to "Commandes", admin_orders_path, class: admin_nav_link_class("orders") %>
+              <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_nav_link_class("bake_days") %>
+              <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
+              <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
+              <%= link_to "Ingrédients", admin_ingredients_path, class: admin_nav_link_class("ingredients") %>
+              <%= link_to "Artisans", admin_artisans_path, class: admin_nav_link_class("artisans") %>
+              <%= link_to "Reporting", admin_reports_path, class: admin_nav_link_class("reports") %>
+              <%= link_to admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors", title: "Déconnexion", aria: { label: "Déconnexion" } do %>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+              <% end %>
+            </div>
+
+            <%# Mobile burger button %>
+            <button type="button" data-mobile-menu-target="button" data-action="click->mobile-menu#toggle" class="flex h-10 items-center justify-center rounded-lg bg-transparent px-2.5 text-gray-700 hover:text-gray-900 md:hidden" aria-label="Ouvrir le menu">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
-            <% end %>
-          </div>
+            </button>
+          <% end %>
         </div>
       </div>
     </nav>
+
+    <% if admin_authenticated? %>
+      <%# Mobile menu overlay - full screen drawer %>
+      <div data-mobile-menu-target="menu" class="fixed inset-0 z-50 hidden bg-white md:hidden">
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+            <h2 class="text-lg font-semibold text-gray-900">Menu</h2>
+            <button type="button" data-action="click->mobile-menu#close" class="flex h-10 items-center justify-center rounded-lg bg-transparent px-2.5 text-gray-700 hover:text-gray-900" aria-label="Fermer le menu">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-4">
+            <%= link_to "Commandes", admin_orders_path, class: admin_mobile_nav_link_class("orders"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_mobile_nav_link_class("bake_days"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Mangeurs", admin_customers_path, class: admin_mobile_nav_link_class("customers"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Produits", admin_products_path, class: admin_mobile_nav_link_class("products"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Ingrédients", admin_ingredients_path, class: admin_mobile_nav_link_class("ingredients"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Artisans", admin_artisans_path, class: admin_mobile_nav_link_class("artisans"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Reporting", admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>
+            <div class="mt-4 border-t border-gray-200 pt-4">
+              <%= link_to admin_logout_path, method: :delete, data: { turbo_method: :delete, action: "click->mobile-menu#close" }, class: "flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100" do %>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                Déconnexion
+              <% end %>
+            </div>
+          </nav>
+        </div>
+      </div>
+    <% end %>
 
     <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       <% if notice %>

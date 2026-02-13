@@ -11,7 +11,6 @@
     <%= yield :head %>
 
     <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,28 +127,27 @@
               <%= yield %>
             </main>
 
-            <footer class="mt-10 border-t border-gray-200 px-5 py-10 text-center">
-              <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
-                <!--a href="/faqs" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta" id="faqs">Questions frequentes</a-->
-                <a href="mailto:boulangerie@les4sources.be" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">boulangerie@les4sources.be</a>
-                <!--a href="/privacy" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">Politique de confidentialite</a-->
-                <!--a href="/terms" class="min-w-40 text-base font-normal leading-normal text-gray-600 hover:text-terracotta">Conditions d'utilisation</a-->
+            <footer class="relative mt-16 overflow-hidden rounded-3xl bg-gradient-to-br from-soft-cream via-[#faf6f2] to-[#f5ebe4] px-5 py-12 text-charcoal md:mt-20 md:py-16">
+              <div class="footer-grain" aria-hidden="true"></div>
+              <div class="relative mx-auto max-w-4xl">
+                <div class="grid gap-10 md:grid-cols-[1fr,auto] md:items-center md:gap-16">
+                  <div class="space-y-6">
+                    <p class="footer-reveal-item text-xs font-semibold uppercase tracking-[0.2em] text-charcoal/60">Écrivez-nous</p>
+                    <a href="mailto:boulangerie@les4sources.be" class="footer-reveal-item footer-email-link inline-block text-lg text-charcoal hover:text-terracotta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 md:text-xl">boulangerie@les4sources.be</a>
+                    <div class="footer-reveal-item mt-6 rounded-xl border border-terracotta/20 bg-white/50 px-4 py-3 text-left">
+                      <p class="text-sm leading-relaxed text-charcoal/80">Nos produits sont élaborés dans un atelier où des noix et fruits à coque sont utilisés. En cas d'allergie, n'hésitez pas à nous contacter.</p>
+                    </div>
+                  </div>
+                  <div class="footer-reveal-item flex flex-col items-start border-t border-terracotta/30 pt-8 md:border-t-0 md:border-l md:border-l-terracotta/30 md:pl-12 md:pt-0">
+                    <span class="text-3xl font-normal text-charcoal md:text-4xl" style="font-family: 'Pacifico', cursive;">Tranches de Vie</span>
+                    <div class="mt-2 flex items-center gap-3">
+                      <%= image_tag "logo-les-4-sources-production.png", alt: "Les 4 Sources", class: "h-8 w-auto object-contain md:h-10" %>
+                      <span class="text-sm font-medium tracking-[0.35em] text-charcoal/70">Les 4 Sources</span>
+                    </div>
+                    <span class="mt-4 block h-px w-12 bg-terracotta/50" aria-hidden="true"></span>
+                  </div>
+                </div>
               </div>
-              <!--div class="mt-6 flex flex-wrap justify-center gap-4">
-                <a href="https://www.instagram.com" class="text-gray-600 hover:text-terracotta" aria-label="Instagram">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
-                  </svg>
-                </a>
-                <a href="https://www.facebook.com" class="text-gray-600 hover:text-terracotta" aria-label="Facebook">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                  </svg>
-                </a>
-            </div-->
-              <p class="mt-6 text-base font-normal leading-normal text-gray-600">Tranches de Vie, Les 4 Sources</p>
             </footer>
           </div>
         </div>

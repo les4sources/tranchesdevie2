@@ -3,7 +3,7 @@ class Admin::ProductsController < Admin::BaseController
   before_action :set_product_variant, only: [:show_variant, :edit_variant, :update_variant, :destroy_variant, :reorder_variant_images]
 
   def index
-    @products = Product.not_deleted.includes(product_variants: { variant_ingredients: :ingredient }).ordered
+    @products = Product.not_deleted.includes(product_variants: [ { variant_ingredients: :ingredient }, :restricted_groups ]).ordered
   end
 
   def show

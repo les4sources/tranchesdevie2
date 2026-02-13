@@ -56,7 +56,12 @@ class ProductVariant < ApplicationRecord
   end
 
   def price_euros
+    return nil if price_cents.nil?
     (price_cents / 100.0).round(2)
+  end
+
+  def price_euros=(value)
+    self.price_cents = value.to_s.blank? ? nil : (value.to_f * 100).round
   end
 
   def restricted?

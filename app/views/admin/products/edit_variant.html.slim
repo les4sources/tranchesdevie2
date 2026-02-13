@@ -18,26 +18,28 @@
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
       = f.text_field :name, class: admin_input_class
     .space-y-2
-      = f.label :price_cents, "Prix (en centimes)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :price_cents, class: admin_input_class
+      = f.label :price_euros, "Prix (€)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :price_euros, step: 0.01, min: 0, class: admin_input_class
     .space-y-2
       = f.label :flour_quantity, "Quantité de pâte requise", class: "block text-sm font-medium text-gray-700"
       = f.number_field :flour_quantity, min: 0, step: 1, class: admin_input_class
 
-  .space-y-3
-    span.block.text-sm.font-medium.text-gray-700 Statut
-    .flex.items-center.space-x-3
-      = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-      = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
-  .space-y-2
-    span.block.text-sm.font-medium.text-gray-700 Canal de vente
-    .space-y-2.mt-2
-      .flex.items-center
-        = f.radio_button :channel, "store", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm font-medium text-gray-700"
-      .flex.items-center
-        = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
+  .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    span.block.text-sm.font-medium.text-gray-700 En vente en ligne
+    p.text-sm.text-gray-500.mb-3 Pour qu'une variante soit visible et achetable sur le site, elle doit être « Active » et en canal « Vente en ligne ».
+    .space-y-3
+      .flex.items-center.space-x-3
+        = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
+      .space-y-2
+        span.block.text-xs.font-medium.text-gray-600 Canal de vente
+        .flex.items-center.space-x-4
+          .flex.items-center
+            = f.radio_button :channel, "store", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm text-gray-700"
+          .flex.items-center
+            = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm text-gray-700"
 
   .space-y-3
     span.block.text-sm.font-medium.text-gray-700 Restrictions par groupe

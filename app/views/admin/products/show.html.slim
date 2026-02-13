@@ -66,19 +66,16 @@
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Prix
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Canal de vente
-              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Statut
               th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
           tbody.divide-y.divide-gray-200
             - @variants.each do |variant|
               tr
-                td.px-4.py-3.text-sm.text-gray-900 = variant.name
+                td.px-4.py-3.text-sm.text-gray-900
+                  span.inline-flex.items-center.gap-2
+                    span.h-2.w-2.rounded-full.shrink-0 class=(variant.active? ? "bg-green-500" : "bg-red-500") title=(variant.active? ? "Actif" : "Inactif") aria-hidden="true"
+                    = variant.name
                 td.px-4.py-3.text-sm.text-gray-600 = number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ")
                 td.px-4.py-3.text-sm = ProductVariantDecorator.decorate(variant).channel_label
-                td.px-4.py-3.text-sm
-                  - if variant.active? && variant.channel == "store"
-                    span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif
-                  - else
-                    span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-gray-100.text-gray-800 Inactif
                 td.px-4.py-3.text-sm
                   = link_to "Modifier", edit_variant_admin_product_path(@product, variant), class: "text-blue-600 hover:text-blue-800 mr-3"
                   = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { confirm: "Êtes-vous sûr ?" }, class: "text-red-600 hover:text-red-800 inline", form: { class: "inline" }

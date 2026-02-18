@@ -8,7 +8,6 @@ module Admin::BakeDaysHelper
 
   def status_pill_classes(status)
     {
-      "pending" => "bg-yellow-100 text-yellow-800",
       "unpaid" => "bg-orange-100 text-orange-800",
       "paid" => "bg-blue-100 text-blue-800",
       "ready" => "bg-emerald-100 text-emerald-800",

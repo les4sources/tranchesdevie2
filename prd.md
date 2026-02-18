@@ -106,7 +106,7 @@ Tranches de Vie is a single-tenant web application for one artisan bakery that b
 - bake_days(id, baked_on date unique, cut_off_at timestamptz)
 - customers(id, phone_e164 unique, first_name, last_name nullable, email nullable)
 - phone_verifications(id, phone_e164, code, expires_at)
-- orders(id, customer_id FK, bake_day_id FK, status enum[pending,paid,ready,picked_up,no_show,cancelled], total_cents, public_token unique)
+- orders(id, customer_id FK, bake_day_id FK, status enum[unpaid,paid,ready,picked_up,no_show,cancelled], total_cents, public_token unique)
 - order_items(id, order_id FK, product_variant_id FK, qty int, unit_price_cents)
 - payments(id, order_id FK unique, stripe_payment_intent_id unique, status enum[succeeded,failed,refunded])
 - sms_messages(id, direction enum[outbound,inbound], to_e164, from_e164, baked_on nullable, body, kind enum[confirmation,ready,refund,other], external_id)
@@ -134,11 +134,12 @@ Tranches de Vie is a single-tenant web application for one artisan bakery that b
 
 # 6. Status Transitions (allowed)
 
-- `pending` → `paid` (successful Stripe webhook)
-- `paid` → `ready` (admin action) → sends “ready” SMS
+- `unpaid` → `ready` (admin action) → sends "ready" SMS
+- `paid` → `ready` (admin action) → sends "ready" SMS
 - `ready` → `picked_up` (admin action)
 - `ready` → `no_show` (admin action)
-- `paid` → `cancelled` (full refund before cut‑off) → sends “refund” SMS
+- `unpaid` → `cancelled` (admin action before cut‑off)
+- `paid` → `cancelled` (full refund before cut‑off) → sends "refund" SMS
 - Forbidden: reverse transitions except manual admin correction via console (out of UI flow)
 
 # 7. Refund (before cut‑off)

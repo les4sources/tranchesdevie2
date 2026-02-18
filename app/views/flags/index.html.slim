@@ -1,6 +1,6 @@
 - content_for :title, "Drapeaux - #{Date.current.strftime('%d/%m/%Y')}"
 
-.max-w-4xl.mx-auto.px-4.py-6
+.max-w-5xl.mx-auto.px-4.py-6
   .mb-6
     h1.text-3xl.font-bold.text-slate-900.mb-2
       | Drapeaux du jour
@@ -8,27 +8,58 @@
       = I18n.with_locale(:fr) { I18n.l(Date.current, format: "%A %d %B %Y") }
 
   - if @bake_day && @dashboard && @dashboard.customer_breakdown.any?
-    .space-y-4
-      - @dashboard.customer_breakdown.each do |entry|
+    - flag_colors = ["bg-amber-50 border-amber-300", "bg-sky-50 border-sky-300", "bg-rose-50 border-rose-300", "bg-emerald-50 border-emerald-300", "bg-violet-50 border-violet-300", "bg-orange-50 border-orange-300", "bg-teal-50 border-teal-300", "bg-pink-50 border-pink-300", "bg-lime-50 border-lime-300", "bg-indigo-50 border-indigo-300"]
+    - flag_accents = ["text-amber-800", "text-sky-800", "text-rose-800", "text-emerald-800", "text-violet-800", "text-orange-800", "text-teal-800", "text-pink-800", "text-lime-800", "text-indigo-800"]
+    - flag_dots = ["bg-amber-400", "bg-sky-400", "bg-rose-400", "bg-emerald-400", "bg-violet-400", "bg-orange-400", "bg-teal-400", "bg-pink-400", "bg-lime-400", "bg-indigo-400"]
+    - total_flags = @dashboard.customer_breakdown.sum { |e| e[:orders].flat_map { |o| o[:items] }.sum { |i| i[:qty] } }
+
+    .flex.flex-wrap.items-center.gap-4.mb-5
+      .flex.items-center.gap-2
+        .h-8.w-8.rounded-full.bg-slate-100.flex.items-center.justify-center
+          svg.h-4.w-4.text-slate-600 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+            path fill-rule="evenodd" d="M3 6a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3V6ZM3 15.75a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2.25Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3v-2.25Z" clip-rule="evenodd"
+        p.text-sm.text-slate-600
+          span.font-bold.text-slate-900 = @dashboard.customer_breakdown.size
+          |  clients
+      .h-4.w-px.bg-slate-300
+      .flex.items-center.gap-2
+        .h-8.w-8.rounded-full.bg-slate-100.flex.items-center.justify-center
+          svg.h-4.w-4.text-slate-600 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+            path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5ZM6 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"
+        p.text-sm.text-slate-600
+          span.font-bold.text-slate-900 = total_flags
+          |  drapeaux à préparer
+
+    .grid.gap-4.grid-cols-1.sm:grid-cols-2.lg:grid-cols-3
+      - @dashboard.customer_breakdown.each_with_index do |entry, idx|
         - customer = entry[:customer]
-        - customer_items = {}
+        - color = flag_colors[idx % flag_colors.size]
+        - accent = flag_accents[idx % flag_accents.size]
+        - dot = flag_dots[idx % flag_dots.size]
+        - customer_items = []
         - entry[:orders].each do |customer_order|
           - customer_order[:items].each do |item|
             - variant = item[:variant]
             - product = variant.product
-            - key = "#{product.name} #{variant.name}"
-            - customer_items[key] ||= 0
-            - customer_items[key] += item[:qty]
-        .rounded-xl.border-2.border-slate-300.bg-white.p-6.shadow-md
-          h2.text-xl.font-bold.text-slate-900.mb-4.border-b.border-slate-200.pb-2
-            = customer.full_name
-          ul.space-y-2
-            - customer_items.sort_by { |k, v| k.downcase }.each do |product_label, qty|
-              li.flex.items-start.gap-3.text-base.text-slate-700
-                span.font-bold.text-slate-900.text-lg.min-w-[3rem]
-                  = "#{qty}x"
-                span.flex-1.text-slate-700.text-lg
-                  = product_label
+            - customer_items << { product: product, variant: variant, qty: item[:qty], label: "#{product.name} — #{variant.name}" }
+        - grouped = customer_items.group_by { |i| i[:label] }.map { |label, items| { label: label, qty: items.sum { |i| i[:qty] }, product: items.first[:product], variant: items.first[:variant] } }.sort_by { |i| i[:label].downcase }
+        - total_items = grouped.sum { |i| i[:qty] }
+
+        .relative.rounded-2xl.border-2.p-5.transition-shadow.hover:shadow-md class=color
+          .flex.items-start.justify-between.mb-3
+            .flex.items-center.gap-2.min-w-0
+              .h-3.w-3.rounded-full.shrink-0 class=dot
+              h3.text-base.font-bold.truncate class=accent = customer.full_name
+            .shrink-0.rounded-full.bg-white.px-2.5.py-0.5.text-xs.font-bold.shadow-sm class=accent
+              = "#{total_items} #{total_items > 1 ? 'pains' : 'pain'}"
+          .space-y-2
+            - grouped.each do |item|
+              .flex.items-center.gap-3.rounded-xl.bg-white/70.px-3.py-2
+                .flex.items-center.justify-center.h-8.w-8.rounded-lg.bg-white.shadow-sm.text-sm.font-bold class=accent
+                  = item[:qty]
+                .min-w-0
+                  p.text-sm.font-semibold.text-slate-800.truncate = item[:product].name
+                  p.text-xs.text-slate-500.truncate = item[:variant].name
   - elsif @bake_day && @dashboard
     .rounded-xl.border.border-slate-200.bg-white.p-8.text-center.shadow-sm
       p.text-lg.text-slate-500

@@ -71,8 +71,6 @@ Rails.application.routes.draw do
 
     resources :groups, only: [:index, :new, :create, :edit, :update]
 
-    resources :ingredients, except: [:show]
-
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do
         collection do
@@ -96,6 +94,7 @@ Rails.application.routes.draw do
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"
       resources :artisans
+      resources :ingredients
       resources :dough_ratios, path: "ratios-de-panification", only: [:index, :edit, :update]
     end
   end

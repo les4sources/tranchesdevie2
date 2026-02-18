@@ -1,8 +1,0 @@
-- content_for :title, "Nouvel ingrédient"
-- content_for :layout, "admin"
-
-.mb-6.flex.justify-between.items-center
-  h1.text-2xl.font-bold.text-gray-900 Nouvel ingrédient
-  = link_to "Retour à la liste", admin_ingredients_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-
-= render "form", ingredient: @ingredient

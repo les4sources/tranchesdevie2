@@ -31,7 +31,6 @@
               <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_nav_link_class("bake_days") %>
               <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
               <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
-              <%= link_to "Ingrédients", admin_ingredients_path, class: admin_nav_link_class("ingredients") %>
               <%= link_to admin_reports_path, class: admin_nav_link_class("reports"), title: "Reporting", aria: { label: "Reporting" } do %>
                 <span class="md:hidden">Reporting</span>
                 <svg class="hidden md:block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -80,7 +79,6 @@
             <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_mobile_nav_link_class("bake_days"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Mangeurs", admin_customers_path, class: admin_mobile_nav_link_class("customers"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Produits", admin_products_path, class: admin_mobile_nav_link_class("products"), data: { action: "click->mobile-menu#close" } %>
-            <%= link_to "Ingrédients", admin_ingredients_path, class: admin_mobile_nav_link_class("ingredients"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Reporting", admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Paramètres", admin_settings_path, class: admin_mobile_nav_link_class("settings"), data: { action: "click->mobile-menu#close" } %>
             <div class="mt-4 border-t border-gray-200 pt-4">

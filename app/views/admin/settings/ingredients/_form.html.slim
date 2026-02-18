@@ -1,4 +1,4 @@
-= form_with model: [:admin, ingredient], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+= form_with model: [:admin, :settings, ingredient], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
   - if ingredient.errors.any?
     .rounded-md.bg-red-50.p-4
       h2.text-sm.font-semibold.text-red-800 Correction requise
@@ -25,5 +25,5 @@
         = f.label :unit_type, "Pièces", value: "piece", class: "ml-2 text-sm font-medium text-gray-700"
 
   .flex.justify-end.space-x-3
-    = link_to "Annuler", admin_ingredients_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = link_to "Annuler", admin_settings_ingredients_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
     = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

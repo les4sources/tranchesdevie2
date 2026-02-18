@@ -6,8 +6,11 @@ class Product < ApplicationRecord
   has_many :product_variants, dependent: :destroy
   has_many :product_availabilities, through: :product_variants
   has_many :product_images, dependent: :destroy
+  has_many :product_flours, dependent: :destroy
+  has_many :flours, through: :product_flours
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
+  accepts_nested_attributes_for :product_flours, allow_destroy: true
 
   validates :name, presence: true
   validates :category, presence: true
@@ -21,6 +24,12 @@ class Product < ApplicationRecord
 
   def display_name
     name
+  end
+
+  def flour_composition_label
+    return "Aucune" if product_flours.empty?
+
+    product_flours.includes(:flour).map { |pf| "#{pf.flour.name} #{pf.percentage} %" }.join(", ")
   end
 
   private

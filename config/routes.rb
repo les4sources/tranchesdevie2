@@ -73,8 +73,6 @@ Rails.application.routes.draw do
 
     resources :ingredients, except: [:show]
 
-    resources :artisans, only: [:index, :new, :create, :edit, :update]
-
     resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       resources :variants, controller: "products", only: [:new, :create], param: :variant_id do
         collection do
@@ -93,5 +91,12 @@ Rails.application.routes.draw do
     end
 
     resources :bake_days, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+
+    get "parametres", to: "settings#index", as: :settings
+    scope path: "parametres", as: "settings", module: "settings" do
+      resources :flours, path: "farines"
+      resources :artisans
+      resources :dough_ratios, path: "ratios-de-panification", only: [:index, :edit, :update]
+    end
   end
 end

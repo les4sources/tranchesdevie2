@@ -35,7 +35,7 @@ module Admin
                            .includes(:customer,
                                      order_items: {
                                        product_variant: [
-                                         { product: { product_images: { image_attachment: :blob } } },
+                                         { product: { product_images: { image_attachment: :blob }, product_flours: :flour } },
                                          { product_images: { image_attachment: :blob } }
                                        ]
                                      })
@@ -160,38 +160,73 @@ module Admin
         confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
         confirmed_order_items = confirmed_orders.flat_map(&:order_items)
 
-        # Group by flour type
-        grouped_by_flour = confirmed_order_items.group_by do |item|
-          item.product_variant.product.flour.presence || "none"
+        # Build hash: flour_id => { flour: Flour, total: 0, by_product: { product => quantity } }
+        flour_stats = Hash.new { |h, flour_id| h[flour_id] = { flour: nil, total: 0.0, by_product: Hash.new(0) } }
+
+        confirmed_order_items.each do |item|
+          variant = item.product_variant
+          product = variant.product
+          total_dough = item.qty * (variant.flour_quantity || 0)
+          next if total_dough.zero?
+
+          product.product_flours.includes(:flour).each do |pf|
+            flour = pf.flour
+            contribution = total_dough * pf.percentage / 100.0
+            flour_stats[flour.id][:flour] = flour
+            flour_stats[flour.id][:total] += contribution
+            flour_stats[flour.id][:by_product][product] += contribution
+          end
         end
 
-        grouped_by_flour.map do |flour_type, items|
-          # Group items by product to get product-level stats
-          grouped_by_product = items.group_by { |item| item.product_variant.product_id }
-
-          product_details = grouped_by_product.map do |product_id, product_items|
-            product = product_items.first.product_variant.product
-            product_flour = product_items.sum do |item|
-              flour_qty = item.product_variant.flour_quantity || 0
-              item.qty * flour_qty
-            end
+        flour_stats.values
+          .select { |stat| stat[:flour].present? && stat[:total].positive? }
+          .map do |stat|
+            product_details = stat[:by_product].map do |product, qty|
+              { product: product, flour_quantity: qty.round }
+            end.select { |detail| detail[:flour_quantity].positive? }
+               .sort_by { |detail| detail[:product].name.downcase }
 
             {
-              product: product,
-              flour_quantity: product_flour
+              flour: stat[:flour],
+              flour_quantity: stat[:total].round,
+              products: product_details
             }
-          end.select { |detail| detail[:flour_quantity].positive? }
-             .sort_by { |detail| detail[:product].name.downcase }
+          end
+          .sort_by { |stat| [stat[:flour].position || Float::INFINITY, stat[:flour].name.downcase] }
+      end
+    end
 
-          total_flour = product_details.sum { |detail| detail[:flour_quantity] }
+    def dough_quantities
+      @dough_quantities ||= begin
+        ratios = DoughRatio.ratios_hash
+        farine_ratio = ratios["farine"] || 0.5556
+        sel_ratio    = ratios["sel"]    || 0.022
+        eau_ratio    = ratios["eau"]    || 0.655
+        levain_ratio = ratios["levain"] || 0.12095
+
+        per_flour = flour_type_stats.map do |stat|
+          pate_grams = stat[:flour_quantity].to_f
+          farine_grams = farine_ratio * pate_grams
 
           {
-            flour_type: flour_type,
-            flour_quantity: total_flour,
-            products: product_details
+            flour: stat[:flour],
+            pate_kg:   (pate_grams / 1000.0).round(2),
+            farine_kg: (farine_grams / 1000.0).round(2),
+            sel_kg:    (farine_grams * sel_ratio / 1000.0).round(3),
+            eau_l:     (farine_grams * eau_ratio / 1000.0).round(2),
+            levain_kg: (levain_ratio * pate_grams / 1000.0).round(3)
           }
-        end.select { |stat| stat[:flour_quantity].positive? }
-           .sort_by { |stat| stat[:flour_type] }
+        end
+
+        totals = {
+          pate_kg:   per_flour.sum { |f| f[:pate_kg] }.round(2),
+          farine_kg: per_flour.sum { |f| f[:farine_kg] }.round(2),
+          sel_kg:    per_flour.sum { |f| f[:sel_kg] }.round(3),
+          eau_l:     per_flour.sum { |f| f[:eau_l] }.round(2),
+          levain_kg: per_flour.sum { |f| f[:levain_kg] }.round(3)
+        }
+
+        { per_flour: per_flour, totals: totals }
       end
     end
 

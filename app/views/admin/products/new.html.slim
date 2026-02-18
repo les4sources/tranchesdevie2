@@ -18,29 +18,39 @@
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
+      p.text-xs.text-gray-500 Nom affiché aux clients
       = f.text_field :name, class: admin_input_class
     .space-y-2
       = f.label :short_name, "Nom court", class: "block text-sm font-medium text-gray-700"
+      p.text-xs.text-gray-500 Nom interne
       = f.text_field :short_name, class: admin_input_class
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :category, "Catégorie", class: "block text-sm font-medium text-gray-700"
       = f.select :category, options_for_select(category_options, @product.category), {}, class: admin_input_class
     .space-y-2
-      span.block.text-sm.font-medium.text-gray-700 Farine
-      .space-y-2.mt-2
-        .flex.items-center
-          = f.radio_button :flour, "wheat", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-          = f.label :flour, "Froment", value: "wheat", class: "ml-2 text-sm font-medium text-gray-700"
-        .flex.items-center
-          = f.radio_button :flour, "spelled", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-          = f.label :flour, "Épeautre", value: "spelled", class: "ml-2 text-sm font-medium text-gray-700"
-        .flex.items-center
-          = f.radio_button :flour, "ancien_wheat", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-          = f.label :flour, "Blé ancien", value: "ancien_wheat", class: "ml-2 text-sm font-medium text-gray-700"
-        .flex.items-center
-          = f.radio_button :flour, "", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-          = f.label :flour, "Aucune", value: "", class: "ml-2 text-sm font-medium text-gray-700"
+      .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
+        span.block.text-sm.font-medium.text-gray-700 Composition en farines
+        p.text-xs.text-gray-500.sm:order-last La somme des pourcentages doit être égale à 100 %. Laissez vide pour « Aucune ».
+      .space-y-3.mt-2 data-controller="product-flours"
+        button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap w-fit" data-action="product-flours#add" Ajouter une farine
+        #product-flours.space-y-3 data-product-flours-target="container"
+          = f.fields_for :product_flours do |pf_form|
+            - product_flour = pf_form.object
+            .product-flour-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.flex-col.gap-4.sm:flex-row.sm:items-center.sm:gap-4 data-product-flours-target="item"
+              = pf_form.hidden_field :id if product_flour.persisted?
+              .flex-1.min-w-0
+                = pf_form.collection_select :flour_id, Flour.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner une farine" }, class: admin_input_class
+              .flex.items-center.gap-2.sm:min-w-[8rem]
+                = pf_form.number_field :percentage, step: 1, min: 1, max: 100, class: "#{admin_input_class} w-20", placeholder: "%"
+                span.text-sm.text-gray-500.whitespace-nowrap %
+              .flex-shrink-0
+                = pf_form.hidden_field :_destroy, value: false, class: "destroy-field"
+                button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="product-flours#remove" Supprimer
+          - if @product.product_flours.empty?
+            .text-sm.text-gray-500.text-center.py-4 data-product-flours-target="empty" Aucune farine
+        script type="application/json" data-product-flours-target="floursData"
+          = raw Flour.not_deleted.ordered.map { |f| { id: f.id, name: f.name } }.to_json
 
   .space-y-2
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
@@ -63,7 +73,7 @@
         = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm font-medium text-gray-700"
       .flex.items-center
         = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
+        = f.label :channel, "Boulangers uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
 
   .flex.justify-end.space-x-3
     = link_to "Annuler", admin_products_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"

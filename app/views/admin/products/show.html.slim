@@ -21,8 +21,8 @@
       label.block.text-sm.font-medium.text-gray-700 Position
       p.text-sm.text-gray-900 = @product.position
     .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Farine
-      p.text-sm.text-gray-900 = product_flour_label(@product.flour)
+      label.block.text-sm.font-medium.text-gray-700 Farines
+      p.text-sm.text-gray-900 = @product.flour_composition_label
     .space-y-2
       label.block.text-sm.font-medium.text-gray-700 Statut
       - if @product.active?

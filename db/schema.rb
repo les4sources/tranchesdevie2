@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -54,15 +54,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   create_table "artisans", force: :cascade do |t|
     t.string "name", null: false
     t.boolean "active", default: true, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "bake_day_artisans", force: :cascade do |t|
     t.bigint "bake_day_id", null: false
     t.bigint "artisan_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["artisan_id"], name: "index_bake_day_artisans_on_artisan_id"
     t.index ["bake_day_id", "artisan_id"], name: "index_bake_day_artisans_on_bake_day_id_and_artisan_id", unique: true
     t.index ["bake_day_id"], name: "index_bake_day_artisans_on_bake_day_id"
@@ -80,8 +80,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   create_table "customer_groups", force: :cascade do |t|
     t.bigint "customer_id", null: false
     t.bigint "group_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["customer_id", "group_id"], name: "idx_customer_groups_unique", unique: true
     t.index ["customer_id"], name: "index_customer_groups_on_customer_id"
     t.index ["group_id"], name: "index_customer_groups_on_group_id"
@@ -98,6 +98,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
+  create_table "dough_ratios", force: :cascade do |t|
+    t.string "key", null: false
+    t.decimal "value", precision: 10, scale: 5, null: false
+    t.string "label", null: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_dough_ratios_on_key", unique: true
+  end
+
+  create_table "flours", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "position", default: 0
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_flours_on_deleted_at"
+    t.index ["name"], name: "index_flours_on_name", unique: true, where: "(deleted_at IS NULL)"
+  end
+
   create_table "groups", force: :cascade do |t|
     t.string "name", null: false
     t.integer "discount_percent", null: false
@@ -109,9 +129,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.string "name", null: false
     t.integer "unit_type", default: 0, null: false
     t.integer "position", default: 0
-    t.datetime "deleted_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "deleted_at", precision: nil
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
     t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
@@ -138,13 +158,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.boolean "requires_invoice", default: false, null: false
-    t.integer "source", default: 0, null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
-    t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
   end
 
@@ -178,6 +196,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.datetime "updated_at", precision: nil, null: false
     t.index ["product_variant_id"], name: "index_product_availabilities_on_product_variant_id"
     t.index ["start_on", "end_on"], name: "index_product_availabilities_on_start_on_and_end_on"
+  end
+
+  create_table "product_flours", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "flour_id", null: false
+    t.integer "percentage", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flour_id"], name: "index_product_flours_on_flour_id"
+    t.index ["product_id", "flour_id"], name: "index_product_flours_on_product_id_and_flour_id", unique: true
+    t.index ["product_id"], name: "index_product_flours_on_product_id"
   end
 
   create_table "product_images", force: :cascade do |t|
@@ -215,7 +244,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.string "short_name"
     t.string "flour"
     t.string "channel", default: "store", null: false
-    t.datetime "deleted_at"
+    t.datetime "deleted_at", precision: nil
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
     t.index ["deleted_at"], name: "index_products_on_deleted_at"
@@ -377,8 +406,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   create_table "variant_group_restrictions", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
     t.bigint "group_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["group_id"], name: "index_variant_group_restrictions_on_group_id"
     t.index ["product_variant_id", "group_id"], name: "idx_variant_group_restrictions_unique", unique: true
     t.index ["product_variant_id"], name: "index_variant_group_restrictions_on_product_variant_id"
@@ -388,48 +417,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
     t.bigint "product_variant_id", null: false
     t.bigint "ingredient_id", null: false
     t.decimal "quantity", precision: 10, scale: 2, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["ingredient_id"], name: "index_variant_ingredients_on_ingredient_id"
     t.index ["product_variant_id", "ingredient_id"], name: "index_variant_ingredients_on_variant_and_ingredient", unique: true
     t.index ["product_variant_id"], name: "index_variant_ingredients_on_product_variant_id"
   end
 
-  create_table "wallet_transactions", force: :cascade do |t|
-    t.bigint "wallet_id", null: false
-    t.integer "amount_cents", null: false
-    t.integer "transaction_type", null: false
-    t.bigint "order_id"
-    t.string "stripe_payment_intent_id"
-    t.text "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["created_at"], name: "index_wallet_transactions_on_created_at"
-    t.index ["order_id"], name: "index_wallet_transactions_on_order_id"
-    t.index ["wallet_id"], name: "index_wallet_transactions_on_wallet_id"
-  end
-
-  create_table "wallets", force: :cascade do |t|
-    t.bigint "customer_id", null: false
-    t.integer "balance_cents", default: 0, null: false
-    t.integer "low_balance_threshold_cents", default: 1000, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["customer_id"], name: "index_wallets_on_customer_id", unique: true
-  end
-
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id", name: "active_storage_attachments_blob_id_fkey"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id", name: "active_storage_variant_records_blob_id_fkey"
-  add_foreign_key "bake_day_artisans", "artisans"
-  add_foreign_key "bake_day_artisans", "bake_days"
-  add_foreign_key "customer_groups", "customers"
-  add_foreign_key "customer_groups", "groups"
+  add_foreign_key "bake_day_artisans", "artisans", name: "bake_day_artisans_artisan_id_fkey"
+  add_foreign_key "bake_day_artisans", "bake_days", name: "bake_day_artisans_bake_day_id_fkey"
+  add_foreign_key "customer_groups", "customers", name: "customer_groups_customer_id_fkey"
+  add_foreign_key "customer_groups", "groups", name: "customer_groups_group_id_fkey"
   add_foreign_key "order_items", "orders", name: "order_items_order_id_fkey"
   add_foreign_key "order_items", "product_variants", name: "order_items_product_variant_id_fkey"
   add_foreign_key "orders", "bake_days", name: "orders_bake_day_id_fkey"
   add_foreign_key "orders", "customers", name: "orders_customer_id_fkey"
   add_foreign_key "payments", "orders", name: "payments_order_id_fkey"
   add_foreign_key "product_availabilities", "product_variants", name: "product_availabilities_product_variant_id_fkey"
+  add_foreign_key "product_flours", "flours"
+  add_foreign_key "product_flours", "products"
   add_foreign_key "product_images", "product_variants", name: "product_images_product_variant_id_fkey"
   add_foreign_key "product_images", "products", name: "product_images_product_id_fkey"
   add_foreign_key "product_variants", "products", name: "product_variants_product_id_fkey"
@@ -440,11 +448,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_10_150001) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_ready_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_recurring_executions_job_id_fkey", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_scheduled_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "variant_group_restrictions", "groups"
-  add_foreign_key "variant_group_restrictions", "product_variants"
-  add_foreign_key "variant_ingredients", "ingredients"
-  add_foreign_key "variant_ingredients", "product_variants"
-  add_foreign_key "wallet_transactions", "orders"
-  add_foreign_key "wallet_transactions", "wallets"
-  add_foreign_key "wallets", "customers"
+  add_foreign_key "variant_group_restrictions", "groups", name: "variant_group_restrictions_group_id_fkey"
+  add_foreign_key "variant_group_restrictions", "product_variants", name: "variant_group_restrictions_product_variant_id_fkey"
+  add_foreign_key "variant_ingredients", "ingredients", name: "variant_ingredients_ingredient_id_fkey"
+  add_foreign_key "variant_ingredients", "product_variants", name: "variant_ingredients_product_variant_id_fkey"
 end

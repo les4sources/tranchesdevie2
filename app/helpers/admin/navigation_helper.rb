@@ -25,6 +25,8 @@ module Admin::NavigationHelper
     if controller_name == "orders"
       controller.controller_name == "orders" ||
         (controller.controller_path == "admin/sessions" && controller.action_name == "index")
+    elsif controller_name == "settings"
+      controller.controller_path == "admin/settings" || controller.controller_path.start_with?("admin/settings/")
     else
       controller.controller_name == controller_name
     end

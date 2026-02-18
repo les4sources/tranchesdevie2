@@ -124,11 +124,10 @@
         tbody.divide-y.divide-slate-50.bg-white
           - if @dashboard.flour_type_stats.any?
             - @dashboard.flour_type_stats.each do |stat|
-              - next if stat[:flour_type] == "none"
               - products = stat[:products] || []
               tr.hover:bg-slate-50.bg-slate-50
                 td.px-4.py-3
-                  p.font-semibold.text-slate-900 = product_flour_label(stat[:flour_type])
+                  p.font-semibold.text-slate-900 = stat[:flour].name
                 td.px-4.py-3.text-right.font-semibold.text-slate-900
                   | #{stat[:flour_quantity]} g
               - if products.any?
@@ -146,6 +145,58 @@
             tr
               td.px-4.py-6.text-center.text-sm.text-slate-500 colspan="2"
                 | Aucune quantité de farine requise pour l'instant.
+
+  - dough_data = @dashboard.dough_quantities
+  - if dough_data[:per_flour].any?
+    .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
+      .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
+        div
+          h2.text-xl.font-semibold.text-slate-900 Panification
+          p.text-sm.text-slate-500.mt-1 Farine, sel, eau et levain calculés à partir des ratios de panification
+      .mt-4.overflow-x-auto.rounded-xl.border.border-slate-100.sm:mt-6
+        table.min-w-full.divide-y.divide-slate-100.text-sm
+          thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
+            tr
+              th.px-4.py-3.text-left
+              - dough_data[:per_flour].each do |col|
+                th.px-4.py-3.text-right = col[:flour].name
+              th.px-4.py-3.text-right.font-bold TOTAL
+          tbody.divide-y.divide-slate-50.bg-white
+            tr.bg-slate-300.hover:bg-slate-300
+              td.px-4.py-3.font-semibold.text-slate-900 Quantité pâte (kg)
+              - dough_data[:per_flour].each do |col|
+                td.px-4.py-3.text-right.text-slate-700.bg-slate-300
+                  = number_with_precision(col[:pate_kg], precision: 2, strip_insignificant_zeros: true)
+              td.px-4.py-3.text-right.font-semibold.text-slate-900.bg-slate-300
+                = number_with_precision(dough_data[:totals][:pate_kg], precision: 2, strip_insignificant_zeros: true)
+            tr.hover:bg-slate-50.bg-slate-50
+              td.px-4.py-3.font-semibold.text-slate-900 Farine (kg)
+              - dough_data[:per_flour].each do |col|
+                td.px-4.py-3.text-right.text-slate-700
+                  = number_with_precision(col[:farine_kg], precision: 2, strip_insignificant_zeros: true)
+              td.px-4.py-3.text-right.font-semibold.text-slate-900
+                = number_with_precision(dough_data[:totals][:farine_kg], precision: 2, strip_insignificant_zeros: true)
+            tr.hover:bg-slate-50
+              td.px-4.py-3.font-semibold.text-slate-900 Sel (kg)
+              - dough_data[:per_flour].each do |col|
+                td.px-4.py-3.text-right.text-slate-700
+                  = number_with_precision(col[:sel_kg], precision: 3, strip_insignificant_zeros: true)
+              td.px-4.py-3.text-right.font-semibold.text-slate-900
+                = number_with_precision(dough_data[:totals][:sel_kg], precision: 3, strip_insignificant_zeros: true)
+            tr.hover:bg-slate-50.bg-slate-50
+              td.px-4.py-3.font-semibold.text-slate-900 Eau (l)
+              - dough_data[:per_flour].each do |col|
+                td.px-4.py-3.text-right.text-slate-700
+                  = number_with_precision(col[:eau_l], precision: 2, strip_insignificant_zeros: true)
+              td.px-4.py-3.text-right.font-semibold.text-slate-900
+                = number_with_precision(dough_data[:totals][:eau_l], precision: 2, strip_insignificant_zeros: true)
+            tr.hover:bg-slate-50
+              td.px-4.py-3.font-semibold.text-slate-900 Levain (kg)
+              - dough_data[:per_flour].each do |col|
+                td.px-4.py-3.text-right.text-slate-700
+                  = number_with_precision(col[:levain_kg], precision: 3, strip_insignificant_zeros: true)
+              td.px-4.py-3.text-right.font-semibold.text-slate-900
+                = number_with_precision(dough_data[:totals][:levain_kg], precision: 3, strip_insignificant_zeros: true)
 
   .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between

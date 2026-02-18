@@ -1,0 +1,26 @@
+- content_for :title, "Paramètres"
+- content_for :layout, "admin"
+
+.mb-6
+  h1.text-2xl.font-bold.text-gray-900 Paramètres
+
+.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+  ul.divide-y.divide-gray-200
+    li
+      = link_to admin_settings_flours_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
+        span.text-sm.font-medium.text-gray-900 Farines
+        span.text-gray-400
+          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
+    li
+      = link_to admin_settings_artisans_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
+        span.text-sm.font-medium.text-gray-900 Artisans
+        span.text-gray-400
+          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
+    li
+      = link_to admin_settings_dough_ratios_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
+        span.text-sm.font-medium.text-gray-900 Ratios de panification
+        span.text-gray-400
+          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"

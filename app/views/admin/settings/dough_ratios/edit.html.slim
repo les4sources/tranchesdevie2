@@ -1,0 +1,25 @@
+- content_for :title, "Modifier le ratio"
+- content_for :layout, "admin"
+
+.mb-6
+  .flex.items-center.gap-3
+    = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+    = link_to "Ratios", admin_settings_dough_ratios_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+    h1.text-2xl.font-bold.text-gray-900 = "Modifier : #{@ratio.label}"
+
+= form_with model: @ratio, url: admin_settings_dough_ratio_path(@ratio), local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if @ratio.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - @ratio.errors.full_messages.each do |message|
+          li= message
+
+  .space-y-2
+    = f.label :value, "Valeur du ratio", class: "block text-sm font-medium text-gray-700"
+    = f.number_field :value, step: 0.00001, class: admin_input_class
+    p.text-xs.text-gray-500.mt-1 = "Ratio actuel : #{@ratio.label}. Clé : #{@ratio.key}"
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_dough_ratios_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

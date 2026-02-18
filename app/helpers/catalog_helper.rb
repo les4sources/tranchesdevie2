@@ -51,6 +51,7 @@ module CatalogHelper
     case flour
     when "wheat" then "Froment"
     when "spelled" then "Épeautre"
+    when "small_spelled" then "Petit épeautre"
     when "ancien_wheat" then "Blé ancien"
     else flour.to_s.tr("_", " ").capitalize
     end

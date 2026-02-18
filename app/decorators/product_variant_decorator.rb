@@ -3,7 +3,7 @@ class ProductVariantDecorator < Draper::Decorator
 
   CHANNEL_LABELS = {
     'store' => 'Vente en ligne',
-    'admin' => 'Administrateurs uniquement'
+    'admin' => 'Boulangers uniquement'
   }.freeze
 
   def channel_label

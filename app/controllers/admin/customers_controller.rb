@@ -2,7 +2,7 @@ class Admin::CustomersController < Admin::BaseController
   before_action :set_customer, only: [:show, :edit, :update, :send_sms]
 
   def index
-    @customers = Customer.order(created_at: :desc).includes(:orders)
+    @customers = Customer.includes(:orders, :groups)
     
     if params[:search].present?
       search_term = "%#{params[:search]}%"
@@ -10,6 +10,19 @@ class Admin::CustomersController < Admin::BaseController
         "first_name ILIKE ? OR last_name ILIKE ? OR phone_e164 ILIKE ? OR email ILIKE ?",
         search_term, search_term, search_term, search_term
       )
+    end
+
+    case params[:sort]
+    when "orders"
+      @customers = @customers.left_joins(:orders)
+                              .group("customers.id")
+                              .order(Arel.sql("COUNT(orders.id) DESC"))
+    when "last_order"
+      @customers = @customers.left_joins(:orders)
+                              .group("customers.id")
+                              .order(Arel.sql("MAX(orders.created_at) DESC NULLS LAST"))
+    else
+      @customers = @customers.order(:last_name, :first_name)
     end
   end
 

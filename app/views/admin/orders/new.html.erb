@@ -20,9 +20,9 @@
 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
   <%= form_with model: @order, url: admin_orders_path, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customers.map { |c| { id: c.id, discount_percent: c.effective_discount_percent } }.to_json } do |f| %>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div>
+      <div data-controller="searchable-select" data-searchable-select-placeholder-value="Choisir un client...">
         <%= f.label :customer_id, "Client", class: "block text-sm font-medium text-gray-700" %>
-        <% customer_options = @customers.map do |customer|
+        <% customer_options = @customers.sort_by { |c| [c.last_name.to_s.downcase, c.first_name.to_s.downcase] }.map do |customer|
              label = [customer.last_name&.upcase, customer.first_name].compact.join(' ').squish
              [label, customer.id]
            end %>
@@ -30,7 +30,7 @@
                      options_for_select(customer_options, @order.customer_id),
                      { include_blank: "Sélectionner un client" },
                      class: "mt-1 #{admin_input_class}",
-                     data: { order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
+                     data: { searchable_select_target: "select", order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
       </div>
 
       <div>

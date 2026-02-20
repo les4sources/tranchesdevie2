@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["quantity", "rowSubtotal", "totalAmount", "customerSelect", "discountInfo", "discountMessage", "discountText"]
+  static targets = ["quantity", "rowSubtotal", "totalAmount", "customerSelect", "discountInfo", "discountMessage", "discountText", "productCard", "variantRow"]
   static values = {
     customers: Array
   }
@@ -39,7 +39,48 @@ export default class extends Controller {
       const productId = target.dataset.productId
       const cents = subtotalByProduct[productId] || 0
       subtotalCents += cents
-      target.textContent = this.formatCurrency(cents)
+      target.textContent = cents > 0 ? this.formatCurrency(cents) : ""
+      // Update subtotal color
+      if (cents > 0) {
+        target.classList.remove("text-gray-400")
+        target.classList.add("text-indigo-600")
+      } else {
+        target.classList.remove("text-indigo-600")
+        target.classList.add("text-gray-400")
+      }
+    })
+
+    // Update card borders
+    this.productCardTargets.forEach((card) => {
+      const productId = card.dataset.productId
+      const hasSelection = (subtotalByProduct[productId] || 0) > 0
+      if (hasSelection) {
+        card.classList.remove("border-gray-200", "shadow-sm")
+        card.classList.add("border-indigo-400", "shadow-md", "ring-1", "ring-indigo-100")
+      } else {
+        card.classList.remove("border-indigo-400", "shadow-md", "ring-1", "ring-indigo-100")
+        card.classList.add("border-gray-200", "shadow-sm")
+      }
+    })
+
+    // Update variant row styles
+    this.quantityTargets.forEach((input) => {
+      const qty = parseInt(input.value, 10) || 0
+      const variantId = input.dataset.variantId
+      const row = this.variantRowTargets.find(r => r.dataset.variantId === variantId)
+      if (row) {
+        if (qty > 0) {
+          row.classList.remove("bg-gray-50")
+          row.classList.add("bg-indigo-50")
+          input.classList.remove("text-gray-400")
+          input.classList.add("text-indigo-700")
+        } else {
+          row.classList.remove("bg-indigo-50")
+          row.classList.add("bg-gray-50")
+          input.classList.remove("text-indigo-700")
+          input.classList.add("text-gray-400")
+        }
+      }
     })
 
     // Calculer la remise si un client est sélectionné
@@ -77,6 +118,27 @@ export default class extends Controller {
     if (!customerId || !this.customersValue) return 0
     const customer = this.customersValue.find(c => c.id === customerId)
     return customer?.discount_percent || 0
+  }
+
+  increment(event) {
+    event.preventDefault()
+    const variantId = event.currentTarget.dataset.variantId
+    const input = this.quantityTargets.find(i => i.dataset.variantId === variantId)
+    if (input) {
+      input.value = (parseInt(input.value, 10) || 0) + 1
+      this.recalculate()
+    }
+  }
+
+  decrement(event) {
+    event.preventDefault()
+    const variantId = event.currentTarget.dataset.variantId
+    const input = this.quantityTargets.find(i => i.dataset.variantId === variantId)
+    if (input) {
+      const current = parseInt(input.value, 10) || 0
+      input.value = Math.max(0, current - 1)
+      this.recalculate()
+    }
   }
 
   resetQuantities(event) {

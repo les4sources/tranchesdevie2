@@ -3,7 +3,7 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def index
     # Jours futurs (aujourd'hui et futurs)
-    @future_bake_days = BakeDay.future.includes(:baking_artisans).order(:baked_on)
+    @future_bake_days = BakeDay.future.includes(:baking_artisans, orders: { order_items: { product_variant: [:mold_type, { product: { product_flours: :flour } }] } }).order(:baked_on)
 
     # Jours passés avec pagination par année et filtre par mois
     past_bake_days = BakeDay.past
@@ -28,7 +28,7 @@ class Admin::BakeDaysController < Admin::BaseController
       past_bake_days = past_bake_days.where("EXTRACT(MONTH FROM baked_on) = ?", @selected_month)
     end
     
-    @past_bake_days = past_bake_days.includes(:baking_artisans).order(:baked_on)
+    @past_bake_days = past_bake_days.includes(:baking_artisans, orders: { order_items: { product_variant: [:mold_type, { product: { product_flours: :flour } }] } }).order(:baked_on)
     
     # Liste des années disponibles pour le filtre
     @available_years = BakeDay.past

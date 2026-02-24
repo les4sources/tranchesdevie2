@@ -5,8 +5,8 @@
         tr
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase = show_future ? "Jour" : "Date"
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Commandes
+          th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Capacité
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Artisans
-          th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase @nbsp;
       tbody.bg-white.divide-y.divide-gray-200
         - bake_days.each do |bake_day|
           tr
@@ -27,11 +27,24 @@
               = link_to bake_day.orders.count, 
                         admin_orders_path(bake_day_id: bake_day.id), 
                         class: "text-blue-600 hover:text-blue-800 hover:underline"
+            td.px-6.py-4.whitespace-nowrap
+              - cap = BakeCapacityService.new(bake_day)
+              - pct = cap.fill_percentage
+              - if pct >= 100
+                - bar_color = "bg-red-500"
+              - elsif pct >= 80
+                - bar_color = "bg-amber-500"
+              - else
+                - bar_color = "bg-emerald-500"
+              .flex.items-center.gap-2
+                span.h-2.w-16.rounded-full.bg-gray-200.overflow-hidden
+                  span.block.h-2.rounded-full class=bar_color style="width: #{[pct, 100].min}%"
+                span.text-xs.font-medium class=(pct >= 100 ? "text-red-600" : "text-gray-600")
+                  | #{pct}%
             td.px-6.py-4.text-gray-600
               - if bake_day.baking_artisans.any?
                 = bake_day.baking_artisans.map(&:name).join(", ")
               - else
                 span.text-gray-400 —
             td.px-6.py-4.whitespace-nowrap
-              = link_to "Tableau de bord", admin_bake_day_path(bake_day), class: "text-blue-600 hover:text-blue-800 hover:underline mr-3"
               = link_to "Modifier", edit_admin_bake_day_path(bake_day), class: "text-blue-600 hover:text-blue-800 hover:underline"

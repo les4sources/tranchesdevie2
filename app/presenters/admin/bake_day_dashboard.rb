@@ -1,29 +1,5 @@
 module Admin
   class BakeDayDashboard
-    XXL_MOLD_PATTERNS = [
-      /xxl/i
-    ].freeze
-
-    LARGE_MOLD_PATTERNS = [
-      /1\s?kg/i,
-      /1000/,
-      /grand/i
-    ].freeze
-
-    MIDDLE_MOLD_PATTERNS = [
-      /800\s?g/i,
-      /0\.8/i,
-      /800/,
-      /moyen/i
-    ].freeze
-
-    SMALL_MOLD_PATTERNS = [
-      /600\s?g/i,
-      /0\.6/i,
-      /600/,
-      /petit/i
-    ].freeze
-
     attr_reader :bake_day
 
     def initialize(bake_day)
@@ -35,6 +11,7 @@ module Admin
                            .includes(:customer,
                                      order_items: {
                                        product_variant: [
+                                         :mold_type,
                                          { product: { product_images: { image_attachment: :blob }, product_flours: :flour } },
                                          { product_images: { image_attachment: :blob } }
                                        ]
@@ -59,22 +36,30 @@ module Admin
             category: product.category,
             orders_count: order_ids.size,
             units_count: items.sum(&:qty),
-            mold_size: detect_mold_size(product, variant)
+            mold_type: variant.mold_type
           }
         end.sort_by { |stat| [stat[:product].name.downcase, stat[:variant].name.downcase] }
       end
     end
 
     def breads_mold_requirements
-      stats = variant_stats.select { |stat| stat[:product].breads? }
+      @breads_mold_requirements ||= begin
+        stats = variant_stats.select { |stat| stat[:product].breads? }
 
-      {
-        xxl: stats.select { |stat| stat[:mold_size] == :xxl }.sum { |stat| stat[:units_count] },
-        large: stats.select { |stat| stat[:mold_size] == :large }.sum { |stat| stat[:units_count] },
-        middle: stats.select { |stat| stat[:mold_size] == :middle }.sum { |stat| stat[:units_count] },
-        small: stats.select { |stat| stat[:mold_size] == :small }.sum { |stat| stat[:units_count] },
-        unspecified: stats.select { |stat| stat[:mold_size].nil? }.sum { |stat| stat[:units_count] }
-      }
+        result = {}
+        MoldType.not_deleted.ordered.each do |mt|
+          result[mt] = stats.select { |stat| stat[:mold_type]&.id == mt.id }.sum { |stat| stat[:units_count] }
+        end
+
+        unassigned = stats.select { |stat| stat[:mold_type].nil? }.sum { |stat| stat[:units_count] }
+        result[:unassigned] = unassigned
+
+        result
+      end
+    end
+
+    def capacity_service
+      @capacity_service ||= BakeCapacityService.new(bake_day)
     end
 
     def kpis
@@ -140,7 +125,7 @@ module Admin
         grouped_by_product_id.map do |product_id, items|
           # Get the product from the first item (all items in this group have the same product)
           product = items.first.product_variant.product
-          
+
           total_flour = items.sum do |item|
             flour_qty = item.product_variant.flour_quantity || 0
             item.qty * flour_qty
@@ -251,20 +236,5 @@ module Admin
           .sort_by { |stat| stat[:ingredient].name.downcase }
       end
     end
-
-    private
-
-    def detect_mold_size(product, variant)
-      label = "#{product.name} #{variant.name}".downcase
-
-      return :xxl if XXL_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
-      return :large if LARGE_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
-      return :middle if MIDDLE_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
-      return :small if SMALL_MOLD_PATTERNS.any? { |pattern| label.match?(pattern) }
-
-      nil
-    end
   end
 end
-
-

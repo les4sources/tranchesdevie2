@@ -96,7 +96,7 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def bake_day_params
-    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, baking_artisan_ids: [])
+    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, :market_day, baking_artisan_ids: [])
   end
 end
 

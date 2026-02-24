@@ -1,0 +1,30 @@
+- content_for :title, "Capacités de production"
+- content_for :layout, "admin"
+
+.mb-6.flex.justify-between.items-center
+  .flex.items-center.gap-3
+    = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+  h1.text-2xl.font-bold.text-gray-900 Capacités de production
+
+= form_with model: [:admin, :settings, @production_setting], url: admin_settings_production_setting_path, method: :patch, local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if @production_setting.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - @production_setting.errors.full_messages.each do |message|
+          li= message
+
+  h2.text-lg.font-semibold.text-gray-800 Capacité du four
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :oven_capacity_grams, "Jour normal (grammes)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :oven_capacity_grams, min: 1, class: admin_input_class
+      p.text-xs.text-gray-500 = "#{(@production_setting.oven_capacity_grams / 1000.0).round(1)} kg"
+    .space-y-2
+      = f.label :market_day_oven_capacity_grams, "Jour de marché (grammes)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :market_day_oven_capacity_grams, min: 1, class: admin_input_class
+      p.text-xs.text-gray-500 = "#{(@production_setting.market_day_oven_capacity_grams / 1000.0).round(1)} kg"
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

@@ -95,6 +95,14 @@ class CheckoutController < ApplicationController
     
     @bake_day = BakeDay.find(session[:bake_day_id])
     @cart = session[:cart] || []
+
+    # Pre-check capacity before creating Stripe PaymentIntent
+    capacity_result = BakeCapacityService.new(@bake_day).cart_fits?(@cart)
+    unless capacity_result[:fits]
+      render json: { error: capacity_result[:errors].join(". ") }, status: :unprocessable_entity
+      return
+    end
+
     subtotal_cents = calculate_subtotal
     
     # Obtenir le client pour calculer la remise

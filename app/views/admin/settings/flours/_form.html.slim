@@ -6,13 +6,18 @@
         - flour.errors.full_messages.each do |message|
           li= message
 
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
+  .grid.grid-cols-1.md:grid-cols-3.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
       = f.text_field :name, class: admin_input_class
     .space-y-2
       = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
       = f.number_field :position, class: admin_input_class
+    .space-y-2
+      = f.label :kneader_limit_grams, "Limite pétrin (grammes)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :kneader_limit_grams, min: 0, class: admin_input_class, placeholder: "Vide = pas de limite"
+      - if flour.kneader_limit_grams.present?
+        p.text-xs.text-gray-500 = "#{(flour.kneader_limit_grams / 1000.0).round(1)} kg"
 
   .flex.justify-end.space-x-3
     = link_to "Annuler", admin_settings_flours_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"

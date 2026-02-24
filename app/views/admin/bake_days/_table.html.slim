@@ -20,6 +20,9 @@
               - elsif bake_day.baked_on == Date.tomorrow
                 span.ml-2.inline-flex.items-center.rounded-md.bg-yellow-50.px-2.py-1.text-xs.font-medium.text-yellow-700.ring-1.ring-inset.ring-yellow-600/20
                   | Demain
+              - if bake_day.market_day?
+                span.ml-2.inline-flex.items-center.rounded-md.bg-purple-50.px-2.py-1.text-xs.font-medium.text-purple-700.ring-1.ring-inset.ring-purple-600/20
+                  | Marché
             td.px-6.py-4.whitespace-nowrap.text-gray-600
               = link_to bake_day.orders.count, 
                         admin_orders_path(bake_day_id: bake_day.id), 

@@ -118,7 +118,8 @@ class WebhooksController < ApplicationController
         customer: customer,
         bake_day: bake_day,
         cart_items: cart_items,
-        payment_intent_id: payment_intent_id
+        payment_intent_id: payment_intent_id,
+        skip_capacity_check: true
       )
 
       order = service.call

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -74,6 +74,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.text "internal_note"
+    t.boolean "market_day", default: false, null: false
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
   end
 
@@ -114,6 +115,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "kneader_limit_grams"
     t.index ["deleted_at"], name: "index_flours_on_deleted_at"
     t.index ["name"], name: "index_flours_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
@@ -134,6 +136,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
     t.datetime "updated_at", precision: nil, null: false
     t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
     t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
+  end
+
+  create_table "mold_types", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "limit", null: false
+    t.integer "position", default: 0
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_mold_types_on_deleted_at"
+    t.index ["name"], name: "index_mold_types_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
 
   create_table "order_items", force: :cascade do |t|
@@ -229,7 +242,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "flour_quantity"
     t.string "channel", default: "store", null: false
+    t.bigint "mold_type_id"
+    t.index ["mold_type_id"], name: "index_product_variants_on_mold_type_id"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
+  end
+
+  create_table "production_settings", force: :cascade do |t|
+    t.integer "oven_capacity_grams", default: 110000, null: false
+    t.integer "market_day_oven_capacity_grams", default: 165000, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "products", force: :cascade do |t|
@@ -440,6 +462,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_155242) do
   add_foreign_key "product_flours", "products"
   add_foreign_key "product_images", "product_variants", name: "product_images_product_variant_id_fkey"
   add_foreign_key "product_images", "products", name: "product_images_product_id_fkey"
+  add_foreign_key "product_variants", "mold_types"
   add_foreign_key "product_variants", "products", name: "product_variants_product_id_fkey"
   add_foreign_key "sms_messages", "customers", name: "sms_messages_customer_id_fkey"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_blocked_executions_job_id_fkey", on_delete: :cascade

@@ -3,6 +3,8 @@
 
 - kpis = @dashboard.kpis
 - mold_requirements = @dashboard.breads_mold_requirements
+- capacity = @dashboard.capacity_service
+- capacity_usage = capacity.usage
 - status_distribution = @dashboard.status_distribution
 - note_input_id = dom_id(@bake_day, :internal_note)
 
@@ -16,6 +18,9 @@
             | Fournée du #{@bake_day.baked_on.strftime("%d/%m/%Y")}
           span.inline-flex.items-center.rounded-full.px-3.py-1.text-xs.font-semibold.shrink-0 class=("#{@bake_day.cut_off_passed? ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}")
             = @bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes"
+          - if @bake_day.market_day?
+            span.inline-flex.items-center.rounded-full.bg-purple-100.px-3.py-1.text-xs.font-semibold.text-purple-700.shrink-0
+              | Jour de marché
         p.text-slate-500.text-sm.mt-1
           | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
       .flex.flex-wrap.gap-2.sm:gap-3.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
@@ -82,34 +87,68 @@
         p.mt-2.text-2xl.font-semibold.text-slate-900.sm:text-3xl = card[:value]
         p.text-sm.text-slate-500 = card[:meta]
 
+  - fill_pct = capacity.fill_percentage
+  - fill_color = fill_pct >= 100 ? "text-rose-700 bg-rose-100" : (fill_pct >= 80 ? "text-amber-700 bg-amber-100" : "text-emerald-700 bg-emerald-100")
   .rounded-2xl.border.border-indigo-100.bg-indigo-50.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
       div
-        h2.text-xl.font-semibold.text-indigo-950 Préparez vos moules et la pâte requise
-    .mt-4.grid.gap-3.sm:mt-6.sm:gap-4.grid-cols-2.sm:grid-cols-2 class=("md:grid-cols-4 #{mold_requirements[:unspecified].positive? ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}")
-      - unspecified_status = mold_requirements[:unspecified].zero? ? "Ok" : "Clarify"
-      - total_flour = @dashboard.total_flour_quantity
+        h2.text-xl.font-semibold.text-indigo-950
+          | Capacité de production
+          span.ml-3.inline-flex.items-center.rounded-full.px-3.py-1.text-sm.font-semibold class=fill_color
+            = "#{fill_pct}%"
+    .mt-4.space-y-4.sm:mt-6
+      h3.text-sm.font-semibold.text-indigo-900.tracking-wide Moules
+      .grid.gap-3.grid-cols-2.sm:grid-cols-3.lg:grid-cols-5
+        - capacity_usage[:molds].each do |entry|
+          - pct = entry[:limit] > 0 ? (entry[:used].to_f / entry[:limit] * 100).round : 0
+          - bar_color = pct >= 100 ? "bg-rose-500" : (pct >= 80 ? "bg-amber-500" : "bg-emerald-500")
+          - text_color = pct >= 100 ? "text-rose-700" : (pct >= 80 ? "text-amber-700" : "text-emerald-700")
+          .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
+            p.text-sm.font-semibold.text-indigo-900 = entry[:mold_type].name
+            p.mt-1.text-2xl.font-bold.text-indigo-950
+              = entry[:used]
+              span.text-sm.font-normal.text-indigo-700 = " / #{entry[:limit]}"
+            .mt-2.h-2.w-full.rounded-full.bg-slate-200
+              .h-2.rounded-full class=bar_color style="width: #{[pct, 100].min}%"
+            p.mt-1.text-xs.font-semibold class=text_color = "#{pct}%"
+        - if mold_requirements[:unassigned] > 0
+          .rounded-2xl.border.border-amber-200.bg-amber-50.p-4.shadow.sm:p-5
+            p.text-sm.font-semibold.text-amber-900 Non assignés
+            p.mt-1.text-2xl.font-bold.text-amber-950 = mold_requirements[:unassigned]
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
-        p.text-sm.font-semibold.text-indigo-900 XXL (1,4 kg)
-        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:xxl]
+      - if capacity_usage[:kneader].any?
+        h3.text-sm.font-semibold.text-indigo-900.tracking-wide Pétrin
+        .grid.gap-3.grid-cols-2.sm:grid-cols-3
+          - capacity_usage[:kneader].each do |entry|
+            - pct = entry[:limit] > 0 ? (entry[:used].to_f / entry[:limit] * 100).round : 0
+            - bar_color = pct >= 100 ? "bg-rose-500" : (pct >= 80 ? "bg-amber-500" : "bg-emerald-500")
+            - text_color = pct >= 100 ? "text-rose-700" : (pct >= 80 ? "text-amber-700" : "text-emerald-700")
+            .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
+              p.text-sm.font-semibold.text-indigo-900 = entry[:flour].name
+              p.mt-1.text-2xl.font-bold.text-indigo-950
+                = "#{(entry[:used] / 1000.0).round(1)} kg"
+                span.text-sm.font-normal.text-indigo-700 = " / #{(entry[:limit] / 1000.0).round(1)} kg"
+              .mt-2.h-2.w-full.rounded-full.bg-slate-200
+                .h-2.rounded-full class=bar_color style="width: #{[pct, 100].min}%"
+              p.mt-1.text-xs.font-semibold class=text_color = "#{pct}%"
 
-      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
-        p.text-sm.font-semibold.text-indigo-900 Grands (1 kg)
-        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:large]
-
-      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
-        p.text-sm.font-semibold.text-indigo-900 Moyens (800 g)
-        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:middle]
-
-      .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
-        p.text-sm.font-semibold.text-indigo-900 Petits (600 g)
-        p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:small]
-
-      - if mold_requirements[:unspecified].positive?
+      h3.text-sm.font-semibold.text-indigo-900.tracking-wide Four
+      - oven = capacity_usage[:oven]
+      - oven_pct = oven[:limit] > 0 ? (oven[:used].to_f / oven[:limit] * 100).round : 0
+      - oven_bar_color = oven_pct >= 100 ? "bg-rose-500" : (oven_pct >= 80 ? "bg-amber-500" : "bg-emerald-500")
+      - oven_text_color = oven_pct >= 100 ? "text-rose-700" : (oven_pct >= 80 ? "text-amber-700" : "text-emerald-700")
+      .grid.gap-3.grid-cols-1.sm:grid-cols-2
         .rounded-2xl.border.border-white/60.bg-white/80.p-4.shadow.sm:p-5
-          p.text-sm.font-semibold.text-indigo-900 À clarifier
-          p.mt-2.text-2xl.font-bold.text-indigo-950.sm:text-3xl = mold_requirements[:unspecified]
+          p.text-sm.font-semibold.text-indigo-900
+            | Capacité four
+            - if @bake_day.market_day?
+              span.ml-1.text-xs.text-purple-600 (marché)
+          p.mt-1.text-2xl.font-bold.text-indigo-950
+            = "#{(oven[:used] / 1000.0).round(1)} kg"
+            span.text-sm.font-normal.text-indigo-700 = " / #{(oven[:limit] / 1000.0).round(1)} kg"
+          .mt-2.h-2.w-full.rounded-full.bg-slate-200
+            .h-2.rounded-full class=oven_bar_color style="width: #{[oven_pct, 100].min}%"
+          p.mt-1.text-xs.font-semibold class=oven_text_color = "#{oven_pct}%"
 
   .rounded-2xl.border.border-slate-200.bg-white.p-4.shadow-sm.sm:p-6
     .flex.flex-col.gap-4.md:flex-row.md:items-center.md:justify-between
@@ -284,13 +323,10 @@
                       = stat[:units_count]
                     td.px-4.py-3.text-xs.text-slate-500
                       - if product.breads?
-                        - case stat[:mold_size]
-                        - when :large
-                          | Grand moule requis
-                        - when :small
-                          | Petit moule requis
+                        - if stat[:mold_type]
+                          = stat[:mold_type].name
                         - else
-                          | Moule à confirmer
+                          span.text-amber-600 À assigner
                       - else
                         | —
               - else

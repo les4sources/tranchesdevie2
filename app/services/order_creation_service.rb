@@ -1,12 +1,13 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: 'online')
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: 'online', skip_capacity_check: false)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
     @payment_intent_id = payment_intent_id
     @payment_method = payment_method
+    @skip_capacity_check = skip_capacity_check
     @errors = []
   end
 
@@ -15,16 +16,31 @@ class OrderCreationService
 
     initial_status = @payment_method == 'cash' ? :unpaid : :pending
 
-    @order = Order.create!(
-      customer: @customer,
-      bake_day: @bake_day,
-      total_cents: calculate_total,
-      payment_intent_id: @payment_intent_id,
-      status: initial_status
-    )
+    ActiveRecord::Base.transaction do
+      # Advisory lock on bake_day to prevent race conditions
+      unless @skip_capacity_check
+        ActiveRecord::Base.connection.execute("SELECT pg_advisory_xact_lock(#{@bake_day.id})")
 
-    create_order_items
-    @order
+        # Re-check capacity inside the lock
+        result = BakeCapacityService.new(@bake_day).cart_fits?(@cart_items)
+        unless result[:fits]
+          @errors.concat(result[:errors])
+          raise ActiveRecord::Rollback
+        end
+      end
+
+      @order = Order.create!(
+        customer: @customer,
+        bake_day: @bake_day,
+        total_cents: calculate_total,
+        payment_intent_id: @payment_intent_id,
+        status: initial_status
+      )
+
+      create_order_items
+    end
+
+    @errors.empty? ? @order : false
   end
 
   private
@@ -41,6 +57,12 @@ class OrderCreationService
     if @payment_method == 'online' && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
       @errors << 'Order already exists for this payment intent'
       return false
+    end
+
+    # Check capacity (pre-check before lock, will re-check inside lock)
+    unless @skip_capacity_check
+      result = BakeCapacityService.new(@bake_day).cart_fits?(@cart_items)
+      @errors.concat(result[:errors]) unless result[:fits]
     end
 
     # Ensure each variant is still available for online sale

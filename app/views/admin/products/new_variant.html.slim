@@ -23,6 +23,9 @@
     .space-y-2
       = f.label :flour_quantity, "Quantité de pâte requise", class: "block text-sm font-medium text-gray-700"
       = f.number_field :flour_quantity, min: 0, step: 1, class: admin_input_class
+    .space-y-2
+      = f.label :mold_type_id, "Type de moule", class: "block text-sm font-medium text-gray-700"
+      = f.collection_select :mold_type_id, MoldType.not_deleted.ordered, :id, :name, { include_blank: "Aucun" }, class: admin_input_class
 
   .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
     span.block.text-sm.font-medium.text-gray-700 En vente en ligne

@@ -31,6 +31,11 @@ class BakeDay < ApplicationRecord
       .sum(:total_cents) / 100.0
   end
 
+  def oven_capacity_grams
+    setting = ProductionSetting.current
+    market_day? ? setting.market_day_oven_capacity_grams : setting.oven_capacity_grams
+  end
+
   class << self
     def next_available
       future.ordered.first

@@ -9,9 +9,19 @@ class CartController < ApplicationController
     @discount_cents = calculate_discount(@subtotal, @customer)
     @total = @subtotal - @discount_cents
     @available_bake_days = load_next_available_bake_days
+    @bake_day_capacities = @available_bake_days.each_with_object({}) do |bd, hash|
+      svc = BakeCapacityService.new(bd)
+      hash[bd.id] = { fill_percentage: svc.fill_percentage, fully_booked: svc.fully_booked? }
+    end
     @phone_e164 = session[:phone_e164] if phone_verified?
     # Vérifier si le bake_day actuel est toujours disponible
     if @bake_day && !@bake_day.can_order?
+      @bake_day = nil
+      @bake_day_id = nil
+      session[:bake_day_id] = nil
+    end
+    # Clear selection if selected bake_day is fully booked
+    if @bake_day && @bake_day_capacities.dig(@bake_day.id, :fully_booked)
       @bake_day = nil
       @bake_day_id = nil
       session[:bake_day_id] = nil
@@ -93,7 +103,7 @@ class CartController < ApplicationController
   def update_bake_day
     bake_day = BakeDay.find_by(id: params[:bake_day_id])
     
-    if bake_day && bake_day.can_order?
+    if bake_day && bake_day.can_order? && !BakeCapacityService.new(bake_day).fully_booked?
       session[:bake_day_id] = bake_day.id
       respond_to do |format|
         format.json { render json: { success: true, bake_day_id: bake_day.id } }

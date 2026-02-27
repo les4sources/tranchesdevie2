@@ -43,9 +43,11 @@
               <div class="hidden flex-1 items-center justify-end gap-8 md:flex">
                 <div class="flex items-center gap-9">
                   <%= link_to "Nos pains et compagnie", catalog_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
-                  <%= link_to "À propos", a_propos_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% if customer_signed_in? %>
                     <%= link_to "Calendrier", calendar_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
+                  <% end %>
+                  <%= link_to "À propos", a_propos_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
+                  <% if customer_signed_in? %>
                     <%= link_to "Mon compte", customers_account_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% else %>
                     <%= link_to "Connexion", customer_login_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
@@ -86,9 +88,11 @@
                 </div>
                 <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-4">
                   <%= link_to "Nos pains et compagnie", catalog_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
-                  <%= link_to "À propos", a_propos_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                   <% if customer_signed_in? %>
                     <%= link_to "Calendrier", calendar_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                  <% end %>
+                  <%= link_to "À propos", a_propos_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
+                  <% if customer_signed_in? %>
                     <%= link_to "Mon compte", customers_account_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                     <%= button_to "Déconnexion",
                           customer_logout_path,

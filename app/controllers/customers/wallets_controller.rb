@@ -23,13 +23,23 @@ module Customers
         amount: amount_cents,
         currency: 'eur',
         payment_method_types: ['bancontact'],
+        payment_method_data: {
+          type: 'bancontact',
+          billing_details: { name: current_customer.full_name.presence || 'Client' }
+        },
+        confirm: true,
+        return_url: customers_wallet_reload_success_url,
         metadata: {
           customer_id: current_customer.id,
           type: 'wallet_reload'
         }
       })
 
-      render json: { client_secret: payment_intent.client_secret }
+      if payment_intent.status == 'requires_action' && payment_intent.next_action&.type == 'redirect_to_url'
+        render json: { redirect_url: payment_intent.next_action.redirect_to_url.url }
+      else
+        render json: { redirect_url: customers_wallet_reload_success_url(payment_intent: payment_intent.id) }
+      end
     rescue Stripe::StripeError => e
       Rails.logger.error("Stripe error: #{e.message}")
       render json: { error: e.message }, status: :unprocessable_entity

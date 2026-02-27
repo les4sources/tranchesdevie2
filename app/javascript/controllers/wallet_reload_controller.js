@@ -2,25 +2,11 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["amountBtn", "customAmount", "selectedAmount", "error", "submitBtn", "btnText", "btnSpinner"]
-  static values = { createUrl: String, successUrl: String }
+  static values = { createUrl: String }
 
   connect() {
     this.selectedAmountCents = 0
-    this.stripe = null
-    this.elements = null
-
-    this.initStripe()
     this.bindAmountButtons()
-  }
-
-  async initStripe() {
-    const stripeKey = document.querySelector('meta[name="stripe-key"]')?.content
-    if (!stripeKey) {
-      console.error("Stripe public key not found")
-      return
-    }
-
-    this.stripe = Stripe(stripeKey)
   }
 
   bindAmountButtons() {
@@ -79,27 +65,8 @@ export default class extends Controller {
         throw new Error(data.error || "Erreur lors de la création du paiement")
       }
 
-      // Redirect to Bancontact (using "if_required" to handle redirect manually and avoid new window)
-      const { error, paymentIntent } = await this.stripe.confirmBancontactPayment(data.client_secret, {
-        payment_method: {
-          billing_details: {
-            name: "Client"
-          }
-        },
-        return_url: this.successUrlValue
-      }, {
-        handleActions: false
-      })
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      if (paymentIntent.status === "requires_action" && paymentIntent.next_action) {
-        window.location.href = paymentIntent.next_action.redirect_to_url.url
-      } else {
-        window.location.href = this.successUrlValue + "?payment_intent=" + paymentIntent.id
-      }
+      // Redirect to Bancontact (server-side confirmed, just follow the redirect URL)
+      window.location.href = data.redirect_url
     } catch (e) {
       this.showError(e.message)
       this.setLoading(false)

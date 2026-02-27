@@ -26,7 +26,7 @@ export default class extends Controller {
         price: parseInt(el.dataset.price),
         productName: el.dataset.productName || el.querySelector(".text-sm.font-medium")?.textContent || "Produit",
         productCategory: el.dataset.productCategory || "",
-        variantName: el.querySelector(".text-xs.text-gray-500")?.textContent || ""
+        variantName: el.dataset.variantName || el.querySelector(".text-xs.text-gray-500")?.textContent || ""
       }
     })
     return products
@@ -365,6 +365,67 @@ export default class extends Controller {
     }, 3000)
   }
 
+  celebrateDrop(card, productName) {
+    // 1. Flash the card green with a scale pulse
+    card.style.transition = "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease"
+    card.classList.add("ring-2", "ring-green-500", "bg-green-50")
+    card.style.transform = "scale(1.03)"
+    card.style.boxShadow = "0 0 20px rgba(34, 197, 94, 0.4)"
+
+    // 2. Burst tiny particles from the card center
+    const rect = card.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    for (let i = 0; i < 12; i++) {
+      const dot = document.createElement("div")
+      dot.style.cssText = `
+        position:fixed; z-index:9999; pointer-events:none;
+        width:8px; height:8px; border-radius:50%;
+        left:${cx}px; top:${cy}px;
+        background:${["#22c55e", "#86efac", "#fbbf24", "#f9a8d4"][i % 4]};
+        transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        opacity:1;
+      `
+      document.body.appendChild(dot)
+      const angle = (i / 12) * Math.PI * 2
+      const dist = 40 + Math.random() * 50
+      requestAnimationFrame(() => {
+        dot.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px) scale(0)`
+        dot.style.opacity = "0"
+      })
+      setTimeout(() => dot.remove(), 800)
+    }
+
+    // 3. Show inline label on the card
+    const badge = document.createElement("span")
+    badge.textContent = `+ ${productName}`
+    badge.style.cssText = `
+      position:absolute; right:12px; top:50%; transform:translateY(-50%) scale(0.8);
+      background:#22c55e; color:white; font-size:13px; font-weight:600;
+      padding:3px 10px; border-radius:9999px; white-space:nowrap;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); opacity:0;
+    `
+    card.style.position = "relative"
+    card.appendChild(badge)
+    requestAnimationFrame(() => {
+      badge.style.opacity = "1"
+      badge.style.transform = "translateY(-50%) scale(1)"
+    })
+
+    // 4. Settle back down
+    setTimeout(() => {
+      card.style.transform = "scale(1)"
+      card.style.boxShadow = ""
+      badge.style.opacity = "0"
+      badge.style.transform = "translateY(-50%) scale(0.8)"
+    }, 1200)
+
+    setTimeout(() => {
+      card.classList.remove("ring-2", "ring-green-500", "bg-green-50")
+      badge.remove()
+    }, 1600)
+  }
+
   // Drag and drop functionality
   dragStart(event) {
     event.dataTransfer.setData("text/plain", event.currentTarget.dataset.variantId)
@@ -439,12 +500,11 @@ export default class extends Controller {
       }
 
       const product = this.products[variantId]
-      const bakeDateLabel = bakeDayEl.dataset.bakeDate
-      this.showToast(`${product?.productName || "Produit"} ajouté pour le ${bakeDateLabel}`)
+      this.celebrateDrop(bakeDayEl, product?.productName || "Produit")
       setTimeout(() => {
         window.location.hash = `highlight-${bakeDayId}`
         window.location.reload()
-      }, 1500)
+      }, 1800)
     } catch (e) {
       this.showToast(e.message, "error")
     }

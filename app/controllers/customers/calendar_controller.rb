@@ -14,7 +14,13 @@ module Customers
       @wallet = current_customer.wallet || current_customer.create_wallet!
       @committed_cents = current_customer.orders.where(status: :planned, source: :calendar).sum(:total_cents)
       @available_balance_cents = @wallet.balance_cents - @committed_cents
-      @product_variants = ProductVariant.where(active: true).includes(:product)
+      @product_variants = ProductVariant.active
+                                       .store_channel
+                                       .visible_to_customer(current_customer)
+                                       .joins(:product)
+                                       .merge(Product.not_deleted.active.store_channel)
+                                       .includes(product: { product_images: :image_attachment })
+                                       .order("products.category ASC, products.position ASC, products.name ASC")
     end
 
     def update_day

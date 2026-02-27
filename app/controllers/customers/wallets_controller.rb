@@ -59,7 +59,7 @@ module Customers
                   when 'processing'
                     "Le paiement est en cours de traitement. Veuillez patienter quelques instants."
                   else
-                    "Le paiement a échoué. Veuillez réessayer et nous prévenir si le problème persiste."
+                    "Nom d'un oignon, le paiement a échoué. Veuillez réessayer et nous prévenir si le problème persiste."
                   end
         redirect_to customers_wallet_reload_path, alert: message and return
       end

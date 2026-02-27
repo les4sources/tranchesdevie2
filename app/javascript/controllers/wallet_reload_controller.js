@@ -79,18 +79,26 @@ export default class extends Controller {
         throw new Error(data.error || "Erreur lors de la création du paiement")
       }
 
-      // Redirect to Bancontact
-      const { error } = await this.stripe.confirmBancontactPayment(data.client_secret, {
+      // Redirect to Bancontact (using "if_required" to handle redirect manually and avoid new window)
+      const { error, paymentIntent } = await this.stripe.confirmBancontactPayment(data.client_secret, {
         payment_method: {
           billing_details: {
             name: "Client"
           }
         },
         return_url: this.successUrlValue
+      }, {
+        handleActions: false
       })
 
       if (error) {
         throw new Error(error.message)
+      }
+
+      if (paymentIntent.status === "requires_action" && paymentIntent.next_action) {
+        window.location.href = paymentIntent.next_action.redirect_to_url.url
+      } else {
+        window.location.href = this.successUrlValue + "?payment_intent=" + paymentIntent.id
       }
     } catch (e) {
       this.showError(e.message)

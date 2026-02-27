@@ -40,6 +40,9 @@
             </label>
           <% end %>
         </div>
+        <p class="mt-3 text-sm text-gray-500">
+          <%= link_to "Planifie tes commandes pour les jours de cuisson suivants", calendar_path, class: "text-amber-600 hover:text-amber-700 underline" %>
+        </p>
       </div>
     <% elsif @bake_day %>
       <p class="mt-2 text-sm text-gray-600">

@@ -1,15 +1,21 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["modal", "modalTitle", "modalItems", "modalTotal", "productList", "toast"]
+  static targets = ["modal", "modalTitle", "modalItems", "modalTotal", "productList", "toast", "balanceIndicator", "saveBtn", "modalForm", "modalSuccess"]
   static values = {
-    updateUrl: { type: String, default: "/calendrier/update_day" }
+    updateUrl: { type: String, default: "/calendrier/update_day" },
+    walletBalance: { type: Number, default: 0 },
+    committed: { type: Number, default: 0 },
+    reloadUrl: { type: String, default: "/portefeuille/recharger" },
+    skipWallet: { type: Boolean, default: false }
   }
 
   connect() {
     this.currentBakeDayId = null
     this.currentItems = []
+    this.currentOrderOriginalTotal = 0
     this.products = this.loadProducts()
+    this.highlightSavedCard()
   }
 
   loadProducts() {
@@ -18,7 +24,8 @@ export default class extends Controller {
       products[el.dataset.variantId] = {
         id: parseInt(el.dataset.variantId),
         price: parseInt(el.dataset.price),
-        name: el.querySelector(".text-sm.font-medium")?.textContent || "Produit",
+        productName: el.dataset.productName || el.querySelector(".text-sm.font-medium")?.textContent || "Produit",
+        productCategory: el.dataset.productCategory || "",
         variantName: el.querySelector(".text-xs.text-gray-500")?.textContent || ""
       }
     })
@@ -38,16 +45,24 @@ export default class extends Controller {
     this.currentBakeDayId = bakeDayId
     this.currentItems = this.loadExistingItems(bakeDayId)
 
+    // Calculate original total of this order (to exclude from committed)
+    this.currentOrderOriginalTotal = this.calculateItemsTotal(this.currentItems)
+
+    // Update modal title with bake day date
+    const bakeDate = bakeDayEl?.dataset.bakeDate
+    if (bakeDate && this.hasModalTitleTarget) {
+      this.modalTitleTarget.textContent = `Ma commande du ${bakeDate}`
+    }
+
     this.renderModal()
     this.showModal()
   }
 
   loadExistingItems(bakeDayId) {
-    // Load existing items from data attributes or DOM
-    const orderEl = document.querySelector(`[data-bake-day-id="${bakeDayId}"] [data-order-items]`)
-    if (orderEl) {
+    const bakeDayEl = document.querySelector(`[data-bake-day-id="${bakeDayId}"]`)
+    if (bakeDayEl?.dataset.orderItems) {
       try {
-        return JSON.parse(orderEl.dataset.orderItems)
+        return JSON.parse(bakeDayEl.dataset.orderItems)
       } catch (e) {
         return []
       }
@@ -55,36 +70,77 @@ export default class extends Controller {
     return []
   }
 
+  calculateItemsTotal(items) {
+    return items.reduce((sum, item) => {
+      const product = this.products[item.product_variant_id]
+      return sum + (product?.price || 0) * item.qty
+    }, 0)
+  }
+
+  get availableForCurrentOrder() {
+    // Available = wallet balance - committed + this order's original total (since it will be replaced)
+    return this.walletBalanceValue - this.committedValue + this.currentOrderOriginalTotal
+  }
+
   renderModal() {
     if (!this.hasModalTarget) return
 
-    // Render product list
     if (this.hasProductListTarget) {
-      this.productListTarget.innerHTML = Object.values(this.products).map(product => {
-        const existingItem = this.currentItems.find(i => i.product_variant_id === product.id)
-        const qty = existingItem?.qty || 0
+      // Group variants by category then by product name
+      const byCategory = {}
+      Object.values(this.products).forEach(variant => {
+        const cat = variant.productCategory || "Autres"
+        if (!byCategory[cat]) byCategory[cat] = {}
+        if (!byCategory[cat][variant.productName]) byCategory[cat][variant.productName] = []
+        byCategory[cat][variant.productName].push(variant)
+      })
+      // Sort variants within each product by price ascending
+      Object.values(byCategory).forEach(products => {
+        Object.values(products).forEach(variants => variants.sort((a, b) => a.price - b.price))
+      })
+
+      this.productListTarget.innerHTML = Object.entries(byCategory).map(([categoryName, products]) => {
+        const productBlocks = Object.entries(products).map(([productName, variants]) => {
+          const variantRows = variants.map(variant => {
+            const existingItem = this.currentItems.find(i => i.product_variant_id === variant.id)
+            const qty = existingItem?.qty || 0
+
+            return `
+              <div class="flex items-center justify-between py-2 pl-3" data-variant-id="${variant.id}">
+                <div>
+                  <p class="text-sm text-gray-600">${variant.variantName} — ${(variant.price / 100).toFixed(2)} €</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button"
+                          class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                          data-action="click->calendar#decrementQty"
+                          data-variant-id="${variant.id}">
+                    <span class="text-lg font-bold">−</span>
+                  </button>
+                  <span class="w-8 text-center font-semibold" data-qty-display="${variant.id}">${qty}</span>
+                  <button type="button"
+                          class="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center"
+                          data-action="click->calendar#incrementQty"
+                          data-variant-id="${variant.id}">
+                    <span class="text-lg font-bold">+</span>
+                  </button>
+                </div>
+              </div>
+            `
+          }).join("")
+
+          return `
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="font-medium text-gray-900 mb-1">${productName}</p>
+              <div class="space-y-1">${variantRows}</div>
+            </div>
+          `
+        }).join("")
 
         return `
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg" data-variant-id="${product.id}">
-            <div>
-              <p class="font-medium text-gray-900">${product.name}</p>
-              <p class="text-sm text-gray-500">${product.variantName} - ${(product.price / 100).toFixed(2)} €</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button"
-                      class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                      data-action="click->calendar#decrementQty"
-                      data-variant-id="${product.id}">
-                <span class="text-lg font-bold">−</span>
-              </button>
-              <span class="w-8 text-center font-semibold" data-qty-display="${product.id}">${qty}</span>
-              <button type="button"
-                      class="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center"
-                      data-action="click->calendar#incrementQty"
-                      data-variant-id="${product.id}">
-                <span class="text-lg font-bold">+</span>
-              </button>
-            </div>
+          <div class="space-y-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">${categoryName}</p>
+            ${productBlocks}
           </div>
         `
       }).join("")
@@ -126,14 +182,39 @@ export default class extends Controller {
   }
 
   updateModalTotal() {
-    if (!this.hasModalTotalTarget) return
+    const total = this.calculateItemsTotal(this.currentItems)
+    const available = this.availableForCurrentOrder
+    const remaining = available - total
 
-    const total = this.currentItems.reduce((sum, item) => {
-      const product = this.products[item.product_variant_id]
-      return sum + (product?.price || 0) * item.qty
-    }, 0)
+    if (this.hasModalTotalTarget) {
+      this.modalTotalTarget.textContent = `${(total / 100).toFixed(2)} €`
+    }
 
-    this.modalTotalTarget.textContent = `${(total / 100).toFixed(2)} €`
+    if (!this.skipWalletValue) {
+      // Update balance indicator
+      if (this.hasBalanceIndicatorTarget) {
+        if (total === 0) {
+          this.balanceIndicatorTarget.innerHTML = `
+            <p class="text-gray-500">Solde disponible : ${(available / 100).toFixed(2)} €</p>
+          `
+        } else if (remaining >= 0) {
+          this.balanceIndicatorTarget.innerHTML = `
+            <p class="text-green-600">Solde restant après cette commande : ${(remaining / 100).toFixed(2)} €</p>
+          `
+        } else {
+          this.balanceIndicatorTarget.innerHTML = `
+            <p class="text-red-600 font-medium">Solde insuffisant — il manque ${(Math.abs(remaining) / 100).toFixed(2)} €</p>
+            <a href="${this.reloadUrlValue}" class="text-red-600 underline text-xs">Recharger mon portefeuille</a>
+          `
+        }
+      }
+
+      // Enable/disable save button
+      if (this.hasSaveBtnTarget) {
+        const canSave = total === 0 || remaining >= 0
+        this.saveBtnTarget.disabled = !canSave
+      }
+    }
   }
 
   showModal() {
@@ -148,9 +229,21 @@ export default class extends Controller {
       this.modalTarget.classList.add("hidden")
       document.body.classList.remove("overflow-hidden")
     }
+    // Reset modal panels for next opening
+    if (this.hasModalFormTarget) {
+      this.modalFormTarget.classList.remove("hidden")
+    }
+    if (this.hasModalSuccessTarget) {
+      this.modalSuccessTarget.classList.add("hidden")
+    }
   }
 
   async saveOrder() {
+    if (this.hasSaveBtnTarget) {
+      this.saveBtnTarget.disabled = true
+      this.saveBtnTarget.textContent = "Enregistrement..."
+    }
+
     try {
       const response = await fetch(this.updateUrlValue, {
         method: "PATCH",
@@ -170,21 +263,92 @@ export default class extends Controller {
         throw new Error(data.error || "Erreur lors de la sauvegarde")
       }
 
-      this.closeModal()
-      this.showToast("Commande enregistrée !")
+      const bakeDayEl = document.querySelector(`[data-bake-day-id="${this.currentBakeDayId}"]`)
+      const bakeDate = bakeDayEl?.dataset.bakeDate || ""
+      const totalEuros = (this.calculateItemsTotal(this.currentItems) / 100).toFixed(2)
+      const summary = this.buildOrderSummary()
+      const isEmpty = this.currentItems.length === 0
 
-      // Reload page to show updated data
-      setTimeout(() => window.location.reload(), 500)
+      this.showModalSuccess(bakeDate, totalEuros, summary, isEmpty)
     } catch (e) {
       this.showToast(e.message, "error")
+      if (this.hasSaveBtnTarget) {
+        this.saveBtnTarget.disabled = false
+        this.saveBtnTarget.textContent = "Enregistrer"
+      }
     }
   }
 
   async deleteOrder() {
-    if (!confirm("Supprimer cette commande planifiée ?")) return
+    if (!confirm("Vider cette commande planifiée ?")) return
 
     this.currentItems = []
     await this.saveOrder()
+  }
+
+  buildOrderSummary() {
+    return this.currentItems.map(item => {
+      const product = this.products[item.product_variant_id]
+      return `${product?.productName || "Produit"} x${item.qty}`
+    }).join(", ")
+  }
+
+  showModalSuccess(bakeDate, totalEuros, summary, isEmpty) {
+    if (this.hasModalFormTarget) {
+      this.modalFormTarget.classList.add("hidden")
+    }
+
+    if (this.hasModalSuccessTarget) {
+      const message = isEmpty
+        ? `Votre commande pour le ${bakeDate} a bien été annulée.`
+        : `C'est noté !\nVotre commande pour le ${bakeDate} est bien enregistrée.`
+
+      this.modalSuccessTarget.innerHTML = `
+        <div class="text-center py-6">
+          <div class="w-16 h-16 ${isEmpty ? "bg-gray-100" : "bg-green-100"} rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 ${isEmpty ? "text-gray-500" : "text-green-600"}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <p class="text-lg font-semibold text-gray-900 mb-3 whitespace-pre-line">${message}</p>
+          ${!isEmpty ? `
+            <p class="text-sm text-gray-600 mb-1">${summary}</p>
+            <p class="text-xl font-bold text-green-600 mb-2">${totalEuros} €</p>
+          ` : ""}
+          <button type="button"
+                  class="mt-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-base font-medium"
+                  data-action="click->calendar#closeModalAndReload">
+            Parfait, merci !
+          </button>
+        </div>
+      `
+      this.modalSuccessTarget.classList.remove("hidden")
+    }
+  }
+
+  closeModalAndReload() {
+    this.closeModal()
+    window.location.hash = `highlight-${this.currentBakeDayId}`
+    window.location.reload()
+  }
+
+  highlightSavedCard() {
+    const hash = window.location.hash
+    if (!hash.startsWith("#highlight-")) return
+
+    const bakeDayId = hash.replace("#highlight-", "")
+    const card = document.querySelector(`[data-bake-day-id="${bakeDayId}"]`)
+    if (!card) return
+
+    card.scrollIntoView({ behavior: "smooth", block: "center" })
+    card.classList.add("ring-2", "ring-green-500", "bg-green-50")
+
+    setTimeout(() => {
+      card.classList.add("transition-all", "duration-1000")
+      card.classList.remove("ring-2", "ring-green-500", "bg-green-50")
+    }, 2000)
+
+    history.replaceState(null, "", window.location.pathname)
   }
 
   showToast(message, type = "success") {
@@ -235,7 +399,26 @@ export default class extends Controller {
     const variantId = parseInt(event.dataTransfer.getData("text/plain"))
     const bakeDayId = bakeDayEl.dataset.bakeDayId
 
-    // Quick add: add 1 item directly
+    // Merge with existing items
+    const existingItems = this.loadExistingItems(bakeDayId)
+    const existingIndex = existingItems.findIndex(i => i.product_variant_id === variantId)
+    if (existingIndex >= 0) {
+      existingItems[existingIndex].qty += 1
+    } else {
+      existingItems.push({ product_variant_id: variantId, qty: 1 })
+    }
+
+    // Check balance before sending (skip for internal customers)
+    if (!this.skipWalletValue) {
+      const existingTotal = this.calculateItemsTotal(this.loadExistingItems(bakeDayId))
+      const newTotal = this.calculateItemsTotal(existingItems)
+      const available = this.walletBalanceValue - this.committedValue + existingTotal
+      if (newTotal > available) {
+        this.showToast("Solde insuffisant — rechargez votre portefeuille", "error")
+        return
+      }
+    }
+
     try {
       const response = await fetch(this.updateUrlValue, {
         method: "PATCH",
@@ -245,7 +428,7 @@ export default class extends Controller {
         },
         body: JSON.stringify({
           bake_day_id: bakeDayId,
-          items: [{ product_variant_id: variantId, qty: 1 }]
+          items: existingItems
         })
       })
 
@@ -255,8 +438,13 @@ export default class extends Controller {
         throw new Error(data.error || "Erreur")
       }
 
-      this.showToast("Produit ajouté !")
-      setTimeout(() => window.location.reload(), 500)
+      const product = this.products[variantId]
+      const bakeDateLabel = bakeDayEl.dataset.bakeDate
+      this.showToast(`${product?.productName || "Produit"} ajouté pour le ${bakeDateLabel}`)
+      setTimeout(() => {
+        window.location.hash = `highlight-${bakeDayId}`
+        window.location.reload()
+      }, 1500)
     } catch (e) {
       this.showToast(e.message, "error")
     }

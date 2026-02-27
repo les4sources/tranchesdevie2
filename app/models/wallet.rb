@@ -22,6 +22,12 @@ class Wallet < ApplicationRecord
     credit!(-amount_cents, type: type, order: order, description: description)
   end
 
+  def available_balance_cents(excluding_order: nil)
+    committed = customer.orders.where(status: :planned, source: :calendar).sum(:total_cents)
+    committed -= excluding_order.total_cents if excluding_order&.persisted?
+    balance_cents - committed
+  end
+
   def can_cover?(amount_cents)
     balance_cents >= amount_cents
   end

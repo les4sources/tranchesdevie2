@@ -12,6 +12,8 @@ module Customers
                                         .includes(:order_items, :bake_day)
                                         .index_by(&:bake_day_id)
       @wallet = current_customer.wallet || current_customer.create_wallet!
+      @committed_cents = current_customer.orders.where(status: :planned, source: :calendar).sum(:total_cents)
+      @available_balance_cents = @wallet.balance_cents - @committed_cents
       @product_variants = ProductVariant.where(active: true).includes(:product)
     end
 

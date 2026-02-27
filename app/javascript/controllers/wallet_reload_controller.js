@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["amountBtn", "customAmount", "selectedAmount", "error", "submitBtn", "btnText", "btnSpinner"]
-  static values = { createUrl: String }
+  static values = { createUrl: String, successUrl: String }
 
   connect() {
     this.selectedAmountCents = 0
@@ -85,7 +85,7 @@ export default class extends Controller {
             name: "Client"
           }
         },
-        return_url: `${window.location.origin}/portefeuille/success`
+        return_url: this.successUrlValue
       })
 
       if (error) {

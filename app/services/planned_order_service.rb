@@ -10,6 +10,21 @@ class PlannedOrderService
         source: :calendar
       )
 
+      # Calculate new total before transaction
+      new_total = items.sum do |item|
+        variant = ProductVariant.find(item[:product_variant_id])
+        item[:qty].to_i * variant.price_cents
+      end
+
+      # Check wallet balance (skip for internal customers)
+      unless customer.skip_wallet_check?
+        wallet = customer.wallet
+        available = wallet&.available_balance_cents(excluding_order: order) || 0
+        if new_total > available
+          return { error: "Solde insuffisant. Rechargez votre portefeuille." }
+        end
+      end
+
       Order.transaction do
         order.order_items.destroy_all if order.persisted?
 

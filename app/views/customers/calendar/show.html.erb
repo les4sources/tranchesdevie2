@@ -1,6 +1,11 @@
 <% content_for :title, "Mon calendrier" %>
 
-<div class="w-full mx-auto" data-controller="calendar">
+<div class="w-full mx-auto" data-controller="calendar"
+     data-calendar-wallet-balance-value="<%= @wallet.balance_cents %>"
+     data-calendar-committed-value="<%= @committed_cents %>"
+     data-calendar-reload-url-value="<%= customers_wallet_reload_path %>"
+     data-calendar-skip-wallet-value="<%= current_customer.skip_wallet_check? %>"
+>
   <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-gray-900">Mon calendrier</h1>
     <div class="flex gap-3">
@@ -9,15 +14,37 @@
     </div>
   </div>
 
-  <!-- Solde du portefeuille -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-    <div class="flex items-center justify-between">
-      <span class="text-gray-600">Solde disponible:</span>
-      <span class="text-xl font-bold <%= @wallet.balance_cents >= 0 ? 'text-green-600' : 'text-red-600' %>">
-        <%= number_to_currency(@wallet.balance_euros, unit: '€', format: '%n %u') %>
-      </span>
+  <% unless current_customer.skip_wallet_check? %>
+    <!-- Solde du portefeuille -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <span class="text-gray-600">Solde du portefeuille</span>
+        <span class="text-lg font-bold text-gray-900">
+          <%= number_to_currency(@wallet.balance_euros, unit: '€', format: '%n %u') %>
+        </span>
+      </div>
+      <% if @committed_cents > 0 %>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-500">Engagé sur commandes planifiées</span>
+          <span class="text-sm font-medium text-gray-500">
+            − <%= number_to_currency(@committed_cents / 100.0, unit: '€', format: '%n %u') %>
+          </span>
+        </div>
+      <% end %>
+      <div class="flex items-center justify-between mt-1 pt-2 border-t border-gray-100">
+        <span class="text-gray-600 font-medium">Disponible pour commander</span>
+        <span class="text-xl font-bold <%= @available_balance_cents > 0 ? 'text-green-600' : 'text-red-600' %>">
+          <%= number_to_currency(@available_balance_cents / 100.0, unit: '€', format: '%n %u') %>
+        </span>
+      </div>
+      <% if @available_balance_cents <= 0 %>
+        <div class="mt-2 p-2 bg-red-50 rounded text-sm text-red-700">
+          Solde insuffisant pour commander.
+          <%= link_to "Recharger mon portefeuille", customers_wallet_reload_path, class: "underline font-medium" %>
+        </div>
+      <% end %>
     </div>
-  </div>
+  <% end %>
 
   <% if @bake_days.empty? %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
@@ -39,6 +66,10 @@
             <div class="flex items-center justify-between p-3 rounded-lg border transition-all <%= cut_off_passed ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200 hover:border-green-300' %>"
                  data-bake-day-id="<%= bake_day.id %>"
                  data-can-order="<%= can_order %>"
+                 data-bake-date="<%= l(bake_day.baked_on, format: '%A %d/%m').downcase %>"
+                 <% if order %>
+                 data-order-items="<%= order.order_items.map { |i| { product_variant_id: i.product_variant_id, qty: i.qty } }.to_json %>"
+                 <% end %>
                  <% if can_order %>
                  data-action="dragover->calendar#dragOver dragleave->calendar#dragLeave drop->calendar#drop"
                  <% end %>>
@@ -47,7 +78,7 @@
                   <%= l(bake_day.baked_on, format: :long_with_day).capitalize %>
                 </p>
                 <% if cut_off_passed %>
-                  <p class="text-xs text-yellow-600">Cut-off passé</p>
+                  <p class="text-xs text-yellow-600">Il n'est plus possible de commander pour ce jour de cuisson</p>
                 <% end %>
               </div>
 
@@ -94,6 +125,8 @@
                  draggable="true"
                  data-variant-id="<%= variant.id %>"
                  data-price="<%= variant.price_cents %>"
+                 data-product-name="<%= variant.product.name %>"
+                 data-product-category="<%= product_category_heading(variant.product.category) %>"
                  data-action="dragstart->calendar#dragStart dragend->calendar#dragEnd">
               <div class="flex items-center gap-2">
                 <% first_image = variant.product_images.first&.image %>
@@ -123,14 +156,18 @@
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
              data-bake-day-id="<%= bake_day.id %>"
-             data-can-order="<%= can_order %>">
+             data-can-order="<%= can_order %>"
+             data-bake-date="<%= l(bake_day.baked_on, format: '%A %d/%m').downcase %>"
+             <% if order %>
+             data-order-items="<%= order.order_items.map { |i| { product_variant_id: i.product_variant_id, qty: i.qty } }.to_json %>"
+             <% end %>>
           <div class="flex justify-between items-start">
             <div>
               <p class="font-medium text-gray-900">
                 <%= l(bake_day.baked_on, format: :long_with_day).capitalize %>
               </p>
               <% if cut_off_passed %>
-                <p class="text-xs text-yellow-600 mt-1">Cut-off passé</p>
+                <p class="text-xs text-yellow-600 mt-1">Il n'est plus possible de commander pour ce jour de cuisson</p>
               <% end %>
             </div>
 
@@ -171,48 +208,58 @@
 
       <!-- Modal content -->
       <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900" data-calendar-target="modalTitle">Planifier ma commande</h3>
-            <button type="button" class="text-gray-400 hover:text-gray-600" data-action="click->calendar#closeModal">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
+        <!-- État formulaire -->
+        <div data-calendar-target="modalForm">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold text-gray-900" data-calendar-target="modalTitle">Planifier ma commande</h3>
+              <button type="button" class="text-gray-400 hover:text-gray-600" data-action="click->calendar#closeModal">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Product list -->
+            <div class="space-y-3 max-h-[50vh] overflow-y-auto" data-calendar-target="productList">
+              <!-- Products will be rendered here by Stimulus -->
+            </div>
+
+            <!-- Total -->
+            <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+              <span class="font-semibold text-gray-900">Total:</span>
+              <span class="text-xl font-bold text-green-600" data-calendar-target="modalTotal">0,00 €</span>
+            </div>
+
+            <!-- Balance indicator -->
+            <div data-calendar-target="balanceIndicator" class="mt-2 text-sm"></div>
+          </div>
+
+          <!-- Actions -->
+          <div class="px-6 py-4 bg-gray-50 flex justify-between">
+            <button type="button"
+                    class="px-4 py-2 text-red-600 hover:text-red-700"
+                    data-action="click->calendar#deleteOrder">
+              Vider
             </button>
-          </div>
-
-          <!-- Product list -->
-          <div class="space-y-3 max-h-[50vh] overflow-y-auto" data-calendar-target="productList">
-            <!-- Products will be rendered here by Stimulus -->
-          </div>
-
-          <!-- Total -->
-          <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-            <span class="font-semibold text-gray-900">Total:</span>
-            <span class="text-xl font-bold text-green-600" data-calendar-target="modalTotal">0,00 €</span>
+            <div class="flex gap-2">
+              <button type="button"
+                      class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                      data-action="click->calendar#closeModal">
+                Annuler
+              </button>
+              <button type="button"
+                      class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      data-action="click->calendar#saveOrder"
+                      data-calendar-target="saveBtn">
+                Enregistrer
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Actions -->
-        <div class="px-6 py-4 bg-gray-50 flex justify-between">
-          <button type="button"
-                  class="px-4 py-2 text-red-600 hover:text-red-700"
-                  data-action="click->calendar#deleteOrder">
-            Supprimer
-          </button>
-          <div class="flex gap-2">
-            <button type="button"
-                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                    data-action="click->calendar#closeModal">
-              Annuler
-            </button>
-            <button type="button"
-                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                    data-action="click->calendar#saveOrder">
-              Enregistrer
-            </button>
-          </div>
-        </div>
+        <!-- État confirmation (injecté par JS) -->
+        <div data-calendar-target="modalSuccess" class="hidden p-6"></div>
       </div>
     </div>
   </div>

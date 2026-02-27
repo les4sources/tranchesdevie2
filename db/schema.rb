@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_27_071748) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,7 +19,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "record_type", null: false
     t.bigint "record_id", null: false
     t.bigint "blob_id", null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
@@ -32,7 +32,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "service_name", null: false
     t.bigint "byte_size", null: false
     t.string "checksum"
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
@@ -46,23 +46,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "slug", null: false
     t.string "title", null: false
     t.text "body"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_admin_pages_on_slug", unique: true
   end
 
   create_table "artisans", force: :cascade do |t|
     t.string "name", null: false
     t.boolean "active", default: true, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "bake_day_artisans", force: :cascade do |t|
     t.bigint "bake_day_id", null: false
     t.bigint "artisan_id", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["artisan_id"], name: "index_bake_day_artisans_on_artisan_id"
     t.index ["bake_day_id", "artisan_id"], name: "index_bake_day_artisans_on_bake_day_id_and_artisan_id", unique: true
     t.index ["bake_day_id"], name: "index_bake_day_artisans_on_bake_day_id"
@@ -71,8 +71,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "bake_days", force: :cascade do |t|
     t.date "baked_on", null: false
     t.timestamptz "cut_off_at", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.text "internal_note"
     t.boolean "market_day", default: false, null: false
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
@@ -81,8 +81,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "customer_groups", force: :cascade do |t|
     t.bigint "customer_id", null: false
     t.bigint "group_id", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["customer_id", "group_id"], name: "idx_customer_groups_unique", unique: true
     t.index ["customer_id"], name: "index_customer_groups_on_customer_id"
     t.index ["group_id"], name: "index_customer_groups_on_group_id"
@@ -94,8 +94,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "last_name"
     t.string "email"
     t.boolean "sms_opt_out", default: false, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "skip_wallet_check", default: false, null: false
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
@@ -123,17 +124,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "groups", force: :cascade do |t|
     t.string "name", null: false
     t.integer "discount_percent", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "ingredients", force: :cascade do |t|
     t.string "name", null: false
     t.integer "unit_type", default: 0, null: false
     t.integer "position", default: 0
-    t.datetime "deleted_at", precision: nil
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
     t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
@@ -154,8 +155,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "product_variant_id", null: false
     t.integer "qty", null: false
     t.integer "unit_price_cents", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
   end
@@ -168,14 +169,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "public_token", limit: 24, null: false
     t.string "order_number", null: false
     t.string "payment_intent_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "requires_invoice", default: false, null: false
+    t.integer "source", default: 0, null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
+    t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
   end
 
@@ -183,8 +186,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "order_id", null: false
     t.string "stripe_payment_intent_id", null: false
     t.integer "status", default: 0, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["order_id"], name: "index_payments_on_order_id", unique: true
     t.index ["status"], name: "index_payments_on_status"
     t.index ["stripe_payment_intent_id"], name: "index_payments_on_stripe_payment_intent_id", unique: true
@@ -193,10 +196,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "phone_verifications", force: :cascade do |t|
     t.string "phone_e164", null: false
     t.string "code", limit: 6, null: false
-    t.datetime "expires_at", precision: nil, null: false
+    t.datetime "expires_at", null: false
     t.integer "attempts_count", default: 0, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["code"], name: "index_phone_verifications_on_code"
     t.index ["phone_e164"], name: "index_phone_verifications_on_phone_e164"
   end
@@ -205,8 +208,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "product_variant_id", null: false
     t.date "start_on", null: false
     t.date "end_on"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["product_variant_id"], name: "index_product_availabilities_on_product_variant_id"
     t.index ["start_on", "end_on"], name: "index_product_availabilities_on_start_on_and_end_on"
   end
@@ -225,8 +228,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "product_images", force: :cascade do |t|
     t.bigint "product_id", null: false
     t.bigint "product_variant_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "position"
     t.index ["product_id"], name: "index_product_images_on_product_id"
     t.index ["product_variant_id", "position"], name: "index_product_images_on_variant_and_position"
@@ -238,8 +241,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "name", null: false
     t.integer "price_cents", null: false
     t.boolean "active", default: true, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "flour_quantity"
     t.string "channel", default: "store", null: false
     t.bigint "mold_type_id"
@@ -260,13 +263,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.integer "category", default: 0, null: false
     t.integer "position", default: 0
     t.boolean "active", default: true, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "flour_quantity"
     t.string "short_name"
     t.string "flour"
     t.string "channel", default: "store", null: false
-    t.datetime "deleted_at", precision: nil
+    t.datetime "deleted_at"
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
     t.index ["deleted_at"], name: "index_products_on_deleted_at"
@@ -280,10 +283,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.text "body", null: false
     t.integer "kind", default: 0, null: false
     t.string "external_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "customer_id"
-    t.datetime "sent_at", precision: nil
+    t.datetime "sent_at"
     t.index ["customer_id"], name: "index_sms_messages_on_customer_id"
     t.index ["direction"], name: "index_sms_messages_on_direction"
     t.index ["external_id"], name: "index_sms_messages_on_external_id"
@@ -296,8 +299,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.string "queue_name", null: false
     t.integer "priority", default: 0, null: false
     t.string "concurrency_key", null: false
-    t.datetime "expires_at", precision: nil, null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
     t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
     t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
     t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
@@ -306,7 +309,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "solid_queue_claimed_executions", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.bigint "process_id"
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
     t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
   end
@@ -314,7 +317,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "solid_queue_failed_executions", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.text "error"
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
   end
 
@@ -324,11 +327,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.text "arguments"
     t.integer "priority", default: 0, null: false
     t.string "active_job_id"
-    t.datetime "scheduled_at", precision: nil
-    t.datetime "finished_at", precision: nil
+    t.datetime "scheduled_at"
+    t.datetime "finished_at"
     t.string "concurrency_key"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
     t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
     t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
@@ -338,18 +341,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
 
   create_table "solid_queue_pauses", force: :cascade do |t|
     t.string "queue_name", null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
   end
 
   create_table "solid_queue_processes", force: :cascade do |t|
     t.string "kind", null: false
-    t.datetime "last_heartbeat_at", precision: nil, null: false
+    t.datetime "last_heartbeat_at", null: false
     t.bigint "supervisor_id"
     t.integer "pid", null: false
     t.string "hostname"
     t.text "metadata"
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.string "name", null: false
     t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
     t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
@@ -360,7 +363,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "job_id", null: false
     t.string "queue_name", null: false
     t.integer "priority", default: 0, null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
     t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
     t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
@@ -369,8 +372,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "solid_queue_recurring_executions", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.string "task_key", null: false
-    t.datetime "run_at", precision: nil, null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "run_at", null: false
+    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
     t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
   end
@@ -385,8 +388,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.integer "priority", default: 0
     t.boolean "static", default: true, null: false
     t.text "description"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
     t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
   end
@@ -395,8 +398,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "job_id", null: false
     t.string "queue_name", null: false
     t.integer "priority", default: 0, null: false
-    t.datetime "scheduled_at", precision: nil, null: false
-    t.datetime "created_at", precision: nil, null: false
+    t.datetime "scheduled_at", null: false
+    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
     t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
   end
@@ -404,9 +407,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "solid_queue_semaphores", force: :cascade do |t|
     t.string "key", null: false
     t.integer "value", default: 1, null: false
-    t.datetime "expires_at", precision: nil, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
     t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
@@ -418,8 +421,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.datetime "processed_at", precision: nil
     t.jsonb "payload"
     t.bigint "tenant_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["event_id"], name: "index_stripe_events_on_event_id", unique: true
     t.index ["event_type"], name: "index_stripe_events_on_event_type"
     t.index ["tenant_id"], name: "index_stripe_events_on_tenant_id"
@@ -428,8 +431,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
   create_table "variant_group_restrictions", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
     t.bigint "group_id", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["group_id"], name: "index_variant_group_restrictions_on_group_id"
     t.index ["product_variant_id", "group_id"], name: "idx_variant_group_restrictions_unique", unique: true
     t.index ["product_variant_id"], name: "index_variant_group_restrictions_on_product_variant_id"
@@ -439,40 +442,66 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_070306) do
     t.bigint "product_variant_id", null: false
     t.bigint "ingredient_id", null: false
     t.decimal "quantity", precision: 10, scale: 2, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["ingredient_id"], name: "index_variant_ingredients_on_ingredient_id"
     t.index ["product_variant_id", "ingredient_id"], name: "index_variant_ingredients_on_variant_and_ingredient", unique: true
     t.index ["product_variant_id"], name: "index_variant_ingredients_on_product_variant_id"
   end
 
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id", name: "active_storage_attachments_blob_id_fkey"
-  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id", name: "active_storage_variant_records_blob_id_fkey"
-  add_foreign_key "bake_day_artisans", "artisans", name: "bake_day_artisans_artisan_id_fkey"
-  add_foreign_key "bake_day_artisans", "bake_days", name: "bake_day_artisans_bake_day_id_fkey"
-  add_foreign_key "customer_groups", "customers", name: "customer_groups_customer_id_fkey"
-  add_foreign_key "customer_groups", "groups", name: "customer_groups_group_id_fkey"
-  add_foreign_key "order_items", "orders", name: "order_items_order_id_fkey"
-  add_foreign_key "order_items", "product_variants", name: "order_items_product_variant_id_fkey"
-  add_foreign_key "orders", "bake_days", name: "orders_bake_day_id_fkey"
-  add_foreign_key "orders", "customers", name: "orders_customer_id_fkey"
-  add_foreign_key "payments", "orders", name: "payments_order_id_fkey"
-  add_foreign_key "product_availabilities", "product_variants", name: "product_availabilities_product_variant_id_fkey"
+  create_table "wallet_transactions", force: :cascade do |t|
+    t.bigint "wallet_id", null: false
+    t.integer "amount_cents", null: false
+    t.integer "transaction_type", null: false
+    t.bigint "order_id"
+    t.string "stripe_payment_intent_id"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_wallet_transactions_on_created_at"
+    t.index ["order_id"], name: "index_wallet_transactions_on_order_id"
+    t.index ["wallet_id"], name: "index_wallet_transactions_on_wallet_id"
+  end
+
+  create_table "wallets", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.integer "balance_cents", default: 0, null: false
+    t.integer "low_balance_threshold_cents", default: 1000, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_wallets_on_customer_id", unique: true
+  end
+
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "bake_day_artisans", "artisans"
+  add_foreign_key "bake_day_artisans", "bake_days"
+  add_foreign_key "customer_groups", "customers"
+  add_foreign_key "customer_groups", "groups"
+  add_foreign_key "order_items", "orders"
+  add_foreign_key "order_items", "product_variants"
+  add_foreign_key "orders", "bake_days"
+  add_foreign_key "orders", "customers"
+  add_foreign_key "payments", "orders"
+  add_foreign_key "product_availabilities", "product_variants"
   add_foreign_key "product_flours", "flours"
   add_foreign_key "product_flours", "products"
-  add_foreign_key "product_images", "product_variants", name: "product_images_product_variant_id_fkey"
-  add_foreign_key "product_images", "products", name: "product_images_product_id_fkey"
+  add_foreign_key "product_images", "product_variants"
+  add_foreign_key "product_images", "products"
   add_foreign_key "product_variants", "mold_types"
-  add_foreign_key "product_variants", "products", name: "product_variants_product_id_fkey"
-  add_foreign_key "sms_messages", "customers", name: "sms_messages_customer_id_fkey"
-  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_blocked_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_claimed_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_failed_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_ready_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_recurring_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", name: "solid_queue_scheduled_executions_job_id_fkey", on_delete: :cascade
-  add_foreign_key "variant_group_restrictions", "groups", name: "variant_group_restrictions_group_id_fkey"
-  add_foreign_key "variant_group_restrictions", "product_variants", name: "variant_group_restrictions_product_variant_id_fkey"
-  add_foreign_key "variant_ingredients", "ingredients", name: "variant_ingredients_ingredient_id_fkey"
-  add_foreign_key "variant_ingredients", "product_variants", name: "variant_ingredients_product_variant_id_fkey"
+  add_foreign_key "product_variants", "products"
+  add_foreign_key "sms_messages", "customers"
+  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "variant_group_restrictions", "groups"
+  add_foreign_key "variant_group_restrictions", "product_variants"
+  add_foreign_key "variant_ingredients", "ingredients"
+  add_foreign_key "variant_ingredients", "product_variants"
+  add_foreign_key "wallet_transactions", "orders"
+  add_foreign_key "wallet_transactions", "wallets"
+  add_foreign_key "wallets", "customers"
 end

@@ -1,6 +1,7 @@
 class Customer < ApplicationRecord
   has_many :customer_groups, dependent: :destroy
   has_many :groups, through: :customer_groups
+  has_one :wallet, dependent: :destroy
   has_many :orders, dependent: :restrict_with_error
   has_many :phone_verifications, dependent: :destroy
   has_many :sms_messages, dependent: :nullify

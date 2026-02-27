@@ -6,8 +6,11 @@ class Order < ApplicationRecord
     picked_up: 3,
     no_show: 4,
     cancelled: 5,
-    unpaid: 6
+    unpaid: 6,
+    planned: 7
   }
+
+  enum :source, { checkout: 0, calendar: 1 }
 
   belongs_to :customer
   belongs_to :bake_day
@@ -32,6 +35,8 @@ class Order < ApplicationRecord
   scope :in_bake_day_range, lambda { |start_date, end_date|
     joins(:bake_day).where(bake_days: { baked_on: start_date..end_date })
   }
+  scope :from_calendar, -> { calendar }
+  scope :from_checkout, -> { checkout }
 
   def total_euros
     (total_cents / 100.0).round(2)
@@ -49,6 +54,8 @@ class Order < ApplicationRecord
     case status.to_sym
     when :pending
       new_status.to_sym == :paid
+    when :planned
+      [:paid, :cancelled].include?(new_status.to_sym)
     when :paid, :unpaid
       [:ready, :cancelled].include?(new_status.to_sym)
     when :ready

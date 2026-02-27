@@ -7,6 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <meta name="stripe-key" content="<%= ENV['STRIPE_PUBLIC_KEY'] %>">
 
     <%= yield :head %>
 
@@ -44,6 +45,7 @@
                   <%= link_to "Nos pains et compagnie", catalog_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <%= link_to "À propos", a_propos_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% if customer_signed_in? %>
+                    <%= link_to "Calendrier", calendar_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                     <%= link_to "Mon compte", customers_account_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
                   <% else %>
                     <%= link_to "Connexion", customer_login_path, class: "text-sm font-medium leading-normal text-charcoal hover:text-terracotta" %>
@@ -86,6 +88,7 @@
                   <%= link_to "Nos pains et compagnie", catalog_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                   <%= link_to "À propos", a_propos_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                   <% if customer_signed_in? %>
+                    <%= link_to "Calendrier", calendar_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                     <%= link_to "Mon compte", customers_account_path, class: "rounded-lg px-4 py-3 text-base font-medium text-charcoal hover:bg-gray-100", data: { action: "click->mobile-menu#close" } %>
                     <%= button_to "Déconnexion",
                           customer_logout_path,

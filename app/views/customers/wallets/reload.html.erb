@@ -51,20 +51,14 @@
         <p class="text-2xl font-bold text-gray-900" data-wallet-reload-target="selectedAmount">0 €</p>
       </div>
 
-      <!-- Stripe Bancontact -->
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Paiement par Bancontact</label>
-        <div id="payment-element" class="p-4 border border-gray-300 rounded-md">
-          <!-- Stripe Elements will be mounted here -->
-        </div>
-        <p data-wallet-reload-target="error" class="mt-2 text-sm text-red-600 hidden"></p>
-      </div>
+      <!-- Erreurs -->
+      <p data-wallet-reload-target="error" class="mb-4 text-sm text-red-600 hidden"></p>
 
       <!-- Submit -->
       <button type="button" data-action="click->wallet-reload#submit"
               data-wallet-reload-target="submitBtn"
               class="w-full py-3 px-4 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
-        <span data-wallet-reload-target="btnText">Recharger</span>
+        <span data-wallet-reload-target="btnText">Payer avec Bancontact</span>
         <span data-wallet-reload-target="btnSpinner" class="hidden">
           Traitement en cours...
         </span>

@@ -48,8 +48,9 @@ export default class extends Controller {
       }
     })
 
-    const euros = (amountCents / 100).toFixed(2)
-    this.selectedAmountTarget.textContent = `${euros} €`
+    const euros = amountCents / 100
+    const display = Number.isInteger(euros) ? `${euros} €` : `${euros.toFixed(2).replace('.', ',')} €`
+    this.selectedAmountTarget.textContent = display
   }
 
   async submit() {

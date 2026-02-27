@@ -38,27 +38,41 @@ module Customers
     def reload_success
       @payment_intent_id = params[:payment_intent]
 
-      if @payment_intent_id.present?
-        # Check if already processed
-        existing_transaction = @wallet.wallet_transactions.find_by(stripe_payment_intent_id: @payment_intent_id)
-
-        if existing_transaction
-          @amount_cents = existing_transaction.amount_cents
-          @already_processed = true
-        else
-          # Retrieve from Stripe and process if succeeded
-          payment_intent = Stripe::PaymentIntent.retrieve(@payment_intent_id)
-
-          if payment_intent.status == 'succeeded' && payment_intent.metadata['type'] == 'wallet_reload'
-            WalletService.top_up(
-              wallet: @wallet,
-              amount_cents: payment_intent.amount,
-              stripe_payment_intent_id: @payment_intent_id
-            )
-            @amount_cents = payment_intent.amount
-          end
-        end
+      unless @payment_intent_id.present?
+        redirect_to customers_wallet_reload_path, alert: "Paiement non trouvé." and return
       end
+
+      # Check if already processed
+      existing_transaction = @wallet.wallet_transactions.find_by(stripe_payment_intent_id: @payment_intent_id)
+
+      if existing_transaction
+        @amount_cents = existing_transaction.amount_cents
+        @already_processed = true
+        return
+      end
+
+      # Retrieve from Stripe and check status
+      payment_intent = Stripe::PaymentIntent.retrieve(@payment_intent_id)
+
+      unless payment_intent.status == 'succeeded' && payment_intent.metadata['type'] == 'wallet_reload'
+        message = case payment_intent.status
+                  when 'processing'
+                    "Le paiement est en cours de traitement. Veuillez patienter quelques instants."
+                  else
+                    "Le paiement a échoué. Veuillez réessayer et nous prévenir si le problème persiste."
+                  end
+        redirect_to customers_wallet_reload_path, alert: message and return
+      end
+
+      WalletService.top_up(
+        wallet: @wallet,
+        amount_cents: payment_intent.amount,
+        stripe_payment_intent_id: @payment_intent_id
+      )
+      @amount_cents = payment_intent.amount
+    rescue Stripe::StripeError => e
+      Rails.logger.error("Stripe error on reload_success: #{e.message}")
+      redirect_to customers_wallet_reload_path, alert: "Une erreur est survenue. Veuillez réessayer."
     end
 
     private

@@ -17,6 +17,19 @@ module Admin::BakeDaysHelper
       "cancelled" => "bg-red-100 text-red-800"
     }[status.to_s] || "bg-gray-100 text-gray-800"
   end
+
+  def dough_tooltip_dot_class(status)
+    {
+      "planned" => "bg-violet-400",
+      "unpaid" => "bg-amber-400",
+      "paid" => "bg-blue-400",
+      "ready" => "bg-emerald-400",
+      "picked_up" => "bg-slate-400",
+      "pending" => "bg-yellow-400",
+      "cancelled" => "bg-red-400",
+      "no_show" => "bg-red-400"
+    }[status.to_s] || "bg-slate-300"
+  end
 end
 
 

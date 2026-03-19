@@ -105,10 +105,7 @@ module Admin
     end
 
     def total_flour_quantity
-      confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
-      confirmed_order_items = confirmed_orders.flat_map(&:order_items)
-
-      confirmed_order_items.sum do |item|
+      production_order_items.sum do |item|
         flour_qty = item.product_variant.flour_quantity || 0
         item.qty * flour_qty
       end
@@ -116,11 +113,7 @@ module Admin
 
     def product_flour_stats
       @product_flour_stats ||= begin
-        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
-        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
-
-        # Group by product_id to ensure proper grouping
-        grouped_by_product_id = confirmed_order_items.group_by { |item| item.product_variant.product_id }
+        grouped_by_product_id = production_order_items.group_by { |item| item.product_variant.product_id }
 
         grouped_by_product_id.map do |product_id, items|
           # Get the product from the first item (all items in this group have the same product)
@@ -142,16 +135,18 @@ module Admin
 
     def flour_type_stats
       @flour_type_stats ||= begin
-        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
-        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+        flour_stats = Hash.new do |h, flour_id|
+          h[flour_id] = { flour: nil, total: 0.0, by_product: Hash.new { |h2, k| h2[k] = { total: 0.0, order_details: [] } } }
+        end
 
-        # Build hash: flour_id => { flour: Flour, total: 0, by_product: { product => quantity } }
-        flour_stats = Hash.new { |h, flour_id| h[flour_id] = { flour: nil, total: 0.0, by_product: Hash.new(0) } }
+        orders_by_id = production_orders.index_by(&:id)
 
-        confirmed_order_items.each do |item|
+        production_order_items.each do |item|
+          order = orders_by_id[item.order_id]
           variant = item.product_variant
           product = variant.product
-          total_dough = item.qty * (variant.flour_quantity || 0)
+          flour_qty_per_unit = variant.flour_quantity || 0
+          total_dough = item.qty * flour_qty_per_unit
           next if total_dough.zero?
 
           product.product_flours.includes(:flour).each do |pf|
@@ -159,15 +154,25 @@ module Admin
             contribution = total_dough * pf.percentage / 100.0
             flour_stats[flour.id][:flour] = flour
             flour_stats[flour.id][:total] += contribution
-            flour_stats[flour.id][:by_product][product] += contribution
+            bucket = flour_stats[flour.id][:by_product][product]
+            bucket[:total] += contribution
+            bucket[:order_details] << {
+              order_number: order&.order_number,
+              status: order&.status,
+              qty: item.qty,
+              variant_name: variant.name,
+              flour_qty_per_unit: flour_qty_per_unit,
+              percentage: pf.percentage,
+              contribution: contribution.round
+            }
           end
         end
 
         flour_stats.values
           .select { |stat| stat[:flour].present? && stat[:total].positive? }
           .map do |stat|
-            product_details = stat[:by_product].map do |product, qty|
-              { product: product, flour_quantity: qty.round }
+            product_details = stat[:by_product].map do |product, data|
+              { product: product, flour_quantity: data[:total].round, order_details: data[:order_details] }
             end.select { |detail| detail[:flour_quantity].positive? }
                .sort_by { |detail| detail[:product].name.downcase }
 
@@ -217,12 +222,11 @@ module Admin
 
     def ingredient_stats
       @ingredient_stats ||= begin
-        confirmed_orders = orders.select { |order| order.unpaid? || order.paid? || order.ready? || order.picked_up? }
-        confirmed_order_items = confirmed_orders.flat_map(&:order_items)
+        items = production_order_items
 
         ingredient_totals = Hash.new { |h, k| h[k] = { ingredient: nil, total: BigDecimal("0") } }
 
-        confirmed_order_items.each do |item|
+        items.each do |item|
           variant = item.product_variant
           variant.variant_ingredients.includes(:ingredient).each do |vi|
             ingredient = vi.ingredient
@@ -235,6 +239,18 @@ module Admin
           .select { |stat| stat[:total].positive? }
           .sort_by { |stat| stat[:ingredient].name.downcase }
       end
+    end
+
+    private
+
+    PRODUCTION_STATUSES = %i[unpaid paid ready picked_up planned].freeze
+
+    def production_orders
+      @production_orders ||= orders.select { |order| PRODUCTION_STATUSES.include?(order.status.to_sym) }
+    end
+
+    def production_order_items
+      @production_order_items ||= production_orders.flat_map(&:order_items)
     end
   end
 end

@@ -141,15 +141,21 @@ class WebhooksController < ApplicationController
     end
 
     if order
-      order.transition_to!(:paid)
-      
+      # Only transition if not already paid (success page may have already processed this)
+      if order.can_transition_to?(:paid)
+        order.transition_to!(:paid)
+        Rails.logger.info("Order #{order.id} transitioned to paid")
+      else
+        Rails.logger.info("Order #{order.id} already in status '#{order.status}', skipping transition to paid")
+      end
+
       # Create payment record
       Payment.find_or_create_by!(order: order) do |payment|
         payment.stripe_payment_intent_id = payment_intent_id
         payment.status = :succeeded
       end
-      
-      Rails.logger.info("Order #{order.id} marked as paid and payment record created")
+
+      Rails.logger.info("Order #{order.id} payment record ensured")
       return true
     else
       Rails.logger.error("Order is nil after processing payment_intent #{payment_intent_id}")

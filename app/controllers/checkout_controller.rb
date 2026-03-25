@@ -572,8 +572,13 @@ class CheckoutController < ApplicationController
     end
 
     if order
-      order.transition_to!(:paid)
-      
+      # Only transition if not already paid (webhook may have already processed this)
+      if order.can_transition_to?(:paid)
+        order.transition_to!(:paid)
+      else
+        Rails.logger.info("Order #{order.id} already in status '#{order.status}', skipping transition to paid")
+      end
+
       # Create payment record
       Payment.find_or_create_by!(order: order) do |payment|
         payment.stripe_payment_intent_id = payment_intent_id

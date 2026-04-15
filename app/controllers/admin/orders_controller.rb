@@ -129,8 +129,12 @@ class Admin::OrdersController < Admin::BaseController
 
     @order.transition_to!(new_status)
 
-    # Send ready SMS if status changed to ready (from paid or unpaid)
-    if @order.ready? && @order.saved_change_to_status? && ['paid', 'unpaid'].include?(@order.status_before_last_save)
+    # Send ready SMS only when marking ready on the day of the bake.
+    # If the bake day is in the past, the admin simply forgot to mark it ready earlier
+    # and notifying the customer now would be confusing.
+    if @order.ready? && @order.saved_change_to_status? &&
+       ['paid', 'unpaid'].include?(@order.status_before_last_save) &&
+       @order.bake_day&.baked_on == Time.zone.today
       SmsService.send_ready(@order)
     end
 

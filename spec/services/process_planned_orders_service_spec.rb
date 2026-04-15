@@ -18,18 +18,26 @@ RSpec.describe ProcessPlannedOrdersService do
   end
 
   describe '.process_for_bake_day' do
-    it 'processes all planned orders for the bake day' do
-      expect(ProcessPlannedOrdersService).to receive(:process_order).with(planned_order)
+    it 'processes all planned orders for the bake day with send_sms: true when baked_on is still in the future' do
+      expect(ProcessPlannedOrdersService).to receive(:process_order).with(planned_order, send_sms: true)
       ProcessPlannedOrdersService.process_for_bake_day(bake_day)
     end
 
     it 'only processes planned orders' do
       paid_order = create(:order, :paid, customer: customer, bake_day: bake_day)
 
-      expect(ProcessPlannedOrdersService).to receive(:process_order).with(planned_order)
-      expect(ProcessPlannedOrdersService).not_to receive(:process_order).with(paid_order)
+      expect(ProcessPlannedOrdersService).to receive(:process_order).with(planned_order, send_sms: true)
+      expect(ProcessPlannedOrdersService).not_to receive(:process_order).with(paid_order, anything)
 
       ProcessPlannedOrdersService.process_for_bake_day(bake_day)
+    end
+
+    it 'passes send_sms: false when the bake day is already in the past (stale catch-up)' do
+      stale_bake_day = create(:bake_day, baked_on: Date.current - 1.day, cut_off_at: 3.days.ago)
+      stale_order = create(:order, :planned, customer: customer, bake_day: stale_bake_day, source: :calendar, total_cents: 1100)
+
+      expect(ProcessPlannedOrdersService).to receive(:process_order).with(stale_order, send_sms: false)
+      ProcessPlannedOrdersService.process_for_bake_day(stale_bake_day)
     end
   end
 
@@ -102,6 +110,29 @@ RSpec.describe ProcessPlannedOrdersService do
         ProcessPlannedOrdersService.process_order(planned_order)
 
         expect(wallet.reload.balance_cents).to eq(400)
+      end
+    end
+
+    context 'when send_sms: false (stale catch-up)' do
+      it 'still debits the wallet and marks the order paid but does not send confirmation SMS' do
+        expect(SmsService).not_to receive(:send_planned_order_confirmed)
+        expect(SmsService).not_to receive(:send_low_balance_alert)
+
+        expect {
+          ProcessPlannedOrdersService.process_order(planned_order, send_sms: false)
+        }.to change { wallet.reload.balance_cents }.from(5000).to(3900)
+
+        expect(planned_order.reload.paid?).to be true
+      end
+
+      it 'still cancels the order when balance insufficient but does not send cancellation SMS' do
+        wallet.update!(balance_cents: 500)
+
+        expect(SmsService).not_to receive(:send_planned_order_cancelled)
+
+        ProcessPlannedOrdersService.process_order(planned_order, send_sms: false)
+
+        expect(planned_order.reload.cancelled?).to be true
       end
     end
   end

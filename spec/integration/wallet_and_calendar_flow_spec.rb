@@ -314,5 +314,55 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       order.reload
       expect(order.planned?).to be true
     end
+
+    it 'catches up on orders whose cut-off passed long ago (delayed/missed run)' do
+      stale_bake_day = create(:bake_day, cut_off_at: 2.days.ago, baked_on: Date.current + 1.day)
+
+      order = Order.create!(
+        customer: customer,
+        bake_day: stale_bake_day,
+        status: :planned,
+        source: :calendar,
+        total_cents: 1100
+      )
+      order.order_items.create!(
+        product_variant: product_variant,
+        qty: 2,
+        unit_price_cents: 550
+      )
+
+      ProcessPlannedOrdersJob.perform_now
+
+      order.reload
+      expect(order.paid?).to be true
+      expect(customer.wallet.reload.balance_cents).to eq(3900) # 5000 - 1100
+    end
+
+    it 'catches up silently (no SMS) when the bake day itself is already in the past' do
+      past_bake_day = create(:bake_day, cut_off_at: 5.days.ago, baked_on: Date.current - 2.days)
+
+      order = Order.create!(
+        customer: customer,
+        bake_day: past_bake_day,
+        status: :planned,
+        source: :calendar,
+        total_cents: 1100
+      )
+      order.order_items.create!(
+        product_variant: product_variant,
+        qty: 2,
+        unit_price_cents: 550
+      )
+
+      expect(SmsService).not_to receive(:send_planned_order_confirmed)
+      expect(SmsService).not_to receive(:send_planned_order_cancelled)
+      expect(SmsService).not_to receive(:send_low_balance_alert)
+
+      ProcessPlannedOrdersJob.perform_now
+
+      order.reload
+      expect(order.paid?).to be true
+      expect(customer.wallet.reload.balance_cents).to eq(3900)
+    end
   end
 end

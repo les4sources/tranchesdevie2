@@ -1,7 +1,12 @@
 class CheckInsufficientBalanceJob < ApplicationJob
+  include SlackNotifiable
+
   queue_as :default
 
   def perform
+    @checked_count = 0
+    @warned_count = 0
+
     # Find BakeDays with upcoming cut-offs (within the next 6 hours)
     # This job is scheduled to run at noon on Sundays and Wednesdays
     upcoming_cutoffs = BakeDay.where(cut_off_at: Time.current..6.hours.from_now)
@@ -10,6 +15,7 @@ class CheckInsufficientBalanceJob < ApplicationJob
       Rails.logger.info("Checking insufficient balances for bake day #{bake_day.baked_on}")
 
       Order.planned.where(bake_day: bake_day).includes(:customer).find_each do |order|
+        @checked_count += 1
         check_and_notify(order)
       end
     end
@@ -29,11 +35,19 @@ class CheckInsufficientBalanceJob < ApplicationJob
 
       unless last_warning
         SmsService.send_insufficient_balance_warning(order)
+        @warned_count += 1
         Rails.logger.info("Sent insufficient balance warning for order #{order.id}")
       end
     end
   rescue StandardError => e
     Rails.logger.error("Error checking balance for order #{order.id}: #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
+  end
+
+  def slack_notification_summary
+    return "Aucune commande planifiée à vérifier." if @checked_count.zero?
+
+    "• #{@checked_count} commande(s) vérifiée(s)\n" \
+      "• #{@warned_count} client(s) alerté(s) pour solde insuffisant"
   end
 end

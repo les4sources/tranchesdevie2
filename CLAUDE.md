@@ -13,7 +13,7 @@ Artisan bakery e-commerce app (single-tenant) for a Belgian bread bakery. Custom
 - **Decorators**: Draper
 - **Soft Deletion**: `soft_deletion` gem
 - **Web Server**: Puma + Thruster (HTTP compression/caching proxy)
-- **Deployment**: Kamal (Docker-based), Let's Encrypt SSL
+- **Deployment**: Hatchbox (auto-deploy on push to `main`)
 - **Observability**: Sentry
 - **Testing**: RSpec, FactoryBot, Faker, VCR/WebMock, Capybara/Selenium
 
@@ -40,9 +40,8 @@ bin/brakeman --no-pager          # Security scanning
 bin/importmap audit              # JS dependency audit
 
 # Deployment
-bin/kamal deploy                 # Deploy via Kamal
-bin/kamal console                # Rails console on server
-bin/kamal logs                   # View server logs
+# Deploys happen automatically via Hatchbox when `main` is updated.
+# Server access (console, logs, SSH) is managed through the Hatchbox dashboard.
 ```
 
 ## Project Structure
@@ -66,8 +65,7 @@ app/
 └── views/                  # Slim templates (.html.slim)
 config/
 ├── routes.rb
-├── recurring.yml           # Cron-style scheduled jobs
-└── deploy.yml              # Kamal deployment config
+└── recurring.yml           # Cron-style scheduled jobs (Solid Queue)
 spec/                       # RSpec tests
 ├── models/, requests/, services/, integration/
 ├── factories/              # FactoryBot factories
@@ -161,13 +159,14 @@ Config: `config/recurring.yml` (production only)
 
 ## Environment Variables
 
-Key env vars (set in `.env` for dev, Kamal secrets for production):
+Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLIC_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `ADMIN_PASSWORD`, `ADMIN_USER`
 - `RAILS_MASTER_KEY`
 - `DATABASE_URL` (production)
 - `SMSTOOLS_*` (SMS API credentials)
 - `SENTRY_DSN`
+- `SLACK_WEBHOOK_URL` (recurring job notifications)
 
 ## Conventions
 

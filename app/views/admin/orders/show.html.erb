@@ -30,6 +30,11 @@
       </div>
 
       <div>
+        <dt class="text-sm font-medium text-gray-500">Origine</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= order_source_label(@order.source) %></dd>
+      </div>
+
+      <div>
         <dt class="text-sm font-medium text-gray-500">Client</dt>
         <dd class="mt-1 text-sm text-gray-900"><%= link_to @order.customer.full_name, admin_customer_path(@order.customer), class: "text-blue-600 hover:text-blue-800 hover:underline" %></dd>
         <% if @order.customer.phone_e164.present? %>
@@ -59,10 +64,19 @@
     <h2 class="text-lg font-medium text-gray-900 mb-4">Actions</h2>
 
     <div class="space-y-3">
+      <% if @order.unpaid? && @order.can_transition_to?(:paid) %>
+        <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
+          <%= f.hidden_field :status, value: :paid %>
+          <%= f.submit "Marquer comme payée",
+              class: "w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700",
+              data: { confirm: "Marquer cette commande comme payée ?" } %>
+        <% end %>
+      <% end %>
+
       <% if @order.can_transition_to?(:ready) %>
         <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
           <%= f.hidden_field :status, value: :ready %>
-          <%= f.submit "Marquer comme prête", 
+          <%= f.submit "Marquer comme prête",
               class: "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700",
               data: { confirm: "Envoyer le SMS 'prête' au client ?" } %>
         <% end %>

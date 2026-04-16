@@ -71,6 +71,14 @@
 
     <div class="mt-6">
       <div class="flex items-center">
+        <%= f.check_box :billable, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+        <%= f.label :billable, "Facturable", class: "ml-2 block text-sm text-gray-900" %>
+      </div>
+      <p class="mt-1 text-sm text-gray-500">Cochez pour les points de dépôt et clients pro qui reçoivent une facture mensuelle.</p>
+    </div>
+
+    <div class="mt-6">
+      <div class="flex items-center">
         <%= f.check_box :skip_wallet_check, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
         <%= f.label :skip_wallet_check, "Client interne (pas de vérification de solde)", class: "ml-2 block text-sm text-gray-900" %>
       </div>

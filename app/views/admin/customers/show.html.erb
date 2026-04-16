@@ -63,6 +63,17 @@
         <dd class="mt-1 text-sm text-gray-900"><%= @customer.created_at.strftime("%d/%m/%Y à %H:%M") %></dd>
       </div>
 
+      <% if @customer.billable? %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Facturation</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              Facturable
+            </span>
+          </dd>
+        </div>
+      <% end %>
+
       <div>
         <dt class="text-sm font-medium text-gray-500">Groupes</dt>
         <dd class="mt-1 text-sm text-gray-900">

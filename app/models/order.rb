@@ -10,7 +10,7 @@ class Order < ApplicationRecord
     planned: 7
   }
 
-  enum :source, { checkout: 0, calendar: 1 }
+  enum :source, { checkout: 0, calendar: 1, admin: 2 }
 
   belongs_to :customer
   belongs_to :bake_day
@@ -56,8 +56,10 @@ class Order < ApplicationRecord
       new_status.to_sym == :paid
     when :planned
       [:paid, :cancelled].include?(new_status.to_sym)
-    when :paid, :unpaid
+    when :paid
       [:ready, :cancelled].include?(new_status.to_sym)
+    when :unpaid
+      [:paid, :ready, :cancelled].include?(new_status.to_sym)
     when :ready
       [:picked_up, :no_show].include?(new_status.to_sym)
     else

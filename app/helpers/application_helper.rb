@@ -13,4 +13,14 @@ module ApplicationHelper
 
     labels[status.to_s] || status.to_s.tr("_", " ").capitalize
   end
+
+  def order_source_label(source)
+    labels = {
+      "checkout" => "Client (en ligne)",
+      "calendar" => "Client (calendrier)",
+      "admin" => "Admin"
+    }
+
+    labels[source.to_s] || source.to_s.capitalize
+  end
 end

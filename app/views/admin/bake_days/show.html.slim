@@ -76,7 +76,7 @@
   - kpi_cards = [ \
       { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
       { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },
-      { label: "Revenus attendus", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC prévu" },
+      { label: "Chiffre d'affaires", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC" },
       { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
     ]
 

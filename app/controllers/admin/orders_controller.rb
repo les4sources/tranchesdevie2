@@ -89,7 +89,7 @@ class Admin::OrdersController < Admin::BaseController
     @selected_quantities = normalize_variant_quantities(raw_quantities)
     @final_total_input = permitted_params.delete(:final_total_euros)
 
-    @order = Order.new(permitted_params)
+    @order = Order.new(permitted_params.merge(source: :admin))
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
     
     # Calculer la remise si un client est sélectionné

@@ -23,6 +23,11 @@ module Customers
                                        .order("products.category ASC, products.position ASC, products.name ASC")
     end
 
+    def mark_intro_seen
+      current_customer.update!(calendar_intro_seen_at: Time.current)
+      head :no_content
+    end
+
     def update_day
       bake_day = BakeDay.find(params[:bake_day_id])
       items = params[:items] || []

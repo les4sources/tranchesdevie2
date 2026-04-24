@@ -47,6 +47,11 @@ RSpec.describe 'Customers::Wallets', type: :request do
         get '/customers/portefeuille/recharger'
         expect(response).to have_http_status(:success)
       end
+
+      it 'shows the pedagogical banner about calendar credit' do
+        get '/customers/portefeuille/recharger'
+        expect(response.body).to include('À quoi sert ce crédit')
+      end
     end
   end
 

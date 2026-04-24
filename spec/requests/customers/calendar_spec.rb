@@ -36,6 +36,27 @@ RSpec.describe "Customers::Calendar", type: :request do
       expect(response.body).to include('50')
     end
 
+    it "renders the intro help button" do
+      get '/calendrier'
+      expect(response.body).to include('Comment ça marche ?')
+    end
+
+    context "for a customer who has not seen the intro yet" do
+      it "marks auto-open as true on the root container" do
+        get '/calendrier'
+        expect(response.body).to include('data-calendar-intro-auto-open-value="true"')
+      end
+    end
+
+    context "for a customer who has already seen the intro" do
+      before { customer.update!(calendar_intro_seen_at: 1.day.ago) }
+
+      it "marks auto-open as false on the root container" do
+        get '/calendrier'
+        expect(response.body).to include('data-calendar-intro-auto-open-value="false"')
+      end
+    end
+
     context "when not authenticated" do
       before do
         delete '/deconnexion'
@@ -135,6 +156,30 @@ RSpec.describe "Customers::Calendar", type: :request do
       it "returns unauthorized" do
         patch '/calendrier/update_day', params: { bake_day_id: future_bake_day.id, items: items }, as: :json
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  describe "POST /calendrier/intro/vu" do
+    it "returns no content" do
+      post '/calendrier/intro/vu'
+      expect(response).to have_http_status(:no_content)
+    end
+
+    it "stamps calendar_intro_seen_at on the customer" do
+      expect {
+        post '/calendrier/intro/vu'
+      }.to change { customer.reload.calendar_intro_seen_at }.from(nil)
+    end
+
+    context "when not authenticated" do
+      before do
+        delete '/deconnexion'
+      end
+
+      it "redirects to login" do
+        post '/calendrier/intro/vu'
+        expect(response).to redirect_to('/connexion')
       end
     end
   end

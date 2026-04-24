@@ -16,6 +16,21 @@
     </div>
 
     <div data-controller="wallet-reload" data-wallet-reload-create-url-value="<%= customers_wallet_create_reload_path %>">
+      <!-- Info pédagogique -->
+      <div class="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg flex gap-3">
+        <svg class="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="text-sm text-gray-700 leading-relaxed">
+          <p class="font-medium text-gray-900 mb-1">À quoi sert ce crédit&nbsp;?</p>
+          <p>
+            Il te permet de réserver ton pain pour les prochaines dates de cuisson sur ton
+            <%= link_to "calendrier", calendar_path, class: "underline font-medium text-green-700 hover:text-green-800" %>.
+            Tu peux modifier tes commandes jusqu'à la veille, et demander un remboursement à tout moment en nous contactant.
+          </p>
+        </div>
+      </div>
+
       <!-- Montant -->
       <div class="mb-6">
         <label class="block text-sm font-medium text-gray-700 mb-2">Montant à recharger</label>

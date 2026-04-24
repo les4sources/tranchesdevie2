@@ -39,6 +39,7 @@ Rails.application.routes.draw do
   # Customer calendar (root level for cleaner URLs)
   get "calendrier", to: "customers/calendar#show", as: :calendar
   patch "calendrier/update_day", to: "customers/calendar#update_day", as: :calendar_update_day
+  post "calendrier/intro/vu", to: "customers/calendar#mark_intro_seen", as: :calendar_intro_seen
 
   namespace :customers do
     get "mon-compte", to: "account#show", as: :account

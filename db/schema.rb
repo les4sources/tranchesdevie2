@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_16_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -97,6 +97,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_16_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "skip_wallet_check", default: false, null: false
+    t.datetime "calendar_intro_seen_at"
     t.boolean "billable", default: false, null: false
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end

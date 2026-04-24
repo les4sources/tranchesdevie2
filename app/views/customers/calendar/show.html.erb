@@ -1,14 +1,25 @@
 <% content_for :title, "Mon calendrier" %>
 
-<div class="w-full mx-auto" data-controller="calendar"
+<div class="w-full mx-auto" data-controller="calendar calendar-intro"
      data-calendar-wallet-balance-value="<%= @wallet.balance_cents %>"
      data-calendar-committed-value="<%= @committed_cents %>"
      data-calendar-reload-url-value="<%= customers_wallet_reload_path %>"
      data-calendar-skip-wallet-value="<%= current_customer.skip_wallet_check? %>"
+     data-calendar-intro-auto-open-value="<%= current_customer.calendar_intro_seen_at.nil? %>"
+     data-calendar-intro-mark-seen-url-value="<%= calendar_intro_seen_path %>"
 >
-  <div class="flex justify-between items-center mb-8">
+  <div class="flex justify-between items-center mb-8 gap-3 flex-wrap">
     <h1 class="text-3xl font-bold text-gray-900">Mon calendrier</h1>
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
+      <button type="button"
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              data-action="click->calendar-intro#open"
+              aria-label="Comment ça marche ?">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="hidden sm:inline">Comment ça marche ?</span>
+      </button>
       <%= link_to "Mon compte", customers_account_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200" %>
       <%= link_to "Portefeuille", customers_wallet_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
     </div>
@@ -268,6 +279,123 @@
 
         <!-- État confirmation (injecté par JS) -->
         <div data-calendar-target="modalSuccess" class="hidden p-6"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale d'aide / onboarding -->
+  <div data-calendar-intro-target="modal"
+       data-calendar-intro-cta-url="<%= customers_wallet_reload_path %>"
+       data-action="click->calendar-intro#overlayClick"
+       class="hidden fixed inset-0 z-50 overflow-y-auto bg-white/40 backdrop-blur-md flex items-center justify-center px-4">
+    <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
+      <!-- Barre du haut -->
+      <div class="flex justify-between items-center px-6 pt-5">
+        <button type="button"
+                class="text-sm text-gray-500 hover:text-gray-700 underline"
+                data-action="click->calendar-intro#skip">
+          Passer
+        </button>
+        <button type="button"
+                class="text-gray-400 hover:text-gray-600"
+                data-action="click->calendar-intro#close"
+                aria-label="Fermer">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenu des slides -->
+      <div class="px-6 py-4">
+        <!-- Slide 1 -->
+        <div data-calendar-intro-target="slide" class="text-center">
+          <div class="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Commande ton pain à l'avance, en toute simplicité.</h3>
+          <p class="text-gray-600 leading-relaxed">
+            Recharge ton portefeuille du montant de ton choix, puis utilise ce crédit pour réserver ton pain pour les prochaines dates de cuisson. Un peu comme un abonnement flexible, sans engagement.
+          </p>
+        </div>
+
+        <!-- Slide 2 -->
+        <div data-calendar-intro-target="slide" class="hidden text-center">
+          <div class="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Change d'avis quand tu veux.</h3>
+          <p class="text-gray-600 leading-relaxed">
+            Tu peux ajouter, modifier ou supprimer ta commande jusqu'à la veille de la cuisson à l'heure de clôture des commandes. Même produit chaque semaine, ou quelque chose de différent à chaque fois — tu décides, date par date.
+          </p>
+        </div>
+
+        <!-- Slide 3 -->
+        <div data-calendar-intro-target="slide" class="hidden text-center">
+          <div class="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Ta commande se confirme toute seule.</h3>
+          <p class="text-gray-600 leading-relaxed">
+            La veille de la cuisson, ta commande est automatiquement confirmée et le montant débité de ton portefeuille. Si ton solde est insuffisant, on te prévient par SMS et la commande est simplement annulée — aucun frais.
+          </p>
+        </div>
+
+        <!-- Slide 4 (CTA) -->
+        <div data-calendar-intro-target="slide" class="hidden text-center">
+          <div class="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Prêt·e à essayer ?</h3>
+          <div class="flex flex-col gap-2 mt-4">
+            <button type="button"
+                    class="w-full px-4 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700"
+                    data-action="click->calendar-intro#goToCta">
+              Recharger mon portefeuille
+            </button>
+            <button type="button"
+                    class="w-full px-4 py-3 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                    data-action="click->calendar-intro#close">
+              Explorer d'abord
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-4">
+            Une question ? Tu peux rouvrir cette aide à tout moment via le bouton « Comment ça marche ? ».
+          </p>
+        </div>
+      </div>
+
+      <!-- Navigation (slides 1-3) -->
+      <div data-calendar-intro-target="navBar" class="px-6 py-4 bg-gray-50 flex items-center justify-between">
+        <button type="button"
+                class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                data-calendar-intro-target="prevBtn"
+                data-action="click->calendar-intro#prev">
+          Précédent
+        </button>
+
+        <!-- Indicateur de progression -->
+        <div class="flex gap-1.5">
+          <span data-calendar-intro-target="progressDot" class="w-2 h-2 rounded-full bg-green-600 transition-colors"></span>
+          <span data-calendar-intro-target="progressDot" class="w-2 h-2 rounded-full bg-gray-300 transition-colors"></span>
+          <span data-calendar-intro-target="progressDot" class="w-2 h-2 rounded-full bg-gray-300 transition-colors"></span>
+          <span data-calendar-intro-target="progressDot" class="w-2 h-2 rounded-full bg-gray-300 transition-colors"></span>
+        </div>
+
+        <button type="button"
+                class="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                data-calendar-intro-target="nextBtn"
+                data-action="click->calendar-intro#next">
+          Suivant
+        </button>
       </div>
     </div>
   </div>

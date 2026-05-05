@@ -10,6 +10,8 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
+  get "confidentialite", to: "pages#confidentialite", as: :privacy_policy
+  get "sms", to: "pages#sms", as: :sms_terms
   get "drapeaux", to: "flags#index", as: :flags
 
   get "panier", to: "cart#show", as: :cart
@@ -75,9 +77,6 @@ Rails.application.routes.draw do
     end
 
     resources :customers, only: [:index, :show, :new, :create, :edit, :update] do
-      member do
-        post :send_sms
-      end
       resources :sms_messages, only: [:show], controller: "sms_messages"
     end
 

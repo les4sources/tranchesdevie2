@@ -5,14 +5,15 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
   let(:product_variant) { create(:product_variant, price_cents: 550) }
 
   before do
-    # Stub SMS service
-    allow(HTTParty).to receive(:post).and_return(
-      double(success?: true, code: 200, :[] => 'msg_123', body: '{"messageid": "msg_123"}')
-    )
-    allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with('SMSTOOLS_CLIENT_ID').and_return('test_client_id')
-    allow(ENV).to receive(:[]).with('SMSTOOLS_CLIENT_SECRET').and_return('test_client_secret')
-    allow(ENV).to receive(:[]).with('SMSTOOLS_SENDER').and_return('TranchesDeVie')
+    # Stub Sent.dm SMS provider
+    recipient = double(message_id: "msg_123", body: "stubbed body")
+    data = double(recipients: [recipient])
+    allow(SentDmClient).to receive(:send_message).and_return(double(data: data))
+
+    # Templates needed by the planned-order flow
+    create(:sms_template, name: "planned_confirmed", body: "Confirmé {{0:bake_date}} {{1:amount}}")
+    create(:sms_template, name: "planned_cancelled", body: "Annulé {{0:bake_date}}")
+    create(:sms_template, name: "low_balance", body: "Solde bas {{0:balance}}")
   end
 
   describe 'complete flow: wallet reload + planned order + cut-off processing' do

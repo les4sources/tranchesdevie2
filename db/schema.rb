@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_04_162559) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -294,6 +294,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
     t.index ["external_id"], name: "index_sms_messages_on_external_id"
     t.index ["kind"], name: "index_sms_messages_on_kind"
     t.index ["to_e164"], name: "index_sms_messages_on_to_e164"
+  end
+
+  create_table "sms_templates", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "external_id"
+    t.string "category", null: false
+    t.string "language", default: "fr", null: false
+    t.text "body", null: false
+    t.jsonb "variables", default: [], null: false
+    t.datetime "synced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["external_id"], name: "index_sms_templates_on_external_id"
+    t.index ["name"], name: "index_sms_templates_on_name", unique: true
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|

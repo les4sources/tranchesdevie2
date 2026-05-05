@@ -1,0 +1,85 @@
+# Sent.dm templates synchronisés via `bin/rails sentdm:sync_templates`.
+# Voir SmsTemplatesSeeder. Variables sous forme {{n:nom}} dans le body.
+# `variables` doit énumérer dans l'ordre les variables référencées par le body.
+---
+templates:
+  # Catégorie UTILITY (et non AUTHENTICATION) : la validation Meta des templates
+  # AUTHENTICATION + multiChannel est extrêmement stricte (refus silencieux côté
+  # Sent.dm). Pour des SMS purs, UTILITY suffit et passe la review carrier.
+  - name: otp
+    category: UTILITY
+    language: fr
+    body: "Salut, c'est Tranches de Vie ! Voici ton code de connexion : {{0:code}}. À tout de suite !"
+    variables:
+      - id: 0
+        name: code
+        sample: "123456"
+
+  - name: confirmation
+    category: UTILITY
+    language: fr
+    body: "Ta commande chez Tranches de Vie est confirmée. Merci ! Pour ne plus recevoir de SMS, désinscris-toi via Mon compte sur tranchesdevie.be."
+    variables: []
+
+  - name: ready_paid
+    category: UTILITY
+    language: fr
+    body: "Bonjour, ta commande de pains est prête, elle est disponible dans l'épicerie aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Les artisans de Tranche de Vie"
+    variables: []
+
+  - name: ready_unpaid
+    category: UTILITY
+    language: fr
+    body: "Bonjour, ta commande de pains est prête, elle est disponible dans l'épicerie aux 4 Sources (Fonds d'Ahinvaux 1, Yvoir) ! Si tu paies sur place (total de ta commande: {{0:amount}}), merci de le noter dans le carnet près du rack. Les artisans de Tranche de Vie"
+    variables:
+      - id: 0
+        name: amount
+        sample: "12€"
+
+  - name: refund
+    category: UTILITY
+    language: fr
+    body: "Ta commande a été remboursée intégralement car annulée avant l'heure limite."
+    variables: []
+
+  - name: planned_confirmed
+    category: UTILITY
+    language: fr
+    body: "Ta commande planifiée pour le {{0:bake_date}} a été validée ({{1:amount}} débité de ton portefeuille). Merci ! Les artisans de Tranche de Vie"
+    variables:
+      - id: 0
+        name: bake_date
+        sample: "vendredi 7 mai 2026"
+      - id: 1
+        name: amount
+        sample: "12€"
+
+  - name: planned_cancelled
+    category: UTILITY
+    language: fr
+    body: "Ta commande planifiée pour le {{0:bake_date}} a été annulée car ton solde était insuffisant. Pense à recharger ton portefeuille ! Les artisans de Tranche de Vie"
+    variables:
+      - id: 0
+        name: bake_date
+        sample: "vendredi 7 mai 2026"
+
+  - name: low_balance
+    category: UTILITY
+    language: fr
+    body: "Ton solde de portefeuille est bas ({{0:balance}}). Pense à le recharger pour tes prochaines commandes ! Les artisans de Tranche de Vie"
+    variables:
+      - id: 0
+        name: balance
+        sample: "5€"
+
+  - name: insufficient_balance
+    category: UTILITY
+    language: fr
+    body: "Attention ! Il te manque {{0:amount_needed}} sur ton portefeuille pour ta commande du {{1:bake_date}}. Recharge avant 18h sinon ta commande sera annulée. Les artisans de Tranche de Vie"
+    variables:
+      - id: 0
+        name: amount_needed
+        sample: "10€"
+      - id: 1
+        name: bake_date
+        sample: "vendredi 7 mai 2026"

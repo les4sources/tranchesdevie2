@@ -28,8 +28,11 @@ gem "bcrypt", "~> 3.1.7"
 # Stripe payments
 gem "stripe"
 
-# HTTP client for Telerivet API
+# HTTP client (used for Sent.dm template management endpoints not exposed by the SDK)
 gem "httparty"
+
+# Sent.dm SMS provider
+gem "sentdm", "~> 0.15"
 
 # Base58 encoding for public tokens
 gem "base58"

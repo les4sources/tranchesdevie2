@@ -9,8 +9,7 @@ VCR.configure do |config|
   # Filter sensitive data
   config.filter_sensitive_data('<STRIPE_SECRET_KEY>') { ENV['STRIPE_SECRET_KEY'] }
   config.filter_sensitive_data('<STRIPE_WEBHOOK_SECRET>') { ENV['STRIPE_WEBHOOK_SECRET'] }
-  config.filter_sensitive_data('<SMSTOOLS_CLIENT_ID>') { ENV['SMSTOOLS_CLIENT_ID'] }
-  config.filter_sensitive_data('<SMSTOOLS_CLIENT_SECRET>') { ENV['SMSTOOLS_CLIENT_SECRET'] }
+  config.filter_sensitive_data('<SENT_DM_API_KEY>') { ENV['SENT_DM_API_KEY'] }
 
   # Allow localhost connections for system tests
   config.ignore_localhost = true

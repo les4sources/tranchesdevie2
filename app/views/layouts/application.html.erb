@@ -154,6 +154,14 @@
                     <span class="mt-4 block h-px w-12 bg-terracotta/50" aria-hidden="true"></span>
                   </div>
                 </div>
+
+                <nav class="footer-reveal-item mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-terracotta/20 pt-6 text-xs uppercase tracking-[0.18em] text-charcoal/60 md:mt-12 md:justify-start" aria-label="Liens légaux">
+                  <%= link_to "Confidentialité", privacy_policy_path, class: "transition hover:text-terracotta focus-visible:outline-none focus-visible:text-terracotta" %>
+                  <span class="text-charcoal/30" aria-hidden="true">·</span>
+                  <%= link_to "Notifications SMS", sms_terms_path, class: "transition hover:text-terracotta focus-visible:outline-none focus-visible:text-terracotta" %>
+                  <span class="text-charcoal/30" aria-hidden="true">·</span>
+                  <%= link_to "À propos", a_propos_path, class: "transition hover:text-terracotta focus-visible:outline-none focus-visible:text-terracotta" %>
+                </nav>
               </div>
             </footer>
           </div>

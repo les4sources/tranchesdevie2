@@ -1,0 +1,75 @@
+<% content_for :title, "Notifications SMS - Tranches de Vie" %>
+
+<div class="px-4">
+  <div class="mx-auto max-w-3xl">
+    <header class="mb-12 border-b border-terracotta/30 pb-8">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-charcoal/60">Notifications SMS</p>
+      <h1 class="mt-3 text-4xl font-bold leading-tight tracking-[-0.015em] text-charcoal md:text-5xl">
+        Comment fonctionnent nos SMS&nbsp;?
+      </h1>
+      <p class="mt-4 text-base text-charcoal/80">
+        Tout ce que tu reçois de Tranches de Vie sur ton téléphone, en clair.
+      </p>
+    </header>
+
+    <div class="space-y-10 text-base leading-relaxed text-charcoal/90">
+      <section>
+        <h2 class="mb-3 text-2xl font-semibold tracking-[-0.01em] text-charcoal">À quoi tu consens en entrant ton numéro</h2>
+        <p>
+          Lorsque tu saisis ton numéro de mobile sur la page de connexion ou de paiement, tu acceptes de recevoir des SMS de notre part dans le cadre du service.
+          Tous nos SMS sont <strong>transactionnels</strong> (liés à tes commandes ou ton compte) — nous n'envoyons aucun SMS marketing.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-2xl font-semibold tracking-[-0.01em] text-charcoal">Quels SMS tu vas recevoir&nbsp;?</h2>
+        <ul class="ml-5 list-disc space-y-2">
+          <li><strong>Code de connexion (OTP)</strong> : un code à 6 chiffres pour t'authentifier, à chaque login.</li>
+          <li><strong>Confirmation de commande</strong> : un message court une fois ta commande validée.</li>
+          <li><strong>Notification "pain prêt"</strong> : le jour de la cuisson, dès que ta commande est disponible à l'épicerie des 4 Sources.</li>
+          <li><strong>Confirmations de portefeuille</strong> : validation et débit de tes commandes planifiées.</li>
+          <li><strong>Alerte solde bas</strong> : si ton portefeuille n'a plus de quoi couvrir tes prochaines commandes.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-2xl font-semibold tracking-[-0.01em] text-charcoal">Fréquence et coût</h2>
+        <p>
+          La fréquence dépend de ton activité&nbsp;: en moyenne <strong>1 à 3 SMS par commande</strong>, plus un SMS chaque fois que tu te connectes.
+          Les SMS sont gratuits côté envoi&nbsp;; ton opérateur peut appliquer son tarif standard à la réception (généralement nul en Belgique et UE).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-2xl font-semibold tracking-[-0.01em] text-charcoal">Comment te désinscrire</h2>
+        <p class="mb-3">
+          Tu peux te désinscrire à tout moment, par l'un de ces moyens&nbsp;:
+        </p>
+        <ul class="ml-5 list-disc space-y-2">
+          <li>
+            <strong>Depuis ton compte</strong> : rends-toi sur <%= link_to "Mon compte", customers_account_path, class: "text-terracotta hover:underline" %> &rarr; <em>Modifier mes informations</em> &rarr; coche <em>« Désactiver les notifications par SMS »</em>.
+          </li>
+          <li>
+            <strong>Par e-mail</strong> : écris-nous à <a href="mailto:boulangerie@les4sources.be" class="text-terracotta hover:underline">boulangerie@les4sources.be</a> et nous désactivons les SMS dans la journée.
+          </li>
+        </ul>
+        <p class="mt-3 rounded-xl border border-terracotta/30 bg-soft-cream/60 px-4 py-3 text-sm">
+          <strong>À noter</strong>&nbsp;: les SMS d'authentification (OTP) restent envoyés tant que tu utilises le site, car ils sont indispensables pour te connecter. Si tu ne souhaites plus en recevoir, contacte-nous pour fermer ton compte.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-2xl font-semibold tracking-[-0.01em] text-charcoal">Besoin d'aide&nbsp;?</h2>
+        <p>
+          Une question, un SMS qui ne te paraît pas légitime, un problème pour te connecter&nbsp;? Écris-nous directement à <a href="mailto:boulangerie@les4sources.be" class="text-terracotta hover:underline">boulangerie@les4sources.be</a>. Nous te répondrons aussi vite que possible.
+        </p>
+      </section>
+
+      <section class="border-t border-terracotta/30 pt-8 text-sm text-charcoal/70">
+        <p>
+          Le traitement de ton numéro et le détail de nos sous-traitants (Sent.dm pour l'envoi des SMS) sont décrits dans notre <%= link_to "politique de confidentialité", privacy_policy_path, class: "text-terracotta hover:underline" %>.
+        </p>
+      </section>
+    </div>
+  </div>
+</div>

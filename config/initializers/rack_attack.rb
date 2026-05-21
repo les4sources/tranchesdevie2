@@ -11,6 +11,12 @@ class Rack::Attack
     req.ip if req.path == '/checkout' && req.post?
   end
 
+  # Rate limit OTP sends per IP. The email channel can target an arbitrary
+  # address (unregistered phones), so cap how many a single IP can trigger.
+  throttle('otp-send/ip', limit: 8, period: 60.seconds) do |req|
+    req.ip if req.path == '/checkout/verify_phone' && req.post?
+  end
+
   # Block requests from blocked IPs (if needed)
   # blocklist('block bad actors') do |req|
   #   Blocklist.find_by(ip: req.ip)

@@ -1,0 +1,22 @@
+<% format_eur = ->(euros) { number_to_currency(euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u") } -%>
+Merci <%= @customer.first_name.presence || "" %> !
+
+Ta commande est confirmée.
+
+Commande : <%= @order.order_number %>
+À retirer le : <%= I18n.l(@order.bake_day.baked_on, format: :long) %>
+
+Articles :
+<% @items.each do |item| -%>
+- <%= item.product_variant.product.name %> — <%= item.product_variant.name %> x<%= item.qty %> : <%= format_eur.call(item.subtotal_euros) %>
+<% end -%>
+Total : <%= format_eur.call(@order.total_euros) %>
+
+Retrait : Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir.
+Ta commande t'attendra le jour de cuisson indiqué ci-dessus.
+
+Voir ma commande : <%= @order_url %>
+
+—
+Tranches de Vie · boulangerie@les4sources.be
+Gérer mes préférences e-mail : <%= @unsubscribe_url %>

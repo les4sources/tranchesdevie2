@@ -1,0 +1,13 @@
+Salut <%= @customer&.first_name.presence || "" %>,
+
+Voici ton code de connexion pour accéder à ton compte Tranches de Vie :
+
+    <%= @code %>
+
+Ce code est valable 15 minutes. Saisis-le sur la page de connexion pour continuer.
+
+Si tu n'es pas à l'origine de cette demande, tu peux ignorer cet e-mail.
+
+—
+Tranches de Vie · Les 4 Sources, Fonds d'Ahinvaux 1, Yvoir
+boulangerie@les4sources.be

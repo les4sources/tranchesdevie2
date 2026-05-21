@@ -1,8 +1,16 @@
 class OtpService
   SMSTOOLS_API_URL = 'https://api.smsgatewayapi.com/v1/message/send'
 
-  def self.send_otp(phone_e164)
+  # Sends a login OTP to the customer.
+  #   channel: :sms (default) — primary channel via Smstools
+  #           :email          — fallback channel via AuthMailer (only when an
+  #                             email address is already on file for this phone)
+  def self.send_otp(phone_e164, channel: :sms, email: nil, allow_email_entry: false)
     return { success: false, error: 'Phone number required' } if phone_e164.blank?
+
+    if channel.to_sym == :email
+      return send_otp_via_email(phone_e164, email: email, allow_email_entry: allow_email_entry)
+    end
 
     # Check cooldown
     unless PhoneVerification.can_send_new?(phone_e164)
@@ -34,6 +42,54 @@ class OtpService
     { success: false, error: 'Une erreur est survenue' }
   end
 
+  # Email fallback. Determines the recipient according to the agreed rules:
+  #   - existing account WITH an email on file -> always sent to that address
+  #     (a typed address is ignored, so a code can never be redirected)
+  #   - existing account WITHOUT an email      -> not eligible (contact the bakery)
+  #   - unregistered phone                     -> a typed address is accepted,
+  #     but only when allow_email_entry is true (checkout flow)
+  # Reuses the current active code if one exists (so it matches a code already
+  # requested by SMS), otherwise generates a new one.
+  def self.send_otp_via_email(phone_e164, email: nil, allow_email_entry: false)
+    customer = Customer.find_by(phone_e164: phone_e164)
+
+    target_email =
+      if customer
+        if customer.email.blank?
+          return { success: false, error: no_email_on_file_error }
+        end
+
+        customer.email
+      else
+        return { success: false, error: no_email_on_file_error } unless allow_email_entry
+        return { success: false, need_email: true, error: "Saisis l'adresse e-mail où recevoir ton code." } if email.blank?
+        return { success: false, need_email: true, error: "Cette adresse e-mail semble invalide." } unless email.match?(URI::MailTo::EMAIL_REGEXP)
+
+        email
+      end
+
+    verification = PhoneVerification.for_phone(phone_e164).active.order(created_at: :desc).first
+
+    if verification.nil?
+      unless PhoneVerification.can_send_new?(phone_e164)
+        return { success: false, error: 'Veuillez patienter 20 secondes avant de redemander un code' }
+      end
+      verification = PhoneVerification.create_for_phone(phone_e164)
+    end
+
+    AuthMailer.otp(target_email, verification.code, customer: customer).deliver_now
+
+    { success: true, verification_id: verification.id, channel: :email, email: target_email }
+  rescue StandardError => e
+    Rails.logger.error("OTP Email Error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
+  end
+
+  def self.no_email_on_file_error
+    "Aucune adresse e-mail n'est associée à ce numéro. Contacte-nous à boulangerie@les4sources.be."
+  end
+
   def self.verify_otp(phone_e164, code)
     verification = PhoneVerification.for_phone(phone_e164)
                                     .active
@@ -60,6 +116,13 @@ class OtpService
   private
 
   def self.send_otp_sms(to:, body:, customer_id: nil)
+    # En développement, on n'envoie jamais de vrai SMS : on journalise le
+    # message (code inclus) pour tester le flux OTP en local. Aucun effet en prod.
+    if Rails.env.development?
+      Rails.logger.warn("OTP Service - SMS non envoyé en développement. To: #{to} | Message: #{body}")
+      return true
+    end
+
     unless client_id.present? && client_secret.present? && sender.present?
       Rails.logger.error("OTP Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
       return false

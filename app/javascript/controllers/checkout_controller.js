@@ -49,6 +49,64 @@ export default class extends Controller {
     }
   }
 
+  async sendOTPByEmail(event) {
+    event.preventDefault()
+
+    const phone = document.getElementById('customer_phone_e164')?.value
+    if (!phone) {
+      this.showMessage('Veuillez entrer un numéro de GSM', 'error')
+      return
+    }
+
+    const email = document.getElementById('otp_email')?.value || ''
+
+    const btn = document.getElementById('send-otp-email-btn')
+    const originalText = btn ? btn.textContent : null
+    let revealedEmail = false
+    if (btn) {
+      btn.disabled = true
+      btn.textContent = 'Envoi...'
+    }
+
+    try {
+      const response = await fetch('/checkout/verify_phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ phone_e164: phone, channel: 'email', email: email })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const otpSection = document.getElementById('otp-input-section')
+        if (otpSection) {
+          otpSection.classList.remove('hidden')
+        }
+        this.showMessage(data.message || 'Code envoyé par e-mail', 'success')
+      } else if (data.need_email) {
+        const emailFields = document.getElementById('email-otp-fields')
+        if (emailFields) {
+          emailFields.classList.remove('hidden')
+        }
+        document.getElementById('otp_email')?.focus()
+        revealedEmail = true
+        this.showMessage(data.error || "Saisis l'adresse e-mail où recevoir ton code.", 'error')
+      } else {
+        this.showMessage(data.error || "Erreur lors de l'envoi de l'e-mail", 'error')
+      }
+    } catch (error) {
+      this.showMessage('Erreur de connexion', 'error')
+    } finally {
+      if (btn) {
+        btn.disabled = false
+        btn.textContent = revealedEmail ? 'Envoyer le code par e-mail' : originalText
+      }
+    }
+  }
+
   async verifyOTP(event) {
     event.preventDefault()
 

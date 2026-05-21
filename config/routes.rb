@@ -55,6 +55,10 @@ Rails.application.routes.draw do
 
   end
 
+  # Email preferences (unsubscribe link in non-OTP emails — no login required, signed token)
+  get "e-mails/preferences/:token", to: "email_preferences#show", as: :email_preferences
+  patch "e-mails/preferences/:token", to: "email_preferences#update"
+
   # Webhooks
   post "/webhooks/stripe", to: "webhooks#stripe"
 
@@ -79,6 +83,11 @@ Rails.application.routes.draw do
         post :send_sms
       end
       resources :sms_messages, only: [:show], controller: "sms_messages"
+      resources :email_messages, only: [:show], controller: "email_messages" do
+        member do
+          post :resend
+        end
+      end
     end
 
     resources :groups, only: [:index, :new, :create, :edit, :update]

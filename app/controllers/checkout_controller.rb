@@ -33,6 +33,21 @@ class CheckoutController < ApplicationController
       return
     end
 
+    if params[:channel] == 'email'
+      result = OtpService.send_otp(phone_e164, channel: :email, email: params[:email], allow_email_entry: true)
+
+      if result[:success]
+        session[:phone_e164] = phone_e164
+        session[:email] = result[:email]
+        render json: { success: true, message: 'Code envoyé par e-mail à ' + Time.current.strftime('%H:%M') }
+      elsif result[:need_email]
+        render json: { success: false, need_email: true, error: result[:error] }, status: :unprocessable_entity
+      else
+        render json: { success: false, error: result[:error] }, status: :unprocessable_entity
+      end
+      return
+    end
+
     result = OtpService.send_otp(phone_e164)
 
     if result[:success]
@@ -237,6 +252,9 @@ class CheckoutController < ApplicationController
       render json: { success: false, error: service.errors.join(', ') }, status: :unprocessable_entity
       return
     end
+
+    # Send order confirmation email (idempotent via EmailMessage guard)
+    OrderNotificationService.send_confirmation(order)
 
     # Clear cart and session data
     session[:cart] = []
@@ -580,10 +598,14 @@ class CheckoutController < ApplicationController
       end
 
       # Create payment record
-      Payment.find_or_create_by!(order: order) do |payment|
-        payment.stripe_payment_intent_id = payment_intent_id
-        payment.status = :succeeded
+      payment = Payment.find_or_create_by!(order: order) do |p|
+        p.stripe_payment_intent_id = payment_intent_id
+        p.status = :succeeded
       end
+
+      # Send confirmation email only when the payment is first recorded here
+      # (idempotent across the webhook / success-page race).
+      OrderNotificationService.send_confirmation(order) if payment.previously_new_record?
     end
 
     order

@@ -1,8 +1,14 @@
 class OtpService
   SMSTOOLS_API_URL = 'https://api.smsgatewayapi.com/v1/message/send'
 
-  def self.send_otp(phone_e164)
+  # Sends a login OTP to the customer.
+  #   channel: :sms (default) — primary channel via Smstools
+  #           :email          — fallback channel via AuthMailer (only when an
+  #                             email address is already on file for this phone)
+  def self.send_otp(phone_e164, channel: :sms)
     return { success: false, error: 'Phone number required' } if phone_e164.blank?
+
+    return send_otp_via_email(phone_e164) if channel.to_sym == :email
 
     # Check cooldown
     unless PhoneVerification.can_send_new?(phone_e164)
@@ -32,6 +38,36 @@ class OtpService
     Rails.logger.error("OTP Service Error: #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
     { success: false, error: 'Une erreur est survenue' }
+  end
+
+  # Email fallback: reuse the current active code if one exists (so it matches a
+  # code already requested by SMS), otherwise generate a new one.
+  def self.send_otp_via_email(phone_e164)
+    customer = Customer.find_by(phone_e164: phone_e164)
+
+    if customer.nil? || customer.email.blank?
+      return {
+        success: false,
+        error: "Aucune adresse e-mail n'est associée à ce numéro. Contacte-nous à boulangerie@les4sources.be."
+      }
+    end
+
+    verification = PhoneVerification.for_phone(phone_e164).active.order(created_at: :desc).first
+
+    if verification.nil?
+      unless PhoneVerification.can_send_new?(phone_e164)
+        return { success: false, error: 'Veuillez patienter 20 secondes avant de redemander un code' }
+      end
+      verification = PhoneVerification.create_for_phone(phone_e164)
+    end
+
+    AuthMailer.otp(customer, verification.code).deliver_now
+
+    { success: true, verification_id: verification.id, channel: :email }
+  rescue StandardError => e
+    Rails.logger.error("OTP Email Error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
   end
 
   def self.verify_otp(phone_e164, code)

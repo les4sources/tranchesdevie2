@@ -68,6 +68,59 @@ export default class extends Controller {
     }
   }
 
+  async sendOTPByEmail(event) {
+    event.preventDefault()
+
+    const phone = this.phoneInputTarget?.value
+    if (!phone) {
+      this.showMessage('Veuillez entrer un numéro de GSM', 'error')
+      return
+    }
+
+    const btn = document.getElementById('send-otp-email-btn')
+    const originalText = btn ? btn.textContent : null
+    if (btn) {
+      btn.disabled = true
+      btn.textContent = 'Envoi en cours…'
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('phone_e164', phone)
+      formData.append('channel', 'email')
+
+      const response = await fetch('/connexion', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+      })
+
+      const html = await response.text()
+      const doc = new DOMParser().parseFromString(html, 'text/html')
+      const notice = doc.querySelector('.bg-green-50')?.textContent.trim()
+      const alert = doc.querySelector('.bg-red-50')?.textContent.trim()
+
+      if (response.ok) {
+        const otpSection = document.getElementById('otp-input-section')
+        if (otpSection) {
+          otpSection.classList.remove('hidden')
+        }
+        this.showMessage(notice || 'Code envoyé par e-mail', 'success')
+      } else {
+        this.showMessage(alert || "Erreur lors de l'envoi de l'e-mail", 'error')
+      }
+    } catch (error) {
+      this.showMessage('Erreur de connexion', 'error')
+    } finally {
+      if (btn) {
+        btn.disabled = false
+        btn.textContent = originalText
+      }
+    }
+  }
+
   async verifyOTP(event) {
     event.preventDefault()
 

@@ -32,12 +32,14 @@ class Customers::SessionsController < ApplicationController
         render :new, status: :unprocessable_entity
       end
     else
-      # Envoyer le code OTP
-      result = OtpService.send_otp(phone_e164)
+      # Envoyer le code OTP (par SMS, ou par e-mail en secours)
+      channel = params[:channel] == 'email' ? :email : :sms
+      result = OtpService.send_otp(phone_e164, channel: channel)
 
       if result[:success]
         session[:phone_e164] = phone_e164
-        flash.now[:notice] = "Code envoyé par SMS à #{Time.current.strftime('%H:%M')}"
+        sent_time = Time.current.strftime('%H:%M')
+        flash.now[:notice] = channel == :email ? "Code envoyé par e-mail à #{sent_time}" : "Code envoyé par SMS à #{sent_time}"
         @phone_e164 = phone_e164
         render :new
       else

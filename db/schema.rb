@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_21_090001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -99,6 +99,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
     t.boolean "skip_wallet_check", default: false, null: false
     t.datetime "calendar_intro_seen_at"
     t.boolean "billable", default: false, null: false
+    t.boolean "email_opt_out", default: false, null: false
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
@@ -110,6 +111,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_24_163525) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["key"], name: "index_dough_ratios_on_key", unique: true
+  end
+
+  create_table "email_messages", force: :cascade do |t|
+    t.integer "direction", default: 0, null: false
+    t.string "to_email", null: false
+    t.string "from_email", null: false
+    t.string "subject"
+    t.text "body_html", null: false
+    t.integer "kind", default: 0, null: false
+    t.string "message_id"
+    t.bigint "customer_id"
+    t.bigint "order_id"
+    t.datetime "sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_email_messages_on_customer_id"
+    t.index ["kind"], name: "index_email_messages_on_kind"
+    t.index ["message_id"], name: "index_email_messages_on_message_id"
+    t.index ["order_id"], name: "index_email_messages_on_order_id"
   end
 
   create_table "flours", force: :cascade do |t|

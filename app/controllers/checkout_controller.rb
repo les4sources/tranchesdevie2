@@ -238,6 +238,9 @@ class CheckoutController < ApplicationController
       return
     end
 
+    # Send order confirmation email (idempotent via EmailMessage guard)
+    OrderNotificationService.send_confirmation(order)
+
     # Clear cart and session data
     session[:cart] = []
     session[:bake_day_id] = nil
@@ -580,10 +583,14 @@ class CheckoutController < ApplicationController
       end
 
       # Create payment record
-      Payment.find_or_create_by!(order: order) do |payment|
-        payment.stripe_payment_intent_id = payment_intent_id
-        payment.status = :succeeded
+      payment = Payment.find_or_create_by!(order: order) do |p|
+        p.stripe_payment_intent_id = payment_intent_id
+        p.status = :succeeded
       end
+
+      # Send confirmation email only when the payment is first recorded here
+      # (idempotent across the webhook / success-page race).
+      OrderNotificationService.send_confirmation(order) if payment.previously_new_record?
     end
 
     order

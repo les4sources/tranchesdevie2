@@ -10,6 +10,14 @@ FactoryBot.define do
       sms_opt_out { true }
     end
 
+    trait :with_email_disabled do
+      email_opt_out { true }
+    end
+
+    trait :without_email do
+      email { nil }
+    end
+
     trait :without_phone do
       phone_e164 { nil }
       skip_phone_validation { true }

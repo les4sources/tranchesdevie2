@@ -1,0 +1,83 @@
+<% format_eur = ->(euros) { number_to_currency(euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u") } %>
+
+<p style="margin:0 0 16px 0; font-size:17px; color:#2d2a26;">
+  Merci <%= @customer.first_name.presence || "" %> ! 🍞
+</p>
+
+<p style="margin:0 0 24px 0;">
+  Ta commande est confirmée. Voici le récapitulatif :
+</p>
+
+<!-- Order summary card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf7f2; border:1px solid #ece4d8; border-radius:12px; margin-bottom:24px;">
+  <tr>
+    <td style="padding:18px 20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="font-size:13px; color:#8a8178; text-transform:uppercase; letter-spacing:1px;">Commande</td>
+          <td align="right" style="font-size:13px; color:#8a8178; text-transform:uppercase; letter-spacing:1px;">À retirer le</td>
+        </tr>
+        <tr>
+          <td style="font-size:18px; font-weight:bold; color:#7c2d12; padding-top:2px;"><%= @order.order_number %></td>
+          <td align="right" style="font-size:16px; font-weight:bold; color:#2d2a26; padding-top:2px;"><%= I18n.l(@order.bake_day.baked_on, format: :long) %></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- Items -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+  <thead>
+    <tr>
+      <th align="left" style="font-size:12px; color:#8a8178; text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid #ece4d8; padding:0 0 8px 0;">Article</th>
+      <th align="center" style="font-size:12px; color:#8a8178; text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid #ece4d8; padding:0 0 8px 0;">Qté</th>
+      <th align="right" style="font-size:12px; color:#8a8178; text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid #ece4d8; padding:0 0 8px 0;">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @items.each do |item| %>
+      <tr>
+        <td style="padding:12px 0; border-bottom:1px solid #f0eae0; font-size:15px; color:#2d2a26;">
+          <%= item.product_variant.product.name %>
+          <span style="color:#8a8178; font-size:13px;">— <%= item.product_variant.name %></span>
+        </td>
+        <td align="center" style="padding:12px 0; border-bottom:1px solid #f0eae0; font-size:15px; color:#2d2a26;"><%= item.qty %></td>
+        <td align="right" style="padding:12px 0; border-bottom:1px solid #f0eae0; font-size:15px; color:#2d2a26;"><%= format_eur.call(item.subtotal_euros) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2" style="padding:16px 0 0 0; font-size:17px; font-weight:bold; color:#2d2a26;">Total</td>
+      <td align="right" style="padding:16px 0 0 0; font-size:17px; font-weight:bold; color:#7c2d12;"><%= format_eur.call(@order.total_euros) %></td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- Pickup info -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px; background-color:#fdf6ef; border-radius:12px;">
+  <tr>
+    <td style="padding:18px 20px; font-size:14px; line-height:1.6; color:#5c544b;">
+      <strong style="color:#2d2a26;">📍 Retrait</strong><br>
+      Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir.<br>
+      Ta commande t'attendra le jour de cuisson indiqué ci-dessus.
+    </td>
+  </tr>
+</table>
+
+<!-- CTA -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
+  <tr>
+    <td align="center">
+      <a href="<%= @order_url %>" style="display:inline-block; background-color:#7c2d12; color:#ffffff; text-decoration:none; font-size:15px; font-weight:bold; padding:13px 28px; border-radius:10px;">
+        Voir ma commande
+      </a>
+    </td>
+  </tr>
+</table>
+
+<% content_for :unsubscribe do %>
+  Tu reçois cet e-mail car tu as commandé chez Tranches de Vie.
+  <a href="<%= @unsubscribe_url %>" style="color:#a89f94; text-decoration:underline;">Gérer mes préférences e-mail</a>.
+<% end %>

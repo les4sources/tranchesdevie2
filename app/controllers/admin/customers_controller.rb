@@ -29,6 +29,7 @@ class Admin::CustomersController < Admin::BaseController
   def show
     @orders = @customer.orders.includes(:bake_day).order(created_at: :desc)
     @sms_messages = @customer.sms_messages.ordered_by_sent_at
+    @email_messages = @customer.email_messages.ordered_by_sent_at
   end
 
   def new
@@ -95,7 +96,7 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   def customer_params
-    permitted = params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :skip_wallet_check, :billable, group_ids: [])
+    permitted = params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :email_opt_out, :skip_wallet_check, :billable, group_ids: [])
     # Convertir les chaînes vides en nil pour phone_e164
     permitted[:phone_e164] = nil if permitted[:phone_e164].blank?
     permitted

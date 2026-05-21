@@ -167,6 +167,17 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `SMSTOOLS_*` (SMS API credentials)
 - `SENTRY_DSN`
 - `SLACK_WEBHOOK_URL` (recurring job notifications)
+- `SES_SMTP_USERNAME`, `SES_SMTP_PASSWORD` (Amazon SES SMTP credentials for outbound email)
+- `SES_REGION` (SES region, defaults to `eu-west-1`)
+- `MAIL_FROM` (sender address, defaults to `boulangerie@les4sources.be`)
+- `APP_HOST` (production host for links in emails — unsubscribe, order pages)
+
+## Email (Amazon SES)
+
+- **Delivery**: SMTP via SES (`config/environments/production.rb`); `:letter_opener` in dev (opens in browser), `:test` in test.
+- **Mailers**: `AuthMailer#otp` (login code, always sent), `OrderMailer#confirmation` (order paid), `RawMailer#resend` (admin verbatim resend).
+- **Logging**: every outbound email is recorded as an `EmailMessage` via an `after_action` in `ApplicationMailer` → `EmailMessageLogger` (reads `X-Customer-Id`/`X-Email-Kind`/`X-Order-Id` headers set by mailers).
+- **Opt-out**: `Customer#email_enabled?` gates non-OTP emails (`email_opt_out` flag). Unsubscribe link uses a signed token (`signed_id(purpose: :email_unsubscribe)`) → public `EmailPreferencesController`. OTP emails ignore opt-out.
 
 ## Conventions
 

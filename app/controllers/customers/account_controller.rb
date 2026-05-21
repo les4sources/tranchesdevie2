@@ -42,7 +42,7 @@ class Customers::AccountController < ApplicationController
   private
 
   def customer_params
-    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out)
+    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :email_opt_out)
   end
 end
 

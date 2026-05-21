@@ -19,13 +19,9 @@ module Admin
                            .order(:created_at)
     end
 
-    def order_items
-      @order_items ||= orders.flat_map(&:order_items)
-    end
-
     def variant_stats
       @variant_stats ||= begin
-        grouped = order_items.group_by(&:product_variant)
+        grouped = production_order_items.group_by(&:product_variant)
 
         grouped.map do |variant, items|
           product = variant.product
@@ -63,11 +59,11 @@ module Admin
     end
 
     def kpis
-      total_cents = orders.sum(&:total_cents)
+      total_cents = production_orders.sum(&:total_cents)
 
       {
-        orders_count: orders.size,
-        items_count: order_items.sum(&:qty),
+        orders_count: production_orders.size,
+        items_count: production_order_items.sum(&:qty),
         revenue_cents: total_cents,
         variants_count: variant_stats.size,
         open_orders: orders.count { |order| order.pending? || order.unpaid? },
@@ -76,7 +72,7 @@ module Admin
     end
 
     def customer_breakdown
-      @customer_breakdown ||= orders.group_by(&:customer).map do |customer, customer_orders|
+      @customer_breakdown ||= production_orders.group_by(&:customer).map do |customer, customer_orders|
         {
           customer: customer,
           orders: customer_orders.map do |order|

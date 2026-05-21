@@ -33,6 +33,21 @@ class CheckoutController < ApplicationController
       return
     end
 
+    if params[:channel] == 'email'
+      result = OtpService.send_otp(phone_e164, channel: :email, email: params[:email], allow_email_entry: true)
+
+      if result[:success]
+        session[:phone_e164] = phone_e164
+        session[:email] = result[:email]
+        render json: { success: true, message: 'Code envoyé par e-mail à ' + Time.current.strftime('%H:%M') }
+      elsif result[:need_email]
+        render json: { success: false, need_email: true, error: result[:error] }, status: :unprocessable_entity
+      else
+        render json: { success: false, error: result[:error] }, status: :unprocessable_entity
+      end
+      return
+    end
+
     result = OtpService.send_otp(phone_e164)
 
     if result[:success]

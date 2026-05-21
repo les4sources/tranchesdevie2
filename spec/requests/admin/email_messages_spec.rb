@@ -40,7 +40,7 @@ RSpec.describe "Admin::EmailMessages", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)["success"]).to be true
-      expect(ActionMailer::Base.deliveries.last.to).to eq([customer.email])
+      expect(ActionMailer::Base.deliveries.last.to).to eq([ customer.email ])
     end
   end
 end

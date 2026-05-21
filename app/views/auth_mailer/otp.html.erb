@@ -1,5 +1,5 @@
 <p style="margin:0 0 16px 0; font-size:17px; color:#2d2a26;">
-  Salut <%= @customer.first_name.presence || "" %> 👋
+  Salut <%= @customer&.first_name.presence || "" %> 👋
 </p>
 
 <p style="margin:0 0 24px 0;">

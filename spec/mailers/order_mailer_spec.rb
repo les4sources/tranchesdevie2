@@ -9,7 +9,7 @@ RSpec.describe OrderMailer, type: :mailer do
     subject(:mail) { described_class.confirmation(order) }
 
     it 'is addressed to the customer email' do
-      expect(mail.to).to eq(["marc@example.com"])
+      expect(mail.to).to eq([ "marc@example.com" ])
     end
 
     it 'references the order number in the subject and body' do

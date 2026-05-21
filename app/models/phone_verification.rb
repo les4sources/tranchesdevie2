@@ -1,5 +1,5 @@
 class PhoneVerification < ApplicationRecord
-  OTP_TTL = 5.minutes
+  OTP_TTL = 15.minutes
   MAX_ATTEMPTS = 5
   COOLDOWN_PERIOD = 20.seconds
 

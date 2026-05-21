@@ -66,7 +66,7 @@ RSpec.describe 'Customers::Wallets', type: :request do
         expect(response).to have_http_status(:success)
 
         json = JSON.parse(response.body)
-        expect(json['client_secret']).to be_present
+        expect(json['redirect_url']).to be_present
       end
 
       it 'uses Bancontact as payment method' do
@@ -76,7 +76,7 @@ RSpec.describe 'Customers::Wallets', type: :request do
             currency: 'eur',
             payment_method_types: ['bancontact']
           )
-        ).and_return(double(id: 'pi_123', client_secret: 'secret'))
+        ).and_return(double(id: 'pi_123', client_secret: 'secret', status: 'requires_payment_method'))
 
         post '/customers/portefeuille/recharger', params: { amount_cents: 5000 }, as: :json
       end
@@ -89,7 +89,7 @@ RSpec.describe 'Customers::Wallets', type: :request do
               type: 'wallet_reload'
             )
           )
-        ).and_return(double(id: 'pi_123', client_secret: 'secret'))
+        ).and_return(double(id: 'pi_123', client_secret: 'secret', status: 'requires_payment_method'))
 
         post '/customers/portefeuille/recharger', params: { amount_cents: 5000 }, as: :json
       end

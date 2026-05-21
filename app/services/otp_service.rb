@@ -116,6 +116,13 @@ class OtpService
   private
 
   def self.send_otp_sms(to:, body:, customer_id: nil)
+    # En développement, on n'envoie jamais de vrai SMS : on journalise le
+    # message (code inclus) pour tester le flux OTP en local. Aucun effet en prod.
+    if Rails.env.development?
+      Rails.logger.warn("OTP Service - SMS non envoyé en développement. To: #{to} | Message: #{body}")
+      return true
+    end
+
     unless client_id.present? && client_secret.present? && sender.present?
       Rails.logger.error("OTP Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
       return false

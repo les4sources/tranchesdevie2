@@ -57,6 +57,24 @@
           <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
         </dd>
       </div>
+
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Paiement</dt>
+        <dd class="mt-1">
+          <% if @order.payment_refunded? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Remboursé</span>
+          <% elsif @order.payment_received? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Payé</span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Non payé</span>
+          <% end %>
+        </dd>
+        <% if @order.payment_method %>
+          <dd class="mt-1 text-sm text-gray-600">
+            <%= order_payment_method_label(@order.payment_method) %><% if @order.paid_at %> · le <%= @order.paid_at.strftime("%d/%m/%Y") %><% end %>
+          </dd>
+        <% end %>
+      </div>
     </dl>
   </div>
 

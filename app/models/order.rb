@@ -15,6 +15,7 @@ class Order < ApplicationRecord
   belongs_to :customer
   belongs_to :bake_day
   has_many :order_items, dependent: :destroy
+  has_many :wallet_transactions
   has_one :payment, dependent: :destroy
 
   validates :total_cents, presence: true, numericality: { greater_than: 0 }
@@ -24,6 +25,8 @@ class Order < ApplicationRecord
   validates :requires_invoice, inclusion: { in: [true, false] }
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
+  # Statuts qui ne sont atteints qu'une fois le paiement encaissé (Stripe ou portefeuille).
+  PAID_STATUSES = %w[paid ready picked_up no_show].freeze
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
@@ -48,6 +51,32 @@ class Order < ApplicationRecord
 
   def unpaid_ready?
     ready? && payment.nil?
+  end
+
+  # Le paiement est considéré comme encaissé dès que le statut le sous-entend.
+  def payment_received?
+    PAID_STATUSES.include?(status)
+  end
+
+  def wallet_order_debit
+    wallet_transactions.detect { |transaction| transaction.transaction_type == "order_debit" }
+  end
+
+  # Méthode d'encaissement réellement enregistrée, indépendamment du statut.
+  def payment_method
+    return :stripe if payment.present?
+    return :wallet if wallet_order_debit.present?
+
+    nil
+  end
+
+  def payment_refunded?
+    payment&.refunded? ||
+      wallet_transactions.any? { |transaction| transaction.transaction_type == "order_refund" }
+  end
+
+  def paid_at
+    payment&.created_at || wallet_order_debit&.created_at
   end
 
   def can_transition_to?(new_status)

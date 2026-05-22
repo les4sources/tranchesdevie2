@@ -23,4 +23,13 @@ module ApplicationHelper
 
     labels[source.to_s] || source.to_s.capitalize
   end
+
+  def order_payment_method_label(method)
+    labels = {
+      stripe: "Carte / Bancontact",
+      wallet: "Portefeuille"
+    }
+
+    labels[method&.to_sym]
+  end
 end

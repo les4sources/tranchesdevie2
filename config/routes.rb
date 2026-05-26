@@ -19,7 +19,7 @@ Rails.application.routes.draw do
   delete "cart/remove/:id", to: "cart#remove", as: :cart_remove
   delete "cart/logout", to: "cart#logout", as: :cart_logout
 
-  resources :checkout, only: [:new] do
+  resources :checkout, only: [ :new ] do
     collection do
       post :verify_phone
       post :verify_otp
@@ -29,7 +29,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :orders, only: [:show], param: :token
+  resources :orders, only: [ :show ], param: :token
 
   # Customer authentication and account
   get "connexion", to: "customers/sessions#new", as: :customer_login
@@ -52,7 +52,6 @@ Rails.application.routes.draw do
     get "portefeuille/recharger", to: "wallets#reload", as: :wallet_reload
     post "portefeuille/recharger", to: "wallets#create_reload", as: :wallet_create_reload
     get "portefeuille/success", to: "wallets#reload_success", as: :wallet_reload_success
-
   end
 
   # Email preferences (unsubscribe link in non-OTP emails — no login required, signed token)
@@ -62,6 +61,52 @@ Rails.application.routes.draw do
   # Webhooks
   post "/webhooks/stripe", to: "webhooks#stripe"
 
+  # Private, read-only JSON API for AI agents.
+  # Auth: Authorization: Bearer <TRANCHESDEVIE_API_KEY>. Only GET routes exist.
+  namespace :api do
+    namespace :v1 do
+      # Agent entry points: discovery, machine spec, markdown guide.
+      get "/", to: "root#index"
+      get "openapi", to: "root#openapi"
+      get "docs", to: "root#docs"
+      get "stats", to: "stats#index"
+
+      resources :products, only: [ :index, :show ] do
+        resources :variants, only: [ :index ], controller: "product_variants"
+      end
+      resources :product_variants, only: [ :index, :show ]
+
+      resources :bake_days, only: [ :index, :show ] do
+        resources :orders, only: [ :index ], controller: "orders"
+      end
+
+      resources :customers, only: [ :index, :show ] do
+        resources :orders, only: [ :index ], controller: "orders"
+        resource :wallet, only: [ :show ], controller: "wallets"
+      end
+
+      resources :orders, only: [ :index, :show ]
+      resources :payments, only: [ :index, :show ]
+
+      resources :wallets, only: [ :index, :show ] do
+        resources :transactions, only: [ :index ], controller: "wallet_transactions"
+      end
+      resources :wallet_transactions, only: [ :index, :show ]
+
+      resources :groups, only: [ :index, :show ]
+      resources :flours, only: [ :index, :show ]
+      resources :mold_types, only: [ :index, :show ]
+      resources :ingredients, only: [ :index, :show ]
+      resources :artisans, only: [ :index, :show ]
+      resource :production_setting, only: [ :show ]
+      resources :sms_messages, only: [ :index, :show ]
+      resources :email_messages, only: [ :index, :show ]
+
+      # JSON 404 for any other GET under /api/v1 (keep last).
+      get "*unmatched", to: "base#not_found_route"
+    end
+  end
+
   # Admin routes
   namespace :admin do
     root to: "sessions#index"
@@ -69,31 +114,31 @@ Rails.application.routes.draw do
     post "login", to: "sessions#create"
     delete "logout", to: "sessions#destroy"
 
-    resources :reports, only: [:index]
+    resources :reports, only: [ :index ]
 
-    resources :orders, only: [:index, :show, :new, :create, :edit, :update] do
+    resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do
       member do
         patch :update_status
         post :refund
       end
     end
 
-    resources :customers, only: [:index, :show, :new, :create, :edit, :update] do
+    resources :customers, only: [ :index, :show, :new, :create, :edit, :update ] do
       member do
         post :send_sms
       end
-      resources :sms_messages, only: [:show], controller: "sms_messages"
-      resources :email_messages, only: [:show], controller: "email_messages" do
+      resources :sms_messages, only: [ :show ], controller: "sms_messages"
+      resources :email_messages, only: [ :show ], controller: "email_messages" do
         member do
           post :resend
         end
       end
     end
 
-    resources :groups, only: [:index, :new, :create, :edit, :update]
+    resources :groups, only: [ :index, :new, :create, :edit, :update ]
 
-    resources :products, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
-      resources :variants, controller: "products", only: [:new, :create], param: :variant_id do
+    resources :products, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+      resources :variants, controller: "products", only: [ :new, :create ], param: :variant_id do
         collection do
           get :new, action: :new_variant, as: :new
           post :create, action: :create_variant, as: :create
@@ -109,16 +154,16 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :bake_days, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+    resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ]
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"
       resources :artisans
       resources :ingredients
-      resources :dough_ratios, path: "ratios-de-panification", only: [:index, :edit, :update]
+      resources :dough_ratios, path: "ratios-de-panification", only: [ :index, :edit, :update ]
       resources :mold_types, path: "types-de-moules"
-      resource :production_setting, path: "capacites-de-production", only: [:edit, :update]
+      resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
     end
   end
 end

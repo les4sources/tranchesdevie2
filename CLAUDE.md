@@ -171,6 +171,18 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `SES_REGION` (SES region, defaults to `eu-west-1`)
 - `MAIL_FROM` (sender address, defaults to `boulangerie@les4sources.be`)
 - `APP_HOST` (production host for links in emails — unsubscribe, order pages)
+- `TRANCHESDEVIE_API_KEY` (Bearer token for the private read-only agent API — see Agent API below)
+
+## Agent API (private, read-only)
+
+A versioned JSON API for AI agents lives under `/api/v1`, built on `ActionController::API` (no sessions/CSRF). It is **read-only** (GET routes only) and authenticated by a single shared Bearer token from `ENV['TRANCHESDEVIE_API_KEY']` (missing token → 401; key unset server-side → 503).
+
+- **Entry point / discovery**: `GET /api/v1` — self-describing index of all resources, auth instructions, conventions, and links. An agent can navigate the whole API from here.
+- **Machine spec**: `GET /api/v1/openapi.json` (OpenAPI 3.1). **Markdown guide**: `GET /api/v1/docs`.
+- All three docs surfaces are generated from one source of truth: `app/controllers/api/v1/resource_catalog.rb` (+ `openapi_spec.rb`, `api_guide.rb`) — keep them in sync by editing the catalog.
+- **Resources** (index+show, GET): products, product_variants, bake_days (+capacity), customers, orders (filters: status/source/bake_day_id), payments, wallets (+transactions), groups, flours, mold_types, ingredients, artisans, production_setting, sms_messages, email_messages, plus `/api/v1/stats`. Customer/order/payment/wallet/message resources expose PII by design.
+- **Conventions**: envelope `{ data, meta, _links }`; errors `{ error: { status, code, message, documentation_url } }`; pagination `?page=`/`?per_page=` (max 100); money in `*_cents` + `*_euros`; enums as string names; ISO 8601 dates.
+- **Serializers**: PORO classes in `app/serializers/api/v1/` (subclass `Api::V1::BaseSerializer`). **Specs**: `spec/requests/api/v1/api_spec.rb`.
 
 ## Email (Amazon SES)
 

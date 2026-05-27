@@ -4,10 +4,10 @@ task: "Project ISA — Tranches de Vie"
 effort: E3
 effort_source: explicit
 phase: verify
-progress: 45/80
+progress: 48/80
 mode: interactive
 started: 2026-05-27T17:10:00+02:00
-updated: 2026-05-27T17:35:00+02:00
+updated: 2026-05-27T18:05:00+02:00
 ---
 
 # Tranches de Vie — Project ISA
@@ -83,9 +83,9 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 
 **Bake capacity planning**
 - [ ] ISC-25: `BakeDay` has `baked_on` + `cut_off_at` (Tue/Fri bakes; Sun/Wed 18:00 Brussels cut-offs)
-- [ ] ISC-26: `OrderCreationService` enforces mold capacity per `MoldType` unit limit
-- [ ] ISC-27: `OrderCreationService` enforces kneader capacity per flour (`kneader_limit_grams`)
-- [ ] ISC-28: `OrderCreationService` enforces oven capacity (`oven_capacity_grams`: 110kg normal / 165kg market day)
+- [x] ISC-26: `OrderCreationService` enforces mold capacity per `MoldType` unit limit
+- [x] ISC-27: `OrderCreationService` enforces kneader capacity per flour (`kneader_limit_grams`)
+- [x] ISC-28: `OrderCreationService` enforces oven capacity (`oven_capacity_grams`: 110kg normal / 165kg market day)
 - [x] ISC-29: `OrderCreationService` uses `pg_advisory_xact_lock` to prevent capacity races
 - [x] ISC-30: Anti: an order exceeding a bake day's oven/kneader/mold limit is NOT created
 
@@ -167,7 +167,7 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
 | ISC-13 | security | 6th OTP in 60s returns 429 | rate limit fires | `curl` loop against verify_phone |
 | ISC-17..20 | payments | webhook creates one order, dedup holds | `StripeEvent` count stable on replay | rspec + Stripe CLI replay |
 | ISC-24, ISC-30, ISC-45 | data integrity (anti) | invariant holds | violation impossible | service spec / `SELECT` |
-| ISC-26..29 | capacity | over-limit order rejected | `OrderCreationService` raises/returns failure | `bundle exec rspec spec/services` (no spec yet — gap) |
+| ISC-26..29 | capacity | over-limit order rejected | `cart_fits?` returns `fits: false` past each resource limit | `bundle exec rspec spec/services/bake_capacity_service_spec.rb` (14 ex.) |
 | ISC-31..34 | auth/account | OTP login + account CRUD | `spec/requests/customers/account_spec.rb` green | `bundle exec rspec` |
 | ISC-35..39 | wallet | typed transactions + available balance math | `spec/services/wallet_service_spec.rb` green | `bundle exec rspec` |
 | ISC-40..45 | calendar/planned | upsert + post-cutoff processing | `planned_order_service_spec` + `process_planned_orders_service_spec` green | `bundle exec rspec` |
@@ -204,6 +204,7 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
 - **2026-05-27 — Seed-generated baseline draft.** This ISA was bootstrapped via `Skill("ISA", "seed")` from the live repo: `README.md`, `CLAUDE.md`, `config/routes.rb`, `app/models/` (~33), `app/services/` (12), `app/jobs/` (4), `app/mailers/` (3), the `spec/` tree (23 spec files), and recent git history. Source PRD-shaped artifacts `prd.md` (MVP PRD with acceptance criteria, journeys §10) and `PRD2.md` (implementation plan) were consulted as source material and remain in-repo. The 80 seeded ISCs describe **current** behavior.
 - **2026-05-27 — First verification pass (45/80 verified).** Ran the full RSpec suite (212 examples, 0 failures), API request spec, route-verb audit, and code inspection of `OrderCreationService` + `BakeCapacityService`. 45 ISCs flipped `[x]` with evidence. Coverage gaps identified and left `[ ]`: capacity-math behavior (ISC-26/27/28 — logic present in `BakeCapacityService` but **no automated test**), all admin CRUD/auth except resend (ISC-46–52, 54), Stripe webhook order-creation (ISC-18/19), and every live-HTML route (ISC-1/2/4/23/75 — need a running server / Interceptor). Not committed — awaiting Michael's go.
 - **2026-05-27 — `refined:` ISC-79 marked `[DEFERRED-VERIFY]`.** Deploy-SHA verification is impossible from the local dev machine; follow-up is a Hatchbox-dashboard check (or `curl` the deployed `/up` + version) after the next push to `main`.
+- **2026-05-27 — Capacity coverage gap closed (45 → 48/80).** Wrote `spec/services/bake_capacity_service_spec.rb` (14 examples, all green) covering `BakeCapacityService#cart_fits?` across mold/kneader/oven limits, exact-limit boundaries (enforcement is strictly `>`), cancelled-order exclusion (ISC-24), existing-usage accumulation, non-bread products ignored, and multi-flour dough distribution. ISC-26/27/28 now `[x]`; ISC-24 and ISC-30 evidence strengthened. Full suite 226 examples, 0 failures. **Forge delegation relaxed (show-your-math):** single-file spec, tight local rspec loop, repo-specific factory archaeology (no factories for Flour/MoldType/ProductFlour/ProductionSetting), non-parallelizable — single-author was the right call.
 
 ## Changelog
 
@@ -211,3 +212,7 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
   **refuted by:** `bin/rubocop` on `2026-05-27` reported **667 offenses (586 autocorrectable)** across 248 files — the suite is not green locally.
   **learned:** the repo's rubocop gate is either advisory in CI, has drifted, or relies on autocorrect-on-commit that hasn't run; lint cleanliness is not currently an invariant of `main`.
   **criterion now:** ISC-77 stays `[ ]` pending a decision — run `bin/rubocop -A` to autocorrect the 586, then triage the remaining 81, or relax the criterion to "no new offenses vs baseline."
+- **conjectured:** the seeded baseline assumed bake-day capacity enforcement (ISC-26/27/28/30) was real because the code exists in `BakeCapacityService` and `OrderCreationService`.
+  **refuted by:** the first verification pass found the entire capacity subsystem had **zero automated test coverage** — the riskiest business invariant (never oversell the oven) was unverifiable, only assumed.
+  **learned:** code presence is not behavior verification; the most critical logic was the least tested. A passing suite only proves what specs exercise.
+  **criterion now:** ISC-26/27/28 are `[x]`, verified by `bake_capacity_service_spec.rb` (14 examples incl. boundary and cancelled-exclusion cases); capacity is now a tested invariant, not an assumed one.

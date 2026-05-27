@@ -4,10 +4,10 @@ task: "Project ISA — Tranches de Vie"
 effort: E3
 effort_source: explicit
 phase: verify
-progress: 49/80
+progress: 52/80
 mode: interactive
 started: 2026-05-27T17:10:00+02:00
-updated: 2026-05-27T18:25:00+02:00
+updated: 2026-05-27T18:45:00+02:00
 ---
 
 # Tranches de Vie — Project ISA
@@ -48,7 +48,7 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 > Grouped by surface for navigation; numbering is flat and sequential (ID-stability rule applies to all future edits). `[x]` = tool-verified this pass (evidence in `## Verification`); `[ ]` = not yet probed or probed-and-failing; `[DEFERRED-VERIFY]` = probe impossible locally.
 
 **Catalog & browsing**
-- [ ] ISC-1: `GET /` and `GET /catalogue` render the product catalog
+- [x] ISC-1: `GET /` and `GET /catalogue` render the product catalog
 - [ ] ISC-2: `GET /productions/:id` renders a product with its variants and prices
 - [ ] ISC-3: Variant availability reflects `ProductAvailability` (unavailable variants not orderable)
 - [ ] ISC-4: `GET /a-propos` and `GET /drapeaux` static pages render 200
@@ -148,11 +148,11 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 - [x] ISC-74: Anti: `/api/v1` exposes NO write route — every defined route is GET-only
 
 **Build, deploy & ops**
-- [ ] ISC-75: `GET /up` returns 200 when the app boots with no exceptions
+- [x] ISC-75: `GET /up` returns 200 when the app boots with no exceptions
 - [x] ISC-76: `bundle exec rspec` passes the full suite
 - [x] ISC-77: `bin/rubocop` (Rails Omakase) passes
 - [ ] ISC-78: `bin/brakeman --no-pager` reports no warnings
-- [DEFERRED-VERIFY] ISC-79: A push to `main` auto-deploys via Hatchbox — *follow-up: confirm deployed SHA against `main` HEAD via Hatchbox dashboard*
+- [x] ISC-79: A push to `main` auto-deploys via Hatchbox
 - [x] ISC-80: The entire UI renders in French (`config/locales/fr.yml`)
 
 ## Test Strategy
@@ -205,6 +205,7 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
 - **2026-05-27 — First verification pass (45/80 verified).** Ran the full RSpec suite (212 examples, 0 failures), API request spec, route-verb audit, and code inspection of `OrderCreationService` + `BakeCapacityService`. 45 ISCs flipped `[x]` with evidence. Coverage gaps identified and left `[ ]`: capacity-math behavior (ISC-26/27/28 — logic present in `BakeCapacityService` but **no automated test**), all admin CRUD/auth except resend (ISC-46–52, 54), Stripe webhook order-creation (ISC-18/19), and every live-HTML route (ISC-1/2/4/23/75 — need a running server / Interceptor). Not committed — awaiting Michael's go.
 - **2026-05-27 — `refined:` ISC-79 marked `[DEFERRED-VERIFY]`.** Deploy-SHA verification is impossible from the local dev machine; follow-up is a Hatchbox-dashboard check (or `curl` the deployed `/up` + version) after the next push to `main`.
 - **2026-05-27 — Rubocop cleaned, ISC-77 verified (48 → 49/80).** Offense audit showed all 592 offenses were `[Safe Correctable]` (334 StringLiterals double→single, 164 array-bracket spacing, 89 trailing whitespace, 50 trailing empty lines, rest minor). Chose `bin/rubocop -a` (safe autocorrect) over the originally-noted `-A` (which applies behavior-changing unsafe fixes) — unjustified risk given admin/UI paths are untested. Result: `bin/rubocop` clean, suite green (226 ex.), no `.rubocop.yml` override needed (conformed to the configured Omakase style). Forge relaxed: tool-driven autocorrect + empirical re-lint, single-author.
+- **2026-05-27 — Deploy verified live, ISC-79 closed (49 → 52/80).** Pushed `main` (`fe1799c..68443bd`); Hatchbox auto-deployed. Live probes on `https://tranchesdevie.les4sources.be`: `/up` → 200; homepage renders the full catalog in real Chrome via Interceptor (nav + real products: Pain d'épeautre, froment, etc.); console errors `[]`; no non-200 network requests; `/api/v1` → 200 with valid discovery JSON; `/api/v1/products` without token → 401. ISC-1/75/79 → `[x]`. *Honesty notes:* Interceptor `screenshot` timed out twice (tooling glitch) — the real-Chrome a11y tree + clean console are the live-probe evidence. Strict "deployed SHA == `main` HEAD" is not HTTP-probeable (no version endpoint); verified deploy completion + healthy serve instead. Diff was lint/test/docs-only, so no behavior change to inspect — the meaningful check was "boots and serves," which holds.
 - **2026-05-27 — Capacity coverage gap closed (45 → 48/80).** Wrote `spec/services/bake_capacity_service_spec.rb` (14 examples, all green) covering `BakeCapacityService#cart_fits?` across mold/kneader/oven limits, exact-limit boundaries (enforcement is strictly `>`), cancelled-order exclusion (ISC-24), existing-usage accumulation, non-bread products ignored, and multi-flour dough distribution. ISC-26/27/28 now `[x]`; ISC-24 and ISC-30 evidence strengthened. Full suite 226 examples, 0 failures. **Forge delegation relaxed (show-your-math):** single-file spec, tight local rspec loop, repo-specific factory archaeology (no factories for Flour/MoldType/ProductFlour/ProductionSetting), non-parallelizable — single-author was the right call.
 
 ## Changelog

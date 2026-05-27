@@ -71,7 +71,7 @@ RSpec.describe "Customers::Calendar", type: :request do
 
   describe "PATCH /calendrier/update_day" do
     let(:items) do
-      [{ product_variant_id: product_variant.id, qty: 2 }]
+      [ { product_variant_id: product_variant.id, qty: 2 } ]
     end
 
     context "creating a new planned order" do

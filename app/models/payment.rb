@@ -13,11 +13,10 @@ class Payment < ApplicationRecord
   scope :succeeded, -> { where(status: :succeeded) }
 
   def refunded?
-    status == 'refunded'
+    status == "refunded"
   end
 
   def succeeded?
-    status == 'succeeded'
+    status == "succeeded"
   end
 end
-

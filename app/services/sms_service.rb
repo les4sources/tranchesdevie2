@@ -1,7 +1,7 @@
 class SmsService
   extend ActionView::Helpers::NumberHelper
 
-  SMSTOOLS_API_URL = 'https://api.smsgatewayapi.com/v1/message/send'
+  SMSTOOLS_API_URL = "https://api.smsgatewayapi.com/v1/message/send"
 
   def self.send_confirmation(order)
     return false unless order.customer.sms_enabled?
@@ -134,7 +134,7 @@ class SmsService
     end
 
     # Format phone number: remove + if present (Smstools expects international format without +)
-    formatted_to = to.to_s.gsub(/^\+/, '')
+    formatted_to = to.to_s.gsub(/^\+/, "")
 
     # Use test mode in development (validates parameters but doesn't send SMS or consume credits)
     test_mode = !Rails.env.production?
@@ -153,9 +153,9 @@ class SmsService
     response = HTTParty.post(
       SMSTOOLS_API_URL,
       headers: {
-        'Content-Type' => 'application/json',
-        'X-Client-Id' => client_id,
-        'X-Client-Secret' => client_secret
+        "Content-Type" => "application/json",
+        "X-Client-Id" => client_id,
+        "X-Client-Secret" => client_secret
       },
       body: request_body.to_json
     )
@@ -165,7 +165,7 @@ class SmsService
 
     if response.success?
       # Smstools returns {"messageid": "..."} for single recipient
-      external_id = response['messageid'] || (response['messageids']&.first)
+      external_id = response["messageid"] || (response["messageids"]&.first)
       sent_at = Time.current
       SmsMessage.create!(
         direction: :outbound,
@@ -192,15 +192,14 @@ class SmsService
   end
 
   def self.client_id
-    ENV['SMSTOOLS_CLIENT_ID']
+    ENV["SMSTOOLS_CLIENT_ID"]
   end
 
   def self.client_secret
-    ENV['SMSTOOLS_CLIENT_SECRET']
+    ENV["SMSTOOLS_CLIENT_SECRET"]
   end
 
   def self.sender
-    ENV['SMSTOOLS_SENDER']
+    ENV["SMSTOOLS_SENDER"]
   end
 end
-

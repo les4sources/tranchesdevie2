@@ -14,4 +14,3 @@ class BakeDayService
     BakeDay.calculate_cut_off_for(date)
   end
 end
-

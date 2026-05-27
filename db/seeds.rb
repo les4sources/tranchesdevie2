@@ -128,7 +128,7 @@ puts "✅ Products and variants created"
 today = Date.current
 end_date = today + 4.months
 
-[2, 5].each do |weekday|
+[ 2, 5 ].each do |weekday|
   date = today + ((weekday - today.wday) % 7).days
 
   while date <= end_date
@@ -151,7 +151,7 @@ next_friday = today + ((5 - today.wday) % 7).days
 next_friday_bake_day = BakeDay.find_by!(baked_on: next_friday)
 
 variant_lookup = ProductVariant.includes(:product).each_with_object({}) do |variant, memo|
-  memo[[variant.product.name, variant.name]] = variant
+  memo[[ variant.product.name, variant.name ]] = variant
 end
 
 sample_orders = [
@@ -258,7 +258,7 @@ sample_orders.each do |order_data|
   total_cents = 0
 
   order_data[:items].each do |item|
-    variant = variant_lookup[[item[:product_name], item[:variant_name]]]
+    variant = variant_lookup[[ item[:product_name], item[:variant_name] ]]
     raise "Unknown product variant for #{item.inspect}" unless variant
 
     unit_price_cents = variant.price_cents

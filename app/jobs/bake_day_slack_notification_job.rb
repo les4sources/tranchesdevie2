@@ -18,4 +18,3 @@ class BakeDaySlackNotificationJob < ApplicationJob
     raise
   end
 end
-

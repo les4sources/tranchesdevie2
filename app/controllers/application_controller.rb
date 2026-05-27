@@ -43,26 +43,26 @@ class ApplicationController < ActionController::Base
   end
 
   def current_cart_count
-    (session[:cart] || []).sum { |item| item['qty'].to_i }
+    (session[:cart] || []).sum { |item| item["qty"].to_i }
   end
 
   def current_cart_variant_qty(variant_id)
     cart = session[:cart] || []
-    item = cart.find { |i| i['product_variant_id'] == variant_id.to_s }
-    item ? item['qty'].to_i : 0
+    item = cart.find { |i| i["product_variant_id"] == variant_id.to_s }
+    item ? item["qty"].to_i : 0
   end
 
   def build_cart_items(cart)
     return [] if cart.blank?
 
-    variant_ids = cart.map { |item| item['product_variant_id'] }.compact.uniq
+    variant_ids = cart.map { |item| item["product_variant_id"] }.compact.uniq
     variants = ProductVariant.includes(:product).where(id: variant_ids).index_by { |variant| variant.id.to_s }
 
     cart.filter_map do |item|
-      variant = variants[item['product_variant_id']]
+      variant = variants[item["product_variant_id"]]
       next unless variant
 
-      qty = item['qty'].to_i
+      qty = item["qty"].to_i
 
       {
         variant_id: variant.id,
@@ -84,12 +84,12 @@ class ApplicationController < ActionController::Base
       session[:otp_verified_at] = Time.current.to_i
       return true
     end
-    
+
     # Sinon, vérifier la session OTP classique
     return false unless session[:otp_verified] == true
     return false unless session[:otp_verified_at].present?
     return false unless session[:phone_e164].present?
-    
+
     verified_at = Time.at(session[:otp_verified_at])
     verified_at > 1.year.ago
   end

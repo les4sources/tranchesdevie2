@@ -5,7 +5,7 @@ class CreateCustomerGroups < ActiveRecord::Migration[8.0]
       t.references :group, null: false, foreign_key: true
       t.timestamps
     end
-    add_index :customer_groups, [:customer_id, :group_id], unique: true, name: "idx_customer_groups_unique"
+    add_index :customer_groups, [ :customer_id, :group_id ], unique: true, name: "idx_customer_groups_unique"
 
     # Migrate existing group_id data
     execute <<-SQL.squish

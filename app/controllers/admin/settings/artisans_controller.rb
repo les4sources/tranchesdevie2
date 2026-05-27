@@ -3,7 +3,7 @@
 module Admin
   module Settings
     class ArtisansController < Admin::BaseController
-      before_action :set_artisan, only: [:edit, :update]
+      before_action :set_artisan, only: [ :edit, :update ]
 
       def index
         @artisans = Artisan.order(:name)

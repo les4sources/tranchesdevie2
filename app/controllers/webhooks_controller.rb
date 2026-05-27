@@ -3,18 +3,18 @@ class WebhooksController < ApplicationController
 
   def stripe
     payload = request.body.read
-    sig_header = request.env['HTTP_STRIPE_SIGNATURE']
-    endpoint_secret = ENV['STRIPE_WEBHOOK_SECRET']
+    sig_header = request.env["HTTP_STRIPE_SIGNATURE"]
+    endpoint_secret = ENV["STRIPE_WEBHOOK_SECRET"]
 
     begin
       event = Stripe::Webhook.construct_event(
         payload, sig_header, endpoint_secret
       )
     rescue JSON::ParserError => e
-      render json: { error: 'Invalid JSON' }, status: :bad_request
+      render json: { error: "Invalid JSON" }, status: :bad_request
       return
     rescue Stripe::SignatureVerificationError => e
-      render json: { error: 'Invalid signature' }, status: :bad_request
+      render json: { error: "Invalid signature" }, status: :bad_request
       return
     end
 
@@ -33,14 +33,14 @@ class WebhooksController < ApplicationController
 
     # Process event
     case event.type
-    when 'payment_intent.succeeded'
+    when "payment_intent.succeeded"
       result = handle_payment_intent_succeeded(event)
       unless result
         Rails.logger.error("handle_payment_intent_succeeded returned false/nil for event #{event.id}")
       end
-    when 'payment_intent.payment_failed'
+    when "payment_intent.payment_failed"
       handle_payment_intent_failed(event)
-    when 'charge.refunded'
+    when "charge.refunded"
       handle_charge_refunded(event)
     end
 
@@ -63,7 +63,7 @@ class WebhooksController < ApplicationController
     Rails.logger.info("Processing payment_intent.succeeded webhook for: #{payment_intent_id}")
 
     # Check if this is a wallet reload
-    if metadata['type'] == 'wallet_reload'
+    if metadata["type"] == "wallet_reload"
       return handle_wallet_reload(payment_intent)
     end
 
@@ -72,13 +72,13 @@ class WebhooksController < ApplicationController
 
     unless order
       Rails.logger.info("Order not found for payment_intent #{payment_intent_id}, attempting to create...")
-      
+
       # Find customer from metadata (phone_e164 or customer_id)
       # Metadata is a hash, access with bracket notation
       metadata = payment_intent.metadata || {}
-      phone_e164 = metadata[:phone_e164] || metadata['phone_e164']
-      customer_id = metadata[:customer_id] || metadata['customer_id']
-      bake_day_id = metadata[:bake_day_id] || metadata['bake_day_id']
+      phone_e164 = metadata[:phone_e164] || metadata["phone_e164"]
+      customer_id = metadata[:customer_id] || metadata["customer_id"]
+      bake_day_id = metadata[:bake_day_id] || metadata["bake_day_id"]
 
       Rails.logger.info("Payment intent metadata - phone_e164: #{phone_e164}, customer_id: #{customer_id}, bake_day_id: #{bake_day_id}")
 
@@ -111,7 +111,7 @@ class WebhooksController < ApplicationController
       end
 
       # Reconstruct cart from metadata
-      cart_items_json = metadata[:cart_items] || metadata['cart_items'] || '[]'
+      cart_items_json = metadata[:cart_items] || metadata["cart_items"] || "[]"
       cart_items = JSON.parse(cart_items_json) rescue []
       Rails.logger.info("Parsed cart_items from metadata: #{cart_items.size} items")
 
@@ -160,16 +160,16 @@ class WebhooksController < ApplicationController
       OrderNotificationService.send_confirmation(order) if payment.previously_new_record?
 
       Rails.logger.info("Order #{order.id} payment record ensured")
-      return true
+      true
     else
       Rails.logger.error("Order is nil after processing payment_intent #{payment_intent_id}")
-      return false
+      false
     end
   rescue StandardError => e
     Rails.logger.error("Exception in handle_payment_intent_succeeded for payment_intent #{payment_intent_id}: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
     Sentry.capture_exception(e) if defined?(Sentry)
-    return false
+    false
   end
 
   def handle_payment_intent_failed(event)
@@ -202,7 +202,7 @@ class WebhooksController < ApplicationController
   def handle_wallet_reload(payment_intent)
     payment_intent_id = payment_intent.id
     metadata = payment_intent.metadata || {}
-    customer_id = metadata['customer_id']
+    customer_id = metadata["customer_id"]
 
     Rails.logger.info("Processing wallet reload for customer #{customer_id}, amount: #{payment_intent.amount}")
 
@@ -234,4 +234,3 @@ class WebhooksController < ApplicationController
     false
   end
 end
-

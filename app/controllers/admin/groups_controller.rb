@@ -1,5 +1,5 @@
 class Admin::GroupsController < Admin::BaseController
-  before_action :set_group, only: [:edit, :update]
+  before_action :set_group, only: [ :edit, :update ]
 
   def index
     @groups = Group.order(created_at: :desc)
@@ -13,7 +13,7 @@ class Admin::GroupsController < Admin::BaseController
     @group = Group.new(group_params)
 
     if @group.save
-      redirect_to admin_groups_path, notice: 'Groupe créé avec succès'
+      redirect_to admin_groups_path, notice: "Groupe créé avec succès"
     else
       render :new, status: :unprocessable_entity
     end
@@ -24,7 +24,7 @@ class Admin::GroupsController < Admin::BaseController
 
   def update
     if @group.update(group_params)
-      redirect_to admin_groups_path, notice: 'Groupe mis à jour avec succès'
+      redirect_to admin_groups_path, notice: "Groupe mis à jour avec succès"
     else
       render :edit, status: :unprocessable_entity
     end
@@ -40,4 +40,3 @@ class Admin::GroupsController < Admin::BaseController
     params.require(:group).permit(:name, :discount_percent)
   end
 end
-

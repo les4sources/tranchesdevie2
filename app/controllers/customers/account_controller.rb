@@ -4,8 +4,8 @@ class Customers::AccountController < ApplicationController
   def show
     @customer = current_customer
     @orders = @customer.orders
-                      .includes(:bake_day, :order_items => { product_variant: :product })
-                      .order('bake_days.baked_on DESC')
+                      .includes(:bake_day, order_items: { product_variant: :product })
+                      .order("bake_days.baked_on DESC")
   end
 
   def edit
@@ -16,7 +16,7 @@ class Customers::AccountController < ApplicationController
     @customer = current_customer
 
     if @customer.update(customer_params)
-      redirect_to customers_account_path, notice: 'Profil mis à jour avec succès'
+      redirect_to customers_account_path, notice: "Profil mis à jour avec succès"
     else
       render :edit, status: :unprocessable_entity
     end
@@ -26,17 +26,17 @@ class Customers::AccountController < ApplicationController
     @order = current_customer.orders.find_by(id: params[:id])
 
     unless @order
-      redirect_to customers_account_path, alert: 'Commande introuvable'
+      redirect_to customers_account_path, alert: "Commande introuvable"
       return
     end
 
     unless @order.can_be_cancelled_by_customer?
-      redirect_to customers_account_path, alert: 'Cette commande ne peut pas être annulée'
+      redirect_to customers_account_path, alert: "Cette commande ne peut pas être annulée"
       return
     end
 
     @order.destroy
-    redirect_to customers_account_path, notice: 'Commande annulée avec succès'
+    redirect_to customers_account_path, notice: "Commande annulée avec succès"
   end
 
   private
@@ -45,4 +45,3 @@ class Customers::AccountController < ApplicationController
     params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :email_opt_out)
   end
 end
-

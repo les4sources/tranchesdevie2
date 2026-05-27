@@ -17,14 +17,14 @@ class CreateFloursAndProductFlours < ActiveRecord::Migration[8.0]
       t.integer :percentage, null: false
       t.timestamps
     end
-    add_index :product_flours, [:product_id, :flour_id], unique: true
+    add_index :product_flours, [ :product_id, :flour_id ], unique: true
 
     # Seed flours matching current product.flour values
     flour_names = [
-      [1, "Froment"],      # wheat
-      [2, "Épeautre"],    # spelled
-      [3, "Petit épeautre"], # small_spelled
-      [4, "Blé ancien"]   # ancien_wheat
+      [ 1, "Froment" ],      # wheat
+      [ 2, "Épeautre" ],    # spelled
+      [ 3, "Petit épeautre" ], # small_spelled
+      [ 4, "Blé ancien" ]   # ancien_wheat
     ]
     now = Time.current
     flour_names.each do |position, name|

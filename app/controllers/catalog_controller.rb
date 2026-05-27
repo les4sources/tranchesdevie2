@@ -8,11 +8,11 @@ class CatalogController < ApplicationController
 
   def load_all_active_products
     Product.not_deleted.active.store_channel.ordered.includes(
-      product_variants: [:variant_group_restrictions, { product_images: :image_attachment }],
+      product_variants: [ :variant_group_restrictions, { product_images: :image_attachment } ],
       product_images: :image_attachment
     ).map do |product|
       variants = product.product_variants.active.store_channel.visible_to_customer(current_customer)
-      [product, variants] if variants.any?
+      [ product, variants ] if variants.any?
     end.compact
   end
 
@@ -26,4 +26,3 @@ class CatalogController < ApplicationController
     }
   end
 end
-

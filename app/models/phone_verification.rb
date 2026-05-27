@@ -7,7 +7,7 @@ class PhoneVerification < ApplicationRecord
   validates :code, presence: true, length: { is: 6 }, format: { with: /\A\d{6}\z/ }
   validates :expires_at, presence: true
 
-  scope :active, -> { where('expires_at > ?', Time.current) }
+  scope :active, -> { where("expires_at > ?", Time.current) }
   scope :for_phone, ->(phone) { where(phone_e164: phone) }
 
   def expired?
@@ -43,4 +43,3 @@ class PhoneVerification < ApplicationRecord
     last_verification.created_at + COOLDOWN_PERIOD < Time.current
   end
 end
-

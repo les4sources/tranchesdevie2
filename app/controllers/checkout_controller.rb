@@ -1,13 +1,13 @@
 class CheckoutController < ApplicationController
-  before_action :ensure_cart_not_empty, except: [:success]
-  before_action :ensure_bake_day_set, except: [:success]
-  before_action :ensure_cutoff_not_passed, only: [:new, :create_payment_intent, :create_cash_order]
+  before_action :ensure_cart_not_empty, except: [ :success ]
+  before_action :ensure_bake_day_set, except: [ :success ]
+  before_action :ensure_cutoff_not_passed, only: [ :new, :create_payment_intent, :create_cash_order ]
 
   def new
     @cart = session[:cart] || []
     @bake_day = BakeDay.find(session[:bake_day_id])
     @subtotal_cents = calculate_subtotal
-    
+
     # Utiliser le client connecté s'il existe, sinon créer un nouveau client
     if customer_signed_in?
       @customer = current_customer
@@ -19,7 +19,7 @@ class CheckoutController < ApplicationController
     else
       @customer = Customer.find_by(phone_e164: session[:phone_e164]) || Customer.new
     end
-    
+
     @discount_cents = calculate_discount(@subtotal_cents, @customer)
     @total_cents = @subtotal_cents - @discount_cents
     @otp_verified = phone_verified?
@@ -29,17 +29,17 @@ class CheckoutController < ApplicationController
     phone_e164 = normalize_phone(params[:phone_e164])
 
     unless valid_e164?(phone_e164)
-      render json: { success: false, error: 'Format de téléphone invalide' }, status: :unprocessable_entity
+      render json: { success: false, error: "Format de téléphone invalide" }, status: :unprocessable_entity
       return
     end
 
-    if params[:channel] == 'email'
+    if params[:channel] == "email"
       result = OtpService.send_otp(phone_e164, channel: :email, email: params[:email], allow_email_entry: true)
 
       if result[:success]
         session[:phone_e164] = phone_e164
         session[:email] = result[:email]
-        render json: { success: true, message: 'Code envoyé par e-mail à ' + Time.current.strftime('%H:%M') }
+        render json: { success: true, message: "Code envoyé par e-mail à " + Time.current.strftime("%H:%M") }
       elsif result[:need_email]
         render json: { success: false, need_email: true, error: result[:error] }, status: :unprocessable_entity
       else
@@ -52,7 +52,7 @@ class CheckoutController < ApplicationController
 
     if result[:success]
       session[:phone_e164] = phone_e164
-      render json: { success: true, message: 'Code envoyé par SMS à ' + Time.current.strftime('%H:%M') }
+      render json: { success: true, message: "Code envoyé par SMS à " + Time.current.strftime("%H:%M") }
     else
       render json: { success: false, error: result[:error] }, status: :unprocessable_entity
     end
@@ -62,7 +62,7 @@ class CheckoutController < ApplicationController
     phone_e164 = session[:phone_e164]
 
     unless phone_e164
-      render json: { success: false, error: 'Veuillez d\'abord vérifier votre numéro' }, status: :unprocessable_entity
+      render json: { success: false, error: "Veuillez d'abord vérifier votre numéro" }, status: :unprocessable_entity
       return
     end
 
@@ -85,7 +85,7 @@ class CheckoutController < ApplicationController
 
   def create_payment_intent
     unless phone_verified? || customer_signed_in?
-      render json: { error: 'Phone verification required' }, status: :unauthorized
+      render json: { error: "Phone verification required" }, status: :unauthorized
       return
     end
 
@@ -96,18 +96,18 @@ class CheckoutController < ApplicationController
     rescue JSON::ParserError
       json_params = {}
     end
-    
+
     # Store customer info in session if provided
-    if json_params['first_name'].present?
-      session[:first_name] = json_params['first_name']
+    if json_params["first_name"].present?
+      session[:first_name] = json_params["first_name"]
     end
-    if json_params['last_name'].present?
-      session[:last_name] = json_params['last_name']
+    if json_params["last_name"].present?
+      session[:last_name] = json_params["last_name"]
     end
-    if json_params['email'].present?
-      session[:email] = json_params['email']
+    if json_params["email"].present?
+      session[:email] = json_params["email"]
     end
-    
+
     @bake_day = BakeDay.find(session[:bake_day_id])
     @cart = session[:cart] || []
 
@@ -119,27 +119,27 @@ class CheckoutController < ApplicationController
     end
 
     subtotal_cents = calculate_subtotal
-    
+
     # Obtenir le client pour calculer la remise
     customer = if customer_signed_in?
                  current_customer
-               else
+    else
                  Customer.find_by(phone_e164: session[:phone_e164])
-               end
-    
+    end
+
     discount_cents = calculate_discount(subtotal_cents, customer)
     total_cents = subtotal_cents - discount_cents
 
     # Utiliser le phone_e164 du client connecté si disponible, sinon celui de la session
     phone_e164 = if customer_signed_in?
                    current_customer.phone_e164
-                 else
+    else
                    session[:phone_e164]
-                 end
+    end
 
     payment_intent = Stripe::PaymentIntent.create({
       amount: total_cents,
-      currency: 'eur',
+      currency: "eur",
       automatic_payment_methods: {
         enabled: true
       },
@@ -162,7 +162,7 @@ class CheckoutController < ApplicationController
 
   def create_cash_order
     unless phone_verified? || customer_signed_in?
-      render json: { success: false, error: 'Phone verification required' }, status: :unauthorized
+      render json: { success: false, error: "Phone verification required" }, status: :unauthorized
       return
     end
 
@@ -175,25 +175,25 @@ class CheckoutController < ApplicationController
     end
 
     # Store customer info in session if provided
-    if json_params['first_name'].present?
-      session[:first_name] = json_params['first_name']
+    if json_params["first_name"].present?
+      session[:first_name] = json_params["first_name"]
     end
-    if json_params['last_name'].present?
-      session[:last_name] = json_params['last_name']
+    if json_params["last_name"].present?
+      session[:last_name] = json_params["last_name"]
     end
-    if json_params['email'].present?
-      session[:email] = json_params['email']
+    if json_params["email"].present?
+      session[:email] = json_params["email"]
     end
 
     # Vérifier que nous avons les informations nécessaires
     phone_e164 = if customer_signed_in?
                    current_customer.phone_e164
-                 else
+    else
                    session[:phone_e164]
-                 end
+    end
 
     unless phone_e164 && session[:bake_day_id] && session[:cart]&.any?
-      render json: { success: false, error: 'Informations manquantes' }, status: :unprocessable_entity
+      render json: { success: false, error: "Informations manquantes" }, status: :unprocessable_entity
       return
     end
 
@@ -232,7 +232,7 @@ class CheckoutController < ApplicationController
 
     bake_day = BakeDay.find_by(id: session[:bake_day_id])
     unless bake_day
-      render json: { success: false, error: 'Jour de cuisson introuvable' }, status: :unprocessable_entity
+      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
       return
     end
 
@@ -243,13 +243,13 @@ class CheckoutController < ApplicationController
       customer: customer,
       bake_day: bake_day,
       cart_items: cart_items,
-      payment_method: 'cash'
+      payment_method: "cash"
     )
 
     order = service.call
 
     unless order
-      render json: { success: false, error: service.errors.join(', ') }, status: :unprocessable_entity
+      render json: { success: false, error: service.errors.join(", ") }, status: :unprocessable_entity
       return
     end
 
@@ -274,19 +274,19 @@ class CheckoutController < ApplicationController
     Rails.logger.error("Error creating cash order: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
     Sentry.capture_exception(e) if defined?(Sentry)
-    render json: { success: false, error: 'Une erreur est survenue lors de la création de la commande' }, status: :internal_server_error
+    render json: { success: false, error: "Une erreur est survenue lors de la création de la commande" }, status: :internal_server_error
   end
 
   def success
     # Handle both payment_intent (online) and order_token (cash) parameters
     # Strip any whitespace or quotes from payment_intent_id
-    payment_intent_id = params[:payment_intent]&.strip&.gsub(/^['"]|['"]$/, '')
+    payment_intent_id = params[:payment_intent]&.strip&.gsub(/^['"]|['"]$/, "")
     order_token = params[:order_token]
     redirect_status = params[:redirect_status]
 
-    if redirect_status.present? && redirect_status != 'succeeded'
+    if redirect_status.present? && redirect_status != "succeeded"
       Rails.logger.warn("Payment redirect_status=#{redirect_status} for payment_intent=#{payment_intent_id}")
-      flash[:alert] = 'Le paiement a été refusé ou interrompu. Aucun débit n\'a été effectué.'
+      flash[:alert] = "Le paiement a été refusé ou interrompu. Aucun débit n'a été effectué."
       redirect_to new_checkout_path
       return
     end
@@ -296,20 +296,20 @@ class CheckoutController < ApplicationController
       @order = Order.find_by(public_token: order_token)
       unless @order
         Rails.logger.error("Cash order not found with token: #{order_token}")
-        flash[:alert] = 'Commande non trouvée'
+        flash[:alert] = "Commande non trouvée"
         redirect_to cart_path
         return
       end
     elsif payment_intent_id.present?
       Rails.logger.info("Processing success page for payment_intent: #{payment_intent_id}")
-      
+
       # Online payment - find by payment_intent_id
       @order = find_order_by_payment_intent(payment_intent_id)
 
       # If order doesn't exist, wait for webhook or try to create it
       unless @order
         Rails.logger.info("Order not found immediately, waiting for webhook...")
-        
+
         # Wait a bit for webhook to process (increased wait time)
         sleep(1.0)
         @order = find_order_by_payment_intent(payment_intent_id)
@@ -326,15 +326,15 @@ class CheckoutController < ApplicationController
 
       unless @order
         Rails.logger.error("Failed to find or create order for payment_intent: #{payment_intent_id}. Session data: cart=#{session[:cart]&.size || 0} items, bake_day_id=#{session[:bake_day_id]}, phone_e164=#{session[:phone_e164].present? ? 'present' : 'missing'}")
-        flash[:alert] = 'Commande non trouvée. Le paiement a été traité, mais la commande n\'a pas pu être créée. Contactez-nous avec le numéro de paiement: ' + payment_intent_id
+        flash[:alert] = "Commande non trouvée. Le paiement a été traité, mais la commande n'a pas pu être créée. Contactez-nous avec le numéro de paiement: " + payment_intent_id
         redirect_to cart_path
         return
       end
-      
+
       Rails.logger.info("Order found/created successfully: #{@order.id} for payment_intent: #{payment_intent_id}")
     else
       Rails.logger.error("Success page called without payment_intent or order_token")
-      redirect_to cart_path, alert: 'Paramètre manquant'
+      redirect_to cart_path, alert: "Paramètre manquant"
       return
     end
 
@@ -359,25 +359,25 @@ class CheckoutController < ApplicationController
   end
 
   def ensure_cart_not_empty
-    redirect_to cart_path, alert: 'Votre panier est vide' if (session[:cart] || []).empty?
+    redirect_to cart_path, alert: "Votre panier est vide" if (session[:cart] || []).empty?
   end
 
   def ensure_bake_day_set
     unless session[:bake_day_id]
-      redirect_to cart_path, alert: 'Veuillez sélectionner un jour de cuisson'
+      redirect_to cart_path, alert: "Veuillez sélectionner un jour de cuisson"
     end
   end
 
   def ensure_cutoff_not_passed
     @bake_day = BakeDay.find_by(id: session[:bake_day_id])
     if @bake_day&.cut_off_passed?
-      redirect_to cart_path, alert: 'Le délai de commande pour ce jour est dépassé'
+      redirect_to cart_path, alert: "Le délai de commande pour ce jour est dépassé"
     end
   end
 
   def calculate_subtotal
     (session[:cart] || []).sum do |item|
-      item['qty'].to_i * item['price_cents'].to_i
+      item["qty"].to_i * item["price_cents"].to_i
     end
   end
 
@@ -388,7 +388,7 @@ class CheckoutController < ApplicationController
   end
 
   def normalize_phone(phone)
-    phone.to_s.strip.gsub(/\s/, '')
+    phone.to_s.strip.gsub(/\s/, "")
   end
 
   def valid_e164?(phone)
@@ -399,13 +399,13 @@ class CheckoutController < ApplicationController
     # Utiliser le client connecté si disponible
     if customer_signed_in?
       customer = current_customer
-      
+
       # Mettre à jour les informations si fournies
       update_attrs = {}
-      update_attrs[:first_name] = json_params['first_name'] if json_params['first_name'].present?
-      update_attrs[:last_name] = json_params['last_name'] if json_params['last_name'].present?
-      update_attrs[:email] = json_params['email'] if json_params['email'].present?
-      
+      update_attrs[:first_name] = json_params["first_name"] if json_params["first_name"].present?
+      update_attrs[:last_name] = json_params["last_name"] if json_params["last_name"].present?
+      update_attrs[:email] = json_params["email"] if json_params["email"].present?
+
       customer.update(update_attrs) if update_attrs.any?
     else
       phone_e164 = session[:phone_e164]
@@ -413,19 +413,19 @@ class CheckoutController < ApplicationController
 
       if customer.new_record?
         customer.assign_attributes(
-          first_name: json_params['first_name'] || params[:first_name] || session[:first_name],
-          last_name: json_params['last_name'] || params[:last_name] || session[:last_name],
-          email: json_params['email'] || params[:email] || session[:email]
+          first_name: json_params["first_name"] || params[:first_name] || session[:first_name],
+          last_name: json_params["last_name"] || params[:last_name] || session[:last_name],
+          email: json_params["email"] || params[:email] || session[:email]
         )
         customer.save!
       end
 
       # Update customer info if provided
-      if json_params['first_name'].present? || json_params['last_name'].present? || json_params['email'].present?
+      if json_params["first_name"].present? || json_params["last_name"].present? || json_params["email"].present?
         customer.update(
-          first_name: json_params['first_name'] || customer.first_name,
-          last_name: json_params['last_name'] || customer.last_name,
-          email: json_params['email'] || customer.email
+          first_name: json_params["first_name"] || customer.first_name,
+          last_name: json_params["last_name"] || customer.last_name,
+          email: json_params["email"] || customer.email
         ) if json_params.any?
       end
     end
@@ -439,26 +439,26 @@ class CheckoutController < ApplicationController
 
   def create_order_from_session(payment_intent_id)
     # Use payment_intent_id from parameter or fallback to session
-    payment_intent_id = (payment_intent_id || session[:payment_intent_id])&.strip&.gsub(/^['"]|['"]$/, '')
-    
+    payment_intent_id = (payment_intent_id || session[:payment_intent_id])&.strip&.gsub(/^['"]|['"]$/, "")
+
     unless payment_intent_id.present?
       Rails.logger.error("No payment_intent_id provided or found in session")
       return nil
     end
-    
+
     Rails.logger.info("Attempting to create order from session for payment_intent: #{payment_intent_id}")
-    
+
     # Retrieve the payment intent to verify it succeeded and get metadata
     metadata = {}
-    
+
     begin
       payment_intent = Stripe::PaymentIntent.retrieve(payment_intent_id)
-      
-      unless payment_intent.status == 'succeeded'
+
+      unless payment_intent.status == "succeeded"
         Rails.logger.error("Payment intent #{payment_intent_id} status is #{payment_intent.status}, not succeeded")
         return nil
       end
-      
+
       Rails.logger.info("Payment intent #{payment_intent_id} succeeded. Metadata: #{payment_intent.metadata.inspect}")
       metadata = payment_intent.metadata || {}
     rescue Stripe::StripeError => e
@@ -468,30 +468,30 @@ class CheckoutController < ApplicationController
 
     # Try to get data from session first, fallback to payment intent metadata
     # Metadata is a hash, access with bracket notation
-    
+
     phone_e164 = if customer_signed_in?
                    current_customer.phone_e164
-                 elsif session[:phone_e164].present?
+    elsif session[:phone_e164].present?
                    session[:phone_e164]
-                 else
-                   metadata[:phone_e164] || metadata['phone_e164']
-                 end
-    
-    bake_day_id = session[:bake_day_id] || metadata[:bake_day_id] || metadata['bake_day_id']
+    else
+                   metadata[:phone_e164] || metadata["phone_e164"]
+    end
+
+    bake_day_id = session[:bake_day_id] || metadata[:bake_day_id] || metadata["bake_day_id"]
     cart_items_json = if session[:cart]&.present?
                        session[:cart]
-                     else
-                       metadata[:cart_items] || metadata['cart_items']
-                     end
-    
+    else
+                       metadata[:cart_items] || metadata["cart_items"]
+    end
+
     # Parse cart items if it's a JSON string
     cart_items = if cart_items_json.is_a?(String)
                    JSON.parse(cart_items_json) rescue []
-                 elsif cart_items_json.is_a?(Array)
+    elsif cart_items_json.is_a?(Array)
                    cart_items_json
-                 else
+    else
                    []
-                 end
+    end
 
     # Validate required data
     unless phone_e164.present?
@@ -521,7 +521,7 @@ class CheckoutController < ApplicationController
                    update_attrs[:email] = session[:email] if session[:email].present?
                    c.update(update_attrs) if update_attrs.any?
                  end
-               else
+    else
                  Customer.find_or_create_by(phone_e164: phone_e164).tap do |c|
                    if c.new_record?
                      c.assign_attributes(
@@ -538,7 +538,7 @@ class CheckoutController < ApplicationController
                      )
                    end
                  end
-               end
+    end
 
     unless customer
       Rails.logger.error("Failed to find or create customer with phone_e164: #{phone_e164}")
@@ -554,7 +554,7 @@ class CheckoutController < ApplicationController
     # First, check if order already exists (idempotency)
     # This can happen if webhook created it between our checks
     order = find_order_by_payment_intent(payment_intent_id)
-    
+
     if order
       Rails.logger.info("Order already exists for payment_intent #{payment_intent_id}: #{order.id}")
     else
@@ -570,7 +570,7 @@ class CheckoutController < ApplicationController
 
       unless order
         # If service failed because order exists, try to find it again (race condition)
-        if service.errors.any? && service.errors.include?('Order already exists for this payment intent')
+        if service.errors.any? && service.errors.include?("Order already exists for this payment intent")
           Rails.logger.info("OrderCreationService says order exists, retrying find...")
           # Try again with uncached query
           order = find_order_by_payment_intent(payment_intent_id)
@@ -582,7 +582,7 @@ class CheckoutController < ApplicationController
         else
           Rails.logger.error("OrderCreationService failed for payment_intent #{payment_intent_id}. Errors: #{service.errors.join(', ')}")
         end
-        
+
         return nil unless order
       end
 
@@ -616,4 +616,3 @@ class CheckoutController < ApplicationController
     nil
   end
 end
-

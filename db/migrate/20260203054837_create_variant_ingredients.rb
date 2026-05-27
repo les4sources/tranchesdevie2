@@ -8,7 +8,7 @@ class CreateVariantIngredients < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :variant_ingredients, [:product_variant_id, :ingredient_id],
+    add_index :variant_ingredients, [ :product_variant_id, :ingredient_id ],
               unique: true,
               name: "index_variant_ingredients_on_variant_and_ingredient"
   end

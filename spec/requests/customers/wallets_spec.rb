@@ -74,7 +74,7 @@ RSpec.describe 'Customers::Wallets', type: :request do
           hash_including(
             amount: 5000,
             currency: 'eur',
-            payment_method_types: ['bancontact']
+            payment_method_types: [ 'bancontact' ]
           )
         ).and_return(double(id: 'pi_123', client_secret: 'secret', status: 'requires_payment_method'))
 

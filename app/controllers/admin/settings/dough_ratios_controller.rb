@@ -3,7 +3,7 @@
 module Admin
   module Settings
     class DoughRatiosController < Admin::BaseController
-      before_action :set_ratio, only: [:edit, :update]
+      before_action :set_ratio, only: [ :edit, :update ]
 
       def index
         @ratios = DoughRatio.ordered

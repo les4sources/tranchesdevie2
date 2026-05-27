@@ -6,11 +6,11 @@ class SeedMoldTypesAndProductionSettings < ActiveRecord::Migration[8.0]
 
     # Create initial MoldType records
     mold_types = [
-      [1, "Grand", 95],
-      [2, "Classique", 100],
-      [3, "Petit", 50],
-      [4, "Grand rond", 10],
-      [5, "Classique rond", 10]
+      [ 1, "Grand", 95 ],
+      [ 2, "Classique", 100 ],
+      [ 3, "Petit", 50 ],
+      [ 4, "Grand rond", 10 ],
+      [ 5, "Classique rond", 10 ]
     ]
 
     mold_types.each do |position, name, limit|

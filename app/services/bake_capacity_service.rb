@@ -138,15 +138,15 @@ class BakeCapacityService
     cart_items.each do |ci|
       variant_id = if ci.respond_to?(:product_variant_id)
                      ci.product_variant_id
-                   elsif ci.is_a?(Hash)
+      elsif ci.is_a?(Hash)
                      ci["product_variant_id"] || ci[:product_variant_id] || ci["variant_id"] || ci[:variant_id]
-                   end
+      end
 
       variant = if ci.respond_to?(:product_variant)
                   ci.product_variant
-                else
+      else
                   ProductVariant.includes(product: { product_flours: :flour }).find(variant_id)
-                end
+      end
 
       qty = ci.respond_to?(:qty) ? ci.qty : (ci["qty"] || ci[:qty]).to_i
       next unless variant.product.breads?

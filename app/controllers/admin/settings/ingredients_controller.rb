@@ -3,7 +3,7 @@
 module Admin
   module Settings
     class IngredientsController < Admin::BaseController
-      before_action :set_ingredient, only: [:edit, :update, :destroy]
+      before_action :set_ingredient, only: [ :edit, :update, :destroy ]
 
       def index
         @ingredients = Ingredient.not_deleted.ordered

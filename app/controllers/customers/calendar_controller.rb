@@ -69,7 +69,7 @@ module Customers
       unless customer_signed_in?
         respond_to do |format|
           format.html { redirect_to customer_login_path }
-          format.json { render json: { error: 'Non autorisé' }, status: :unauthorized }
+          format.json { render json: { error: "Non autorisé" }, status: :unauthorized }
         end
       end
     end

@@ -17,4 +17,3 @@ class OrderItem < ApplicationRecord
     (subtotal_cents / 100.0).round(2)
   end
 end
-

@@ -15,4 +15,3 @@ class Admin::SmsMessagesController < Admin::BaseController
     @sms_message = @customer.sms_messages.find(params[:id])
   end
 end
-

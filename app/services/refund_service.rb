@@ -13,7 +13,7 @@ class RefundService
       payment_intent: @order.payment.stripe_payment_intent_id
     })
 
-    if refund.status == 'succeeded'
+    if refund.status == "succeeded"
       @order.payment.update!(status: :refunded)
       @order.transition_to!(:cancelled)
       SmsService.send_refund(@order) if @order.customer.sms_enabled?
@@ -33,11 +33,10 @@ class RefundService
   def valid?
     @errors = []
 
-    @errors << 'Order must be paid' unless @order.paid?
-    @errors << 'Payment already refunded' if @order.payment&.refunded?
-    @errors << 'Cut-off has passed' if @order.bake_day.cut_off_passed?
+    @errors << "Order must be paid" unless @order.paid?
+    @errors << "Payment already refunded" if @order.payment&.refunded?
+    @errors << "Cut-off has passed" if @order.bake_day.cut_off_passed?
 
     @errors.empty?
   end
 end
-

@@ -3,7 +3,7 @@
 module Admin
   module Settings
     class FloursController < Admin::BaseController
-      before_action :set_flour, only: [:edit, :update, :destroy]
+      before_action :set_flour, only: [ :edit, :update, :destroy ]
 
       def index
         @flours = Flour.not_deleted.ordered

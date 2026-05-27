@@ -8,6 +8,6 @@ class CreateProductAvailabilities < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :product_availabilities, [:start_on, :end_on]
+    add_index :product_availabilities, [ :start_on, :end_on ]
   end
 end

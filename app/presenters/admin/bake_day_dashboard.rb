@@ -34,7 +34,7 @@ module Admin
             units_count: items.sum(&:qty),
             mold_type: variant.mold_type
           }
-        end.sort_by { |stat| [stat[:product].name.downcase, stat[:variant].name.downcase] }
+        end.sort_by { |stat| [ stat[:product].name.downcase, stat[:variant].name.downcase ] }
       end
     end
 
@@ -89,7 +89,7 @@ module Admin
           total_cents: customer_orders.sum(&:total_cents),
           statuses: customer_orders.group_by(&:status).transform_values(&:count)
         }
-      end.sort_by { |entry| [entry[:customer].last_name.to_s.downcase, entry[:customer].first_name.to_s.downcase] }
+      end.sort_by { |entry| [ entry[:customer].last_name.to_s.downcase, entry[:customer].first_name.to_s.downcase ] }
     end
 
     def status_distribution
@@ -178,7 +178,7 @@ module Admin
               products: product_details
             }
           end
-          .sort_by { |stat| [stat[:flour].position || Float::INFINITY, stat[:flour].name.downcase] }
+          .sort_by { |stat| [ stat[:flour].position || Float::INFINITY, stat[:flour].name.downcase ] }
       end
     end
 

@@ -27,7 +27,7 @@ class ProductVariant < ApplicationRecord
   validates :channel, presence: true, inclusion: { in: %w[store admin] }
 
   scope :active, -> { where(active: true) }
-  scope :store_channel, -> { where(channel: 'store') }
+  scope :store_channel, -> { where(channel: "store") }
 
   scope :unrestricted, -> {
     where.not(id: VariantGroupRestriction.select(:product_variant_id))
@@ -51,7 +51,7 @@ class ProductVariant < ApplicationRecord
     return true if product_availabilities.empty?
 
     product_availabilities.where(
-      'start_on <= ? AND (end_on IS NULL OR end_on >= ?)',
+      "start_on <= ? AND (end_on IS NULL OR end_on >= ?)",
       date, date
     ).exists?
   end
@@ -86,25 +86,24 @@ class ProductVariant < ApplicationRecord
 
   def reject_empty_image?(attributes)
     # Don't reject if _destroy is set (we want to process deletions)
-    return false if attributes['_destroy'].present?
+    return false if attributes["_destroy"].present?
 
     # For existing records (with id), don't reject (allow updates without new image)
-    return false if attributes['id'].present?
+    return false if attributes["id"].present?
 
     # For new records, reject if no image is provided
-    image_value = attributes['image'] || attributes[:image]
+    image_value = attributes["image"] || attributes[:image]
     image_value.blank?
   end
 
   def reject_blank_ingredient?(attributes)
     # Don't reject if _destroy is set (we want to process deletions)
-    return false if attributes['_destroy'].present?
+    return false if attributes["_destroy"].present?
 
     # For existing records (with id), don't reject
-    return false if attributes['id'].present?
+    return false if attributes["id"].present?
 
     # Reject if ingredient_id is blank
-    attributes['ingredient_id'].blank?
+    attributes["ingredient_id"].blank?
   end
 end
-

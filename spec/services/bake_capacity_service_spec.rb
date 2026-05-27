@@ -33,7 +33,7 @@ RSpec.describe BakeCapacityService do
 
   # Panier au format session : tableau de hashes à clés string.
   def cart(qty, for_variant: variant)
-    [{ 'product_variant_id' => for_variant.id, 'qty' => qty }]
+    [ { 'product_variant_id' => for_variant.id, 'qty' => qty } ]
   end
 
   describe '#cart_fits?' do

@@ -1,7 +1,7 @@
 module Admin::NavigationHelper
   def admin_nav_link_class(controller_name)
     base_classes = "px-2 py-2 rounded-md text-sm font-medium transition-colors"
-    
+
     if admin_nav_active?(controller_name)
       "#{base_classes} bg-gray-100 text-gray-900 font-semibold"
     else
@@ -11,7 +11,7 @@ module Admin::NavigationHelper
 
   def admin_mobile_nav_link_class(controller_name)
     base_classes = "rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100"
-    
+
     if admin_nav_active?(controller_name)
       "#{base_classes} bg-gray-100 font-semibold text-gray-900"
     else

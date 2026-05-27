@@ -12,7 +12,7 @@ next_friday = today + ((5 - today.wday) % 7).days
 next_friday += 7.days if next_friday <= today
 
 # Choisir le plus proche
-next_bake_day = [next_tuesday, next_friday].min
+next_bake_day = [ next_tuesday, next_friday ].min
 
 # Vérifier s'il existe déjà
 if BakeDay.exists?(baked_on: next_bake_day)
@@ -37,4 +37,3 @@ bake_day = BakeDay.create!(
 puts "✅ Jour de cuisson créé :"
 puts "   Date : #{bake_day.baked_on.strftime('%A %d/%m/%Y')}"
 puts "   Cut-off : #{bake_day.cut_off_at.strftime('%d/%m/%Y à %H:%M')} (Europe/Brussels)"
-

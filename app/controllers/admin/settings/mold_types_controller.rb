@@ -3,7 +3,7 @@
 module Admin
   module Settings
     class MoldTypesController < Admin::BaseController
-      before_action :set_mold_type, only: [:edit, :update, :destroy]
+      before_action :set_mold_type, only: [ :edit, :update, :destroy ]
 
       def index
         @mold_types = MoldType.not_deleted.ordered

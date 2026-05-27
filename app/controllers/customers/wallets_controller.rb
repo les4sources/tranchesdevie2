@@ -15,27 +15,27 @@ module Customers
       amount_cents = params[:amount_cents].to_i
 
       if amount_cents < 500 # Minimum 5€
-        render json: { error: 'Montant minimum: 5€' }, status: :unprocessable_entity
+        render json: { error: "Montant minimum: 5€" }, status: :unprocessable_entity
         return
       end
 
       payment_intent = Stripe::PaymentIntent.create({
         amount: amount_cents,
-        currency: 'eur',
-        payment_method_types: ['bancontact'],
+        currency: "eur",
+        payment_method_types: [ "bancontact" ],
         payment_method_data: {
-          type: 'bancontact',
-          billing_details: { name: current_customer.full_name.presence || 'Client' }
+          type: "bancontact",
+          billing_details: { name: current_customer.full_name.presence || "Client" }
         },
         confirm: true,
         return_url: customers_wallet_reload_success_url,
         metadata: {
           customer_id: current_customer.id,
-          type: 'wallet_reload'
+          type: "wallet_reload"
         }
       })
 
-      if payment_intent.status == 'requires_action' && payment_intent.next_action&.type == 'redirect_to_url'
+      if payment_intent.status == "requires_action" && payment_intent.next_action&.type == "redirect_to_url"
         render json: { redirect_url: payment_intent.next_action.redirect_to_url.url }
       else
         render json: { redirect_url: customers_wallet_reload_success_url(payment_intent: payment_intent.id) }
@@ -64,13 +64,13 @@ module Customers
       # Retrieve from Stripe and check status
       payment_intent = Stripe::PaymentIntent.retrieve(@payment_intent_id)
 
-      unless payment_intent.status == 'succeeded' && payment_intent.metadata['type'] == 'wallet_reload'
+      unless payment_intent.status == "succeeded" && payment_intent.metadata["type"] == "wallet_reload"
         message = case payment_intent.status
-                  when 'processing'
+        when "processing"
                     "Le paiement est en cours de traitement. Veuillez patienter quelques instants."
-                  else
+        else
                     "Nom d'un oignon, le paiement a échoué. Veuillez réessayer et nous prévenir si le problème persiste."
-                  end
+        end
         redirect_to customers_wallet_reload_path, alert: message and return
       end
 

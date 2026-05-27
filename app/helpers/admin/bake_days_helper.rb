@@ -31,5 +31,3 @@ module Admin::BakeDaysHelper
     }[status.to_s] || "bg-slate-300"
   end
 end
-
-

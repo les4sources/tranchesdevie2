@@ -22,7 +22,7 @@ class Order < ApplicationRecord
   validates :public_token, presence: true, uniqueness: true
   validates :order_number, presence: true, uniqueness: true
   validates :status, presence: true
-  validates :requires_invoice, inclusion: { in: [true, false] }
+  validates :requires_invoice, inclusion: { in: [ true, false ] }
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
   # Statuts qui ne sont atteints qu'une fois le paiement encaissé (Stripe ou portefeuille).
@@ -84,13 +84,13 @@ class Order < ApplicationRecord
     when :pending
       new_status.to_sym == :paid
     when :planned
-      [:paid, :cancelled].include?(new_status.to_sym)
+      [ :paid, :cancelled ].include?(new_status.to_sym)
     when :paid
-      [:ready, :cancelled].include?(new_status.to_sym)
+      [ :ready, :cancelled ].include?(new_status.to_sym)
     when :unpaid
-      [:paid, :ready, :cancelled].include?(new_status.to_sym)
+      [ :paid, :ready, :cancelled ].include?(new_status.to_sym)
     when :ready
-      [:picked_up, :no_show].include?(new_status.to_sym)
+      [ :picked_up, :no_show ].include?(new_status.to_sym)
     else
       false
     end
@@ -108,16 +108,16 @@ class Order < ApplicationRecord
     end
 
     def sales_by_product_between(start_date, end_date)
-      total_quantity = Arel.sql('SUM(order_items.qty)')
-      total_revenue = Arel.sql('SUM(order_items.qty * order_items.unit_price_cents)')
+      total_quantity = Arel.sql("SUM(order_items.qty)")
+      total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")
 
       completed
         .in_bake_day_range(start_date, end_date)
         .joins(order_items: { product_variant: :product })
-        .group('products.id', 'products.name')
+        .group("products.id", "products.name")
         .order(total_revenue.desc)
         .pluck(
-          'products.name',
+          "products.name",
           total_quantity,
           total_revenue
         ).map do |name, total_quantity, total_cents|
@@ -130,23 +130,23 @@ class Order < ApplicationRecord
     end
 
     def top_customers_between(start_date, end_date, limit: 10)
-      orders_count = Arel.sql('COUNT(DISTINCT orders.id)')
-      total_revenue = Arel.sql('SUM(orders.total_cents)')
+      orders_count = Arel.sql("COUNT(DISTINCT orders.id)")
+      total_revenue = Arel.sql("SUM(orders.total_cents)")
 
       completed
         .in_bake_day_range(start_date, end_date)
         .joins(:customer)
-        .group('customers.id', 'customers.first_name', 'customers.last_name')
+        .group("customers.id", "customers.first_name", "customers.last_name")
         .order(total_revenue.desc)
         .limit(limit)
         .pluck(
-          'customers.first_name',
-          'customers.last_name',
+          "customers.first_name",
+          "customers.last_name",
           orders_count,
           total_revenue
         ).map do |first_name, last_name, orders_count, total_cents|
           {
-            customer_name: [first_name, last_name].compact.join(' ').strip,
+            customer_name: [ first_name, last_name ].compact.join(" ").strip,
             orders_count: orders_count.to_i,
             total_cents: total_cents.to_i
           }
@@ -157,13 +157,13 @@ class Order < ApplicationRecord
       completed
         .in_bake_day_range(start_date, end_date)
         .joins(:bake_day)
-        .where('EXTRACT(DOW FROM bake_days.baked_on) IN (?)', weekdays)
-        .group(Arel.sql('EXTRACT(DOW FROM bake_days.baked_on)'))
-        .order(Arel.sql('EXTRACT(DOW FROM bake_days.baked_on)'))
+        .where("EXTRACT(DOW FROM bake_days.baked_on) IN (?)", weekdays)
+        .group(Arel.sql("EXTRACT(DOW FROM bake_days.baked_on)"))
+        .order(Arel.sql("EXTRACT(DOW FROM bake_days.baked_on)"))
         .pluck(
-          Arel.sql('EXTRACT(DOW FROM bake_days.baked_on)::integer'),
-          Arel.sql('COUNT(DISTINCT orders.id)'),
-          Arel.sql('SUM(orders.total_cents)')
+          Arel.sql("EXTRACT(DOW FROM bake_days.baked_on)::integer"),
+          Arel.sql("COUNT(DISTINCT orders.id)"),
+          Arel.sql("SUM(orders.total_cents)")
         ).map do |weekday, orders_count, total_cents|
           {
             weekday: weekday,
@@ -181,8 +181,8 @@ class Order < ApplicationRecord
         .order(Arel.sql("DATE_TRUNC('month', bake_days.baked_on)"))
         .pluck(
           Arel.sql("DATE_TRUNC('month', bake_days.baked_on)"),
-          Arel.sql('COUNT(DISTINCT orders.id)'),
-          Arel.sql('SUM(orders.total_cents)')
+          Arel.sql("COUNT(DISTINCT orders.id)"),
+          Arel.sql("SUM(orders.total_cents)")
         ).map do |month, orders_count, total_cents|
           {
             month: month.to_date,
@@ -202,7 +202,7 @@ class Order < ApplicationRecord
       # Generate 16 random bytes and convert to integer for Base58 encoding
       bytes = SecureRandom.random_bytes(16)
       # Convert bytes to integer (big-endian, treating as 128-bit number)
-      integer = bytes.unpack1('H*').to_i(16)
+      integer = bytes.unpack1("H*").to_i(16)
       self.public_token = Base58.encode(integer)[0..23]
       break unless Order.exists?(public_token: public_token)
     end
@@ -211,18 +211,17 @@ class Order < ApplicationRecord
   def generate_order_number
     return if order_number.present?
 
-    date_str = Date.current.strftime('%Y%m%d')
-    last_order = Order.where('order_number LIKE ?', "TV-#{date_str}-%")
+    date_str = Date.current.strftime("%Y%m%d")
+    last_order = Order.where("order_number LIKE ?", "TV-#{date_str}-%")
                       .order(:order_number)
                       .last
 
     sequence = if last_order&.order_number&.match(/TV-\d{8}-(\d{4})/)
                  last_order.order_number.match(/TV-\d{8}-(\d{4})/)[1].to_i + 1
-               else
+    else
                  1
-               end
+    end
 
     self.order_number = "TV-#{date_str}-#{sequence.to_s.rjust(4, '0')}"
   end
 end
-

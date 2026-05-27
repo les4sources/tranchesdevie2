@@ -1,6 +1,6 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [:show, :edit, :update, :update_status, :refund]
-  before_action :load_form_dependencies, only: [:new, :create, :edit, :update]
+  before_action :set_order, only: [ :show, :edit, :update, :update_status, :refund ]
+  before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
     @orders = Order.includes(:customer, :bake_day).recent
@@ -15,7 +15,7 @@ class Admin::OrdersController < Admin::BaseController
     @order = Order.new(status: :unpaid, customer_id: params[:customer_id])
     @selected_quantities = {}
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
-    
+
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
       customer = Customer.includes(:groups).find_by(id: @order.customer_id)
@@ -34,9 +34,9 @@ class Admin::OrdersController < Admin::BaseController
     @order.order_items.each do |item|
       @selected_quantities[item.product_variant_id] = item.qty
     end
-    
+
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
-    
+
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
       customer = Customer.includes(:groups).find_by(id: @order.customer_id)
@@ -54,7 +54,7 @@ class Admin::OrdersController < Admin::BaseController
     @final_total_input = permitted_params.delete(:final_total_euros)
 
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
-    
+
     # Calculer la remise si un client est sélectionné
     if permitted_params[:customer_id].present?
       customer = Customer.includes(:groups).find_by(id: permitted_params[:customer_id])
@@ -78,7 +78,7 @@ class Admin::OrdersController < Admin::BaseController
       create_order_items!
     end
 
-    redirect_to admin_order_path(@order), notice: 'Commande modifiée'
+    redirect_to admin_order_path(@order), notice: "Commande modifiée"
   rescue ActiveRecord::RecordInvalid
     render :edit, status: :unprocessable_entity
   end
@@ -91,7 +91,7 @@ class Admin::OrdersController < Admin::BaseController
 
     @order = Order.new(permitted_params.merge(source: :admin))
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
-    
+
     # Calculer la remise si un client est sélectionné
     if @order.customer_id.present?
       customer = Customer.includes(:groups).find_by(id: @order.customer_id)
@@ -114,7 +114,7 @@ class Admin::OrdersController < Admin::BaseController
       create_order_items!
     end
 
-    redirect_to admin_order_path(@order), notice: 'Commande créée'
+    redirect_to admin_order_path(@order), notice: "Commande créée"
   rescue ActiveRecord::RecordInvalid
     render :new, status: :unprocessable_entity
   end
@@ -123,7 +123,7 @@ class Admin::OrdersController < Admin::BaseController
     new_status = params[:status]
 
     unless @order.can_transition_to?(new_status)
-      redirect_to admin_order_path(@order), alert: 'Transition de statut invalide'
+      redirect_to admin_order_path(@order), alert: "Transition de statut invalide"
       return
     end
 
@@ -133,19 +133,19 @@ class Admin::OrdersController < Admin::BaseController
     # If the bake day is in the past, the admin simply forgot to mark it ready earlier
     # and notifying the customer now would be confusing.
     if @order.ready? && @order.saved_change_to_status? &&
-       ['paid', 'unpaid'].include?(@order.status_before_last_save) &&
+       [ "paid", "unpaid" ].include?(@order.status_before_last_save) &&
        @order.bake_day&.baked_on == Time.zone.today
       SmsService.send_ready(@order)
     end
 
-    redirect_to admin_order_path(@order), notice: 'Statut mis à jour'
+    redirect_to admin_order_path(@order), notice: "Statut mis à jour"
   end
 
   def refund
     service = RefundService.new(@order)
 
     if service.call
-      redirect_to admin_order_path(@order), notice: 'Remboursement effectué'
+      redirect_to admin_order_path(@order), notice: "Remboursement effectué"
     else
       redirect_to admin_order_path(@order), alert: "Erreur: #{service.errors.join(', ')}"
     end
@@ -160,11 +160,11 @@ class Admin::OrdersController < Admin::BaseController
   def load_form_dependencies
     @customers = Customer.includes(:groups).order(:last_name, :first_name)
     # Pour l'édition, permettre tous les jours de cuisson, pas seulement les futurs
-    @bake_days = if action_name == 'edit' || action_name == 'update'
+    @bake_days = if action_name == "edit" || action_name == "update"
                    BakeDay.ordered
-                 else
+    else
                    BakeDay.future.ordered
-                 end
+    end
     @products = Product.not_deleted.active.includes(:product_variants).ordered
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
     @variant_lookup = @products.each_with_object({}) do |product, hash|
@@ -211,7 +211,7 @@ class Admin::OrdersController < Admin::BaseController
   def assign_total_cents!(amount_input)
     total_cents = parse_euro_amount(amount_input)
     if total_cents.nil?
-      @order.errors.add(:total_cents, 'doit être renseigné')
+      @order.errors.add(:total_cents, "doit être renseigné")
     else
       @order.total_cents = total_cents
     end
@@ -220,7 +220,7 @@ class Admin::OrdersController < Admin::BaseController
   def parse_euro_amount(amount)
     return nil if amount.blank?
 
-    normalized = amount.to_s.tr(',', '.')
+    normalized = amount.to_s.tr(",", ".")
     (BigDecimal(normalized) * 100).round
   rescue ArgumentError
     nil
@@ -228,7 +228,7 @@ class Admin::OrdersController < Admin::BaseController
 
   def ensure_order_has_items!
     if @selected_quantities.none? { |_id, qty| qty.positive? }
-      @order.errors.add(:base, 'La commande doit contenir au moins un article')
+      @order.errors.add(:base, "La commande doit contenir au moins un article")
     end
   end
 
@@ -247,4 +247,3 @@ class Admin::OrdersController < Admin::BaseController
     end
   end
 end
-

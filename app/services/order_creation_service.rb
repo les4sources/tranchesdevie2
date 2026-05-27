@@ -1,7 +1,7 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: 'online', skip_capacity_check: false)
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
@@ -14,7 +14,7 @@ class OrderCreationService
   def call
     return false unless valid?
 
-    initial_status = @payment_method == 'cash' ? :unpaid : :pending
+    initial_status = @payment_method == "cash" ? :unpaid : :pending
 
     ActiveRecord::Base.transaction do
       # Advisory lock on bake_day to prevent race conditions
@@ -48,14 +48,14 @@ class OrderCreationService
   def valid?
     @errors = []
 
-    @errors << 'Bake day cut-off has passed' unless BakeDayService.can_order_for?(@bake_day.baked_on)
-    @errors << 'Cart is empty' if @cart_items.empty?
-    @errors << 'Customer is required' unless @customer
+    @errors << "Bake day cut-off has passed" unless BakeDayService.can_order_for?(@bake_day.baked_on)
+    @errors << "Cart is empty" if @cart_items.empty?
+    @errors << "Customer is required" unless @customer
 
     # Check if order with same payment_intent_id already exists (idempotency)
     # Only check for online payments (cash orders don't have payment_intent_id)
-    if @payment_method == 'online' && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
-      @errors << 'Order already exists for this payment intent'
+    if @payment_method == "online" && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
+      @errors << "Order already exists for this payment intent"
       return false
     end
 
@@ -67,8 +67,8 @@ class OrderCreationService
 
     # Ensure each variant is still available for online sale
     @cart_items.each do |item|
-      variant = ProductVariant.find(item['product_variant_id'])
-      unless variant.active? && variant.channel == 'store'
+      variant = ProductVariant.find(item["product_variant_id"])
+      unless variant.active? && variant.channel == "store"
         @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est plus disponible"
       end
     end
@@ -78,8 +78,8 @@ class OrderCreationService
 
   def calculate_total
     subtotal = @cart_items.sum do |item|
-      variant = ProductVariant.find(item['product_variant_id'])
-      item['qty'].to_i * variant.price_cents
+      variant = ProductVariant.find(item["product_variant_id"])
+      item["qty"].to_i * variant.price_cents
     end
 
     # Appliquer la remise du groupe si le client en a un
@@ -95,13 +95,12 @@ class OrderCreationService
 
   def create_order_items
     @cart_items.each do |item|
-      variant = ProductVariant.find(item['product_variant_id'])
+      variant = ProductVariant.find(item["product_variant_id"])
       @order.order_items.create!(
         product_variant: variant,
-        qty: item['qty'].to_i,
+        qty: item["qty"].to_i,
         unit_price_cents: variant.price_cents
       )
     end
   end
 end
-

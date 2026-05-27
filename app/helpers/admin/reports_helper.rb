@@ -14,14 +14,14 @@ module Admin::ReportsHelper
     revenue_values = weekday_data.map { |entry| (entry[:total_cents].to_f / 100).round(2) }
 
     {
-      type: 'bar',
+      type: "bar",
       data: {
         labels: labels,
         datasets: [
           {
             label: "Chiffre d'affaires (€)",
             data: revenue_values,
-            backgroundColor: '#3b82f6'
+            backgroundColor: "#3b82f6"
           }
         ]
       },
@@ -45,42 +45,42 @@ module Admin::ReportsHelper
     order_counts = monthly_data.map { |entry| entry[:orders_count] }
 
     {
-      type: 'bar',
+      type: "bar",
       data: {
         labels: labels,
         datasets: [
           {
-            type: 'line',
+            type: "line",
             label: "Chiffre d'affaires (€)",
             data: revenue_values,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37, 99, 235, 0.2)",
             tension: 0.3,
-            yAxisID: 'y'
+            yAxisID: "y"
           },
           {
-            type: 'bar',
-            label: 'Commandes',
+            type: "bar",
+            label: "Commandes",
             data: order_counts,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            yAxisID: 'y1'
+            backgroundColor: "rgba(59, 130, 246, 0.5)",
+            yAxisID: "y1"
           }
         ]
       },
       options: {
         responsive: true,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: "index", intersect: false },
         stacked: false,
         scales: {
           y: {
             beginAtZero: true,
-            title: { display: true, text: '€' }
+            title: { display: true, text: "€" }
           },
           y1: {
             beginAtZero: true,
-            position: 'right',
+            position: "right",
             grid: { drawOnChartArea: false },
-            title: { display: true, text: 'Commandes' }
+            title: { display: true, text: "Commandes" }
           }
         }
       }
@@ -93,22 +93,21 @@ module Admin::ReportsHelper
 
   def weekday_label(weekday_number)
     labels = {
-      0 => 'Dimanche',
-      1 => 'Lundi',
-      2 => 'Mardi',
-      3 => 'Mercredi',
-      4 => 'Jeudi',
-      5 => 'Vendredi',
-      6 => 'Samedi'
+      0 => "Dimanche",
+      1 => "Lundi",
+      2 => "Mardi",
+      3 => "Mercredi",
+      4 => "Jeudi",
+      5 => "Vendredi",
+      6 => "Samedi"
     }
 
     labels[weekday_number] || weekday_number.to_s
   end
 
   def month_label(date)
-    I18n.l(date, format: '%B %Y')
+    I18n.l(date, format: "%B %Y")
   rescue I18n::ArgumentError
-    date.strftime('%B %Y')
+    date.strftime("%B %Y")
   end
 end
-

@@ -29,7 +29,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
         result = PlannedOrderService.upsert(
           customer: customer,
           bake_day: bake_day,
-          items: [{ product_variant_id: product_variant.id, qty: 2 }]
+          items: [ { product_variant_id: product_variant.id, qty: 2 } ]
         )
 
         expect(result[:order]).to be_persisted
@@ -63,7 +63,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
         result = PlannedOrderService.upsert(
           customer: customer,
           bake_day: bake_day,
-          items: [{ product_variant_id: product_variant.id, qty: 2 }]
+          items: [ { product_variant_id: product_variant.id, qty: 2 } ]
         )
 
         expect(result[:order]).to be_persisted
@@ -91,7 +91,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
         result = PlannedOrderService.upsert(
           customer: customer,
           bake_day: bake_day,
-          items: [{ product_variant_id: product_variant.id, qty: 2 }]
+          items: [ { product_variant_id: product_variant.id, qty: 2 } ]
         )
 
         # 2. Process the order
@@ -117,7 +117,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       result = PlannedOrderService.upsert(
         customer: customer,
         bake_day: bake_day,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       order = result[:order]
@@ -144,7 +144,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       result = PlannedOrderService.upsert(
         customer: customer,
         bake_day: bake_day,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       order = result[:order]
@@ -168,7 +168,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       result = PlannedOrderService.upsert(
         customer: customer,
         bake_day: past_cut_off_bake_day,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       expect(result[:error]).to be_present
@@ -181,7 +181,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       result = PlannedOrderService.upsert(
         customer: customer,
         bake_day: orderable_bake_day,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       order = result[:order]
@@ -209,7 +209,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       result = PlannedOrderService.upsert(
         customer: customer,
         bake_day: bake_day,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       # Process the order
@@ -236,7 +236,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       PlannedOrderService.upsert(
         customer: customer,
         bake_day: bake_day_soon,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]  # 1100 cents needed
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]  # 1100 cents needed
       )
 
       # Run the job
@@ -254,7 +254,7 @@ RSpec.describe 'Wallet and Calendar Flow', type: :request do
       PlannedOrderService.upsert(
         customer: customer,
         bake_day: bake_day_soon,
-        items: [{ product_variant_id: product_variant.id, qty: 2 }]
+        items: [ { product_variant_id: product_variant.id, qty: 2 } ]
       )
 
       # Run the job

@@ -11,10 +11,10 @@ class Customer < ApplicationRecord
 
   validates :first_name, presence: true
   validates :phone_e164, presence: true, uniqueness: { allow_nil: true }, unless: :skip_phone_validation
-  validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: 'must be in E.164 format' }, if: -> { phone_e164.present? }
+  validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: "must be in E.164 format" }, if: -> { phone_e164.present? }
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
-  scope :with_email_enabled, -> { where.not(email: [nil, ""]).where(email_opt_out: false) }
+  scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
 
   def sms_enabled?
     phone_e164.present? && !sms_opt_out?
@@ -27,7 +27,7 @@ class Customer < ApplicationRecord
   end
 
   def full_name
-    [first_name, last_name].compact.join(' ')
+    [ first_name, last_name ].compact.join(" ")
   end
 
   # Returns the highest discount percent among all groups the customer belongs to.
@@ -64,4 +64,3 @@ class Customer < ApplicationRecord
     update!(email_opt_out: false)
   end
 end
-

@@ -7,7 +7,7 @@ class CreateVariantGroupRestrictions < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :variant_group_restrictions, [:product_variant_id, :group_id],
+    add_index :variant_group_restrictions, [ :product_variant_id, :group_id ],
               unique: true, name: "idx_variant_group_restrictions_unique"
   end
 end

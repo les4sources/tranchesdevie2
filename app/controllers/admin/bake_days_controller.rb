@@ -1,35 +1,35 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [:show, :edit, :update, :destroy]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
-    @future_bake_days = BakeDay.future.includes(:baking_artisans, orders: { order_items: { product_variant: [:mold_type, { product: { product_flours: :flour } }] } }).order(:baked_on)
+    @future_bake_days = BakeDay.future.includes(:baking_artisans, orders: { order_items: { product_variant: [ :mold_type, { product: { product_flours: :flour } } ] } }).order(:baked_on)
 
     # Jours passés avec pagination par année et filtre par mois
     past_bake_days = BakeDay.past
-    
+
     # Récupérer l'année sélectionnée (par défaut: année la plus récente)
     @selected_year = params[:year]&.to_i
     if @selected_year.nil?
       most_recent_year = BakeDay.past.order(baked_on: :desc).limit(1).pluck(Arel.sql("EXTRACT(YEAR FROM baked_on)::integer")).first
       @selected_year = most_recent_year if most_recent_year
     end
-    
+
     # Filtrer par année
     if @selected_year
       past_bake_days = past_bake_days.where("EXTRACT(YEAR FROM baked_on) = ?", @selected_year)
     end
-    
+
     # Récupérer le mois sélectionné (optionnel)
     @selected_month = params[:month]&.to_i
-    
+
     # Filtrer par mois si sélectionné
     if @selected_month && @selected_month.between?(1, 12)
       past_bake_days = past_bake_days.where("EXTRACT(MONTH FROM baked_on) = ?", @selected_month)
     end
-    
-    @past_bake_days = past_bake_days.includes(:baking_artisans, orders: { order_items: { product_variant: [:mold_type, { product: { product_flours: :flour } }] } }).order(:baked_on)
-    
+
+    @past_bake_days = past_bake_days.includes(:baking_artisans, orders: { order_items: { product_variant: [ :mold_type, { product: { product_flours: :flour } } ] } }).order(:baked_on)
+
     # Liste des années disponibles pour le filtre
     @available_years = BakeDay.past
                                .pluck(Arel.sql("DISTINCT EXTRACT(YEAR FROM baked_on)::integer"))
@@ -54,7 +54,7 @@ class Admin::BakeDaysController < Admin::BaseController
     end
 
     if @bake_day.save
-      redirect_to admin_bake_day_path(@bake_day), notice: 'Jour de cuisson créé'
+      redirect_to admin_bake_day_path(@bake_day), notice: "Jour de cuisson créé"
     else
       render :new, status: :unprocessable_entity
     end
@@ -75,7 +75,7 @@ class Admin::BakeDaysController < Admin::BaseController
 
     respond_to do |format|
       if @bake_day.save
-        format.html { redirect_to admin_bake_day_path(@bake_day), notice: 'Jour de cuisson mis à jour' }
+        format.html { redirect_to admin_bake_day_path(@bake_day), notice: "Jour de cuisson mis à jour" }
         format.json { render json: { success: true, bake_day: { internal_note: @bake_day.internal_note } }, status: :ok }
       else
         format.html { render :edit, status: :unprocessable_entity }
@@ -86,7 +86,7 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def destroy
     @bake_day.destroy
-    redirect_to admin_bake_days_path, notice: 'Jour de cuisson supprimé'
+    redirect_to admin_bake_days_path, notice: "Jour de cuisson supprimé"
   end
 
   private
@@ -99,4 +99,3 @@ class Admin::BakeDaysController < Admin::BaseController
     params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, :market_day, baking_artisan_ids: [])
   end
 end
-

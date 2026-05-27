@@ -4,10 +4,10 @@ task: "Project ISA — Tranches de Vie"
 effort: E3
 effort_source: explicit
 phase: verify
-progress: 52/80
+progress: 73/80
 mode: interactive
 started: 2026-05-27T17:10:00+02:00
-updated: 2026-05-27T18:45:00+02:00
+updated: 2026-05-27T19:30:00+02:00
 ---
 
 # Tranches de Vie — Project ISA
@@ -49,15 +49,15 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 
 **Catalog & browsing**
 - [x] ISC-1: `GET /` and `GET /catalogue` render the product catalog
-- [ ] ISC-2: `GET /productions/:id` renders a product with its variants and prices
-- [ ] ISC-3: Variant availability reflects `ProductAvailability` (unavailable variants not orderable)
-- [ ] ISC-4: `GET /a-propos` and `GET /drapeaux` static pages render 200
+- [x] ISC-2: `GET /productions/:id` renders a product with its variants and prices
+- [x] ISC-3: Variant availability reflects `ProductAvailability` (unavailable variants not orderable)
+- [x] ISC-4: `GET /a-propos` and `GET /drapeaux` static pages render 200
 
 **Cart (session-based)**
-- [ ] ISC-5: `POST /cart/add` adds a product variant to the session cart
-- [ ] ISC-6: `PATCH /cart/update` changes a line quantity
-- [ ] ISC-7: `PATCH /cart/update_bake_day` changes the bake day selected for the cart
-- [ ] ISC-8: `DELETE /cart/remove/:id` removes a cart line
+- [x] ISC-5: `POST /cart/add` adds a product variant to the session cart
+- [x] ISC-6: `PATCH /cart/update` changes a line quantity
+- [x] ISC-7: `PATCH /cart/update_bake_day` changes the bake day selected for the cart
+- [x] ISC-8: `DELETE /cart/remove/:id` removes a cart line
 - [x] ISC-9: Cart is stored in `session[:cart]` as array of hashes — no DB cart model
 
 **Checkout & OTP verification**
@@ -70,19 +70,19 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 - [ ] ISC-16: `GET /checkout/success` finds the order or creates it from PI metadata
 
 **Payments (Stripe)**
-- [ ] ISC-17: PaymentIntent supports Card, Bancontact, Apple Pay, Google Pay
-- [ ] ISC-18: `POST /webhooks/stripe` creates/confirms the order via `OrderCreationService`
-- [ ] ISC-19: `StripeEvent` deduplication makes webhook processing idempotent
+- [x] ISC-17: PaymentIntent supports Card, Bancontact, Apple Pay, Google Pay
+- [x] ISC-18: `POST /webhooks/stripe` creates/confirms the order via `OrderCreationService`
+- [x] ISC-19: `StripeEvent` deduplication makes webhook processing idempotent
 - [x] ISC-20: Anti: a duplicate Stripe webhook event does NOT create a second order
 
 **Orders**
 - [x] ISC-21: Order numbers use the format `TV-YYYYMMDD-NNNN`
 - [x] ISC-22: Order status machine is `pending → paid → ready → picked_up / no_show`, plus `unpaid`, `cancelled`, `planned`
-- [ ] ISC-23: `GET /orders/:token` shows an order by token without login
+- [x] ISC-23: `GET /orders/:token` shows an order by token without login
 - [x] ISC-24: Anti: `cancelled` orders are excluded from bake-day production quantities
 
 **Bake capacity planning**
-- [ ] ISC-25: `BakeDay` has `baked_on` + `cut_off_at` (Tue/Fri bakes; Sun/Wed 18:00 Brussels cut-offs)
+- [x] ISC-25: `BakeDay` has `baked_on` + `cut_off_at` (Tue/Fri bakes; Sun/Wed 18:00 Brussels cut-offs)
 - [x] ISC-26: `OrderCreationService` enforces mold capacity per `MoldType` unit limit
 - [x] ISC-27: `OrderCreationService` enforces kneader capacity per flour (`kneader_limit_grams`)
 - [x] ISC-28: `OrderCreationService` enforces oven capacity (`oven_capacity_grams`: 110kg normal / 165kg market day)
@@ -111,20 +111,20 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 - [x] ISC-45: Anti: a planned order is NOT debited before its bake day's cut-off
 
 **Admin panel**
-- [ ] ISC-46: Admin authenticates via single `ADMIN_PASSWORD`; session expires after 24h
+- [x] ISC-46: Admin authenticates via single `ADMIN_PASSWORD`; session expires after 24h
 - [ ] ISC-47: Admin orders index/show/new/create/edit/update all function
-- [ ] ISC-48: Admin `update_status` transitions an order along the allowed state machine
-- [ ] ISC-49: Admin `refund` triggers `RefundService` (Stripe refund + order cancel + SMS)
+- [x] ISC-48: Admin `update_status` transitions an order along the allowed state machine
+- [x] ISC-49: Admin `refund` triggers `RefundService` (Stripe refund + order cancel + SMS)
 - [ ] ISC-50: Admin products + variants CRUD works, including variant image reorder
 - [ ] ISC-51: Admin bake_days CRUD works
 - [ ] ISC-52: Admin settings edit flours, artisans, ingredients, dough_ratios, mold_types, production_setting
 - [x] ISC-53: Admin `send_sms` sends an SMS to a customer; raw email `resend` re-sends verbatim
-- [ ] ISC-54: Anti: a request to `/admin/*` without an admin session is rejected (not 200)
+- [x] ISC-54: Anti: a request to `/admin/*` without an admin session is rejected (not 200)
 
 **Background jobs (Solid Queue)**
-- [ ] ISC-55: `MarkOrdersReadyJob` (daily 18:15) transitions `paid → ready` and sends SMS
-- [ ] ISC-56: `ProcessPlannedOrdersJob` (Sun/Wed 18:05 Brussels) debits wallets and confirms planned orders
-- [ ] ISC-57: `CheckInsufficientBalanceJob` (Sun/Wed 12:00 Brussels) warns low-balance customers
+- [x] ISC-55: `MarkOrdersReadyJob` (daily 18:15) transitions `paid → ready` and sends SMS
+- [x] ISC-56: `ProcessPlannedOrdersJob` (Sun/Wed 18:05 Brussels) debits wallets and confirms planned orders
+- [x] ISC-57: `CheckInsufficientBalanceJob` (Sun/Wed 12:00 Brussels) warns low-balance customers
 - [x] ISC-58: Recurring business jobs notify Slack via `SlackService` / `SLACK_WEBHOOK_URL`
 - [x] ISC-59: Solid Queue runs inside Puma (`SOLID_QUEUE_IN_PUMA`) with no Redis dependency
 
@@ -134,7 +134,7 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 - [x] ISC-62: Every outbound email is logged as an `EmailMessage` via `ApplicationMailer` after_action
 - [x] ISC-63: `Customer#email_enabled?` (`email_opt_out`) gates all non-OTP emails
 - [x] ISC-64: Unsubscribe uses a signed token → public `EmailPreferencesController` (no login)
-- [ ] ISC-65: Anti: an OTP email is NOT suppressed by a customer's email opt-out
+- [x] ISC-65: Anti: an OTP email is NOT suppressed by a customer's email opt-out
 
 **Agent API v1 (private, read-only)**
 - [x] ISC-66: `GET /api/v1` returns a self-describing index of resources, auth instructions, conventions, `_links`
@@ -144,7 +144,7 @@ Tranches de Vie lets customers pre-order bakery products for specific bake days 
 - [x] ISC-70: Missing/invalid Bearer token → 401; key unset server-side → 503
 - [x] ISC-71: Money fields are exposed as both `*_cents` and `*_euros`
 - [x] ISC-72: Pagination via `?page` / `?per_page` (default 25, max 100)
-- [ ] ISC-73: `GET /api/v1/stats` returns aggregate statistics
+- [x] ISC-73: `GET /api/v1/stats` returns aggregate statistics
 - [x] ISC-74: Anti: `/api/v1` exposes NO write route — every defined route is GET-only
 
 **Build, deploy & ops**
@@ -208,6 +208,8 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
 - **2026-05-27 — Deploy verified live, ISC-79 closed (49 → 52/80).** Pushed `main` (`fe1799c..68443bd`); Hatchbox auto-deployed. Live probes on `https://tranchesdevie.les4sources.be`: `/up` → 200; homepage renders the full catalog in real Chrome via Interceptor (nav + real products: Pain d'épeautre, froment, etc.); console errors `[]`; no non-200 network requests; `/api/v1` → 200 with valid discovery JSON; `/api/v1/products` without token → 401. ISC-1/75/79 → `[x]`. *Honesty notes:* Interceptor `screenshot` timed out twice (tooling glitch) — the real-Chrome a11y tree + clean console are the live-probe evidence. Strict "deployed SHA == `main` HEAD" is not HTTP-probeable (no version endpoint); verified deploy completion + healthy serve instead. Diff was lint/test/docs-only, so no behavior change to inspect — the meaningful check was "boots and serves," which holds.
 - **2026-05-27 — Capacity coverage gap closed (45 → 48/80).** Wrote `spec/services/bake_capacity_service_spec.rb` (14 examples, all green) covering `BakeCapacityService#cart_fits?` across mold/kneader/oven limits, exact-limit boundaries (enforcement is strictly `>`), cancelled-order exclusion (ISC-24), existing-usage accumulation, non-bread products ignored, and multi-flour dough distribution. ISC-26/27/28 now `[x]`; ISC-24 and ISC-30 evidence strengthened. Full suite 226 examples, 0 failures. **Forge delegation relaxed (show-your-math):** single-file spec, tight local rspec loop, repo-specific factory archaeology (no factories for Flour/MoldType/ProductFlour/ProductionSetting), non-parallelizable — single-author was the right call.
 
+- **2026-05-27 — Remaining-gap pass (52 → 73/80).** Wrote request/model/job specs closing the untested surfaces: cart (ISC-5/6/7/8), `ProductVariant#available_on?` (ISC-3), the three Solid Queue jobs (ISC-55/56/57), Stripe webhook order-creation + `StripeEvent` idempotency (ISC-18/19), admin auth gate + `update_status` + `refund` (ISC-46/48/49/54), OTP-ignores-opt-out (ISC-65), public order-by-token page (ISC-23). Live probes closed ISC-2/4/73; code inspection closed ISC-17 (`automatic_payment_methods: { enabled: true }`) and ISC-25 (`BakeDay.calculate_cut_off_for`). Full suite now **254 examples, 0 failures** (+28). SMS/Slack/Stripe stubbed — no real external calls. **Honest residual gaps left `[ ]` (no false green):** ISC-14/16 (checkout PaymentIntent creation + success page — need multi-step session state + Stripe stubbing; a dedicated checkout integration spec); ISC-47/50/51/52 (admin: orders full CRUD round-trips, and products/bake_days/settings verified only at section-load depth — index/new render 200 when authed, but create/update/edit/destroy + ISC-50 image reorder not round-tripped); ISC-78 (see Changelog).
+
 ## Changelog
 
 - **conjectured:** seeded ISC-77 assumed `bin/rubocop` (Rails Omakase) passes clean, because `CLAUDE.md` lists rubocop in the CI pipeline on push to `main`.
@@ -218,3 +220,7 @@ Representative probes per surface; ISCs without an entry inherit the obvious pro
   **refuted by:** the first verification pass found the entire capacity subsystem had **zero automated test coverage** — the riskiest business invariant (never oversell the oven) was unverifiable, only assumed.
   **learned:** code presence is not behavior verification; the most critical logic was the least tested. A passing suite only proves what specs exercise.
   **criterion now:** ISC-26/27/28 are `[x]`, verified by `bake_capacity_service_spec.rb` (14 examples incl. boundary and cancelled-exclusion cases); capacity is now a tested invariant, not an assumed one.
+- **conjectured:** ISC-78 assumed `bin/brakeman` produces a clean security report locally, since `CLAUDE.md` lists brakeman in the CI pipeline.
+  **refuted by:** `bin/brakeman` (7.1.0) exits **5 with zero report lines** locally — its only output is "Brakeman 7.1.0 is not the latest version 8.0.4"; it does not run the scan (likely a Rails 8 / brakeman-7.1 incompatibility).
+  **learned:** the brakeman gate cannot be exercised in this local environment; security-scan verification depends on CI (which runs brakeman on push) or a brakeman upgrade to 8.x.
+  **criterion now:** ISC-78 stays `[ ]` locally — defer to CI, or bump brakeman to 8.x and re-run.

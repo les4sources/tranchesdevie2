@@ -51,4 +51,15 @@ RSpec.describe AuthMailer, type: :mailer do
       expect(EmailMessage.last).to have_attributes(kind: "otp", to_email: "newcomer@example.com", customer_id: nil)
     end
   end
+
+  describe '#otp ignores the email opt-out (ISC-65)' do
+    let(:opted_out) { create(:customer, email: "out@example.com", email_opt_out: true) }
+
+    it 'still delivers and logs the OTP even when the customer has opted out of email' do
+      expect(opted_out.email_enabled?).to be false
+      mail = described_class.otp(opted_out.email, "999000", customer: opted_out)
+      expect { mail.deliver_now }.to change(EmailMessage, :count).by(1)
+      expect(mail.body.encoded).to include("999000")
+    end
+  end
 end

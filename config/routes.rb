@@ -123,7 +123,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :customers, only: [ :index, :show, :new, :create, :edit, :update ] do
+    resources :customers, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do
         post :send_sms
       end

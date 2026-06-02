@@ -6,6 +6,9 @@
   <h1 class="text-2xl font-bold text-gray-900">Mangeur : <%= @customer.full_name %></h1>
   <div class="flex space-x-3">
     <%= link_to "Modifier", edit_admin_customer_path(@customer), class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50" %>
+    <% if @customer.orders.empty? %>
+      <%= button_to "Supprimer", admin_customer_path(@customer), method: :delete, form: { data: { turbo_confirm: "Supprimer ce mangeur ? Cette action est définitive." } }, class: "inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white shadow-sm hover:bg-red-50 cursor-pointer" %>
+    <% end %>
     <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: "inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700" %>
     <% if @customer.sms_enabled? %>
       <button

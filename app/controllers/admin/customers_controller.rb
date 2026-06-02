@@ -1,5 +1,5 @@
 class Admin::CustomersController < Admin::BaseController
-  before_action :set_customer, only: [ :show, :edit, :update, :send_sms ]
+  before_action :set_customer, only: [ :show, :edit, :update, :destroy, :send_sms ]
 
   def index
     @customers = Customer.includes(:orders, :groups)
@@ -64,6 +64,16 @@ class Admin::CustomersController < Admin::BaseController
       @groups = Group.order(:name)
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  def destroy
+    if @customer.orders.exists?
+      redirect_to admin_customer_path(@customer), alert: "Impossible de supprimer un mangeur qui a des commandes."
+      return
+    end
+
+    @customer.destroy
+    redirect_to admin_customers_path, notice: "Mangeur supprimé avec succès"
   end
 
   def send_sms

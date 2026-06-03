@@ -74,7 +74,22 @@ RSpec.describe Order, type: :model do
     end
 
     it 'is nil without any payment trace' do
-      expect(create(:order).paid_at).to be_nil
+      expect(create(:order, paid_at: nil).paid_at).to be_nil
+    end
+
+    it 'uses the stored value for offline payments without any trace' do
+      paid_on = Time.zone.local(2026, 5, 12, 10, 0)
+      order = create(:order, :unpaid, paid_at: paid_on)
+
+      expect(order.paid_at).to be_within(1.second).of(paid_on)
+    end
+
+    it 'prefers the stored value over the derived payment timestamp' do
+      stored = Time.zone.local(2026, 5, 1, 9, 0)
+      order = create(:order, paid_at: stored)
+      create(:payment, order: order)
+
+      expect(order.reload.paid_at).to be_within(1.second).of(stored)
     end
   end
 end

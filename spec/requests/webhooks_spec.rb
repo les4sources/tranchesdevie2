@@ -43,6 +43,13 @@ RSpec.describe 'Stripe webhook', type: :request do
         .to change { Order.where(payment_intent_id: pi_id).count }.from(0).to(1)
       expect(Order.find_by(payment_intent_id: pi_id).status).to eq('paid')
     end
+
+    it 'records the payment date on the order' do
+      event = fabricate_event(type: 'payment_intent.succeeded', metadata: succeeded_metadata)
+      deliver(event)
+
+      expect(Order.find_by(payment_intent_id: pi_id).read_attribute(:paid_at)).to be_present
+    end
   end
 
   describe 'idempotency on event id (ISC-19)' do

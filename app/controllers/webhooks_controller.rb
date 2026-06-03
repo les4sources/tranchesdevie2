@@ -149,6 +149,9 @@ class WebhooksController < ApplicationController
         Rails.logger.info("Order #{order.id} already in status '#{order.status}', skipping transition to paid")
       end
 
+      # Renseigner la date d'encaissement si elle n'a pas encore été fixée.
+      order.update!(paid_at: Time.current) if order.read_attribute(:paid_at).blank?
+
       # Create payment record
       payment = Payment.find_or_create_by!(order: order) do |p|
         p.stripe_payment_intent_id = payment_intent_id

@@ -75,8 +75,12 @@ class Order < ApplicationRecord
       wallet_transactions.any? { |transaction| transaction.transaction_type == "order_refund" }
   end
 
+  # Date d'encaissement du paiement.
+  # La valeur stockée (saisie manuelle pour les paiements hors-ligne, ou
+  # renseignée automatiquement via le webhook Stripe) prime ; à défaut on la
+  # déduit de la trace de paiement (paiement Stripe ou débit du portefeuille).
   def paid_at
-    payment&.created_at || wallet_order_debit&.created_at
+    read_attribute(:paid_at) || payment&.created_at || wallet_order_debit&.created_at
   end
 
   def can_transition_to?(new_status)

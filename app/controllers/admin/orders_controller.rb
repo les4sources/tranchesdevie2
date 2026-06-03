@@ -129,6 +129,11 @@ class Admin::OrdersController < Admin::BaseController
 
     @order.transition_to!(new_status)
 
+    # Lors d'un passage à « payée » (typiquement un paiement hors-ligne d'un
+    # client pro), enregistrer la date de paiement saisie par l'admin
+    # (sinon la date du jour).
+    @order.update!(paid_at: paid_at_from_params) if new_status.to_s == "paid"
+
     # Send ready SMS only when marking ready on the day of the bake.
     # If the bake day is in the past, the admin simply forgot to mark it ready earlier
     # and notifying the customer now would be confusing.
@@ -155,6 +160,17 @@ class Admin::OrdersController < Admin::BaseController
 
   def set_order
     @order = Order.find(params[:id])
+  end
+
+  # Date de paiement saisie via l'input date (format YYYY-MM-DD), interprétée
+  # dans le fuseau horaire de l'application. À défaut, la date/heure courante.
+  def paid_at_from_params
+    raw = params[:paid_at]
+    return Time.current if raw.blank?
+
+    Time.zone.parse(raw.to_s) || Time.current
+  rescue ArgumentError
+    Time.current
   end
 
   def load_form_dependencies

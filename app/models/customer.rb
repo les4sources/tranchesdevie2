@@ -15,6 +15,8 @@ class Customer < ApplicationRecord
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
   scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
+  # Clients professionnels (épiceries, points de dépôt) facturés mensuellement.
+  scope :billable, -> { where(billable: true) }
 
   def sms_enabled?
     phone_e164.present? && !sms_opt_out?

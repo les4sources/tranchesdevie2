@@ -1,0 +1,134 @@
+<% content_for :title, "Facturation mensuelle" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Facturation mensuelle</h1>
+    <p class="text-sm text-gray-600">
+      Clients professionnels — <%= month_label(@month) %>
+    </p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <%= form_with url: admin_billing_path, method: :get, local: true, class: "flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0" do |f| %>
+      <div class="flex flex-col">
+        <%= f.label :month, "Mois", class: "text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.month_field :month, value: @month.strftime("%Y-%m"), class: "rounded-md border border-gray-300 px-3 py-2 text-sm" %>
+      </div>
+      <div class="flex flex-col">
+        <%= f.label :customer_id, "Client", class: "text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.select :customer_id,
+              options_from_collection_for_select(@billable_customers, :id, :full_name, @customer&.id),
+              { include_blank: "Tous les clients" },
+              class: "rounded-md border border-gray-300 px-3 py-2 text-sm" %>
+      </div>
+      <div>
+        <%= f.submit "Filtrer", class: "w-full md:w-auto rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 cursor-pointer" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h2 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total à facturer</h2>
+      <p class="mt-1 text-2xl font-bold text-gray-900"><%= reports_currency(@report.grand_total_cents) %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h2 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Déjà payé</h2>
+      <p class="mt-1 text-2xl font-bold text-green-700"><%= reports_currency(@report.paid_total_cents) %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h2 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Impayé</h2>
+      <p class="mt-1 text-2xl font-bold text-red-700"><%= reports_currency(@report.unpaid_total_cents) %></p>
+    </div>
+  </div>
+  <div>
+    <%= link_to "Export CSV", admin_billing_path(format: :csv, month: @month.strftime("%Y-%m"), customer_id: @customer&.id),
+          class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+  </div>
+</div>
+
+<% if @report.customers.any? %>
+  <div class="space-y-6">
+    <% @report.customers.each do |billing| %>
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+          <div>
+            <h2 class="text-lg font-medium text-gray-900">
+              <%= link_to billing.customer.full_name, admin_customer_path(billing.customer), class: "hover:underline" %>
+            </h2>
+            <p class="text-sm text-gray-500">
+              <%= pluralize(billing.orders.size, "commande") %> —
+              Total <span class="font-medium text-gray-900"><%= reports_currency(billing.total_cents) %></span>
+              <% if billing.unpaid_total_cents.positive? %>
+                · <span class="text-red-700">Impayé <%= reports_currency(billing.unpaid_total_cents) %></span>
+              <% end %>
+            </p>
+          </div>
+          <div>
+            <%# Génération de facture PDF : voir issue #38 (hors périmètre de cette page). %>
+            <button type="button" disabled
+              class="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
+              title="Génération de facture PDF à venir (#38)">
+              Facture PDF (à venir)
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50 text-left">
+              <tr>
+                <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Date de cuisson</th>
+                <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Articles</th>
+                <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Montant</th>
+                <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Paiement</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% billing.orders.each do |order| %>
+                <tr>
+                  <td class="px-4 py-2 text-gray-900 whitespace-nowrap">
+                    <%= link_to l(order.bake_day.baked_on), admin_order_path(order), class: "hover:underline" %>
+                  </td>
+                  <td class="px-4 py-2 text-gray-600">
+                    <ul class="space-y-0.5">
+                      <% order.order_items.each do |item| %>
+                        <li><%= item.qty %>x <%= item.product_variant.name %></li>
+                      <% end %>
+                    </ul>
+                  </td>
+                  <td class="px-4 py-2 text-right text-gray-900 whitespace-nowrap"><%= reports_currency(order.total_cents) %></td>
+                  <td class="px-4 py-2 whitespace-nowrap">
+                    <% if order.payment_received? %>
+                      <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Payé</span>
+                      <% if order.paid_at %>
+                        <span class="block text-xs text-gray-500 mt-0.5">le <%= l(order.paid_at.to_date) %></span>
+                      <% end %>
+                    <% else %>
+                      <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Impayé</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+            <tfoot class="bg-gray-50">
+              <tr>
+                <td class="px-4 py-2 font-medium text-gray-700" colspan="2">Total du mois</td>
+                <td class="px-4 py-2 text-right font-bold text-gray-900"><%= reports_currency(billing.total_cents) %></td>
+                <td class="px-4 py-2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    <% end %>
+  </div>
+<% else %>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">
+      Aucune commande à facturer pour les clients professionnels sur ce mois.
+    </p>
+  </div>
+<% end %>

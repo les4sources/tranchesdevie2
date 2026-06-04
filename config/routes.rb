@@ -115,6 +115,7 @@ Rails.application.routes.draw do
     delete "logout", to: "sessions#destroy"
 
     resources :reports, only: [ :index ]
+    get "billing", to: "billing#index", as: :billing
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do
       member do

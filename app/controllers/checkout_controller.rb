@@ -111,53 +111,54 @@ class CheckoutController < ApplicationController
     @bake_day = BakeDay.find(session[:bake_day_id])
     @cart = session[:cart] || []
 
-    # Pre-check capacity before creating Stripe PaymentIntent
-    capacity_result = BakeCapacityService.new(@bake_day).cart_fits?(@cart)
-    unless capacity_result[:fits]
-      render json: { error: capacity_result[:errors].join(". ") }, status: :unprocessable_entity
+    customer = find_or_create_customer(json_params)
+
+    # Réserver la capacité AVANT de prendre l'argent : on crée la commande
+    # (statut pending) sous verrou consultatif + contrôle de capacité. Une commande
+    # pending compte dans la capacité, donc deux clients ne peuvent pas réserver le
+    # même dernier créneau, et une page périmée est bloquée ici (pas de PaymentIntent).
+    service = OrderCreationService.new(
+      customer: customer,
+      bake_day: @bake_day,
+      cart_items: @cart,
+      payment_method: "online"
+    )
+    order = service.call
+
+    unless order
+      render json: { error: service.errors.join(". ") }, status: :unprocessable_entity
       return
     end
 
-    subtotal_cents = calculate_subtotal
+    phone_e164 = customer.phone_e164.presence || session[:phone_e164]
 
-    # Obtenir le client pour calculer la remise
-    customer = if customer_signed_in?
-                 current_customer
-    else
-                 Customer.find_by(phone_e164: session[:phone_e164])
+    begin
+      payment_intent = Stripe::PaymentIntent.create({
+        amount: order.total_cents,
+        currency: "eur",
+        automatic_payment_methods: {
+          enabled: true
+        },
+        metadata: {
+          order_id: order.id,
+          bake_day_id: @bake_day.id,
+          phone_e164: phone_e164,
+          cart_items: @cart.to_json
+        }
+      })
+    rescue Stripe::StripeError => e
+      order.destroy # libère la capacité réservée si Stripe échoue
+      render json: { error: e.message }, status: :unprocessable_entity
+      return
     end
 
-    discount_cents = calculate_discount(subtotal_cents, customer)
-    total_cents = subtotal_cents - discount_cents
-
-    # Utiliser le phone_e164 du client connecté si disponible, sinon celui de la session
-    phone_e164 = if customer_signed_in?
-                   current_customer.phone_e164
-    else
-                   session[:phone_e164]
-    end
-
-    payment_intent = Stripe::PaymentIntent.create({
-      amount: total_cents,
-      currency: "eur",
-      automatic_payment_methods: {
-        enabled: true
-      },
-      metadata: {
-        bake_day_id: @bake_day.id,
-        phone_e164: phone_e164,
-        cart_items: @cart.to_json
-      }
-    })
-
+    order.update!(payment_intent_id: payment_intent.id)
     session[:payment_intent_id] = payment_intent.id
 
     render json: {
       client_secret: payment_intent.client_secret,
       payment_intent_id: payment_intent.id
     }
-  rescue Stripe::StripeError => e
-    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   def create_cash_order
@@ -303,35 +304,27 @@ class CheckoutController < ApplicationController
     elsif payment_intent_id.present?
       Rails.logger.info("Processing success page for payment_intent: #{payment_intent_id}")
 
-      # Online payment - find by payment_intent_id
+      # La commande a été créée (réservée) au moment du paiement. On la retrouve
+      # par son payment_intent_id ; on laisse un court délai au cas où une requête
+      # concurrente la termine.
       @order = find_order_by_payment_intent(payment_intent_id)
-
-      # If order doesn't exist, wait for webhook or try to create it
       unless @order
-        Rails.logger.info("Order not found immediately, waiting for webhook...")
-
-        # Wait a bit for webhook to process (increased wait time)
         sleep(1.0)
         @order = find_order_by_payment_intent(payment_intent_id)
-
-        # If still not found, try to create it from session data or payment intent metadata
-        unless @order
-          Rails.logger.info("Order still not found after wait, attempting to create from session/payment intent...")
-          @order = create_order_from_session(payment_intent_id)
-
-          # After attempting creation, try one last time to fetch the order (webhook might have finished)
-          @order ||= find_order_by_payment_intent(payment_intent_id)
-        end
       end
 
       unless @order
-        Rails.logger.error("Failed to find or create order for payment_intent: #{payment_intent_id}. Session data: cart=#{session[:cart]&.size || 0} items, bake_day_id=#{session[:bake_day_id]}, phone_e164=#{session[:phone_e164].present? ? 'present' : 'missing'}")
-        flash[:alert] = "Commande non trouvée. Le paiement a été traité, mais la commande n'a pas pu être créée. Contactez-nous avec le numéro de paiement: " + payment_intent_id
+        Rails.logger.error("Success: commande introuvable pour PI #{payment_intent_id}")
+        flash[:alert] = "Commande introuvable. Si tu as été débité, contacte-nous avec la référence : " + payment_intent_id
         redirect_to cart_path
         return
       end
 
-      Rails.logger.info("Order found/created successfully: #{@order.id} for payment_intent: #{payment_intent_id}")
+      # Encaisser (idempotent) si Stripe confirme le paiement — la page success
+      # double le webhook en cas de retard de ce dernier.
+      finalize_order_payment(@order, payment_intent_id)
+
+      Rails.logger.info("Order #{@order.id} retrieved for payment_intent: #{payment_intent_id}")
     else
       Rails.logger.error("Success page called without payment_intent or order_token")
       redirect_to cart_path, alert: "Paramètre manquant"
@@ -437,182 +430,20 @@ class CheckoutController < ApplicationController
     customer
   end
 
-  def create_order_from_session(payment_intent_id)
-    # Use payment_intent_id from parameter or fallback to session
-    payment_intent_id = (payment_intent_id || session[:payment_intent_id])&.strip&.gsub(/^['"]|['"]$/, "")
+  # Encaisse (idempotent) une commande déjà réservée, si Stripe confirme le
+  # paiement. Ne crée jamais de commande : la réservation a lieu au moment du
+  # paiement (create_payment_intent).
+  def finalize_order_payment(order, payment_intent_id)
+    payment_intent = Stripe::PaymentIntent.retrieve(payment_intent_id)
+    return order unless payment_intent.status == "succeeded"
 
-    unless payment_intent_id.present?
-      Rails.logger.error("No payment_intent_id provided or found in session")
-      return nil
-    end
-
-    Rails.logger.info("Attempting to create order from session for payment_intent: #{payment_intent_id}")
-
-    # Retrieve the payment intent to verify it succeeded and get metadata
-    metadata = {}
-
-    begin
-      payment_intent = Stripe::PaymentIntent.retrieve(payment_intent_id)
-
-      unless payment_intent.status == "succeeded"
-        Rails.logger.error("Payment intent #{payment_intent_id} status is #{payment_intent.status}, not succeeded")
-        return nil
-      end
-
-      Rails.logger.info("Payment intent #{payment_intent_id} succeeded. Metadata: #{payment_intent.metadata.inspect}")
-      metadata = payment_intent.metadata || {}
-    rescue Stripe::StripeError => e
-      Rails.logger.error("Error retrieving payment intent #{payment_intent_id}: #{e.message}")
-      return nil
-    end
-
-    # Try to get data from session first, fallback to payment intent metadata
-    # Metadata is a hash, access with bracket notation
-
-    phone_e164 = if customer_signed_in?
-                   current_customer.phone_e164
-    elsif session[:phone_e164].present?
-                   session[:phone_e164]
-    else
-                   metadata[:phone_e164] || metadata["phone_e164"]
-    end
-
-    bake_day_id = session[:bake_day_id] || metadata[:bake_day_id] || metadata["bake_day_id"]
-    cart_items_json = if session[:cart]&.present?
-                       session[:cart]
-    else
-                       metadata[:cart_items] || metadata["cart_items"]
-    end
-
-    # Parse cart items if it's a JSON string
-    cart_items = if cart_items_json.is_a?(String)
-                   JSON.parse(cart_items_json) rescue []
-    elsif cart_items_json.is_a?(Array)
-                   cart_items_json
-    else
-                   []
-    end
-
-    # Validate required data
-    unless phone_e164.present?
-      Rails.logger.error("No phone_e164 found in session or payment intent metadata")
-      return nil
-    end
-
-    unless bake_day_id.present?
-      Rails.logger.error("No bake_day_id found in session or payment intent metadata")
-      return nil
-    end
-
-    unless cart_items.any?
-      Rails.logger.error("No cart_items found in session or payment intent metadata")
-      return nil
-    end
-
-    Rails.logger.info("Creating order with phone_e164: #{phone_e164}, bake_day_id: #{bake_day_id}, cart_items: #{cart_items.size} items")
-
-    # Find or create customer
-    customer = if customer_signed_in?
-                 current_customer.tap do |c|
-                   # Update customer info if provided in session
-                   update_attrs = {}
-                   update_attrs[:first_name] = session[:first_name] if session[:first_name].present?
-                   update_attrs[:last_name] = session[:last_name] if session[:last_name].present?
-                   update_attrs[:email] = session[:email] if session[:email].present?
-                   c.update(update_attrs) if update_attrs.any?
-                 end
-    else
-                 Customer.find_or_create_by(phone_e164: phone_e164).tap do |c|
-                   if c.new_record?
-                     c.assign_attributes(
-                       first_name: session[:first_name].presence,
-                       last_name: session[:last_name].presence,
-                       email: session[:email].presence
-                     )
-                     c.save!
-                   elsif session[:first_name].present? || session[:last_name].present? || session[:email].present?
-                     c.update(
-                       first_name: session[:first_name].presence || c.first_name,
-                       last_name: session[:last_name].presence || c.last_name,
-                       email: session[:email].presence || c.email
-                     )
-                   end
-                 end
-    end
-
-    unless customer
-      Rails.logger.error("Failed to find or create customer with phone_e164: #{phone_e164}")
-      return nil
-    end
-
-    bake_day = BakeDay.find_by(id: bake_day_id)
-    unless bake_day
-      Rails.logger.error("Bake day not found with id: #{bake_day_id}")
-      return nil
-    end
-
-    # First, check if order already exists (idempotency)
-    # This can happen if webhook created it between our checks
-    order = find_order_by_payment_intent(payment_intent_id)
-
-    if order
-      Rails.logger.info("Order already exists for payment_intent #{payment_intent_id}: #{order.id}")
-    else
-      # Use OrderCreationService to create order
-      service = OrderCreationService.new(
-        customer: customer,
-        bake_day: bake_day,
-        cart_items: cart_items,
-        payment_intent_id: payment_intent_id
-      )
-
-      order = service.call
-
-      unless order
-        # If service failed because order exists, try to find it again (race condition)
-        if service.errors.any? && service.errors.include?("Order already exists for this payment intent")
-          Rails.logger.info("OrderCreationService says order exists, retrying find...")
-          # Try again with uncached query
-          order = find_order_by_payment_intent(payment_intent_id)
-          if order
-            Rails.logger.info("Found existing order after retry: #{order.id}")
-          else
-            Rails.logger.error("OrderCreationService says order exists but we cannot find it for payment_intent #{payment_intent_id}")
-          end
-        else
-          Rails.logger.error("OrderCreationService failed for payment_intent #{payment_intent_id}. Errors: #{service.errors.join(', ')}")
-        end
-
-        return nil unless order
-      end
-
-      Rails.logger.info("Order created successfully: #{order.id} for payment_intent #{payment_intent_id}")
-    end
-
-    if order
-      # Only transition if not already paid (webhook may have already processed this)
-      if order.can_transition_to?(:paid)
-        order.transition_to!(:paid)
-      else
-        Rails.logger.info("Order #{order.id} already in status '#{order.status}', skipping transition to paid")
-      end
-
-      # Create payment record
-      payment = Payment.find_or_create_by!(order: order) do |p|
-        p.stripe_payment_intent_id = payment_intent_id
-        p.status = :succeeded
-      end
-
-      # Send confirmation email only when the payment is first recorded here
-      # (idempotent across the webhook / success-page race).
-      OrderNotificationService.send_confirmation(order) if payment.previously_new_record?
-    end
-
+    OrderPaymentFinalizer.call(order: order, payment_intent_id: payment_intent_id)
+  rescue Stripe::StripeError => e
+    Rails.logger.error("Erreur récupération PaymentIntent #{payment_intent_id}: #{e.message}")
     order
   rescue StandardError => e
-    Rails.logger.error("Error creating order from session for payment_intent #{payment_intent_id}: #{e.message}")
-    Rails.logger.error(e.backtrace.join("\n"))
+    Rails.logger.error("Erreur finalisation commande #{order&.id} (PI #{payment_intent_id}): #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
-    nil
+    order
   end
 end

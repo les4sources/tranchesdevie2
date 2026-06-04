@@ -67,107 +67,20 @@ class WebhooksController < ApplicationController
       return handle_wallet_reload(payment_intent)
     end
 
-    # Find or create order (idempotency check)
+    # La commande est créée (réservée) au moment du paiement (create_payment_intent),
+    # donc elle existe déjà ici. Le webhook ne fait que l'encaisser — il ne crée
+    # jamais de commande (sinon on contournerait le contrôle de capacité).
     order = Order.uncached { Order.find_by(payment_intent_id: payment_intent_id) }
 
     unless order
-      Rails.logger.info("Order not found for payment_intent #{payment_intent_id}, attempting to create...")
-
-      # Find customer from metadata (phone_e164 or customer_id)
-      # Metadata is a hash, access with bracket notation
-      metadata = payment_intent.metadata || {}
-      phone_e164 = metadata[:phone_e164] || metadata["phone_e164"]
-      customer_id = metadata[:customer_id] || metadata["customer_id"]
-      bake_day_id = metadata[:bake_day_id] || metadata["bake_day_id"]
-
-      Rails.logger.info("Payment intent metadata - phone_e164: #{phone_e164}, customer_id: #{customer_id}, bake_day_id: #{bake_day_id}")
-
-      unless bake_day_id
-        Rails.logger.error("No bake_day_id in payment intent #{payment_intent_id} metadata")
-        return
-      end
-
-      # Find or create customer
-      if customer_id.present?
-        customer = Customer.find_by(id: customer_id)
-        Rails.logger.info("Found customer by id: #{customer_id}" + (customer ? " (#{customer.id})" : " (not found)"))
-      elsif phone_e164.present?
-        customer = Customer.find_or_create_by(phone_e164: phone_e164)
-        Rails.logger.info("Found or created customer by phone_e164: #{phone_e164} (id: #{customer.id})")
-      else
-        Rails.logger.error("No customer_id or phone_e164 in payment intent #{payment_intent_id} metadata")
-        return
-      end
-
-      unless customer
-        Rails.logger.error("Failed to find or create customer for payment_intent #{payment_intent_id}")
-        return
-      end
-
-      bake_day = BakeDay.find_by(id: bake_day_id)
-      unless bake_day
-        Rails.logger.error("Bake day not found with id: #{bake_day_id} for payment_intent #{payment_intent_id}")
-        return
-      end
-
-      # Reconstruct cart from metadata
-      cart_items_json = metadata[:cart_items] || metadata["cart_items"] || "[]"
-      cart_items = JSON.parse(cart_items_json) rescue []
-      Rails.logger.info("Parsed cart_items from metadata: #{cart_items.size} items")
-
-      unless cart_items.any?
-        Rails.logger.error("No cart items found in payment intent #{payment_intent_id} metadata")
-        return
-      end
-
-      service = OrderCreationService.new(
-        customer: customer,
-        bake_day: bake_day,
-        cart_items: cart_items,
-        payment_intent_id: payment_intent_id,
-        skip_capacity_check: true
-      )
-
-      order = service.call
-
-      unless order
-        Rails.logger.error("OrderCreationService failed for payment_intent #{payment_intent_id}. Errors: #{service.errors.join(', ')}")
-        return
-      end
-
-      Rails.logger.info("Order created successfully via webhook: #{order.id} for payment_intent #{payment_intent_id}")
-    else
-      Rails.logger.info("Order already exists for payment_intent #{payment_intent_id}: #{order.id}")
+      Rails.logger.error("Webhook: aucune commande pour le PaymentIntent #{payment_intent_id} (réservation manquante)")
+      Sentry.capture_message("Stripe webhook: commande introuvable pour #{payment_intent_id}") if defined?(Sentry)
+      return false
     end
 
-    if order
-      # Only transition if not already paid (success page may have already processed this)
-      if order.can_transition_to?(:paid)
-        order.transition_to!(:paid)
-        Rails.logger.info("Order #{order.id} transitioned to paid")
-      else
-        Rails.logger.info("Order #{order.id} already in status '#{order.status}', skipping transition to paid")
-      end
-
-      # Renseigner la date d'encaissement si elle n'a pas encore été fixée.
-      order.update!(paid_at: Time.current) if order.read_attribute(:paid_at).blank?
-
-      # Create payment record
-      payment = Payment.find_or_create_by!(order: order) do |p|
-        p.stripe_payment_intent_id = payment_intent_id
-        p.status = :succeeded
-      end
-
-      # Send confirmation email only when the payment is first recorded here
-      # (idempotent across the webhook / success-page race).
-      OrderNotificationService.send_confirmation(order) if payment.previously_new_record?
-
-      Rails.logger.info("Order #{order.id} payment record ensured")
-      true
-    else
-      Rails.logger.error("Order is nil after processing payment_intent #{payment_intent_id}")
-      false
-    end
+    OrderPaymentFinalizer.call(order: order, payment_intent_id: payment_intent_id)
+    Rails.logger.info("Order #{order.id} encaissée via webhook (PI #{payment_intent_id})")
+    true
   rescue StandardError => e
     Rails.logger.error("Exception in handle_payment_intent_succeeded for payment_intent #{payment_intent_id}: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))

@@ -18,6 +18,12 @@ production:
     schedule: at 6:15 pm every day
     description: "Mark orders as ready and send SMS notifications at 6:15pm"
 
+  # Libère la capacité réservée par les paiements en ligne abandonnés (>30 min)
+  expire_stale_pending_orders:
+    class: ExpireStalePendingOrdersJob
+    schedule: "*/10 * * * *"
+    description: "Cancel abandoned online checkouts (pending > 30 min) to free bake capacity"
+
   # Process planned orders after cut-offs (Sunday 18:05 for Tuesday, Wednesday 18:05 for Friday)
   process_planned_orders_sunday:
     class: ProcessPlannedOrdersJob

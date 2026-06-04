@@ -1,31 +1,25 @@
 require 'rails_helper'
 
-# Stripe webhook → order creation + idempotency. Covers ISC-18/19.
-# `Stripe::Webhook.construct_event` is stubbed so payload/signature are irrelevant;
-# we drive the controller with a fabricated event object.
+# Stripe webhook → encaissement de la commande déjà réservée + idempotence.
+# La commande est créée au moment du paiement (create_payment_intent), pas par
+# le webhook. Le webhook ne fait que l'encaisser (pending → paid).
+# `Stripe::Webhook.construct_event` est stubbé ; on pilote le contrôleur avec un
+# événement fabriqué.
 RSpec.describe 'Stripe webhook', type: :request do
   before do
     allow(OrderNotificationService).to receive(:send_confirmation)
-    # Cut-off acceptance is exercised elsewhere (capacity/bake-day specs); here we
-    # isolate the webhook's order-creation wiring.
-    allow(BakeDayService).to receive(:can_order_for?).and_return(true)
   end
 
   let(:bake_day) { create(:bake_day, :can_order) }
-  let!(:product) { create(:product, channel: 'store') }
-  let!(:variant) { create(:product_variant, product: product, channel: 'store') }
   let(:customer) { create(:customer) }
   let(:pi_id) { "pi_test_#{SecureRandom.hex(6)}" }
 
-  def succeeded_metadata
-    {
-      'customer_id' => customer.id.to_s,
-      'bake_day_id' => bake_day.id.to_s,
-      'cart_items' => [ { 'product_variant_id' => variant.id, 'qty' => 1 } ].to_json
-    }
+  # Réservation : commande online en attente, rattachée au PaymentIntent.
+  let!(:order) do
+    create(:order, :pending, :with_items, customer: customer, bake_day: bake_day, payment_intent_id: pi_id)
   end
 
-  def fabricate_event(type:, metadata:)
+  def fabricate_event(type:, metadata: {})
     pi = double('Stripe::PaymentIntent', id: pi_id, metadata: metadata)
     double('Stripe::Event', id: "evt_#{SecureRandom.hex(6)}", type: type,
                             data: double('event_data', object: pi))
@@ -36,31 +30,37 @@ RSpec.describe 'Stripe webhook', type: :request do
     post '/webhooks/stripe', params: '{}', headers: { 'HTTP_STRIPE_SIGNATURE' => 't=1,v1=sig' }
   end
 
-  describe 'payment_intent.succeeded (ISC-18)' do
-    it 'creates a paid order from the payment intent metadata' do
-      event = fabricate_event(type: 'payment_intent.succeeded', metadata: succeeded_metadata)
-      expect { deliver(event) }
-        .to change { Order.where(payment_intent_id: pi_id).count }.from(0).to(1)
-      expect(Order.find_by(payment_intent_id: pi_id).status).to eq('paid')
+  describe 'payment_intent.succeeded' do
+    it 'marks the reserved order as paid' do
+      event = fabricate_event(type: 'payment_intent.succeeded')
+      expect { deliver(event) }.to change { order.reload.status }.from('pending').to('paid')
     end
 
-    it 'records the payment date on the order' do
-      event = fabricate_event(type: 'payment_intent.succeeded', metadata: succeeded_metadata)
-      deliver(event)
+    it 'records the payment date and a payment record' do
+      deliver(fabricate_event(type: 'payment_intent.succeeded'))
 
-      expect(Order.find_by(payment_intent_id: pi_id).read_attribute(:paid_at)).to be_present
+      expect(order.reload.read_attribute(:paid_at)).to be_present
+      expect(order.payment).to be_present
+      expect(order.payment.status).to eq('succeeded')
+    end
+
+    it 'never creates an order when none is reserved for the payment intent' do
+      Order.where(payment_intent_id: pi_id).destroy_all
+      event = fabricate_event(type: 'payment_intent.succeeded')
+
+      expect { deliver(event) }.not_to change(Order, :count)
+      expect(response).to have_http_status(:ok)
     end
   end
 
-  describe 'idempotency on event id (ISC-19)' do
-    it 'ignores a re-delivered event and does not create a second order' do
-      event = fabricate_event(type: 'payment_intent.succeeded', metadata: succeeded_metadata)
+  describe 'idempotency on event id' do
+    it 'ignores a re-delivered event' do
+      event = fabricate_event(type: 'payment_intent.succeeded')
       deliver(event)
-      expect(Order.where(payment_intent_id: pi_id).count).to eq(1)
+      expect(order.reload.status).to eq('paid')
 
-      # Same event.id re-delivered → StripeEvent dedup short-circuits.
-      expect { deliver(event) }
-        .not_to change { Order.where(payment_intent_id: pi_id).count }
+      # Même event.id re-livré → dédup StripeEvent court-circuite.
+      expect { deliver(event) }.not_to change { Payment.count }
     end
   end
 end

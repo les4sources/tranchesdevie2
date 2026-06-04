@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_03_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_04_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -97,9 +97,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_03_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "skip_wallet_check", default: false, null: false
-    t.datetime "calendar_intro_seen_at"
     t.boolean "billable", default: false, null: false
+    t.datetime "calendar_intro_seen_at"
     t.boolean "email_opt_out", default: false, null: false
+    t.index "lower((email)::text)", name: "index_customers_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
@@ -217,13 +218,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_03_120000) do
   end
 
   create_table "phone_verifications", force: :cascade do |t|
-    t.string "phone_e164", null: false
+    t.string "phone_e164"
     t.string "code", limit: 6, null: false
     t.datetime "expires_at", null: false
     t.integer "attempts_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "email"
     t.index ["code"], name: "index_phone_verifications_on_code"
+    t.index ["email"], name: "index_phone_verifications_on_email"
     t.index ["phone_e164"], name: "index_phone_verifications_on_phone_e164"
   end
 

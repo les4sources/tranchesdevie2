@@ -1,123 +1,71 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["phoneInput", "otpInput"]
+  static targets = ["identifierInput", "otpInput", "channelHint", "firstNameInput", "lastNameInput"]
 
-  async sendOTP(event) {
-    event.preventDefault()
-    
-    const phone = this.phoneInputTarget?.value
-    if (!phone) {
-      this.showMessage('Veuillez entrer un numéro de GSM', 'error')
-      return
-    }
+  // Detects whether the typed identifier looks like an email or a phone number.
+  looksLikeEmail(value) {
+    return (value || "").includes("@")
+  }
 
-    const sendOtpBtn = document.getElementById('send-otp-btn')
-    if (sendOtpBtn) {
-      sendOtpBtn.disabled = true
-      sendOtpBtn.textContent = 'Envoi...'
-    }
+  // Live hint under the field so the customer knows which channel will be used.
+  updateChannelHint() {
+    if (!this.hasChannelHintTarget) return
 
-    try {
-      const formData = new FormData()
-      formData.append('phone_e164', phone)
-
-      const response = await fetch('/connexion', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: formData
-      })
-
-      const html = await response.text()
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(html, 'text/html')
-
-      // Vérifier s'il y a des erreurs
-      const alertElement = doc.querySelector('.alert, [class*="alert"]')
-      if (alertElement) {
-        this.showMessage(alertElement.textContent.trim(), 'error')
-        if (sendOtpBtn) {
-          sendOtpBtn.disabled = false
-          sendOtpBtn.textContent = 'Me connecter'
-        }
-        return
-      }
-
-      // Vérifier si le formulaire OTP est maintenant visible
-      const otpSection = document.getElementById('otp-input-section')
-      if (otpSection) {
-        otpSection.classList.remove('hidden')
-      }
-
-      // Afficher le message de succès
-      const noticeElement = doc.querySelector('.notice, [class*="notice"]')
-      if (noticeElement) {
-        this.showMessage(noticeElement.textContent.trim(), 'success')
-      } else {
-        this.showMessage('Code envoyé par SMS', 'success')
-      }
-    } catch (error) {
-      this.showMessage('Erreur de connexion', 'error')
-    } finally {
-      if (sendOtpBtn) {
-        sendOtpBtn.disabled = false
-        sendOtpBtn.textContent = 'Me connecter'
-      }
+    const value = (this.identifierInputTarget.value || "").trim()
+    if (value === "") {
+      this.channelHintTarget.textContent = ""
+    } else if (this.looksLikeEmail(value)) {
+      this.channelHintTarget.textContent = "✉️ On t'enverra le code par e-mail"
+    } else {
+      this.channelHintTarget.textContent = "📱 On t'enverra le code par SMS"
     }
   }
 
-  async sendOTPByEmail(event) {
+  async sendCode(event) {
     event.preventDefault()
 
-    const phone = this.phoneInputTarget?.value
-    if (!phone) {
-      this.showMessage('Veuillez entrer un numéro de GSM', 'error')
+    const identifier = this.identifierInputTarget?.value?.trim()
+    if (!identifier) {
+      this.showMessage("Entre ton numéro de GSM ou ton e-mail", "error")
       return
     }
 
-    const btn = document.getElementById('send-otp-email-btn')
-    const originalText = btn ? btn.textContent : null
-    if (btn) {
-      btn.disabled = true
-      btn.textContent = 'Envoi en cours…'
-    }
+    const button = event.currentTarget
+    const originalText = button.textContent
+    button.disabled = true
+    button.textContent = "Envoi…"
 
     try {
       const formData = new FormData()
-      formData.append('phone_e164', phone)
-      formData.append('channel', 'email')
+      formData.append("identifier", identifier)
 
-      const response = await fetch('/connexion', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        },
+      const response = await fetch("/connexion", {
+        method: "POST",
+        headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
         body: formData
       })
 
       const html = await response.text()
-      const doc = new DOMParser().parseFromString(html, 'text/html')
-      const notice = doc.querySelector('.bg-green-50')?.textContent.trim()
-      const alert = doc.querySelector('.bg-red-50')?.textContent.trim()
+      const doc = new DOMParser().parseFromString(html, "text/html")
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
 
-      if (response.ok) {
-        const otpSection = document.getElementById('otp-input-section')
-        if (otpSection) {
-          otpSection.classList.remove('hidden')
-        }
-        this.showMessage(notice || 'Code envoyé par e-mail', 'success')
-      } else {
-        this.showMessage(alert || "Erreur lors de l'envoi de l'e-mail", 'error')
+      if (!response.ok || alertElement) {
+        this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de l'envoi du code", "error")
+        return
       }
+
+      const otpSection = document.getElementById("otp-input-section")
+      if (otpSection) otpSection.classList.remove("hidden")
+      this.otpInputTarget?.focus()
+
+      const noticeElement = doc.querySelector(".notice, [class*='notice'], .bg-green-50")
+      this.showMessage(noticeElement ? noticeElement.textContent.trim() : "Code envoyé", "success")
     } catch (error) {
-      this.showMessage('Erreur de connexion', 'error')
+      this.showMessage("Erreur de connexion", "error")
     } finally {
-      if (btn) {
-        btn.disabled = false
-        btn.textContent = originalText
-      }
+      button.disabled = false
+      button.textContent = originalText
     }
   }
 
@@ -126,60 +74,109 @@ export default class extends Controller {
 
     const code = this.otpInputTarget?.value
     if (!code || code.length !== 6) {
-      this.showMessage('Veuillez entrer un code à 6 chiffres', 'error')
+      this.showMessage("Entre le code à 6 chiffres", "error")
       return
     }
 
-    const verifyOtpBtn = document.getElementById('verify-otp-btn')
-    if (verifyOtpBtn) {
-      verifyOtpBtn.disabled = true
-      verifyOtpBtn.textContent = 'Vérification...'
-    }
+    const button = event.currentTarget
+    button.disabled = true
+    button.textContent = "Vérification…"
 
     try {
       const formData = new FormData()
-      formData.append('phone_e164', this.phoneInputTarget.value)
-      formData.append('otp_code', code)
+      formData.append("identifier", this.identifierInputTarget.value.trim())
+      formData.append("otp_code", code)
 
-      const response = await fetch('/connexion', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        },
+      const response = await fetch("/connexion", {
+        method: "POST",
+        headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
         body: formData
       })
 
       if (response.redirected) {
         window.location.href = response.url
-      } else {
-        const html = await response.text()
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(html, 'text/html')
+        return
+      }
 
-        const alertElement = doc.querySelector('.alert, [class*="alert"]')
-        if (alertElement) {
-          this.showMessage(alertElement.textContent.trim(), 'error')
-        } else {
-          this.showMessage('Erreur lors de la vérification', 'error')
-        }
+      const html = await response.text()
+      const doc = new DOMParser().parseFromString(html, "text/html")
+
+      // Identifiant inconnu : le code est validé, il faut maintenant le prénom.
+      if (doc.getElementById("needs-name-marker")) {
+        document.getElementById("credentials-step")?.classList.add("hidden")
+        document.getElementById("name-step")?.classList.remove("hidden")
+        this.firstNameInputTarget?.focus()
+        return
       }
+
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
+      this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la vérification", "error")
     } catch (error) {
-      this.showMessage('Erreur de connexion', 'error')
+      this.showMessage("Erreur de connexion", "error")
     } finally {
-      if (verifyOtpBtn) {
-        verifyOtpBtn.disabled = false
-        verifyOtpBtn.textContent = 'Vérifier le code'
+      button.disabled = false
+      button.textContent = "Vérifier le code"
+    }
+  }
+
+  // Étape 3 : crée le compte pour un nouvel identifiant (OTP déjà validé côté serveur).
+  async completeSignup(event) {
+    event.preventDefault()
+
+    const firstName = this.firstNameInputTarget?.value?.trim()
+    if (!firstName) {
+      this.showNameMessage("Entre ton prénom", "error")
+      return
+    }
+
+    const button = event.currentTarget
+    button.disabled = true
+    button.textContent = "Création…"
+
+    try {
+      const formData = new FormData()
+      formData.append("complete_signup", "1")
+      formData.append("first_name", firstName)
+      formData.append("last_name", this.lastNameInputTarget?.value?.trim() || "")
+
+      const response = await fetch("/connexion", {
+        method: "POST",
+        headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
+        body: formData
+      })
+
+      if (response.redirected) {
+        window.location.href = response.url
+        return
       }
+
+      const html = await response.text()
+      const doc = new DOMParser().parseFromString(html, "text/html")
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
+      this.showNameMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la création du compte", "error")
+    } catch (error) {
+      this.showNameMessage("Erreur de connexion", "error")
+    } finally {
+      button.disabled = false
+      button.textContent = "Créer mon compte"
+    }
+  }
+
+  showNameMessage(message, type) {
+    const messageEl = document.getElementById("name-message")
+    if (messageEl) {
+      messageEl.textContent = message
+      messageEl.className = type === "success" ? "mt-4 text-sm text-green-600" : "mt-4 text-sm text-red-600"
+      messageEl.classList.remove("hidden")
     }
   }
 
   showMessage(message, type) {
-    const messageEl = document.getElementById('otp-message')
+    const messageEl = document.getElementById("otp-message")
     if (messageEl) {
       messageEl.textContent = message
-      messageEl.className = type === 'success' ? 'mt-4 text-sm text-green-600' : 'mt-4 text-sm text-red-600'
-      messageEl.classList.remove('hidden')
+      messageEl.className = type === "success" ? "mt-4 text-sm text-green-600" : "mt-4 text-sm text-red-600"
+      messageEl.classList.remove("hidden")
     }
   }
 }
-

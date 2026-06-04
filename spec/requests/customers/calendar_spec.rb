@@ -10,13 +10,13 @@ RSpec.describe "Customers::Calendar", type: :request do
 
   before do
     # Authenticate customer by simulating OTP flow
-    allow(OtpService).to receive(:send_otp).and_return({ success: true })
-    allow(OtpService).to receive(:verify_otp).and_return({ success: true })
+    allow(OtpService).to receive(:send_code).and_return({ success: true, channel: :sms })
+    allow(OtpService).to receive(:verify_code).and_return({ success: true })
 
     # First call to send OTP
-    post '/connexion', params: { phone_e164: customer.phone_e164 }
+    post '/connexion', params: { identifier: customer.phone_e164 }
     # Second call to verify OTP
-    post '/connexion', params: { phone_e164: customer.phone_e164, otp_code: '123456' }
+    post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
   end
 
   describe "GET /calendrier" do

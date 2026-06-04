@@ -4,11 +4,11 @@ RSpec.describe 'Customers::Account', type: :request do
   let(:customer) { create(:customer, email: "eater@example.com", email_opt_out: false) }
 
   def authenticate_customer
-    allow(OtpService).to receive(:send_otp).and_return({ success: true })
-    allow(OtpService).to receive(:verify_otp).and_return({ success: true })
+    allow(OtpService).to receive(:send_code).and_return({ success: true, channel: :sms })
+    allow(OtpService).to receive(:verify_code).and_return({ success: true })
 
-    post '/connexion', params: { phone_e164: customer.phone_e164 }
-    post '/connexion', params: { phone_e164: customer.phone_e164, otp_code: '123456' }
+    post '/connexion', params: { identifier: customer.phone_e164 }
+    post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
   end
 
   before { authenticate_customer }

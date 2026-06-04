@@ -35,22 +35,44 @@
               </div>
             </div>
 
-            <button type="button" 
-                    id="send-otp-btn" 
-                    data-action="click->checkout#sendOTP"
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Me connecter
-            </button>
+            <p class="text-sm text-gray-500 mt-2 mb-4">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="text-blue-600 hover:text-blue-700 hover:underline">Contacte-nous pour commander</a></p>
 
-            <p class="text-sm text-gray-500 mt-2">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="text-blue-600 hover:text-blue-700 hover:underline">Contacte-nous pour commander</a></p>
+            <%# Les deux canaux sont au même niveau : le client choisit de recevoir son code par SMS ou par e-mail. %>
+            <div id="channel-buttons">
+              <p class="block text-sm font-medium text-gray-700 mb-2">Reçois ton code de vérification par&nbsp;:</p>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button"
+                        id="send-otp-btn"
+                        data-action="click->checkout#sendOTP"
+                        class="flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  📱 Par SMS
+                </button>
+                <button type="button"
+                        id="send-otp-email-btn"
+                        data-action="click->checkout#sendOTPByEmail"
+                        class="flex justify-center items-center gap-2 py-2 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  ✉️ Par e-mail
+                </button>
+              </div>
+
+              <div id="email-otp-fields" class="hidden mt-3">
+                <%= email_field_tag :otp_email, nil,
+                    id: "otp_email",
+                    placeholder: "ton@email.com",
+                    class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-base focus:border-blue-500 focus:ring-blue-500" %>
+                <p class="text-xs text-gray-500 mt-1">On t'envoie le code à cette adresse, puis on l'enregistre pour tes prochaines commandes.</p>
+              </div>
+            </div>
 
             <div id="otp-input-section" class="hidden mt-4">
               <div class="mb-4">
                 <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-                <%= text_field_tag :otp_code, nil, 
+                <%= text_field_tag :otp_code, nil,
                     maxlength: 6,
+                    inputmode: "numeric",
                     pattern: "\\d{6}",
-                    class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
+                    autocomplete: "one-time-code",
+                    class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg tracking-[0.3em] text-center focus:border-blue-500 focus:ring-blue-500",
                     placeholder: "123456" %>
               </div>
 
@@ -60,22 +82,6 @@
                       class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
                 Vérifier le code
               </button>
-
-              <div class="mt-4 text-center">
-                <p class="text-sm text-gray-600">Tu ne reçois pas le SMS ?</p>
-                <div id="email-otp-fields" class="hidden mt-2">
-                  <%= email_field_tag :otp_email, nil,
-                      id: "otp_email",
-                      placeholder: "ton@email.com",
-                      class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-base focus:border-blue-500 focus:ring-blue-500" %>
-                </div>
-                <button type="button"
-                        id="send-otp-email-btn"
-                        data-action="click->checkout#sendOTPByEmail"
-                        class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
-                  Recevoir le code par e-mail
-                </button>
-              </div>
             </div>
 
             <div id="otp-message" class="mt-4 hidden"></div>

@@ -34,7 +34,8 @@ export default class extends Controller {
         if (otpSection) {
           otpSection.classList.remove('hidden')
         }
-        this.showMessage('Le code t\'a été envoyé par SMS', 'success')
+        document.getElementById('otp_code')?.focus()
+        this.showMessage(data.message || 'Le code t\'a été envoyé par SMS', 'success')
       } else {
         this.showMessage(data.error || 'Erreur lors de l\'envoi', 'error')
       }
@@ -44,7 +45,7 @@ export default class extends Controller {
       const sendOtpBtn = document.getElementById('send-otp-btn')
       if (sendOtpBtn) {
         sendOtpBtn.disabled = false
-        sendOtpBtn.textContent = 'Envoyer le code de vérification'
+        sendOtpBtn.textContent = '📱 Par SMS'
       }
     }
   }
@@ -85,6 +86,7 @@ export default class extends Controller {
         if (otpSection) {
           otpSection.classList.remove('hidden')
         }
+        document.getElementById('otp_code')?.focus()
         this.showMessage(data.message || 'Code envoyé par e-mail', 'success')
       } else if (data.need_email) {
         const emailFields = document.getElementById('email-otp-fields')
@@ -102,7 +104,7 @@ export default class extends Controller {
     } finally {
       if (btn) {
         btn.disabled = false
-        btn.textContent = revealedEmail ? 'Envoyer le code par e-mail' : originalText
+        btn.textContent = revealedEmail ? 'Envoyer le code par e-mail' : '✉️ Par e-mail'
       }
     }
   }

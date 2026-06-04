@@ -42,6 +42,107 @@ class OtpService
     { success: false, error: "Une erreur est survenue" }
   end
 
+  # ---------------------------------------------------------------------------
+  # Login API — SMS and email at parity, driven by a single identifier field.
+  # The customer types EITHER a phone number OR an email address; we detect
+  # which it is and send the code through the matching channel.
+  # ---------------------------------------------------------------------------
+
+  # Classifies a raw identifier typed at login.
+  #   { type: :phone, phone: "+32..." } | { type: :email, email: "x@y.be" } | { type: :invalid }
+  def self.classify_identifier(raw)
+    value = raw.to_s.strip
+    return { type: :invalid } if value.blank?
+
+    if value.include?("@")
+      email = value.downcase
+      return { type: :email, email: email } if email.match?(URI::MailTo::EMAIL_REGEXP)
+
+      return { type: :invalid }
+    end
+
+    # Letters without an "@" can't be a phone number (normalize_phone would
+    # silently strip them) and isn't a valid email either.
+    return { type: :invalid } if value.match?(/[A-Za-z]/)
+
+    phone = normalize_phone(value)
+    return { type: :phone, phone: phone } if valid_e164?(phone)
+
+    { type: :invalid }
+  end
+
+  # Sends the login code through the channel matching the identifier.
+  # Returns { success:, channel: :sms|:email, identifier:, ... } or an error.
+  def self.send_code(identifier:)
+    id = classify_identifier(identifier)
+
+    case id[:type]
+    when :phone
+      send_otp(id[:phone]).merge(channel: :sms, identifier: id[:phone])
+    when :email
+      send_login_email(id[:email])
+    else
+      { success: false, error: invalid_identifier_error }
+    end
+  end
+
+  # Verifies a login code against the verification keyed by the identifier
+  # (phone OR email).
+  def self.verify_code(identifier:, code:)
+    id = classify_identifier(identifier)
+
+    case id[:type]
+    when :phone
+      verify_otp(id[:phone], code)
+    when :email
+      verification = PhoneVerification.for_email(id[:email]).active.order(created_at: :desc).first
+      verify_against(verification, code)
+    else
+      { success: false, error: invalid_identifier_error }
+    end
+  end
+
+  # Email login channel: the typed address IS the identity. Reuses an active
+  # code for that email if one exists, otherwise generates a new one.
+  def self.send_login_email(email)
+    customer = Customer.find_by("lower(email) = ?", email)
+
+    verification = PhoneVerification.for_email(email).active.order(created_at: :desc).first
+
+    if verification.nil?
+      unless PhoneVerification.can_send_new_for?(email: email)
+        return { success: false, error: "Veuillez patienter 20 secondes avant de redemander un code" }
+      end
+
+      verification = PhoneVerification.create_for_email(email)
+    end
+
+    AuthMailer.otp(email, verification.code, customer: customer).deliver_now
+
+    { success: true, channel: :email, identifier: email, email: email }
+  rescue StandardError => e
+    Rails.logger.error("OTP Login Email Error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
+  end
+
+  def self.invalid_identifier_error
+    "Entre un numéro de GSM ou une adresse e-mail valide."
+  end
+
+  def self.normalize_phone(phone)
+    return nil if phone.blank?
+
+    phone = phone.gsub(/[^\d+]/, "")
+    phone = phone.sub(/^0/, "+32") if phone.start_with?("0")
+    phone = "+32#{phone}" unless phone.start_with?("+")
+    phone
+  end
+
+  def self.valid_e164?(phone)
+    phone.present? && phone.match?(/\A\+[1-9]\d{1,14}\z/)
+  end
+
   # Email fallback. Determines the recipient according to the agreed rules:
   #   - existing account WITH an email on file -> always sent to that address
   #     (a typed address is ignored, so a code can never be redirected)
@@ -96,6 +197,12 @@ class OtpService
                                     .order(created_at: :desc)
                                     .first
 
+    verify_against(verification, code)
+  end
+
+  # Shared verification logic for both channels: enforces max attempts and
+  # expiry, then consumes (destroys) the code on success.
+  def self.verify_against(verification, code)
     return { success: false, error: "Code invalide ou expiré" } unless verification
 
     if verification.max_attempts_reached?

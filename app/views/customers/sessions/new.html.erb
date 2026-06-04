@@ -10,11 +10,8 @@
       </div>
       <div>
         <p class="text-sm text-blue-900">
-          Chaque mangeur.se est désormais identifié par un numéro de téléphone mobile, ce qui nous
-          permet de te contacter en cas de besoin, et de t'envoyer un SMS lorsque tes commandes sont prêtes.
-        </p>
-        <p class="text-sm mt-2 font-bold text-blue-900">
-          Si tu ne reçois pas le code tout de suite, tu peux envoyer ta commande par e-mail à <a href="mailto:boulangerie@les4sources.be" class="text-blue-600">boulangerie@les4sources.be</a>.
+          Connecte-toi avec ton <strong>numéro de GSM</strong> ou ton <strong>adresse e-mail</strong>, comme tu préfères&nbsp;:
+          on t'envoie un code de connexion par SMS ou par e-mail selon ce que tu saisis.
         </p>
       </div>
     </div>
@@ -22,46 +19,48 @@
 
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <%= form_with url: customer_login_path, local: true, data: { controller: "customer-session" } do |f| %>
-      <div id="phone-verification-step">
-        <div class="mb-4" data-controller="phone-input" data-phone-input-default-country-value="BE">
-          <%= f.label :phone_e164, "Ton numéro de GSM", class: "block text-md font-medium text-gray-700 mb-2" %>
+      <%# Étapes 1 & 2 : identifiant puis code de vérification %>
+      <div id="credentials-step" class="<%= "hidden" if @needs_name %>">
+        <div class="mb-2" data-controller="phone-input" data-phone-input-default-country-value="BE">
+          <%= f.label :identifier, "Ton numéro de GSM ou ton e-mail", class: "block text-md font-medium text-gray-700 mb-2" %>
           <div class="relative">
-            <%= f.text_field :phone_e164, 
-                value: @phone_e164,
-                data: { 
-                  customer_session_target: "phoneInput",
-                  phone_input_target: "input"
+            <%= f.text_field :identifier,
+                value: @identifier,
+                data: {
+                  customer_session_target: "identifierInput",
+                  phone_input_target: "input",
+                  action: "input->customer-session#updateChannelHint"
                 },
                 class: "w-full rounded-md border-1 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-lg pr-24",
                 required: true,
-                pattern: "\\+[1-9]\\d{1,14}",
-                autocomplete: "tel" %>
+                autocomplete: "username",
+                placeholder: "+32 4XX XX XX XX ou prenom@exemple.be" %>
             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <span 
-                data-phone-input-target="flag"
-                class="text-xl">
-                🇧🇪
-              </span>
+              <span data-phone-input-target="flag" class="text-xl">🇧🇪</span>
             </div>
           </div>
         </div>
 
-        <button type="button" 
-                id="send-otp-btn" 
-                data-action="click->customer-session#sendOTP"
+        <p id="channel-hint" data-customer-session-target="channelHint" class="mb-4 text-sm text-gray-500 h-5"></p>
+
+        <button type="button"
+                id="send-otp-btn"
+                data-action="click->customer-session#sendCode"
                 class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          Me connecter
+          Recevoir mon code
         </button>
 
         <div id="otp-input-section" class="hidden mt-4">
           <div class="mb-4">
             <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-            <%= text_field_tag :otp_code, nil, 
+            <%= text_field_tag :otp_code, nil,
                 id: "otp_code",
                 maxlength: 6,
+                inputmode: "numeric",
                 pattern: "\\d{6}",
+                autocomplete: "one-time-code",
                 data: { customer_session_target: "otpInput" },
-                class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
+                class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg tracking-[0.3em] text-center focus:border-blue-500 focus:ring-blue-500",
                 placeholder: "123456" %>
           </div>
 
@@ -73,19 +72,51 @@
           </button>
 
           <div class="mt-4 text-center">
-            <p class="text-sm text-gray-600">Tu ne reçois pas le SMS ?</p>
             <button type="button"
-                    id="send-otp-email-btn"
-                    data-action="click->customer-session#sendOTPByEmail"
-                    class="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
-              Recevoir le code par e-mail
+                    id="resend-otp-btn"
+                    data-action="click->customer-session#sendCode"
+                    class="text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+              Renvoyer le code
             </button>
           </div>
         </div>
 
         <div id="otp-message" class="mt-4 hidden"></div>
       </div>
+
+      <%# Étape 3 : prénom — uniquement pour un identifiant inconnu (création de compte) %>
+      <div id="name-step" class="<%= "hidden" unless @needs_name %>">
+        <p class="mb-4 text-sm text-gray-700">Bienvenue&nbsp;! Il nous manque juste ton prénom pour créer ton compte.</p>
+
+        <div class="mb-4">
+          <%= label_tag :signup_first_name, "Ton prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= text_field_tag :first_name, nil,
+              id: "signup_first_name",
+              data: { customer_session_target: "firstNameInput" },
+              class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
+              required: true %>
+        </div>
+
+        <div class="mb-4">
+          <%= label_tag :signup_last_name, "Ton nom (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= text_field_tag :last_name, nil,
+              id: "signup_last_name",
+              data: { customer_session_target: "lastNameInput" },
+              class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
+        </div>
+
+        <button type="button"
+                id="complete-signup-btn"
+                data-action="click->customer-session#completeSignup"
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Créer mon compte
+        </button>
+
+        <div id="name-message" class="mt-4 hidden"></div>
+      </div>
+
+      <%# Marqueur lu par le JS pour révéler l'étape prénom après validation du code %>
+      <% if @needs_name %><div id="needs-name-marker" hidden></div><% end %>
     <% end %>
   </div>
 </div>
-

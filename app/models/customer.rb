@@ -9,9 +9,14 @@ class Customer < ApplicationRecord
   # Attribut virtuel pour permettre de sauter la validation du téléphone (utilisé par l'admin)
   attr_accessor :skip_phone_validation
 
+  # L'e-mail est une identité de connexion à part entière (au même niveau que le
+  # GSM) : on le normalise en minuscules et on garantit son unicité applicative.
+  before_validation :normalize_email
+
   validates :first_name, presence: true
   validates :phone_e164, presence: true, uniqueness: { allow_nil: true }, unless: :skip_phone_validation
   validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: "must be in E.164 format" }, if: -> { phone_e164.present? }
+  validates :email, uniqueness: { case_sensitive: false }, allow_blank: true
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
   scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
@@ -64,5 +69,11 @@ class Customer < ApplicationRecord
 
   def opt_in_email!
     update!(email_opt_out: false)
+  end
+
+  private
+
+  def normalize_email
+    self.email = email.strip.downcase if email.present?
   end
 end

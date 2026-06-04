@@ -6,6 +6,21 @@ class Rack::Attack
     end
   end
 
+  # Rate limit login OTP *sends* per identifier (phone OR email). Only the send
+  # step counts (no otp_code); code verification has its own attempts cap.
+  throttle("login-otp/identifier", limit: 5, period: 60.seconds) do |req|
+    if req.path == "/connexion" && req.post? && req.params["otp_code"].blank?
+      identifier = req.params["identifier"].presence || req.params["phone_e164"]
+      identifier.to_s.strip.downcase if identifier.present?
+    end
+  end
+
+  # Rate limit login OTP sends per IP. The email channel can target an arbitrary
+  # address, so cap how many a single IP can trigger.
+  throttle("login-otp/ip", limit: 8, period: 60.seconds) do |req|
+    req.ip if req.path == "/connexion" && req.post? && req.params["otp_code"].blank?
+  end
+
   # Rate limit checkout init
   throttle("checkout/init", limit: 10, period: 60.seconds) do |req|
     req.ip if req.path == "/checkout" && req.post?

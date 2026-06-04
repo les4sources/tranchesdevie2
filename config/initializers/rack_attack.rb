@@ -1,4 +1,11 @@
 class Rack::Attack
+  # Rack::Attack stocke ses compteurs dans Rails.cache par défaut. En production,
+  # Rails.cache est Solid Cache (table solid_cache_entries), qui n'est pas
+  # provisionnée ici — et aucune autre partie de l'app n'utilise Rails.cache.
+  # On découple donc le rate-limiting avec un store mémoire dédié (par process),
+  # suffisant pour la protection anti-abus et sans dépendance à une table cache.
+  Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new if Rails.env.production?
+
   # Rate limit OTP requests (60s cooldown, max 5 attempts per phone)
   throttle("otp/phone", limit: 5, period: 60.seconds) do |req|
     if req.path == "/checkout/verify_phone" && req.post?

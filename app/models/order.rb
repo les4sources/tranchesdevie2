@@ -133,6 +133,33 @@ class Order < ApplicationRecord
         end
     end
 
+    def sales_by_internal_category_between(start_date, end_date)
+      total_quantity = Arel.sql("SUM(order_items.qty)")
+      total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")
+      orders_count = Arel.sql("COUNT(DISTINCT orders.id)")
+
+      completed
+        .in_bake_day_range(start_date, end_date)
+        .joins(order_items: { product_variant: :product })
+        .group("products.internal_category")
+        .order(total_revenue.desc)
+        .pluck(
+          "products.internal_category",
+          orders_count,
+          total_quantity,
+          total_revenue
+        ).map do |internal_category, orders_count, total_quantity, total_cents|
+          {
+            # `pluck` renvoie déjà le nom de l'enum (ex. "boulangerie") ; on
+            # retombe sur la conversion depuis l'entier au cas où.
+            internal_category: Product.internal_categories.key(internal_category) || internal_category.to_s,
+            orders_count: orders_count.to_i,
+            total_quantity: total_quantity.to_i,
+            total_cents: total_cents.to_i
+          }
+        end
+    end
+
     def top_customers_between(start_date, end_date, limit: 10)
       orders_count = Arel.sql("COUNT(DISTINCT orders.id)")
       total_revenue = Arel.sql("SUM(orders.total_cents)")

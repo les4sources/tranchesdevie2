@@ -45,6 +45,16 @@ module CatalogHelper
     end
   end
 
+  def product_internal_category_heading(internal_category)
+    case internal_category.to_s
+    when "boulangerie" then "Boulangerie"
+    when "epicerie" then "Épicerie"
+    when "traiteur" then "Traiteur"
+    when "autre" then "Autre"
+    else internal_category.to_s.tr("_", " ").capitalize
+    end
+  end
+
   def product_flour_label(flour)
     return "Aucune" if flour.blank?
 

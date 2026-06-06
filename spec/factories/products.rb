@@ -5,6 +5,19 @@ FactoryBot.define do
     sequence(:position) { |n| n }
     active { true }
     channel { 'store' }
+    internal_category { :boulangerie }
+
+    trait :epicerie do
+      internal_category { :epicerie }
+    end
+
+    trait :traiteur do
+      internal_category { :traiteur }
+    end
+
+    trait :autre do
+      internal_category { :autre }
+    end
 
     trait :bread do
       category { :breads }

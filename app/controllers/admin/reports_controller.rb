@@ -5,6 +5,7 @@ class Admin::ReportsController < Admin::BaseController
     @end_date = @start_date if @end_date < @start_date
 
     @sales_by_product = Order.sales_by_product_between(@start_date, @end_date)
+    @sales_by_internal_category = Order.sales_by_internal_category_between(@start_date, @end_date)
     @revenue_cents = Order.revenue_between(@start_date, @end_date)
     @top_customers = Order.top_customers_between(@start_date, @end_date, limit: 10)
     @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, [ 2, 5 ])

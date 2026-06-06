@@ -20,9 +20,13 @@ class OrderPaymentFinalizer
       p.status = :succeeded
     end
 
-    # N'envoyer la confirmation qu'au premier enregistrement du paiement
-    # (idempotent face à la course webhook / page success / job).
-    OrderNotificationService.send_confirmation(@order) if payment.previously_new_record?
+    # N'envoyer la confirmation et ne récupérer la commission Stripe qu'au
+    # premier enregistrement du paiement (idempotent face à la course webhook /
+    # page success / job).
+    if payment.previously_new_record?
+      OrderNotificationService.send_confirmation(@order)
+      FetchStripeFeeJob.perform_later(payment)
+    end
 
     @order
   end

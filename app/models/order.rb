@@ -111,6 +111,16 @@ class Order < ApplicationRecord
       completed.in_bake_day_range(start_date, end_date).sum(:total_cents)
     end
 
+    # Total des commissions Stripe (en cents) prélevées sur les commandes
+    # finalisées payées via Stripe sur la période. Les paiements hors Stripe
+    # (portefeuille, encaissement manuel) n'ont pas de commission.
+    def stripe_fees_between(start_date, end_date)
+      completed
+        .in_bake_day_range(start_date, end_date)
+        .joins(:payment)
+        .sum("payments.stripe_fee_cents")
+    end
+
     def sales_by_product_between(start_date, end_date)
       total_quantity = Arel.sql("SUM(order_items.qty)")
       total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")

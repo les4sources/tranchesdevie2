@@ -33,6 +33,29 @@
   </div>
 </div>
 
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-1">Commissions Stripe &amp; CA net</h2>
+  <p class="text-sm text-gray-500 mb-4">
+    Commissions prélevées par Stripe sur les commandes payées en ligne. Les paiements par portefeuille ou hors ligne n'engendrent pas de commission.
+  </p>
+  <dl class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">CA brut</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Commissions Stripe</dt>
+      <dd class="mt-2 text-2xl font-bold text-red-600">- <%= reports_currency(@stripe_fees_cents) %></dd>
+      <dd class="mt-1 text-sm text-gray-500"><%= revenue_share(@stripe_fees_cents, @revenue_cents) %> % du CA brut</dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">CA net</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@net_revenue_cents) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Après commissions Stripe</dd>
+    </div>
+  </dl>
+</section>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par produit</h2>

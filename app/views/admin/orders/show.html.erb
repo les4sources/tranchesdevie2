@@ -76,6 +76,16 @@
         <% elsif @order.paid_at %>
           <dd class="mt-1 text-sm text-gray-600">Payé le <%= @order.paid_at.strftime("%d/%m/%Y") %></dd>
         <% end %>
+        <% if @order.payment.present? %>
+          <dd class="mt-1 text-sm text-gray-600">
+            Commission Stripe :
+            <% if @order.payment.stripe_fee_recorded? %>
+              <span class="font-medium text-gray-900"><%= number_to_currency(@order.payment.stripe_fee_euros, unit: "€", separator: ",", delimiter: "") %></span>
+            <% else %>
+              <span class="italic text-gray-500">en attente</span>
+            <% end %>
+          </dd>
+        <% end %>
       </div>
     </dl>
   </div>

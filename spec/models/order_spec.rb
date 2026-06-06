@@ -58,6 +58,45 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe '.stripe_fees_between' do
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+
+    it 'sums the Stripe fees of completed orders paid via Stripe in range' do
+      order_a = create(:order, :paid, bake_day: bake_day, total_cents: 2000)
+      order_b = create(:order, :ready, bake_day: bake_day, total_cents: 3000)
+      create(:payment, order: order_a, stripe_fee_cents: 50)
+      create(:payment, order: order_b, stripe_fee_cents: 75)
+
+      expect(Order.stripe_fees_between(Date.new(2026, 5, 1), Date.new(2026, 5, 31))).to eq(125)
+    end
+
+    it 'ignores fees not yet recorded (nil) and orders without a Stripe payment' do
+      order_with_fee = create(:order, :paid, bake_day: bake_day)
+      create(:payment, order: order_with_fee, stripe_fee_cents: 40)
+
+      order_pending_fee = create(:order, :paid, bake_day: bake_day)
+      create(:payment, order: order_pending_fee, stripe_fee_cents: nil)
+
+      create(:order, :paid, bake_day: bake_day) # paiement portefeuille / hors ligne : pas de Payment
+
+      expect(Order.stripe_fees_between(Date.new(2026, 5, 1), Date.new(2026, 5, 31))).to eq(40)
+    end
+
+    it 'excludes orders outside the bake day range' do
+      out_of_range = create(:order, :paid, bake_day: create(:bake_day, baked_on: Date.new(2026, 4, 1)))
+      create(:payment, order: out_of_range, stripe_fee_cents: 99)
+
+      expect(Order.stripe_fees_between(Date.new(2026, 5, 1), Date.new(2026, 5, 31))).to eq(0)
+    end
+
+    it 'excludes non-completed orders' do
+      cancelled = create(:order, :cancelled, bake_day: bake_day)
+      create(:payment, :refunded, order: cancelled, stripe_fee_cents: 60)
+
+      expect(Order.stripe_fees_between(Date.new(2026, 5, 1), Date.new(2026, 5, 31))).to eq(0)
+    end
+  end
+
   describe '#paid_at' do
     it 'uses the Stripe payment timestamp' do
       order = create(:order)

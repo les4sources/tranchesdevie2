@@ -1,6 +1,7 @@
 require "rails_helper"
 
-# Admin : reporting des ventes, dont la ventilation par catégorie interne (ISC-46).
+# Admin : reporting des ventes — ventilation par catégorie interne (ISC-46)
+# + commission Stripe par commande et CA net (#47).
 RSpec.describe "Admin::Reports", type: :request do
   around do |ex|
     original = ENV["ADMIN_PASSWORD"]
@@ -27,6 +28,20 @@ RSpec.describe "Admin::Reports", type: :request do
     end
     let(:grocery_variant) do
       create(:product_variant, product: create(:product, :epicerie))
+    end
+
+    it "affiche le CA net et le total des commissions Stripe" do
+      order = create(:order, :paid, bake_day: bake_day, total_cents: 10_000)
+      create(:payment, order: order, stripe_fee_cents: 250)
+
+      get admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Commissions Stripe")
+      expect(response.body).to include("CA net")
+      # CA net = 10000 - 250 = 9750 cents → 97,50 €
+      expect(response.body).to include("97,50")
+      expect(response.body).to include("2,50")
     end
 
     it "affiche la ventilation des ventes par catégorie interne" do

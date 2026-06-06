@@ -2,6 +2,7 @@
 - content_for :layout, "admin"
 
 - category_options = Product.categories.keys.map { |key| [product_category_heading(key), key] }
+- internal_category_options = Product.internal_categories.keys.map { |key| [product_internal_category_heading(key), key] }
 
 .mb-6.flex.justify-between.items-center
   h1.text-2xl.font-bold.text-gray-900 Modifier le produit
@@ -51,6 +52,12 @@
             .text-sm.text-gray-500.text-center.py-4 data-product-flours-target="empty" Aucune farine
         script type="application/json" data-product-flours-target="floursData"
           = raw Flour.not_deleted.ordered.map { |f| { id: f.id, name: f.name } }.to_json
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :internal_category, "Catégorie interne", class: "block text-sm font-medium text-gray-700"
+      p.text-xs.text-gray-500 Usage interne (comptabilité, reporting). Distingue la production maison des reventes.
+      = f.select :internal_category, options_for_select(internal_category_options, @product.internal_category), {}, class: admin_input_class
 
   .space-y-2
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"

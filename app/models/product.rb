@@ -2,6 +2,9 @@ class Product < ApplicationRecord
   has_soft_deletion
 
   enum :category, { breads: 0, dough_balls: 1 }
+  # Catégorie interne (usage comptable/reporting) : distingue la production
+  # maison (boulangerie) des reventes (épicerie, traiteur, etc.).
+  enum :internal_category, { boulangerie: 0, epicerie: 1, traiteur: 2, autre: 3 }, prefix: true
 
   has_many :product_variants, dependent: :destroy
   has_many :product_availabilities, through: :product_variants
@@ -14,6 +17,7 @@ class Product < ApplicationRecord
 
   validates :name, presence: true
   validates :category, presence: true
+  validates :internal_category, presence: true
   validates :position, presence: true, numericality: { only_integer: true }
   validates :channel, presence: true, inclusion: { in: %w[store admin] }
 

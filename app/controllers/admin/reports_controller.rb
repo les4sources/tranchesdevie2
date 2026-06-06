@@ -5,6 +5,7 @@ class Admin::ReportsController < Admin::BaseController
     @end_date = @start_date if @end_date < @start_date
 
     @sales_by_product = Order.sales_by_product_between(@start_date, @end_date)
+    @sales_by_internal_category = Order.sales_by_internal_category_between(@start_date, @end_date)
     @revenue_cents = Order.revenue_between(@start_date, @end_date)
     @stripe_fees_cents = Order.stripe_fees_between(@start_date, @end_date)
     @net_revenue_cents = @revenue_cents - @stripe_fees_cents

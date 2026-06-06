@@ -18,6 +18,9 @@
       label.block.text-sm.font-medium.text-gray-700 Catégorie
       p.text-sm.text-gray-900 = product_category_heading(@product.category)
     .space-y-2
+      label.block.text-sm.font-medium.text-gray-700 Catégorie interne
+      p.text-sm.text-gray-900 = product_internal_category_heading(@product.internal_category)
+    .space-y-2
       label.block.text-sm.font-medium.text-gray-700 Position
       p.text-sm.text-gray-900 = @product.position
     .space-y-2

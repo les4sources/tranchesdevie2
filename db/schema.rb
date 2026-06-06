@@ -297,9 +297,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
     t.string "flour"
     t.string "channel", default: "store", null: false
     t.datetime "deleted_at"
+    t.integer "internal_category", default: 0, null: false
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
     t.index ["deleted_at"], name: "index_products_on_deleted_at"
+    t.index ["internal_category"], name: "index_products_on_internal_category"
   end
 
   create_table "sms_messages", force: :cascade do |t|

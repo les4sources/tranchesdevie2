@@ -131,4 +131,46 @@ RSpec.describe Order, type: :model do
       expect(order.reload.paid_at).to be_within(1.second).of(stored)
     end
   end
+
+  describe '.sales_by_internal_category_between' do
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+    let(:start_date) { Date.new(2026, 5, 1) }
+    let(:end_date) { Date.new(2026, 5, 31) }
+
+    let(:bakery_variant) do
+      create(:product_variant, product: create(:product, internal_category: :boulangerie))
+    end
+    let(:grocery_variant) do
+      create(:product_variant, product: create(:product, :epicerie))
+    end
+
+    it 'agrège le CA, les quantités et le nombre de commandes par catégorie interne' do
+      order1 = create(:order, :paid, bake_day: bake_day)
+      create(:order_item, order: order1, product_variant: bakery_variant, qty: 2, unit_price_cents: 500)
+      create(:order_item, order: order1, product_variant: grocery_variant, qty: 1, unit_price_cents: 300)
+
+      order2 = create(:order, :ready, bake_day: bake_day)
+      create(:order_item, order: order2, product_variant: bakery_variant, qty: 3, unit_price_cents: 500)
+
+      result = described_class.sales_by_internal_category_between(start_date, end_date)
+      bakery = result.find { |entry| entry[:internal_category] == 'boulangerie' }
+      grocery = result.find { |entry| entry[:internal_category] == 'epicerie' }
+
+      expect(bakery[:total_cents]).to eq(2500) # (2 * 500) + (3 * 500)
+      expect(bakery[:total_quantity]).to eq(5)
+      expect(bakery[:orders_count]).to eq(2)
+
+      expect(grocery[:total_cents]).to eq(300)
+      expect(grocery[:total_quantity]).to eq(1)
+      expect(grocery[:orders_count]).to eq(1)
+    end
+
+    it 'exclut les commandes non finalisées (annulées, impayées, planifiées)' do
+      cancelled = create(:order, :cancelled, bake_day: bake_day)
+      create(:order_item, order: cancelled, product_variant: bakery_variant, qty: 4, unit_price_cents: 500)
+
+      result = described_class.sales_by_internal_category_between(start_date, end_date)
+      expect(result).to be_empty
+    end
+  end
 end

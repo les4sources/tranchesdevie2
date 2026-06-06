@@ -10,6 +10,15 @@ RSpec.describe 'Stripe webhook', type: :request do
     allow(OrderNotificationService).to receive(:send_confirmation)
   end
 
+  # Bascule sur l'adapter ActiveJob `:test` uniquement pour les exemples qui
+  # vérifient l'enfilement d'un job (matchers `have_enqueued_job`).
+  around(:each, :active_job_test) do |example|
+    original_adapter = ActiveJob::Base.queue_adapter
+    ActiveJob::Base.queue_adapter = :test
+    example.run
+    ActiveJob::Base.queue_adapter = original_adapter
+  end
+
   let(:bake_day) { create(:bake_day, :can_order) }
   let(:customer) { create(:customer) }
   let(:pi_id) { "pi_test_#{SecureRandom.hex(6)}" }
@@ -50,6 +59,11 @@ RSpec.describe 'Stripe webhook', type: :request do
 
       expect { deliver(event) }.not_to change(Order, :count)
       expect(response).to have_http_status(:ok)
+    end
+
+    it 'enqueues the Stripe fee retrieval for the new payment', :active_job_test do
+      expect { deliver(fabricate_event(type: 'payment_intent.succeeded')) }
+        .to have_enqueued_job(FetchStripeFeeJob)
     end
   end
 

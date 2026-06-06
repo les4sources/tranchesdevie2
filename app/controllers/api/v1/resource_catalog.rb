@@ -97,7 +97,9 @@ module Api
           description: "Paiements Stripe rattachés aux commandes. Contient les identifiants PaymentIntent Stripe.",
           fields: {
             id: "integer", order_id: "integer", stripe_payment_intent_id: "string",
-            status: "enum: succeeded|failed|refunded", created_at: "datetime", updated_at: "datetime"
+            status: "enum: succeeded|failed|refunded",
+            stripe_fee_cents: "integer|null", stripe_fee_euros: "number|null",
+            created_at: "datetime", updated_at: "datetime"
           }
         },
         {

@@ -97,6 +97,64 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe '.revenue_between' do
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+
+    it 'exclut les commandes remboursées (annulées) du chiffre d\'affaires' do
+      create(:order, :paid, bake_day: bake_day, total_cents: 2000)
+
+      refunded = create(:order, :cancelled, bake_day: bake_day, total_cents: 3000)
+      create(:payment, :refunded, order: refunded, stripe_fee_cents: 60)
+
+      expect(Order.revenue_between(Date.new(2026, 5, 1), Date.new(2026, 5, 31))).to eq(2000)
+    end
+  end
+
+  describe '.refunds_summary_between' do
+    let(:range_start) { Date.new(2026, 5, 1) }
+    let(:range_end) { Date.new(2026, 5, 31) }
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+
+    it 'agrège les remboursements Stripe et portefeuille de la période' do
+      stripe_refund = create(:order, :cancelled, bake_day: bake_day, total_cents: 2000)
+      create(:payment, :refunded, order: stripe_refund, stripe_fee_cents: 60)
+
+      wallet_order = create(:order, :cancelled, bake_day: bake_day, total_cents: 1500)
+      create(:wallet_transaction, :order_refund, order: wallet_order, amount_cents: 1500)
+
+      summary = Order.refunds_summary_between(range_start, range_end)
+
+      expect(summary[:count]).to eq(2)
+      expect(summary[:amount_cents]).to eq(3500)
+      expect(summary[:stripe_fee_cents]).to eq(60)
+      expect(summary[:stripe][:count]).to eq(1)
+      expect(summary[:stripe][:amount_cents]).to eq(2000)
+      expect(summary[:wallet][:count]).to eq(1)
+      expect(summary[:wallet][:amount_cents]).to eq(1500)
+    end
+
+    it 'exclut les remboursements dont le jour de cuisson est hors période' do
+      out = create(:order, :cancelled, bake_day: create(:bake_day, baked_on: Date.new(2026, 4, 1)), total_cents: 2000)
+      create(:payment, :refunded, order: out, stripe_fee_cents: 60)
+
+      summary = Order.refunds_summary_between(range_start, range_end)
+
+      expect(summary[:count]).to eq(0)
+      expect(summary[:amount_cents]).to eq(0)
+      expect(summary[:stripe_fee_cents]).to eq(0)
+    end
+
+    it 'ignore les paiements non remboursés' do
+      paid = create(:order, :paid, bake_day: bake_day, total_cents: 2000)
+      create(:payment, order: paid, stripe_fee_cents: 50)
+
+      summary = Order.refunds_summary_between(range_start, range_end)
+
+      expect(summary[:stripe][:count]).to eq(0)
+      expect(summary[:stripe][:amount_cents]).to eq(0)
+    end
+  end
+
   describe '#paid_at' do
     it 'uses the Stripe payment timestamp' do
       order = create(:order)

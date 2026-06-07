@@ -45,13 +45,53 @@
     </div>
     <div>
       <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Commissions Stripe</dt>
-      <dd class="mt-2 text-2xl font-bold text-red-600">- <%= reports_currency(@stripe_fees_cents) %></dd>
-      <dd class="mt-1 text-sm text-gray-500"><%= revenue_share(@stripe_fees_cents, @revenue_cents) %> % du CA brut</dd>
+      <dd class="mt-2 text-2xl font-bold text-red-600">- <%= reports_currency(@total_stripe_fees_cents) %></dd>
+      <dd class="mt-1 text-sm text-gray-500"><%= revenue_share(@total_stripe_fees_cents, @revenue_cents) %> % du CA brut</dd>
+      <% if @refund_stripe_fees_cents.positive? %>
+        <dd class="mt-1 text-sm text-gray-500">
+          dont <%= reports_currency(@refund_stripe_fees_cents) %> non remboursés sur remboursements
+        </dd>
+      <% end %>
     </div>
     <div>
       <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">CA net</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@net_revenue_cents) %></dd>
-      <dd class="mt-1 text-sm text-gray-500">Après commissions Stripe</dd>
+      <dd class="mt-1 text-sm text-gray-500">Après commissions Stripe (ventes et remboursements)</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-1">Remboursements</h2>
+  <p class="text-sm text-gray-500 mb-4">
+    Remboursements Stripe (commandes annulées remboursées) et remboursements vers le portefeuille
+    sur la période, ventilés par jour de cuisson de la commande. Les commandes remboursées sont
+    exclues du chiffre d'affaires.
+  </p>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursements</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= @refunds[:count] %></dd>
+      <dd class="mt-1 text-sm text-gray-500">
+        <%= @refunds[:stripe][:count] %> Stripe · <%= @refunds[:wallet][:count] %> portefeuille
+      </dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Montant total remboursé</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Stripe + portefeuille</dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursé via Stripe</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:stripe][:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-red-600">
+        commission non récupérée : <%= reports_currency(@refunds[:stripe][:stripe_fee_cents]) %>
+      </dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursé sur portefeuille</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:wallet][:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Crédité au portefeuille client</dd>
     </div>
   </dl>
 </section>

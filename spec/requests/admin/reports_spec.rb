@@ -44,6 +44,26 @@ RSpec.describe "Admin::Reports", type: :request do
       expect(response.body).to include("2,50")
     end
 
+    it "affiche la section remboursements et déduit la commission Stripe non remboursée du CA net" do
+      sale = create(:order, :paid, bake_day: bake_day, total_cents: 10_000)
+      create(:payment, order: sale, stripe_fee_cents: 250)
+
+      stripe_refund = create(:order, :cancelled, bake_day: bake_day, total_cents: 3_000)
+      create(:payment, :refunded, order: stripe_refund, stripe_fee_cents: 90)
+
+      wallet_order = create(:order, :cancelled, bake_day: bake_day, total_cents: 1_500)
+      create(:wallet_transaction, :order_refund, order: wallet_order, amount_cents: 1_500)
+
+      get admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Remboursements")
+      # Montant total remboursé = 3000 + 1500 = 4500 cents → 45,00 €
+      expect(response.body).to include("45,00")
+      # CA net = 10000 - 250 (commission ventes) - 90 (commission remboursement) = 9660 → 96,60 €
+      expect(response.body).to include("96,60")
+    end
+
     it "affiche la ventilation des ventes par catégorie interne" do
       order = create(:order, :paid, bake_day: bake_day)
       create(:order_item, order: order, product_variant: bakery_variant, qty: 2, unit_price_cents: 500)

@@ -8,7 +8,12 @@ class Admin::ReportsController < Admin::BaseController
     @sales_by_internal_category = Order.sales_by_internal_category_between(@start_date, @end_date)
     @revenue_cents = Order.revenue_between(@start_date, @end_date)
     @stripe_fees_cents = Order.stripe_fees_between(@start_date, @end_date)
-    @net_revenue_cents = @revenue_cents - @stripe_fees_cents
+    @refunds = Order.refunds_summary_between(@start_date, @end_date)
+    # Stripe conserve sa commission sur les commandes remboursées : on la
+    # déduit donc aussi du CA net, en plus des commissions sur les ventes.
+    @refund_stripe_fees_cents = @refunds[:stripe_fee_cents]
+    @total_stripe_fees_cents = @stripe_fees_cents + @refund_stripe_fees_cents
+    @net_revenue_cents = @revenue_cents - @total_stripe_fees_cents
     @top_customers = Order.top_customers_between(@start_date, @end_date, limit: 10)
     @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, [ 2, 5 ])
     @monthly_sales = Order.sales_by_month_between(@start_date, @end_date)

@@ -121,6 +121,50 @@ class Order < ApplicationRecord
         .sum("payments.stripe_fee_cents")
     end
 
+    # Remboursements (Stripe + portefeuille) effectués sur la période, ventilés
+    # par jour de cuisson de la commande remboursée — même axe temporel que le CA.
+    # Les commandes remboursées (statut `cancelled`) sont déjà exclues du CA via
+    # le scope `completed`.
+    def refunds_summary_between(start_date, end_date)
+      stripe = stripe_refunds_between(start_date, end_date)
+      wallet = wallet_refunds_between(start_date, end_date)
+
+      {
+        stripe: stripe,
+        wallet: wallet,
+        count: stripe[:count] + wallet[:count],
+        amount_cents: stripe[:amount_cents] + wallet[:amount_cents],
+        # Stripe ne rembourse pas sa commission lors d'un remboursement : elle
+        # reste donc à la charge de la boulangerie et grève le CA net.
+        stripe_fee_cents: stripe[:stripe_fee_cents]
+      }
+    end
+
+    # Remboursements Stripe : commandes dont le paiement a été remboursé.
+    def stripe_refunds_between(start_date, end_date)
+      scope = in_bake_day_range(start_date, end_date)
+                .joins(:payment)
+                .merge(Payment.refunded)
+
+      {
+        count: scope.distinct.count(:id),
+        amount_cents: scope.sum(:total_cents),
+        stripe_fee_cents: scope.sum("payments.stripe_fee_cents")
+      }
+    end
+
+    # Remboursements portefeuille : transactions de type `order_refund`.
+    def wallet_refunds_between(start_date, end_date)
+      scope = WalletTransaction.order_refund
+                .joins(order: :bake_day)
+                .where(bake_days: { baked_on: start_date..end_date })
+
+      {
+        count: scope.count,
+        amount_cents: scope.sum(:amount_cents)
+      }
+    end
+
     def sales_by_product_between(start_date, end_date)
       total_quantity = Arel.sql("SUM(order_items.qty)")
       total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")

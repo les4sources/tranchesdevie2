@@ -69,4 +69,18 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
   end
+
+  describe 'GET /checkout/new — méthode de paiement par défaut' do
+    it 'sélectionne « en ligne » par défaut et non « liquide »' do
+      get '/checkout/new'
+
+      expect(response).to have_http_status(:ok)
+
+      online_radio = response.body[%r{<input[^>]*value="online"[^>]*>}]
+      cash_radio = response.body[%r{<input[^>]*value="cash"[^>]*>}]
+
+      expect(online_radio).to include('checked')
+      expect(cash_radio).not_to include('checked')
+    end
+  end
 end

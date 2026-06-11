@@ -155,11 +155,11 @@
         <label class="block text-sm font-medium text-gray-700 mb-3">Méthode de paiement</label>
         <div class="space-y-3">
           <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="cash">
-            <input type="radio" name="payment_method" value="cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+            <input type="radio" name="payment_method" value="cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
             <span class="ml-3 font-medium text-gray-700">Payer ma commande en liquide au retrait</span>
           </label>
           <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition payment-method-option" data-payment-method="online">
-            <input type="radio" name="payment_method" value="online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+            <input type="radio" name="payment_method" value="online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
             <span class="ml-3 font-medium text-gray-700">Payer en ligne avec Bancontact ou autre</span>
           </label>
         </div>
@@ -207,7 +207,7 @@
   let paymentElement;
   let elements;
   let stripeInitialized = false;
-  let currentPaymentMethod = 'cash'; // Par défaut, paiement cash
+  let currentPaymentMethod = 'online'; // Par défaut, paiement en ligne (Bancontact)
 
   // Initialiser l'état de la méthode de paiement
   function initializePaymentMethodState() {

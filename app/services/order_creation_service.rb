@@ -77,20 +77,13 @@ class OrderCreationService
   end
 
   def calculate_total
-    subtotal = @cart_items.sum do |item|
-      variant = ProductVariant.find(item["product_variant_id"])
-      item["qty"].to_i * variant.price_cents
+    lines = @cart_items.map do |item|
+      { variant: ProductVariant.find(item["product_variant_id"]), qty: item["qty"].to_i }
     end
 
-    # Appliquer la remise du groupe si le client en a un
-    discount_cents = calculate_discount(subtotal)
+    subtotal = lines.sum { |line| line[:variant].price_cents * line[:qty] }
+    discount_cents = GroupDiscountService.new(@customer).total_discount_cents(lines)
     subtotal - discount_cents
-  end
-
-  def calculate_discount(subtotal)
-    return 0 unless @customer&.effective_discount_percent&.positive?
-
-    (subtotal * @customer.effective_discount_percent / 100.0).round
   end
 
   def create_order_items

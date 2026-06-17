@@ -18,7 +18,7 @@
 <% end %>
 
 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-  <%= form_with model: @order, url: admin_orders_path, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customers.map { |c| { id: c.id, discount_percent: c.effective_discount_percent } }.to_json } do |f| %>
+  <%= form_with model: @order, url: admin_orders_path, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customer_discount_data.to_json } do |f| %>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div data-controller="searchable-select" data-searchable-select-placeholder-value="Choisir un client...">
         <%= f.label :customer_id, "Client", class: "block text-sm font-medium text-gray-700" %>
@@ -100,6 +100,7 @@
                                            order_calculator_target: "quantity",
                                            price_cents: variant.price_cents,
                                            product_id: product.id,
+                                           variant_id: variant.id,
                                            action: "input->order-calculator#recalculate change->order-calculator#recalculate"
                                          } %>
                   </td>

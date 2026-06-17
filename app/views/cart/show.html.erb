@@ -164,9 +164,9 @@
                 <%= number_to_currency(@subtotal / 100.0, unit: "€", separator: ",", delimiter: "") %>
               </dd>
             </div>
-            <% if @discount_cents > 0 && @customer&.group %>
+            <% if @discount_cents > 0 %>
               <div class="flex justify-between text-green-600">
-                <dt>Remise (<%= @customer.group.name %> - <%= @customer.effective_discount_percent %>%)</dt>
+                <dt>Remise</dt>
                 <dd class="font-medium">
                   -<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
                 </dd>

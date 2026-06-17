@@ -1,0 +1,15 @@
+/ Restriction de la variante par jour de cuisson.
+/ Cases décochées = disponible tous les jours de cuisson (comportement par défaut).
+.space-y-3
+  span.block.text-sm.font-medium.text-gray-700 Jours de cuisson
+  p.text-sm.text-gray-500.mb-2
+    | Laissez tout décoché pour rendre cette variante disponible
+    |  tous les jours de cuisson. Cochez un ou plusieurs jours pour la restreindre
+    |  (ex. un pain proposé uniquement le mardi).
+  .border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    - selected = Array(variant.available_weekdays).map(&:to_i)
+    - BakeDay::COOKING_WDAYS.each do |wday|
+      .flex.items-center.mb-2
+        = check_box_tag "product_variant[available_weekdays][]", wday, selected.include?(wday), id: "weekday_#{wday}", class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        = label_tag "weekday_#{wday}", BakeDay::WDAY_LABELS[wday].capitalize, class: "ml-2 text-sm font-medium text-gray-700"
+    = hidden_field_tag "product_variant[available_weekdays][]", ""

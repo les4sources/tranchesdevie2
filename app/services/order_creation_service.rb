@@ -71,6 +71,11 @@ class OrderCreationService
       unless variant.active? && variant.channel == "store"
         @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est plus disponible"
       end
+
+      # Garde-fou : variante restreinte à certains jours de cuisson uniquement.
+      unless variant.available_on_weekday?(@bake_day.baked_on.wday)
+        @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est pas disponible le #{BakeDay::WDAY_LABELS[@bake_day.baked_on.wday]}"
+      end
     end
 
     @errors.empty?

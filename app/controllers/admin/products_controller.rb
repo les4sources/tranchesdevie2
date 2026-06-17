@@ -117,7 +117,8 @@ class Admin::ProductsController < Admin::BaseController
       :name, :price_euros, :active, :flour_quantity, :channel, :mold_type_id,
       product_images_attributes: [ :id, :image, :_destroy, :position ],
       variant_ingredients_attributes: [ :id, :ingredient_id, :quantity, :_destroy ],
-      group_ids: []
+      group_ids: [],
+      available_weekdays: []
     )
   end
 end

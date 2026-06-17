@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -273,6 +273,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
     t.integer "flour_quantity"
     t.string "channel", default: "store", null: false
     t.bigint "mold_type_id"
+    t.integer "available_weekdays", default: [], null: false, array: true
     t.index ["mold_type_id"], name: "index_product_variants_on_mold_type_id"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
   end

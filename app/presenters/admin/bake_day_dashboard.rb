@@ -184,23 +184,20 @@ module Admin
 
     def dough_quantities
       @dough_quantities ||= begin
-        ratios = DoughRatio.ratios_hash
-        farine_ratio = ratios["farine"] || 0.5556
-        sel_ratio    = ratios["sel"]    || 0.022
-        eau_ratio    = ratios["eau"]    || 0.655
-        levain_ratio = ratios["levain"] || 0.12095
-
+        # Chaque farine porte désormais son propre ratio de panification (#88).
         per_flour = flour_type_stats.map do |stat|
+          flour = stat[:flour]
           pate_grams = stat[:flour_quantity].to_f
-          farine_grams = farine_ratio * pate_grams
+          farine_grams = flour.flour_ratio.to_f * pate_grams
 
           {
-            flour: stat[:flour],
+            flour: flour,
+            levain_type: flour.levain_type,
             pate_kg:   (pate_grams / 1000.0).round(2),
             farine_kg: (farine_grams / 1000.0).round(2),
-            sel_kg:    (farine_grams * sel_ratio / 1000.0).round(3),
-            eau_l:     (farine_grams * eau_ratio / 1000.0).round(2),
-            levain_kg: (levain_ratio * pate_grams / 1000.0).round(3)
+            sel_kg:    (farine_grams * flour.salt_ratio.to_f / 1000.0).round(3),
+            eau_l:     (farine_grams * flour.water_ratio.to_f / 1000.0).round(2),
+            levain_kg: (flour.levain_ratio.to_f * pate_grams / 1000.0).round(3)
           }
         end
 
@@ -212,7 +209,12 @@ module Admin
           levain_kg: per_flour.sum { |f| f[:levain_kg] }.round(3)
         }
 
-        { per_flour: per_flour, totals: totals }
+        # Base technique #83 : deux totaux de levain distincts (froment vs seigle).
+        levain_by_type = per_flour.each_with_object(Hash.new(0.0)) do |f, acc|
+          acc[f[:levain_type]] += f[:levain_kg]
+        end.transform_values { |v| v.round(3) }
+
+        { per_flour: per_flour, totals: totals, levain_by_type: levain_by_type }
       end
     end
 

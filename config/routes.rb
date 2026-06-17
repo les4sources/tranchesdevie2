@@ -162,7 +162,6 @@ Rails.application.routes.draw do
       resources :flours, path: "farines"
       resources :artisans
       resources :ingredients
-      resources :dough_ratios, path: "ratios-de-panification", only: [ :index, :edit, :update ]
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
     end

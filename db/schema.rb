@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_17_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -104,16 +104,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 
-  create_table "dough_ratios", force: :cascade do |t|
-    t.string "key", null: false
-    t.decimal "value", precision: 10, scale: 5, null: false
-    t.string "label", null: false
-    t.integer "position", default: 0
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["key"], name: "index_dough_ratios_on_key", unique: true
-  end
-
   create_table "email_messages", force: :cascade do |t|
     t.integer "direction", default: 0, null: false
     t.string "to_email", null: false
@@ -140,8 +130,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "kneader_limit_grams"
+    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.5556", null: false
+    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.655", null: false
+    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.022", null: false
+    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12095", null: false
+    t.string "levain_type", default: "froment", null: false
+    t.string "origin"
+    t.string "grade"
+    t.text "notes"
+    t.integer "price_per_kg_cents"
     t.index ["deleted_at"], name: "index_flours_on_deleted_at"
     t.index ["name"], name: "index_flours_on_name", unique: true, where: "(deleted_at IS NULL)"
+  end
+
+  create_table "group_product_discounts", force: :cascade do |t|
+    t.bigint "group_id", null: false
+    t.bigint "product_id"
+    t.bigint "product_variant_id"
+    t.string "discount_kind", default: "percent", null: false
+    t.integer "discount_value", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_id", "product_id"], name: "index_gpd_unique_group_product", unique: true, where: "(product_variant_id IS NULL)"
+    t.index ["group_id", "product_variant_id"], name: "index_gpd_unique_group_variant", unique: true, where: "(product_variant_id IS NOT NULL)"
+    t.index ["group_id"], name: "index_group_product_discounts_on_group_id"
+    t.index ["product_id"], name: "index_group_product_discounts_on_product_id"
+    t.index ["product_variant_id"], name: "index_group_product_discounts_on_product_variant_id"
   end
 
   create_table "groups", force: :cascade do |t|
@@ -273,6 +287,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
     t.integer "flour_quantity"
     t.string "channel", default: "store", null: false
     t.bigint "mold_type_id"
+    t.integer "available_weekdays", default: [], null: false, array: true
     t.index ["mold_type_id"], name: "index_product_variants_on_mold_type_id"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
   end
@@ -507,6 +522,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_06_011030) do
   add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
+  add_foreign_key "group_product_discounts", "groups"
+  add_foreign_key "group_product_discounts", "product_variants"
+  add_foreign_key "group_product_discounts", "products"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"

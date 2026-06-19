@@ -42,6 +42,8 @@ class WebhooksController < ApplicationController
       handle_payment_intent_failed(event)
     when "charge.refunded"
       handle_charge_refunded(event)
+    when "charge.refund.updated", "refund.updated", "refund.failed"
+      handle_refund_failed(event)
     end
 
     stripe_event.mark_processed!
@@ -113,6 +115,36 @@ class WebhooksController < ApplicationController
 
     order.payment&.update!(status: :refunded)
     order.transition_to!(:cancelled) unless order.cancelled?
+  end
+
+  # Un remboursement asynchrone (Bancontact, SEPA…) peut échouer APRÈS avoir été
+  # marqué « remboursé » par charge.refunded : l'argent revient alors sur le
+  # solde Stripe sans atteindre le client. On réinscrit le paiement comme
+  # encaissé et on alerte pour un remboursement manuel. La commande reste
+  # annulée (la fournée l'est).
+  def handle_refund_failed(event)
+    refund = event.data.object
+    return unless refund.status == "failed"
+
+    payment_intent_id = refund.payment_intent
+    order = payment_intent_id && Order.find_by(payment_intent_id: payment_intent_id)
+    return unless order
+
+    order.payment&.update!(status: :succeeded)
+
+    reason = refund.try(:failure_reason).presence || "inconnue"
+    message = "⚠️ Remboursement Stripe ÉCHOUÉ — commande #{order.order_number} " \
+              "(#{order.customer.full_name}, #{order.total_euros} €). Raison : #{reason}. " \
+              "La commande reste annulée mais le client n'a PAS été remboursé : remboursement manuel requis."
+    Rails.logger.error(message)
+    Sentry.capture_message(message) if defined?(Sentry)
+    notify_admin(message)
+  end
+
+  def notify_admin(message)
+    SlackService.send_message(message)
+  rescue StandardError => e
+    Rails.logger.error("Alerte admin non envoyée: #{e.message}")
   end
 
   def handle_wallet_reload(payment_intent)

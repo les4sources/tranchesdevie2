@@ -155,7 +155,11 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ]
+    resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+      member do
+        post :cancel
+      end
+    end
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do

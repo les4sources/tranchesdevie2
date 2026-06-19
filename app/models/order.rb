@@ -94,7 +94,7 @@ class Order < ApplicationRecord
     when :unpaid
       [ :paid, :ready, :cancelled ].include?(new_status.to_sym)
     when :ready
-      [ :picked_up, :no_show ].include?(new_status.to_sym)
+      [ :picked_up, :no_show, :cancelled ].include?(new_status.to_sym)
     else
       false
     end

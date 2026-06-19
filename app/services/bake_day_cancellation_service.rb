@@ -110,7 +110,9 @@ class BakeDayCancellationService
   # mise à jour locale survienne après un remboursement déjà passé chez Stripe.
   def refund_stripe(order)
     refund = Stripe::Refund.create(payment_intent: order.payment.stripe_payment_intent_id)
-    return if refund.status == "succeeded"
+    # `pending` est un succès : les remboursements Bancontact/SEPA sont asynchrones
+    # (cf. RefundService::SUCCESSFUL_STRIPE_REFUND_STATUSES).
+    return if RefundService::SUCCESSFUL_STRIPE_REFUND_STATUSES.include?(refund.status)
 
     raise "Remboursement Stripe non abouti (statut: #{refund.status})"
   end

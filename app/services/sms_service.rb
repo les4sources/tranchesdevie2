@@ -47,6 +47,27 @@ class SmsService
     )
   end
 
+  def self.send_bake_cancelled(order, refunded: true)
+    return false unless order.customer.sms_enabled?
+
+    date = order.bake_day.baked_on.strftime("%d/%m/%Y")
+    message = if refunded
+                "Bonjour, la fournée du #{date} est malheureusement annulée. " \
+                  "Ta commande t'a été intégralement remboursée. Désolés du contretemps ! Les artisans de Tranche de Vie"
+    else
+                "Bonjour, la fournée du #{date} est malheureusement annulée. " \
+                  "Ta commande a été annulée, aucun montant ne t'a été débité. Désolés du contretemps ! Les artisans de Tranche de Vie"
+    end
+
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :refund,
+      baked_on: order.bake_day.baked_on,
+      customer_id: order.customer.id
+    )
+  end
+
   def self.send_custom(customer, body)
     return false unless customer.sms_enabled?
     return false if body.blank?

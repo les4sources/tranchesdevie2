@@ -77,4 +77,35 @@ RSpec.describe 'Stripe webhook', type: :request do
       expect { deliver(event) }.not_to change { Payment.count }
     end
   end
+
+  describe 'refund failure (charge.refund.updated)' do
+    def fabricate_refund_event(status:, failure_reason: 'expired_or_canceled_card')
+      refund = double('Stripe::Refund', status: status, payment_intent: pi_id, failure_reason: failure_reason)
+      double('Stripe::Event', id: "evt_#{SecureRandom.hex(6)}", type: 'charge.refund.updated',
+                              data: double('event_data', object: refund))
+    end
+
+    before do
+      # La commande a été annulée puis marquée « remboursée » par charge.refunded.
+      order.update!(status: :cancelled)
+      create(:payment, :refunded, order: order)
+      allow(SlackService).to receive(:send_message)
+    end
+
+    it 're-marks the payment as collected when the refund fails' do
+      deliver(fabricate_refund_event(status: 'failed'))
+      expect(order.payment.reload.status).to eq('succeeded')
+    end
+
+    it 'keeps the order cancelled and alerts the admin' do
+      expect(SlackService).to receive(:send_message).with(/Remboursement Stripe ÉCHOUÉ/)
+      deliver(fabricate_refund_event(status: 'failed'))
+      expect(order.reload.status).to eq('cancelled')
+    end
+
+    it 'ignores a refund update that did not fail' do
+      deliver(fabricate_refund_event(status: 'succeeded'))
+      expect(order.payment.reload.status).to eq('refunded')
+    end
+  end
 end

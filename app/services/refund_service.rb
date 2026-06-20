@@ -1,4 +1,9 @@
 class RefundService
+  # Statuts Stripe considérés comme un remboursement abouti. `pending` en fait
+  # partie : les remboursements asynchrones (Bancontact, SEPA…) sont d'abord
+  # `pending` puis passent `succeeded` — le webhook charge.refunded réconcilie.
+  SUCCESSFUL_STRIPE_REFUND_STATUSES = %w[succeeded pending].freeze
+
   attr_reader :order, :errors
 
   def initialize(order)
@@ -13,7 +18,7 @@ class RefundService
       payment_intent: @order.payment.stripe_payment_intent_id
     })
 
-    if refund.status == "succeeded"
+    if SUCCESSFUL_STRIPE_REFUND_STATUSES.include?(refund.status)
       @order.payment.update!(status: :refunded)
       @order.transition_to!(:cancelled)
       SmsService.send_refund(@order) if @order.customer.sms_enabled?

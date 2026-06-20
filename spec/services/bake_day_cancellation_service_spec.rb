@@ -136,10 +136,25 @@ RSpec.describe BakeDayCancellationService do
       end
     end
 
-    context "when a Stripe refund does not succeed" do
+    context "with a pending Stripe refund (async method like Bancontact)" do
       let!(:order) { stripe_order }
 
       before { stub_stripe_refund_create(payment_intent_id: order.payment.stripe_payment_intent_id, status: "pending") }
+
+      it "treats it as a success: refunds, cancels and notifies" do
+        expect(SmsService).to receive(:send_bake_cancelled).with(order, refunded: true)
+        result = described_class.new(bake_day).call
+        expect(order.reload.status).to eq("cancelled")
+        expect(order.payment.reload.status).to eq("refunded")
+        expect(result.stripe_refunds_count).to eq(1)
+        expect(result).to be_success
+      end
+    end
+
+    context "when a Stripe refund actually fails" do
+      let!(:order) { stripe_order }
+
+      before { stub_stripe_refund_create(payment_intent_id: order.payment.stripe_payment_intent_id, status: "failed") }
 
       it "records a failure and leaves the order untouched" do
         result = described_class.new(bake_day).call

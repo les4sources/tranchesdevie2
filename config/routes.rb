@@ -122,6 +122,7 @@ Rails.application.routes.draw do
       collection do
         get :refunds
         get :baker_revenue
+        get :payouts
       end
     end
     get "billing", to: "billing#index", as: :billing

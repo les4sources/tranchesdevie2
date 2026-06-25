@@ -42,6 +42,17 @@ class Admin::ReportsController < Admin::BaseController
     @report = BakerRevenueService.new(start_date: @start_date, end_date: @end_date).call
   end
 
+  # Reporting des versements Stripe (#49). Appels Stripe live (mis en cache court
+  # par le service) ; en cas d'échec Stripe, `@report.error` porte un message FR
+  # et la vue affiche une alerte propre — jamais de 500.
+  def payouts
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_month
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @report = StripePayoutReportService.new(start_date: @start_date, end_date: @end_date).call
+  end
+
   private
 
   def parsed_date(value)

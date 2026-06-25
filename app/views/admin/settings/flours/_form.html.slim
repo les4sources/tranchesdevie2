@@ -19,6 +19,41 @@
       - if flour.kneader_limit_grams.present?
         p.text-xs.text-gray-500 = "#{(flour.kneader_limit_grams / 1000.0).round(1)} kg"
 
+  .space-y-4.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    h3.text-sm.font-semibold.text-gray-700 Ratio de panification
+    p.text-xs.text-gray-500 Proportions utilisées pour calculer farine, eau, sel et levain dans le tableau de panification.
+    .grid.grid-cols-1.md:grid-cols-4.gap-6
+      .space-y-2
+        = f.label :flour_ratio, "Farine / pâte", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :flour_ratio, step: "any", min: 0, class: admin_input_class
+      .space-y-2
+        = f.label :water_ratio, "Eau / farine", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :water_ratio, step: "any", min: 0, class: admin_input_class
+      .space-y-2
+        = f.label :salt_ratio, "Sel / farine", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :salt_ratio, step: "any", min: 0, class: admin_input_class
+      .space-y-2
+        = f.label :levain_ratio, "Levain / pâte", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :levain_ratio, step: "any", min: 0, class: admin_input_class
+    .space-y-2.md:w-1/3
+      = f.label :levain_type, "Type de levain", class: "block text-sm font-medium text-gray-700"
+      = f.select :levain_type, Flour.levain_types.keys.map { |k| [ k.capitalize, k ] }, {}, class: admin_input_class
+
+  .grid.grid-cols-1.md:grid-cols-3.gap-6
+    .space-y-2
+      = f.label :origin, "Moulin d'origine", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :origin, class: admin_input_class, placeholder: "Moulin de la Grange, Tongrinne…"
+    .space-y-2
+      = f.label :grade, "Type / raffinage", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :grade, class: admin_input_class, placeholder: "T110, T170…"
+    .space-y-2
+      = f.label :price_per_kg_euros, "Prix au kg (€)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :price_per_kg_euros, step: 0.01, min: 0, value: flour.price_per_kg_euros, class: admin_input_class
+
+  .space-y-2
+    = f.label :notes, "Notes (quantité de son, variété…)", class: "block text-sm font-medium text-gray-700"
+    = f.text_area :notes, rows: 3, class: admin_input_class
+
   .flex.justify-end.space-x-3
     = link_to "Annuler", admin_settings_flours_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
     = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

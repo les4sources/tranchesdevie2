@@ -8,6 +8,7 @@ class ProductVariant < ApplicationRecord
   has_many :ingredients, through: :variant_ingredients
   has_many :variant_group_restrictions, dependent: :destroy
   has_many :restricted_groups, through: :variant_group_restrictions, source: :group
+  has_many :variant_cost_prices, dependent: :destroy
 
   def group_ids
     restricted_group_ids
@@ -19,6 +20,7 @@ class ProductVariant < ApplicationRecord
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
   accepts_nested_attributes_for :variant_ingredients, allow_destroy: true, reject_if: :reject_blank_ingredient?
+  accepts_nested_attributes_for :variant_cost_prices, allow_destroy: true, reject_if: :reject_blank_cost_price?
 
   after_save :link_images_to_variant
 
@@ -28,6 +30,12 @@ class ProductVariant < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :store_channel, -> { where(channel: "store") }
+
+  # Variantes disponibles pour un jour de cuisson donné (wday).
+  # available_weekdays vide = aucune restriction (tous les jours de cuisson).
+  scope :available_on_weekday, ->(wday) {
+    where("cardinality(available_weekdays) = 0 OR ? = ANY(available_weekdays)", wday)
+  }
 
   scope :unrestricted, -> {
     where.not(id: VariantGroupRestriction.select(:product_variant_id))
@@ -44,8 +52,29 @@ class ProductVariant < ApplicationRecord
     end
   }
 
+  # Nettoie l'entrée du formulaire (cases à cocher + champ caché vide) en un
+  # tableau d'entiers trié et dédoublonné. Tableau vide = aucune restriction.
+  def available_weekdays=(values)
+    cleaned = Array(values).map { |v| v.to_s.strip }.reject(&:blank?).map(&:to_i).uniq.sort
+    super(cleaned)
+  end
+
+  # La variante est-elle restreinte à certains jours de cuisson ?
+  def restricted_to_weekdays?
+    available_weekdays.present?
+  end
+
+  # La variante est-elle disponible pour ce jour de la semaine (wday) ?
+  # Aucune restriction (tableau vide) = disponible tous les jours.
+  def available_on_weekday?(wday)
+    return true unless restricted_to_weekdays?
+
+    available_weekdays.include?(wday)
+  end
+
   def available_on?(date)
     return false unless active?
+    return false unless available_on_weekday?(date.wday)
 
     # If no availabilities are defined, product is always available
     return true if product_availabilities.empty?
@@ -54,6 +83,26 @@ class ProductVariant < ApplicationRecord
       "start_on <= ? AND (end_on IS NULL OR end_on >= ?)",
       date, date
     ).exists?
+  end
+
+  # Prix coûtant applicable à une date (#90), exposé pour le reporting (#54).
+  # Renvoie le montant (cents) du palier le plus récent dont la date
+  # d'activation est antérieure ou égale à `on`, ou `nil` si aucun palier n'est
+  # actif à cette date (coûtant manquant signalé explicitement — pas de zéro
+  # trompeur). Versionnement par date : insensible aux paliers postérieurs.
+  def cost_price_cents(on: Date.current)
+    variant_cost_prices
+      .where(active_from: ..on)
+      .ordered
+      .limit(1)
+      .pick(:amount_cents)
+  end
+
+  def cost_price_euros(on: Date.current)
+    cents = cost_price_cents(on: on)
+    return nil if cents.nil?
+
+    (cents / 100.0).round(2)
   end
 
   def price_euros
@@ -105,5 +154,15 @@ class ProductVariant < ApplicationRecord
 
     # Reject if ingredient_id is blank
     attributes["ingredient_id"].blank?
+  end
+
+  def reject_blank_cost_price?(attributes)
+    # Don't reject deletions or existing records.
+    return false if attributes["_destroy"].present?
+    return false if attributes["id"].present?
+
+    # Reject a brand-new blank row (no amount AND no date) so the spare
+    # "add" row in the form is ignored when left empty.
+    attributes["amount_euros"].to_s.strip.blank? && attributes["active_from"].to_s.strip.blank?
   end
 end

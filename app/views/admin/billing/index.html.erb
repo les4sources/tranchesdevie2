@@ -67,12 +67,10 @@
             </p>
           </div>
           <div>
-            <%# Génération de facture PDF : voir issue #38 (hors périmètre de cette page). %>
-            <button type="button" disabled
-              class="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
-              title="Génération de facture PDF à venir (#38)">
-              Facture PDF (à venir)
-            </button>
+            <%# Facture mensuelle groupée (par jour de cuisson) du client — #38. %>
+            <%= link_to "Facture PDF du mois",
+                  admin_period_invoice_path(customer_id: billing.customer.id, month: @month.strftime("%Y-%m")),
+                  class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
           </div>
         </div>
 
@@ -91,11 +89,14 @@
                 <tr>
                   <td class="px-4 py-2 text-gray-900 whitespace-nowrap">
                     <%= link_to l(order.bake_day.baked_on), admin_order_path(order), class: "hover:underline" %>
+                    <%= link_to "Facture PDF",
+                          admin_order_invoice_path(order_id: order.id),
+                          class: "block text-xs text-blue-600 hover:underline mt-0.5" %>
                   </td>
                   <td class="px-4 py-2 text-gray-600">
                     <ul class="space-y-0.5">
                       <% order.order_items.each do |item| %>
-                        <li><%= item.qty %>x <%= item.product_variant.name %></li>
+                        <li><%= item.qty %>x <%= item.full_name %></li>
                       <% end %>
                     </ul>
                   </td>

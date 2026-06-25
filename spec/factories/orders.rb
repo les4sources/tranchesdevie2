@@ -39,6 +39,18 @@ FactoryBot.define do
       source { :calendar }
     end
 
+    trait :payment_unpaid do
+      payment_status { :unpaid }
+    end
+
+    trait :payment_paid do
+      payment_status { :paid }
+    end
+
+    trait :payment_refunded do
+      payment_status { :refunded }
+    end
+
     trait :with_items do
       transient do
         items_count { 2 }

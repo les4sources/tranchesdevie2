@@ -7,6 +7,9 @@
     <p class="text-sm text-gray-600">
       Période du <%= l(@start_date) %> au <%= l(@end_date) %>
     </p>
+    <%= link_to "Revenus des boulangers →",
+                baker_revenue_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                class: "mt-1 inline-block text-sm font-medium text-blue-600 hover:text-blue-800" %>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
     <%= render "date_range_filter", start_date: @start_date, end_date: @end_date %>
@@ -62,7 +65,12 @@
 </section>
 
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-1">Remboursements</h2>
+  <div class="flex items-center justify-between mb-1">
+    <h2 class="text-lg font-medium text-gray-900">Remboursements</h2>
+    <%= link_to "Voir le détail →",
+                refunds_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
+  </div>
   <p class="text-sm text-gray-500 mb-4">
     Remboursements Stripe (commandes annulées remboursées) et remboursements vers le portefeuille
     sur la période, ventilés par jour de cuisson de la commande. Les commandes remboursées sont
@@ -71,7 +79,9 @@
   <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div>
       <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursements</dt>
-      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= @refunds[:count] %></dd>
+      <dd class="mt-2 text-2xl font-bold text-gray-900">
+        <%= link_to @refunds[:count], refunds_admin_reports_path(start_date: @start_date, end_date: @end_date), class: "text-gray-900 hover:text-blue-700 underline decoration-dotted" %>
+      </dd>
       <dd class="mt-1 text-sm text-gray-500">
         <%= @refunds[:stripe][:count] %> Stripe · <%= @refunds[:wallet][:count] %> portefeuille
       </dd>

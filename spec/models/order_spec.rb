@@ -1,17 +1,73 @@
 require 'rails_helper'
 
 RSpec.describe Order, type: :model do
+  # #97 : « payé » ne dépend QUE du paiement réel (payment_status), jamais du
+  # statut logistique. Passer une commande à « prêt » ne la rend pas « payée ».
   describe '#payment_received?' do
-    it 'is true for statuses reached after collecting payment' do
-      %i[paid ready picked_up no_show].each do |status|
-        expect(build(:order, status: status).payment_received?).to be(true)
+    it 'is true only when payment_status is paid (real payment / manual marking)' do
+      expect(build(:order, payment_status: :paid).payment_received?).to be(true)
+    end
+
+    it 'is false when payment_status is not paid, regardless of logistic status' do
+      %i[unpaid refunded].each do |payment_status|
+        expect(build(:order, payment_status: payment_status).payment_received?).to be(false)
       end
     end
 
-    it 'is false before payment is collected or once cancelled' do
-      %i[pending planned unpaid cancelled].each do |status|
-        expect(build(:order, status: status).payment_received?).to be(false)
+    it 'is false for an advanced logistic status with no real payment (#97 bug)' do
+      # Commande facturable passée à « prêt » sans paiement réel : non payée.
+      %i[ready picked_up no_show].each do |status|
+        order = build(:order, status: status, payment_status: :unpaid)
+        expect(order.payment_received?).to be(false)
       end
+    end
+  end
+
+  describe 'payment is never inferred from the "ready" transition (#97)' do
+    it 'does not mark a billable order paid when it is marked ready' do
+      order = create(:order, :unpaid, :payment_unpaid)
+
+      order.transition_to!(:ready)
+
+      expect(order.reload.payment_status).to eq('unpaid')
+      expect(order.payment_received?).to be(false)
+    end
+
+    it 'keeps reflecting a real online payment after the ready transition' do
+      order = create(:order, :paid)
+      create(:payment, order: order) # paiement Stripe réel → payment_status paid (#41)
+      order.reload.transition_to!(:ready) # paid -> ready
+
+      expect(order.reload.payment_received?).to be(true)
+    end
+  end
+
+  describe '#recompute_payment_status! and .marked_paid_without_real_payment (#97 cleanup)' do
+    it 'downgrades an order with no real payment back to unpaid' do
+      order = create(:order, :ready, :payment_paid) # marquée payée à tort
+      expect(order.payment_received?).to be(true)
+
+      order.recompute_payment_status!
+
+      expect(order.reload.payment_status).to eq('unpaid')
+    end
+
+    it 'keeps an order with a real payment as paid' do
+      order = create(:order, :ready, :payment_unpaid)
+      create(:payment, order: order)
+
+      order.recompute_payment_status!
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'identifies orders marked paid without a real payment' do
+      bake_day = create(:bake_day)
+      wrong = create(:order, :ready, :payment_unpaid, bake_day: bake_day)
+      really_paid = create(:order, :ready, :payment_paid, bake_day: bake_day)
+
+      expect(Order.marked_paid_without_real_payment).to include(wrong)
+      expect(Order.marked_paid_without_real_payment).not_to include(really_paid)
     end
   end
 
@@ -55,6 +111,110 @@ RSpec.describe Order, type: :model do
       create(:payment, order: order)
 
       expect(order.reload.payment_refunded?).to be(false)
+    end
+  end
+
+  describe 'payment_status / invoice_status enums (#41)' do
+    it 'leaves the logistic status enum untouched (additive increment)' do
+      expect(Order.statuses.keys).to contain_exactly(
+        'pending', 'paid', 'ready', 'picked_up', 'no_show', 'cancelled', 'unpaid', 'planned'
+      )
+    end
+
+    it 'defaults a new order to unpaid / not_invoiced' do
+      order = create(:order)
+
+      expect(order.payment_status).to eq('unpaid')
+      expect(order.invoice_status).to eq('not_invoiced')
+    end
+  end
+
+  describe '#derived_payment_status (source de vérité = transactions réelles)' do
+    it 'is "paid" when a successful Stripe payment exists' do
+      order = create(:order)
+      create(:payment, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('paid')
+    end
+
+    it 'is "paid" when a wallet debit exists' do
+      order = create(:order, :from_calendar)
+      create(:wallet_transaction, :order_debit, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('paid')
+    end
+
+    it 'is "refunded" when the payment is refunded (takes precedence over paid)' do
+      order = create(:order, :cancelled)
+      create(:payment, :refunded, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('refunded')
+    end
+
+    it 'is "refunded" when a wallet refund transaction exists' do
+      order = create(:order, :cancelled)
+      create(:wallet_transaction, :order_refund, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('refunded')
+    end
+
+    it 'is "unpaid" when no real payment trace exists' do
+      expect(create(:order).derived_payment_status).to eq('unpaid')
+    end
+  end
+
+  describe 'automatic payment_status synchronisation from transactions' do
+    it 'syncs to paid when a Stripe payment is recorded' do
+      order = create(:order, :pending)
+      expect(order.payment_status).to eq('unpaid')
+
+      create(:payment, order: order)
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'syncs to paid when a wallet debit is recorded' do
+      order = create(:order, :from_calendar, :planned)
+
+      create(:wallet_transaction, :order_debit, order: order)
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'syncs to refunded when the payment becomes refunded' do
+      order = create(:order)
+      payment = create(:payment, order: order)
+      expect(order.reload.payment_status).to eq('paid')
+
+      payment.update!(status: :refunded)
+
+      expect(order.reload.payment_status).to eq('refunded')
+    end
+
+    it 'ignores wallet top-ups (no order attached)' do
+      wallet = create(:wallet)
+
+      expect { create(:wallet_transaction, :top_up, wallet: wallet) }.not_to raise_error
+    end
+  end
+
+  describe '#sync_payment_status! and manual marking' do
+    it 'preserves a manual "paid" marking on an offline order with no transaction' do
+      order = create(:order, :unpaid)
+      order.update!(payment_status: :paid)
+
+      # No Stripe/wallet transaction exists: a sync must not downgrade to unpaid.
+      order.sync_payment_status!
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'does not change payment_status when the logistic status changes' do
+      order = create(:order, :paid, :payment_paid)
+
+      order.transition_to!(:ready)
+
+      expect(order.reload.payment_status).to eq('paid')
     end
   end
 
@@ -155,6 +315,39 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe '.detailed_refunds_between (#100)' do
+    let(:range_start) { Date.new(2026, 5, 1) }
+    let(:range_end) { Date.new(2026, 5, 31) }
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+
+    it 'lists each Stripe and wallet refund with customer, amount, order and source' do
+      customer = create(:customer, first_name: "Jo", last_name: "Martin")
+      stripe_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 2000)
+      create(:payment, :refunded, order: stripe_order)
+      wallet_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 1500)
+      create(:wallet_transaction, :order_refund, order: wallet_order, amount_cents: 1500, description: "Remboursement")
+
+      details = described_class.detailed_refunds_between(range_start, range_end)
+
+      expect(details.size).to eq(2)
+      expect(details.map { |r| r[:source] }).to contain_exactly(:stripe, :wallet)
+      stripe = details.find { |r| r[:source] == :stripe }
+      wallet = details.find { |r| r[:source] == :wallet }
+      expect(stripe[:amount_cents]).to eq(2000)
+      expect(stripe[:customer_name]).to eq("Jo Martin")
+      expect(stripe[:order]).to eq(stripe_order)
+      expect(wallet[:amount_cents]).to eq(1500)
+      expect(wallet[:reason]).to eq("Remboursement")
+    end
+
+    it 'excludes refunds whose bake day is outside the range' do
+      out = create(:order, :cancelled, bake_day: create(:bake_day, baked_on: Date.new(2026, 4, 1)), total_cents: 2000)
+      create(:payment, :refunded, order: out)
+
+      expect(described_class.detailed_refunds_between(range_start, range_end)).to be_empty
+    end
+  end
+
   describe '#paid_at' do
     it 'uses the Stripe payment timestamp' do
       order = create(:order)
@@ -229,6 +422,61 @@ RSpec.describe Order, type: :model do
 
       result = described_class.sales_by_internal_category_between(start_date, end_date)
       expect(result).to be_empty
+    end
+  end
+
+  describe '#bread_bags_count (#52)' do
+    it 'counts one bag per produced-bread unit, excluding dough balls and resales' do
+      order = create(:order)
+      bread = create(:product_variant, product: create(:product, category: :breads, internal_category: :boulangerie))
+      dough = create(:product_variant, product: create(:product, :dough_ball, internal_category: :boulangerie))
+      resale = create(:product_variant, product: create(:product, category: :breads, internal_category: :epicerie))
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+      create(:order_item, order: order, product_variant: dough, qty: 2)
+      create(:order_item, order: order, product_variant: resale, qty: 5)
+
+      expect(order.reload.bread_bags_count).to eq(3)
+    end
+
+    it 'is zero for an order with only dough balls' do
+      order = create(:order)
+      dough = create(:product_variant, product: create(:product, :dough_ball))
+      create(:order_item, order: order, product_variant: dough, qty: 4)
+
+      expect(order.reload.bread_bags_count).to eq(0)
+    end
+  end
+
+  describe '#bread_bags_cost_cents (#52)' do
+    let(:bread) { create(:product_variant, product: create(:product, category: :breads, internal_category: :boulangerie)) }
+
+    it 'is the bag count times the bag price applicable on the bake day' do
+      bake_day = create(:bake_day, baked_on: Date.new(2026, 2, 1))
+      order = create(:order, bake_day: bake_day)
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+      create(:bread_bag_price, amount_cents: 4, active_from: Date.new(2026, 1, 1))
+
+      expect(order.reload.bread_bags_cost_cents).to eq(12)
+    end
+
+    it 'uses the price versioned by date (later tiers do not affect earlier bake days)' do
+      create(:bread_bag_price, amount_cents: 4, active_from: Date.new(2026, 1, 1))
+      create(:bread_bag_price, amount_cents: 6, active_from: Date.new(2026, 3, 1))
+
+      early = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 2, 1)))
+      create(:order_item, order: early, product_variant: bread, qty: 2)
+      late = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 3, 15)))
+      create(:order_item, order: late, product_variant: bread, qty: 2)
+
+      expect(early.reload.bread_bags_cost_cents).to eq(8)  # 2 × 4
+      expect(late.reload.bread_bags_cost_cents).to eq(12) # 2 × 6
+    end
+
+    it 'is zero when no bag price is configured for the date' do
+      order = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 2, 1)))
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+
+      expect(order.reload.bread_bags_cost_cents).to eq(0)
     end
   end
 end

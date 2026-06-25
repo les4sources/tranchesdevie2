@@ -27,6 +27,7 @@
                   span.inline-flex.items-center.rounded-full.bg-gray-100.px-2.5.py-0.5.text-xs.font-medium.text-gray-600 Inactif
               td.px-4.py-3.text-sm
                 = link_to "Modifier", edit_admin_settings_artisan_path(artisan), class: "text-blue-600 hover:text-blue-800 mr-3"
+                = link_to "Parts de revenu", admin_settings_artisan_revenue_shares_path(artisan), class: "text-blue-600 hover:text-blue-800"
   - else
     .px-4.py-8.text-center.text-sm.text-gray-500
       | Aucun artisan enregistré

@@ -15,10 +15,31 @@ class Admin::ReportsController < Admin::BaseController
     @total_stripe_fees_cents = @stripe_fees_cents + @refund_stripe_fees_cents
     @net_revenue_cents = @revenue_cents - @total_stripe_fees_cents
     @top_customers = Order.top_customers_between(@start_date, @end_date, limit: 10)
-    @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, [ 2, 5 ])
+    @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, BakeDay::COOKING_WDAYS)
     @monthly_sales = Order.sales_by_month_between(@start_date, @end_date)
     @orders_count = Order.completed.in_bake_day_range(@start_date, @end_date).distinct.count(:id)
     @average_order_value_cents = @orders_count.positive? ? (@revenue_cents.to_f / @orders_count).round : 0
+  end
+
+  # Drill-down depuis le total des remboursements (#100) : liste détaillée des
+  # remboursements de la période (Stripe + portefeuille).
+  def refunds
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @refunds_summary = Order.refunds_summary_between(@start_date, @end_date)
+    @refund_details = Order.detailed_refunds_between(@start_date, @end_date)
+  end
+
+  # Reporting des revenus des boulangers (#54). Filtre par période ; le détail
+  # est ventilé par jour de production, avec cumul par artisan.
+  def baker_revenue
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @report = BakerRevenueService.new(start_date: @start_date, end_date: @end_date).call
   end
 
   private

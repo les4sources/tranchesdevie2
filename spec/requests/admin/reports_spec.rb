@@ -83,5 +83,40 @@ RSpec.describe "Admin::Reports", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Ventes par catégorie interne")
     end
+
+    # #100 : drill-down détaillé des remboursements depuis le total.
+    describe "GET /admin/reports/refunds" do
+      let(:customer) { create(:customer, first_name: "Joséphine", last_name: "Martin") }
+
+      it "liste les remboursements Stripe et portefeuille de la période avec montants" do
+        stripe_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 2000)
+        create(:payment, :refunded, order: stripe_order, stripe_fee_cents: 60)
+
+        wallet_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 1500)
+        create(:wallet_transaction, :order_refund, order: wallet_order, amount_cents: 1500)
+
+        get refunds_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Détail des remboursements")
+        expect(response.body).to include("Joséphine Martin")
+        expect(response.body).to include(stripe_order.order_number)
+        expect(response.body).to include(wallet_order.order_number)
+        expect(response.body).to include("20,00") # 2000 cents Stripe
+        expect(response.body).to include("15,00") # 1500 cents portefeuille
+      end
+
+      it "exclut les remboursements hors période" do
+        out = create(:order, :cancelled, customer: customer,
+                                          bake_day: create(:bake_day, baked_on: Date.new(2026, 4, 1)), total_cents: 9999)
+        create(:payment, :refunded, order: out)
+
+        get refunds_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include(out.order_number)
+        expect(response.body).to include("Aucun remboursement sur cette période.")
+      end
+    end
   end
 end

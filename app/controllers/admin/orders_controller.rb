@@ -7,6 +7,7 @@ class Admin::OrdersController < Admin::BaseController
 
     @orders = @orders.by_bake_day(BakeDay.find(params[:bake_day_id])) if params[:bake_day_id].present?
     @orders = @orders.where(status: params[:status]) if params[:status].present?
+    @orders = @orders.where(payment_status: params[:payment_status]) if params[:payment_status].present?
 
     @bake_days = BakeDay.future.ordered
   end
@@ -205,6 +206,7 @@ class Admin::OrdersController < Admin::BaseController
       :customer_id,
       :bake_day_id,
       :status,
+      :payment_status,
       :requires_invoice,
       :final_total_euros,
       variant_quantities: {}

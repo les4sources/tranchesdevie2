@@ -26,6 +26,21 @@ RSpec.describe 'Cart', type: :request do
       post cart_add_path, params: { product_variant_id: inactive.id }
       expect(session[:cart]).to be_blank
     end
+
+    # ISC-86: garde-fou par jour de cuisson.
+    it 'refuses a friday-only variant for a tuesday bake day' do
+      friday_variant = create(:product_variant, :friday_only, product: product)
+      tuesday = create(:bake_day, :tuesday, cut_off_at: 2.days.from_now)
+      post cart_add_path, params: { product_variant_id: friday_variant.id, bake_day_id: tuesday.id }
+      expect(session[:cart]).to be_blank
+    end
+
+    it 'accepts a friday-only variant for a friday bake day' do
+      friday_variant = create(:product_variant, :friday_only, product: product)
+      friday = create(:bake_day, :friday, cut_off_at: 2.days.from_now)
+      post cart_add_path, params: { product_variant_id: friday_variant.id, bake_day_id: friday.id }
+      expect(session[:cart].size).to eq(1)
+    end
   end
 
   describe 'PATCH /cart/update (ISC-6)' do

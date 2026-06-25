@@ -49,5 +49,28 @@ RSpec.describe "Admin::Billing", type: :request do
       get admin_billing_path(month: "pas-une-date")
       expect(response).to have_http_status(:ok)
     end
+
+    it "affiche le nom du produit en plus de la variante dans le détail (#98)" do
+      product = create(:product, name: "Pain froment")
+      variant = create(:product_variant, product: product, name: "Petit 600 g")
+      detailed = create(:order, :unpaid, customer: pro, bake_day: bake_day, total_cents: 600)
+      create(:order_item, order: detailed, product_variant: variant, qty: 1)
+
+      get admin_billing_path(month: "2026-05")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Pain froment — Petit 600 g")
+    end
+
+    it "inclut le nom du produit + variante dans l'export CSV (#98)" do
+      product = create(:product, name: "Pain seigle")
+      variant = create(:product_variant, product: product, name: "Grand 1 kg")
+      detailed = create(:order, :unpaid, customer: pro, bake_day: bake_day, total_cents: 800)
+      create(:order_item, order: detailed, product_variant: variant, qty: 2)
+
+      get admin_billing_path(month: "2026-05", format: :csv)
+
+      expect(response.body).to include("2x Pain seigle — Grand 1 kg")
+    end
   end
 end

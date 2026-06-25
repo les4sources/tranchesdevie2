@@ -9,6 +9,17 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # wday du jour de cuisson sélectionné en session (s'il est encore commandable), sinon nil.
+  # Sert à filtrer le catalogue selon la restriction de jour des variantes.
+  def selected_bake_day_wday
+    return nil if session[:bake_day_id].blank?
+
+    bake_day = BakeDay.find_by(id: session[:bake_day_id])
+    return nil unless bake_day&.can_order?
+
+    bake_day.baked_on.wday
+  end
+
   def admin_authenticated?
     session[:admin_authenticated] == true &&
       session[:admin_authenticated_at].present? &&

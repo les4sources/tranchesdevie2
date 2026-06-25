@@ -3,6 +3,11 @@ class ProductsController < ApplicationController
     @product = Product.not_deleted.active.store_channel.find(params[:id])
     @variants = @product.product_variants.active.store_channel.visible_to_customer(current_customer).order(:name)
 
+    # Si un jour de cuisson est choisi, n'afficher que les variantes disponibles ce jour-là.
+    if (selected_wday = selected_bake_day_wday)
+      @variants = @variants.select { |v| v.available_on_weekday?(selected_wday) }
+    end
+
     if @variants.empty?
       redirect_to catalog_path, alert: "Produit non disponible"
       return

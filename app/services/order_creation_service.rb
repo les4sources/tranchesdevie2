@@ -1,13 +1,14 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false)
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false, group_name: nil)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
     @payment_intent_id = payment_intent_id
     @payment_method = payment_method
     @skip_capacity_check = skip_capacity_check
+    @group_name = group_name.presence
     @errors = []
   end
 
@@ -34,7 +35,8 @@ class OrderCreationService
         bake_day: @bake_day,
         total_cents: calculate_total,
         payment_intent_id: @payment_intent_id,
-        status: initial_status
+        status: initial_status,
+        group_name: @group_name
       )
 
       create_order_items
@@ -70,6 +72,11 @@ class OrderCreationService
       variant = ProductVariant.find(item["product_variant_id"])
       unless variant.active? && variant.channel == "store"
         @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est plus disponible"
+      end
+
+      # Garde-fou : variante restreinte à certains jours de cuisson uniquement.
+      unless variant.available_on_weekday?(@bake_day.baked_on.wday)
+        @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est pas disponible le #{BakeDay::WDAY_LABELS[@bake_day.baked_on.wday]}"
       end
     end
 

@@ -98,6 +98,9 @@
         <p class="text-base text-gray-700">
           <%= @product.description %>
         </p>
+        <% if @product.pizza_party_role_party? %>
+          <p class="mt-2 text-xs text-gray-500">Nous comptons 1 boule de pâte à pizza / personne</p>
+        <% end %>
       </div>
 
       <!-- Availability -->
@@ -119,6 +122,10 @@
                 <div class="flex flex-col">
                   <span class="block text-sm font-medium text-gray-900"><%= variant.name %></span>
                   <span class="mt-1 block text-sm text-gray-500"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %></span>
+                  <% restriction = ProductVariantDecorator.decorate(variant).weekday_restriction_label %>
+                  <% if restriction %>
+                    <span class="mt-1 block text-xs font-medium text-amber-700"><%= restriction %></span>
+                  <% end %>
                 </div>
               </div>
               <% if variant.id == @selected_variant.id %>
@@ -137,10 +144,11 @@
           <%= f.hidden_field :qty, value: 1, data: { quantity_selector_target: "input" } %>
           
           <!-- Quantity selector -->
+          <% quantity_label = @product.pizza_party_role_party? ? "Nombre de personnes" : "Quantité" %>
           <div>
-            <label class="sr-only">Quantité</label>
+            <label class="sr-only"><%= quantity_label %></label>
             <div class="flex items-center gap-3">
-              <span class="text-sm font-medium text-gray-900">Quantité</span>
+              <span class="text-sm font-medium text-gray-900"><%= quantity_label %></span>
               <div class="flex items-center gap-2">
                 <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                   &minus;

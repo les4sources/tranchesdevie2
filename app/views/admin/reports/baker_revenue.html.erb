@@ -1,0 +1,169 @@
+<% content_for :title, "Revenus des boulangers" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div>
+    <div class="flex items-center gap-3">
+      <%= link_to "← Reporting", admin_reports_path(start_date: @start_date, end_date: @end_date),
+                  class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Revenus des boulangers</h1>
+    <p class="text-sm text-gray-600">
+      Période du <%= l(@start_date) %> au <%= l(@end_date) %>
+    </p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <%= form_with url: baker_revenue_admin_reports_path, method: :get, local: true,
+                  class: "flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0" do |f| %>
+      <div>
+        <%= f.label :start_date, "Date de début", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.date_field :start_date, value: @start_date, class: "mt-1 #{admin_input_class}" %>
+      </div>
+      <div>
+        <%= f.label :end_date, "Date de fin", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.date_field :end_date, value: @end_date, class: "mt-1 #{admin_input_class}" %>
+      </div>
+      <div>
+        <%= f.submit "Actualiser", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @report.warnings.any? %>
+  <div class="mb-6 rounded-md bg-amber-50 border border-amber-200 p-4">
+    <h2 class="text-sm font-semibold text-amber-800">Avertissements</h2>
+    <ul class="mt-2 list-disc list-inside text-sm text-amber-700 space-y-1">
+      <% @report.warnings.each do |warning| %>
+        <li><%= warning %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%# Synthèse de période %>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Chiffre d'affaires</h2>
+    <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_revenue_cents) %></p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Marge brute</h2>
+    <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.gross_margin_cents) %></p>
+    <p class="mt-1 text-xs text-gray-500">CA − coûtant − sacs − transport</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Part Les 4 Sources</h2>
+    <p class="mt-2 text-2xl font-bold text-emerald-700"><%= reports_currency(@report.four_sources_cents) %></p>
+    <p class="mt-1 text-xs text-gray-500">30 % de la marge brute</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Pool boulangers</h2>
+    <p class="mt-2 text-2xl font-bold text-blue-700"><%= reports_currency(@report.baker_pool_cents) %></p>
+    <p class="mt-1 text-xs text-gray-500">70 % de la marge brute</p>
+  </div>
+</div>
+
+<%# Cumul par artisan %>
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-4">Revenu par boulanger (cumul sur la période)</h2>
+  <% if @report.artisan_totals.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Boulanger</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Jours de production</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Revenu</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% @report.artisan_totals.each do |total| %>
+            <tr>
+              <td class="px-4 py-3 text-sm text-gray-900 font-medium"><%= total.artisan.name %></td>
+              <td class="px-4 py-3 text-sm text-gray-600"><%= total.days_count %></td>
+              <td class="px-4 py-3 text-sm text-gray-900 text-right font-semibold"><%= reports_currency(total.amount_cents) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-sm text-gray-500">Aucun boulanger affecté à un jour de production sur la période.</p>
+  <% end %>
+</section>
+
+<%# Détail par jour de production %>
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-4">Détail par jour de production</h2>
+  <% if @report.days.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase">Jour</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">CA</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Coûtant</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Sacs</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Transport</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Marge brute</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part 4S</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Pool</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase">Revenu par boulanger</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% @report.days.each do |day| %>
+            <tr class="<%= 'bg-amber-50' if day.percent_overflow %>">
+              <td class="px-3 py-3 text-gray-900 font-medium whitespace-nowrap"><%= l(day.date) %></td>
+              <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(day.revenue_cents) %></td>
+              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.cost_price_cents) %></td>
+              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.bread_bags_cents) %></td>
+              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.transport_cents) %></td>
+              <td class="px-3 py-3 text-gray-900 text-right font-semibold"><%= reports_currency(day.gross_margin_cents) %></td>
+              <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(day.four_sources_cents) %></td>
+              <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(day.baker_pool_cents) %></td>
+              <td class="px-3 py-3 text-gray-700">
+                <% if day.artisan_shares.any? %>
+                  <ul class="space-y-0.5">
+                    <% day.artisan_shares.each do |share| %>
+                      <li>
+                        <%= share.artisan.name %> —
+                        <% if share.percent.nil? %>
+                          <span class="text-amber-600">part non configurée</span>
+                        <% else %>
+                          <%= reports_currency(share.amount_cents) %>
+                          <span class="text-gray-400">(<%= number_with_precision(share.percent, strip_insignificant_zeros: true) %> %)</span>
+                        <% end %>
+                      </li>
+                    <% end %>
+                  </ul>
+                  <% if day.percent_overflow %>
+                    <p class="mt-1 text-xs text-amber-700">⚠ Somme des parts &gt; 100 %</p>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400">Aucun boulanger affecté</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-gray-50 font-semibold">
+          <tr>
+            <td class="px-3 py-3 text-gray-900">Total</td>
+            <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(@report.total_revenue_cents) %></td>
+            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_cost_price_cents) %></td>
+            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_bread_bags_cents) %></td>
+            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_transport_cents) %></td>
+            <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(@report.gross_margin_cents) %></td>
+            <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(@report.four_sources_cents) %></td>
+            <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(@report.baker_pool_cents) %></td>
+            <td class="px-3 py-3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-sm text-gray-500">Aucun jour de production sur la période sélectionnée.</p>
+  <% end %>
+</section>

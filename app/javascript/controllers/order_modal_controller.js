@@ -58,6 +58,12 @@ export default class extends Controller {
     document.body.style.overflow = ''
   }
 
+  // Laisse le lien de téléchargement de facture (#38) suivre son href sans
+  // ouvrir la modale : on stoppe la propagation vers le clic de la carte.
+  download(event) {
+    event.stopPropagation()
+  }
+
   closeBackground(event) {
     if (event.target === this.overlayTarget) {
       this.close()

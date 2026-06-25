@@ -69,6 +69,10 @@ gem "draper"
 # Soft deletion for models
 gem "soft_deletion"
 
+# Génération de PDF en Ruby pur (factures) — aucun binaire système requis (#38)
+gem "prawn"
+gem "prawn-table"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri mingw mswin x64_mingw ], require: "debug/prelude"
@@ -93,6 +97,9 @@ group :test do
   gem "vcr"
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Lecture du texte des PDF générés pour vérifier leur contenu (#38)
+  gem "pdf-reader"
 end
 
 group :development do

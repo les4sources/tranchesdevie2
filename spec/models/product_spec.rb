@@ -17,4 +17,21 @@ RSpec.describe Product, type: :model do
       expect(product.internal_category_epicerie?).to be(true)
     end
   end
+
+  describe "#incurs_bag_cost? (#52)" do
+    it "is true for an in-house produced bread" do
+      product = build(:product, category: :breads, internal_category: :boulangerie)
+      expect(product.incurs_bag_cost?).to be(true)
+    end
+
+    it "is false for dough balls (pâtons)" do
+      product = build(:product, :dough_ball, internal_category: :boulangerie)
+      expect(product.incurs_bag_cost?).to be(false)
+    end
+
+    it "is false for a resold (non-produced) bread" do
+      product = build(:product, category: :breads, internal_category: :epicerie)
+      expect(product.incurs_bag_cost?).to be(false)
+    end
+  end
 end

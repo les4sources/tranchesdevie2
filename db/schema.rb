@@ -162,21 +162,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170300) do
     t.index ["name"], name: "index_flours_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
 
-  create_table "group_product_discounts", force: :cascade do |t|
-    t.bigint "group_id", null: false
-    t.bigint "product_id"
-    t.bigint "product_variant_id"
-    t.string "discount_kind", default: "percent", null: false
-    t.integer "discount_value", default: 0, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["group_id", "product_id"], name: "index_gpd_unique_group_product", unique: true, where: "(product_variant_id IS NULL)"
-    t.index ["group_id", "product_variant_id"], name: "index_gpd_unique_group_variant", unique: true, where: "(product_variant_id IS NOT NULL)"
-    t.index ["group_id"], name: "index_group_product_discounts_on_group_id"
-    t.index ["product_id"], name: "index_group_product_discounts_on_product_id"
-    t.index ["product_variant_id"], name: "index_group_product_discounts_on_product_variant_id"
-  end
-
   create_table "groups", force: :cascade do |t|
     t.string "name", null: false
     t.integer "discount_percent", null: false
@@ -593,9 +578,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170300) do
   add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
-  add_foreign_key "group_product_discounts", "groups"
-  add_foreign_key "group_product_discounts", "product_variants"
-  add_foreign_key "group_product_discounts", "products"
   add_foreign_key "invoice_orders", "invoices"
   add_foreign_key "invoice_orders", "orders"
   add_foreign_key "invoices", "customers"

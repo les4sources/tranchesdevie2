@@ -43,6 +43,16 @@ class CartController < ApplicationController
       return
     end
 
+    # Si un jour de cuisson est déjà choisi, refuser une variante non disponible ce jour-là.
+    selected_bake_day_id = bake_day_id.presence || session[:bake_day_id]
+    if selected_bake_day_id.present?
+      selected_bake_day = BakeDay.find_by(id: selected_bake_day_id)
+      if selected_bake_day && !variant.available_on_weekday?(selected_bake_day.baked_on.wday)
+        respond_to_unavailable
+        return
+      end
+    end
+
     session[:bake_day_id] = bake_day_id if bake_day_id.present?
     session[:cart] ||= []
 
@@ -110,9 +120,15 @@ class CartController < ApplicationController
 
     if bake_day && bake_day.can_order? && !BakeCapacityService.new(bake_day).fully_booked?
       session[:bake_day_id] = bake_day.id
+      removed_count = remove_items_unavailable_for_bake_day!(bake_day)
       respond_to do |format|
-        format.json { render json: { success: true, bake_day_id: bake_day.id } }
-        format.html { redirect_to cart_path }
+        format.json { render json: { success: true, bake_day_id: bake_day.id, removed_count: removed_count } }
+        format.html do
+          notice = if removed_count.positive?
+            "#{removed_count} article(s) ont été retirés car non disponibles ce jour de cuisson."
+          end
+          redirect_to cart_path, notice: notice
+        end
       end
     else
       respond_to do |format|
@@ -170,21 +186,18 @@ class CartController < ApplicationController
   end
 
   def load_next_available_bake_days
-    # Récupérer tous les jours de cuisson futurs disponibles (mardis et vendredis)
+    # Récupérer tous les jours de cuisson futurs disponibles (cf. BakeDay::COOKING_WDAYS)
     available_bake_days = BakeDay.future
                                   .where("cut_off_at > ?", Time.current)
                                   .ordered
-                                  .select { |bd| bd.can_order? && [ 2, 5 ].include?(bd.baked_on.wday) }
+                                  .select { |bd| bd.can_order? && BakeDay::COOKING_WDAYS.include?(bd.baked_on.wday) }
 
     # Grouper par jour de la semaine et prendre le premier de chaque groupe
-    tuesday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 2 }
-    friday_bake_days = available_bake_days.select { |bd| bd.baked_on.wday == 5 }
-
-    result = []
-    result << tuesday_bake_days.first if tuesday_bake_days.any?
-    result << friday_bake_days.first if friday_bake_days.any?
-
-    result.compact.sort_by(&:baked_on)
+    available_bake_days
+      .group_by { |bd| bd.baked_on.wday }
+      .values
+      .map(&:first)
+      .sort_by(&:baked_on)
   end
 
   def respond_to_unavailable
@@ -198,14 +211,33 @@ class CartController < ApplicationController
     cart = session[:cart] || []
     return if cart.empty?
 
+    bake_day = BakeDay.find_by(id: session[:bake_day_id]) if session[:bake_day_id].present?
+
     available = cart.select do |item|
       variant = ProductVariant.find_by(id: item["product_variant_id"])
-      variant.present? && variant.active? && variant.channel == "store" && variant.product.present?
+      next false unless variant.present? && variant.active? && variant.channel == "store" && variant.product.present?
+      next false if bake_day && !variant.available_on_weekday?(bake_day.baked_on.wday)
+
+      true
     end
     removed_count = cart.size - available.size
     if removed_count.positive?
       session[:cart] = available
       flash.now[:notice] = "#{removed_count} article(s) ont été retirés de ton panier car ils ne sont plus disponibles."
     end
+  end
+
+  # Retire du panier les articles indisponibles pour ce jour de cuisson. Renvoie le nombre retiré.
+  def remove_items_unavailable_for_bake_day!(bake_day)
+    cart = session[:cart] || []
+    return 0 if cart.empty?
+
+    kept = cart.select do |item|
+      variant = ProductVariant.find_by(id: item["product_variant_id"])
+      variant.present? && variant.available_on_weekday?(bake_day.baked_on.wday)
+    end
+    removed_count = cart.size - kept.size
+    session[:cart] = kept if removed_count.positive?
+    removed_count
   end
 end

@@ -15,7 +15,7 @@ class Admin::ReportsController < Admin::BaseController
     @total_stripe_fees_cents = @stripe_fees_cents + @refund_stripe_fees_cents
     @net_revenue_cents = @revenue_cents - @total_stripe_fees_cents
     @top_customers = Order.top_customers_between(@start_date, @end_date, limit: 10)
-    @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, [ 2, 5 ])
+    @weekday_comparison = Order.sales_by_weekday_between(@start_date, @end_date, BakeDay::COOKING_WDAYS)
     @monthly_sales = Order.sales_by_month_between(@start_date, @end_date)
     @orders_count = Order.completed.in_bake_day_range(@start_date, @end_date).distinct.count(:id)
     @average_order_value_cents = @orders_count.positive? ? (@revenue_cents.to_f / @orders_count).round : 0

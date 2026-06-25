@@ -120,7 +120,8 @@ class Admin::ProductsController < Admin::BaseController
       product_images_attributes: [ :id, :image, :_destroy, :position ],
       variant_ingredients_attributes: [ :id, :ingredient_id, :quantity, :_destroy ],
       variant_cost_prices_attributes: [ :id, :amount_euros, :active_from, :_destroy ],
-      group_ids: []
+      group_ids: [],
+      available_weekdays: []
     )
   end
 end

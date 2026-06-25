@@ -7,11 +7,14 @@ class CatalogController < ApplicationController
   private
 
   def load_all_active_products
+    selected_wday = selected_bake_day_wday
+
     Product.not_deleted.active.store_channel.ordered.includes(
       product_variants: [ :variant_group_restrictions, { product_images: :image_attachment } ],
       product_images: :image_attachment
     ).map do |product|
       variants = product.product_variants.active.store_channel.visible_to_customer(current_customer)
+      variants = variants.select { |v| v.available_on_weekday?(selected_wday) } if selected_wday
       [ product, variants ] if variants.any?
     end.compact
   end

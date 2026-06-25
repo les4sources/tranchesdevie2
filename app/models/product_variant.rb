@@ -31,6 +31,12 @@ class ProductVariant < ApplicationRecord
   scope :active, -> { where(active: true) }
   scope :store_channel, -> { where(channel: "store") }
 
+  # Variantes disponibles pour un jour de cuisson donné (wday).
+  # available_weekdays vide = aucune restriction (tous les jours de cuisson).
+  scope :available_on_weekday, ->(wday) {
+    where("cardinality(available_weekdays) = 0 OR ? = ANY(available_weekdays)", wday)
+  }
+
   scope :unrestricted, -> {
     where.not(id: VariantGroupRestriction.select(:product_variant_id))
   }
@@ -46,8 +52,29 @@ class ProductVariant < ApplicationRecord
     end
   }
 
+  # Nettoie l'entrée du formulaire (cases à cocher + champ caché vide) en un
+  # tableau d'entiers trié et dédoublonné. Tableau vide = aucune restriction.
+  def available_weekdays=(values)
+    cleaned = Array(values).map { |v| v.to_s.strip }.reject(&:blank?).map(&:to_i).uniq.sort
+    super(cleaned)
+  end
+
+  # La variante est-elle restreinte à certains jours de cuisson ?
+  def restricted_to_weekdays?
+    available_weekdays.present?
+  end
+
+  # La variante est-elle disponible pour ce jour de la semaine (wday) ?
+  # Aucune restriction (tableau vide) = disponible tous les jours.
+  def available_on_weekday?(wday)
+    return true unless restricted_to_weekdays?
+
+    available_weekdays.include?(wday)
+  end
+
   def available_on?(date)
     return false unless active?
+    return false unless available_on_weekday?(date.wday)
 
     # If no availabilities are defined, product is always available
     return true if product_availabilities.empty?

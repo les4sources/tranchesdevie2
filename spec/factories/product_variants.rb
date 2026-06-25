@@ -17,5 +17,13 @@ FactoryBot.define do
     trait :admin_channel do
       channel { 'admin' }
     end
+
+    trait :tuesday_only do
+      available_weekdays { [ 2 ] }
+    end
+
+    trait :friday_only do
+      available_weekdays { [ 5 ] }
+    end
   end
 end

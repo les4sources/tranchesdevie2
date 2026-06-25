@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_25_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_25_170300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,6 +49,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_admin_pages_on_slug", unique: true
+  end
+
+  create_table "artisan_revenue_shares", force: :cascade do |t|
+    t.bigint "artisan_id", null: false
+    t.decimal "percent", precision: 6, scale: 3, null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id", "active_from"], name: "index_artisan_revenue_shares_on_artisan_id_and_active_from"
+    t.index ["artisan_id"], name: "index_artisan_revenue_shares_on_artisan_id"
   end
 
   create_table "artisans", force: :cascade do |t|
@@ -353,10 +363,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170000) do
     t.string "channel", default: "store", null: false
     t.datetime "deleted_at"
     t.integer "internal_category", default: 0, null: false
+    t.integer "pizza_party_role", default: 0, null: false
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
     t.index ["deleted_at"], name: "index_products_on_deleted_at"
     t.index ["internal_category"], name: "index_products_on_internal_category"
+  end
+
+  create_table "revenue_parameters", force: :cascade do |t|
+    t.string "key", null: false
+    t.integer "value", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key", "active_from"], name: "index_revenue_parameters_on_key_and_active_from"
   end
 
   create_table "sms_messages", force: :cascade do |t|
@@ -568,6 +588,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "artisan_revenue_shares", "artisans"
   add_foreign_key "bake_day_artisans", "artisans"
   add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "customer_groups", "customers"

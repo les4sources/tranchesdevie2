@@ -1,6 +1,10 @@
 class CheckoutController < ApplicationController
   before_action :ensure_cart_not_empty, except: [ :success ]
   before_action :ensure_bake_day_set, except: [ :success ]
+  # Garde-fou (#68) : on resynchronise la ligne forfait Pizza party AVANT de
+  # calculer le total / créer le PaymentIntent ou la commande, au cas où le
+  # panier aurait été modifié hors des actions du CartController. Idempotent.
+  before_action :sync_pizza_party_forfait!, only: [ :new, :create_payment_intent, :create_cash_order ]
   before_action :ensure_cutoff_not_passed, only: [ :new, :create_payment_intent, :create_cash_order ]
 
   def new
@@ -357,6 +361,11 @@ class CheckoutController < ApplicationController
   end
 
   private
+
+  # Resynchronise la ligne forfait Pizza party (#68). Idempotent.
+  def sync_pizza_party_forfait!
+    session[:cart] = PizzaPartyForfaitService.sync(session[:cart])
+  end
 
   def find_order_by_payment_intent(payment_intent_id)
     return nil unless payment_intent_id.present?

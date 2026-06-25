@@ -32,6 +32,16 @@ class Admin::ReportsController < Admin::BaseController
     @refund_details = Order.detailed_refunds_between(@start_date, @end_date)
   end
 
+  # Reporting des revenus des boulangers (#54). Filtre par période ; le détail
+  # est ventilé par jour de production, avec cumul par artisan.
+  def baker_revenue
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @report = BakerRevenueService.new(start_date: @start_date, end_date: @end_date).call
+  end
+
   private
 
   def parsed_date(value)

@@ -117,6 +117,7 @@ Rails.application.routes.draw do
     resources :reports, only: [ :index ] do
       collection do
         get :refunds
+        get :baker_revenue
       end
     end
     get "billing", to: "billing#index", as: :billing
@@ -168,10 +169,17 @@ Rails.application.routes.draw do
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"
-      resources :artisans
+      resources :artisans do
+        resources :revenue_shares, only: [ :index, :new, :create, :edit, :update, :destroy ],
+                                   controller: "artisan_revenue_shares", path: "parts-de-revenu"
+      end
       resources :ingredients
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
+      # Paramètres généraux historisés du calcul des revenus boulangers (#54) :
+      # transport (15 €/jour) et taux 4 Sources (30 %). Un seul contrôleur gère
+      # les deux clés via le paramètre `:key`.
+      resources :revenue_parameters, path: "revenus-boulangers", only: [ :index, :new, :create, :edit, :update, :destroy ]
     end
   end
 end

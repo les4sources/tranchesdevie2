@@ -1,0 +1,26 @@
+- key = revenue_parameter.key
+- is_transport = key == RevenueParameter::TRANSPORT
+- unit_label = is_transport ? "Montant (€ / jour de production)" : "Taux (%)"
+- current_input = revenue_parameter.persisted? ? number_with_precision(revenue_parameter.value / 100.0, strip_insignificant_zeros: true) : nil
+
+= form_with model: revenue_parameter, url: (revenue_parameter.persisted? ? admin_settings_revenue_parameter_path(revenue_parameter) : admin_settings_revenue_parameters_path), method: (revenue_parameter.persisted? ? :patch : :post), local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if revenue_parameter.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - revenue_parameter.errors.full_messages.each do |message|
+          li= message
+
+  = f.hidden_field :key, value: key
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :value_input, unit_label, class: "block text-sm font-medium text-gray-700"
+      = f.text_field :value_input, value: current_input, inputmode: "decimal", required: true, class: admin_input_class
+    .space-y-2
+      = f.label :active_from, "À partir du", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :active_from, class: admin_input_class
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_revenue_parameters_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit revenue_parameter.persisted? ? "Mettre à jour" : "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

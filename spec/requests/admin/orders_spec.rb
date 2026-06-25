@@ -44,4 +44,27 @@ RSpec.describe "Admin::Orders", type: :request do
       expect(response.body).to include("Payé le 12/05/2026")
     end
   end
+
+  describe "GET /admin/orders (index, group name #99)" do
+    it "shows the group name as primary with the customer name below it" do
+      customer = create(:customer, first_name: "Joséphine", last_name: "Martin")
+      create(:order, :unpaid, :with_items, customer: customer, group_name: "Entreprise X")
+
+      get admin_orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Entreprise X")
+      expect(response.body).to include("Joséphine Martin")
+    end
+
+    it "shows only the customer name when no group is set" do
+      customer = create(:customer, first_name: "Paul", last_name: "Durand")
+      create(:order, :unpaid, :with_items, customer: customer)
+
+      get admin_orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Paul Durand")
+    end
+  end
 end

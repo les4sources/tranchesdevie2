@@ -26,6 +26,20 @@ RSpec.describe "Admin::Customers", type: :request do
     end
   end
 
+  describe "GET /admin/customers (colonne Portefeuille)" do
+    it "affiche le solde du portefeuille s'il est positif, et rien sinon" do
+      with_balance = create(:customer, first_name: "Riche")
+      create(:wallet, customer: with_balance, balance_cents: 1250)
+      create(:customer, first_name: "SansWallet") # aucun wallet → colonne vide
+
+      get admin_customers_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Portf.")
+      expect(response.body).to include("12,50 €")
+    end
+  end
+
   # #36 : réglage admin « paiement cash autorisé » sur le client.
   describe "PATCH /admin/customers/:id" do
     it "autorise le paiement cash pour le client" do

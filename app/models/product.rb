@@ -6,6 +6,14 @@ class Product < ApplicationRecord
   # maison (boulangerie) des reventes (épicerie, traiteur, etc.).
   enum :internal_category, { boulangerie: 0, epicerie: 1, traiteur: 2, autre: 3 }, prefix: true
 
+  # Rôle dans le dispositif « Pizza party privée » (#68).
+  # - none    : produit ordinaire, sans lien avec les pizza partys.
+  # - party   : produit « Pizza party privée – Nombre de personnes » (1 boule /
+  #             personne) ; sa présence au panier déclenche le forfait.
+  # - forfait : le forfait Pizza party (40 €), compté UNE seule fois par
+  #             commande, synchronisé automatiquement par PizzaPartyForfaitService.
+  enum :pizza_party_role, { none: 0, party: 1, forfait: 2 }, prefix: true
+
   has_many :product_variants, dependent: :destroy
   has_many :product_availabilities, through: :product_variants
   has_many :product_images, dependent: :destroy
@@ -25,6 +33,8 @@ class Product < ApplicationRecord
   scope :ordered, -> { order(category: :asc, position: :asc, name: :asc) }
   scope :store_channel, -> { where(channel: "store") }
   scope :not_deleted, -> { where(deleted_at: nil) }
+  # Le produit forfait de la Pizza party (#68) — un seul attendu en base.
+  scope :pizza_party_forfait, -> { where(pizza_party_role: :forfait) }
 
   def display_name
     name

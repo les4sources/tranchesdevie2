@@ -390,7 +390,9 @@
               - quantities[variant_id] ||= 0
               - quantities[variant_id] += item[:qty]
           - customer_variant_quantities[customer.id] = quantities
-        .overflow-x-auto.rounded-xl.border.border-slate-100
+        / #71 : conteneur scrollable sur les 2 axes (max-h + overflow-auto) pour
+        / que l'en-tête produits (thead.sticky.top-0) reste figé au défilement vertical.
+        .max-h-[75vh].overflow-auto.rounded-xl.border.border-slate-100
           table.min-w-full.divide-y.divide-slate-100.text-sm
             thead.bg-slate-50.sticky.top-0.z-20
               tr

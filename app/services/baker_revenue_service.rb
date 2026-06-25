@@ -122,7 +122,9 @@ class BakerRevenueService
     revenue_cents = day_revenue_cents(bake_day)
     cost_price_cents = day_cost_price_cents(bake_day, date)
     bread_bags_cents = day_bread_bags_cents(bake_day)
-    transport_cents = RevenueParameter.transport_cents_on(date)
+    # Pas de vente ce jour-là (CA = 0) → aucun transport facturé : pas de
+    # fournée, donc pas de tournée. La marge brute (et le revenu net) reste à 0.
+    transport_cents = revenue_cents.zero? ? 0 : RevenueParameter.transport_cents_on(date)
 
     gross_margin_cents = revenue_cents - cost_price_cents - bread_bags_cents - transport_cents
     four_sources_cents = four_sources_cut(gross_margin_cents, date)

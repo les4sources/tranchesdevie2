@@ -112,6 +112,24 @@ RSpec.describe BakerRevenueService do
     end
   end
 
+  # --- Jour sans vente --------------------------------------------------------
+
+  describe "jour sans vente (CA = 0)" do
+    it "ne compte pas le transport et donne un revenu net de 0" do
+      create(:revenue_parameter, :transport, value: 1_500, active_from: Date.new(2026, 1, 1))
+      create(:revenue_parameter, :four_sources_rate, value: 3_000, active_from: Date.new(2026, 1, 1))
+      create(:bake_day, baked_on: Date.new(2026, 5, 12)) # aucune commande finalisée
+
+      day = report.days.first
+
+      expect(day.revenue_cents).to eq(0)
+      expect(day.transport_cents).to eq(0)
+      expect(day.gross_margin_cents).to eq(0)
+      expect(day.four_sources_cents).to eq(0)
+      expect(day.baker_pool_cents).to eq(0)
+    end
+  end
+
   # --- Répartition par artisan ------------------------------------------------
 
   describe "répartition du pool par artisan présent (% littéral)" do

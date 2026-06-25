@@ -7,6 +7,9 @@
     <p class="text-sm text-gray-600">
       Période du <%= l(@start_date) %> au <%= l(@end_date) %>
     </p>
+    <%= link_to "Revenus des boulangers →",
+                baker_revenue_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                class: "mt-1 inline-block text-sm font-medium text-blue-600 hover:text-blue-800" %>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
     <%= render "date_range_filter", start_date: @start_date, end_date: @end_date %>

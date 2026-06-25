@@ -122,12 +122,9 @@ export default class extends Controller {
       return sum + (item.qty * item.unit_price_cents)
     }, 0)
 
-    // Calculer la remise si le client a un groupe avec discount_percent
-    const customer = order.customer
-    const discountPercent = customer?.group?.discount_percent || 0
-    const discountCents = discountPercent > 0 
-      ? Math.round(subtotalCents * discountPercent / 100)
-      : 0
+    // Remise = différence entre le sous-total (prix public) et le total réel
+    // de la commande (qui fait foi, remises globale et/ou ciblées comprises).
+    const discountCents = Math.max(0, subtotalCents - order.total_cents)
 
     // Déterminer la couleur du statut
     const statusColors = {
@@ -204,7 +201,7 @@ export default class extends Controller {
           </div>
           ${discountCents > 0 ? `
             <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Remise (${discountPercent}%)</span>
+              <span class="text-sm text-gray-600">Remise</span>
               <span class="text-sm text-green-600 font-medium">
                 -${(discountCents / 100).toFixed(2)}€
               </span>

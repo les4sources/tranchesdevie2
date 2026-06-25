@@ -1,0 +1,24 @@
+<div class="mt-8" data-controller="nested-form">
+  <h2 class="text-lg font-medium text-gray-900">Remises ciblées (produit / variante)</h2>
+  <p class="mt-1 text-sm text-gray-600">
+    Une remise ciblée remplace la remise globale du groupe pour le produit ou la variante concerné(e).
+    La valeur est une <strong>réduction</strong> sur le prix public (en % ou en €).
+  </p>
+
+  <div class="mt-4 space-y-3" data-nested-form-target="container">
+    <%= f.fields_for :group_product_discounts do |discount_form| %>
+      <%= render "admin/groups/discount_fields", f: discount_form %>
+    <% end %>
+  </div>
+
+  <template data-nested-form-target="template">
+    <%= f.fields_for :group_product_discounts, GroupProductDiscount.new, child_index: "NEW_RECORD" do |discount_form| %>
+      <%= render "admin/groups/discount_fields", f: discount_form %>
+    <% end %>
+  </template>
+
+  <button type="button" data-action="nested-form#add"
+          class="mt-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+    + Ajouter une remise ciblée
+  </button>
+</div>

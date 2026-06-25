@@ -36,10 +36,11 @@ class ApplicationController < ActionController::Base
 
   def current_cart_discount_cents
     customer = current_customer_for_cart
-    return 0 unless customer&.effective_discount_percent&.positive?
+    return 0 unless customer
 
-    subtotal = current_cart_subtotal_cents
-    (subtotal * customer.effective_discount_percent / 100.0).round
+    GroupDiscountService.new(customer).total_discount_cents(
+      current_cart_items.map { |item| { variant: item[:variant], qty: item[:qty] } }
+    )
   end
 
   def current_cart_total_cents
@@ -77,6 +78,7 @@ class ApplicationController < ActionController::Base
 
       {
         variant_id: variant.id,
+        variant: variant,
         product_name: variant.product.name,
         variant_name: variant.name,
         qty: qty,

@@ -5,10 +5,10 @@ class CartController < ApplicationController
     @cart = session[:cart] || []
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
-    @subtotal = calculate_subtotal
     @customer = current_customer_for_cart
-    @discount_cents = calculate_discount(@subtotal, @customer)
-    @total = @subtotal - @discount_cents
+    @subtotal = current_cart_subtotal_cents
+    @discount_cents = current_cart_discount_cents
+    @total = current_cart_total_cents
     @available_bake_days = load_next_available_bake_days
     @bake_day_capacities = @available_bake_days.each_with_object({}) do |bd, hash|
       svc = BakeCapacityService.new(bd)
@@ -155,17 +155,10 @@ class CartController < ApplicationController
     session[:cart] = PizzaPartyForfaitService.sync(session[:cart])
   end
 
-  def calculate_subtotal
-    (session[:cart] || []).sum do |item|
-      item["qty"].to_i * item["price_cents"].to_i
-    end
-  end
-
-  def calculate_discount(subtotal, customer)
-    return 0 unless customer&.effective_discount_percent&.positive?
-
-    (subtotal * customer.effective_discount_percent / 100.0).round
-  end
+  # NOTE merge #87 : calculate_subtotal/calculate_discount supprimés ici.
+  # La logique de remise du panier passe désormais par les helpers de
+  # ApplicationController (current_cart_subtotal_cents / _discount_cents / _total_cents),
+  # eux-mêmes adossés à GroupDiscountService (remises ciblées #87).
 
   def requested_quantity
     qty = params[:qty].to_i

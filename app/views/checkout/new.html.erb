@@ -150,9 +150,9 @@
             <span>Sous-total</span>
             <span><%= number_to_currency(@subtotal_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
           </div>
-          <% if @discount_cents > 0 && @customer&.group %>
+          <% if @discount_cents > 0 %>
             <div class="flex justify-between text-sm text-green-600">
-              <span>Remise (<%= @customer.group.name %> - <%= @customer.effective_discount_percent %>%)</span>
+              <span>Remise</span>
               <span>-<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
             </div>
           <% end %>

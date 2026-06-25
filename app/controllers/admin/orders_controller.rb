@@ -175,7 +175,7 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def load_form_dependencies
-    @customers = Customer.includes(:groups).order(:last_name, :first_name)
+    @customers = Customer.includes(groups: :group_product_discounts).order(:last_name, :first_name)
     # Pour l'édition, permettre tous les jours de cuisson, pas seulement les futurs
     @bake_days = if action_name == "edit" || action_name == "update"
                    BakeDay.ordered
@@ -188,6 +188,16 @@ class Admin::OrdersController < Admin::BaseController
       product.product_variants.active.each do |variant|
         hash[variant.id] = variant
       end
+    end
+
+    # Données de remise par client pour l'aperçu temps réel (order-calculator).
+    @customer_discount_data = @customers.map do |customer|
+      service = GroupDiscountService.new(customer)
+      {
+        id: customer.id,
+        discount_percent: customer.effective_discount_percent,
+        targeted_unit_discounts: service.targeted_unit_discounts(@variant_lookup)
+      }
     end
   end
 
@@ -220,10 +230,19 @@ class Admin::OrdersController < Admin::BaseController
     end
   end
 
-  def calculate_discount(subtotal, customer)
-    return 0 unless customer&.effective_discount_percent&.positive?
+  def calculate_discount(_subtotal, customer)
+    return 0 unless customer
 
-    (subtotal * customer.effective_discount_percent / 100.0).round
+    lines = @selected_quantities.filter_map do |variant_id, qty|
+      next unless qty.positive?
+
+      variant = @variant_lookup[variant_id]
+      next unless variant
+
+      { variant: variant, qty: qty }
+    end
+
+    GroupDiscountService.new(customer).total_discount_cents(lines)
   end
 
   def assign_total_cents!(amount_input)

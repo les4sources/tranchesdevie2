@@ -33,6 +33,8 @@ class Order < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
   has_one :payment, dependent: :destroy
+  has_many :invoice_orders, dependent: :destroy
+  has_many :invoices, through: :invoice_orders
 
   validates :total_cents, presence: true, numericality: { greater_than: 0 }
   validates :public_token, presence: true, uniqueness: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_25_170200) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_25_170300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -193,6 +193,33 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170200) do
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
     t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
+  end
+
+  create_table "invoice_orders", force: :cascade do |t|
+    t.bigint "invoice_id", null: false
+    t.bigint "order_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "order_id"], name: "index_invoice_orders_on_invoice_id_and_order_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_orders_on_invoice_id"
+    t.index ["order_id"], name: "index_invoice_orders_on_order_id"
+  end
+
+  create_table "invoices", force: :cascade do |t|
+    t.string "number", null: false
+    t.bigint "customer_id", null: false
+    t.date "issued_on", null: false
+    t.date "period_start"
+    t.date "period_end"
+    t.integer "subtotal_cents", default: 0, null: false
+    t.integer "vat_cents", default: 0, null: false
+    t.integer "total_cents", default: 0, null: false
+    t.decimal "vat_rate", precision: 5, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_invoices_on_customer_id"
+    t.index ["issued_on"], name: "index_invoices_on_issued_on"
+    t.index ["number"], name: "index_invoices_on_number", unique: true
   end
 
   create_table "mold_types", force: :cascade do |t|
@@ -569,6 +596,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_170200) do
   add_foreign_key "group_product_discounts", "groups"
   add_foreign_key "group_product_discounts", "product_variants"
   add_foreign_key "group_product_discounts", "products"
+  add_foreign_key "invoice_orders", "invoices"
+  add_foreign_key "invoice_orders", "orders"
+  add_foreign_key "invoices", "customers"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"

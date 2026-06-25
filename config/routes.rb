@@ -47,6 +47,10 @@ Rails.application.routes.draw do
     patch "mon-compte", to: "account#update"
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
 
+    # Facture PDF du détail d'une commande, téléchargeable par les clients
+    # « facturables » (#38). Gating « billable » + propriété dans le contrôleur.
+    get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
+
     # Wallet routes
     get "portefeuille", to: "wallets#show", as: :wallet
     get "portefeuille/recharger", to: "wallets#reload", as: :wallet_reload
@@ -121,6 +125,10 @@ Rails.application.routes.draw do
       end
     end
     get "billing", to: "billing#index", as: :billing
+
+    # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
+    get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
+    get "factures/periode", to: "invoices#period", as: :period_invoice
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do
       member do

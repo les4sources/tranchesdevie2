@@ -58,6 +58,110 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe 'payment_status / invoice_status enums (#41)' do
+    it 'leaves the logistic status enum untouched (additive increment)' do
+      expect(Order.statuses.keys).to contain_exactly(
+        'pending', 'paid', 'ready', 'picked_up', 'no_show', 'cancelled', 'unpaid', 'planned'
+      )
+    end
+
+    it 'defaults a new order to unpaid / not_invoiced' do
+      order = create(:order)
+
+      expect(order.payment_status).to eq('unpaid')
+      expect(order.invoice_status).to eq('not_invoiced')
+    end
+  end
+
+  describe '#derived_payment_status (source de vérité = transactions réelles)' do
+    it 'is "paid" when a successful Stripe payment exists' do
+      order = create(:order)
+      create(:payment, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('paid')
+    end
+
+    it 'is "paid" when a wallet debit exists' do
+      order = create(:order, :from_calendar)
+      create(:wallet_transaction, :order_debit, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('paid')
+    end
+
+    it 'is "refunded" when the payment is refunded (takes precedence over paid)' do
+      order = create(:order, :cancelled)
+      create(:payment, :refunded, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('refunded')
+    end
+
+    it 'is "refunded" when a wallet refund transaction exists' do
+      order = create(:order, :cancelled)
+      create(:wallet_transaction, :order_refund, order: order)
+
+      expect(order.reload.derived_payment_status).to eq('refunded')
+    end
+
+    it 'is "unpaid" when no real payment trace exists' do
+      expect(create(:order).derived_payment_status).to eq('unpaid')
+    end
+  end
+
+  describe 'automatic payment_status synchronisation from transactions' do
+    it 'syncs to paid when a Stripe payment is recorded' do
+      order = create(:order, :pending)
+      expect(order.payment_status).to eq('unpaid')
+
+      create(:payment, order: order)
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'syncs to paid when a wallet debit is recorded' do
+      order = create(:order, :from_calendar, :planned)
+
+      create(:wallet_transaction, :order_debit, order: order)
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'syncs to refunded when the payment becomes refunded' do
+      order = create(:order)
+      payment = create(:payment, order: order)
+      expect(order.reload.payment_status).to eq('paid')
+
+      payment.update!(status: :refunded)
+
+      expect(order.reload.payment_status).to eq('refunded')
+    end
+
+    it 'ignores wallet top-ups (no order attached)' do
+      wallet = create(:wallet)
+
+      expect { create(:wallet_transaction, :top_up, wallet: wallet) }.not_to raise_error
+    end
+  end
+
+  describe '#sync_payment_status! and manual marking' do
+    it 'preserves a manual "paid" marking on an offline order with no transaction' do
+      order = create(:order, :unpaid)
+      order.update!(payment_status: :paid)
+
+      # No Stripe/wallet transaction exists: a sync must not downgrade to unpaid.
+      order.sync_payment_status!
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'does not change payment_status when the logistic status changes' do
+      order = create(:order, :paid, :payment_paid)
+
+      order.transition_to!(:ready)
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+  end
+
   describe '.stripe_fees_between' do
     let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
 

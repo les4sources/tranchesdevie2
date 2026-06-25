@@ -10,6 +10,22 @@ class Order < ApplicationRecord
     planned: 7
   }
 
+  # Statut de paiement (axe financier) — distinct du `status` logistique.
+  # `prefix: :payment_status` évite la collision de méthodes (`paid?`, `unpaid?`)
+  # avec l'enum `status` ci-dessus. `partially_paid` est réservé (non implémenté).
+  enum :payment_status, {
+    unpaid: 0,
+    paid: 1,
+    partially_paid: 2,
+    refunded: 3
+  }, prefix: :payment_status
+
+  # Statut de facturation (axe comptable) — a-t-on émis la facture ?
+  enum :invoice_status, {
+    not_invoiced: 0,
+    invoiced: 1
+  }, prefix: :invoice_status
+
   enum :source, { checkout: 0, calendar: 1, admin: 2 }
 
   belongs_to :customer
@@ -73,6 +89,36 @@ class Order < ApplicationRecord
   def payment_refunded?
     payment&.refunded? ||
       wallet_transactions.any? { |transaction| transaction.transaction_type == "order_refund" }
+  end
+
+  # Statut de paiement déduit des transactions RÉELLES (Stripe + portefeuille),
+  # indépendamment du `status` logistique. C'est la source de vérité automatique
+  # pour `payment_status` (cf. #41) :
+  #   - "refunded" si un remboursement réel existe (prime sur le reste) ;
+  #   - "paid"     si un encaissement réel existe (Stripe succeeded ou débit wallet) ;
+  #   - "unpaid"   sinon.
+  def derived_payment_status
+    return "refunded" if payment_refunded?
+    return "paid" if real_payment_received?
+
+    "unpaid"
+  end
+
+  # Recalcule `payment_status` à partir des transactions réelles et le persiste
+  # si nécessaire. Appelé automatiquement lorsqu'un paiement ou une transaction
+  # de portefeuille est enregistré (cf. Payment / WalletTransaction). Les
+  # commandes hors-ligne (cash) sans transaction ne sont jamais touchées ici :
+  # le marquage manuel admin reste donc préservé.
+  def sync_payment_status!
+    new_status = derived_payment_status
+
+    # La synchronisation automatique ne fait que refléter un encaissement ou un
+    # remboursement RÉEL. Elle ne repasse jamais à "unpaid" : un marquage manuel
+    # admin (paiement hors-ligne cash / client à facture) reste donc préservé.
+    return if new_status == "unpaid"
+    return if payment_status == new_status
+
+    update_column(:payment_status, self.class.payment_statuses[new_status])
   end
 
   # Date d'encaissement du paiement.
@@ -279,6 +325,13 @@ class Order < ApplicationRecord
   end
 
   private
+
+  # Encaissement réel (par opposition au `status` logistique) : un paiement
+  # Stripe abouti, ou un débit du portefeuille.
+  def real_payment_received?
+    (payment.present? && payment.succeeded?) ||
+      wallet_transactions.any? { |transaction| transaction.transaction_type == "order_debit" }
+  end
 
   def generate_public_token
     return if public_token.present?

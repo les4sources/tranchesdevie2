@@ -21,6 +21,17 @@ class Admin::ReportsController < Admin::BaseController
     @average_order_value_cents = @orders_count.positive? ? (@revenue_cents.to_f / @orders_count).round : 0
   end
 
+  # Drill-down depuis le total des remboursements (#100) : liste détaillée des
+  # remboursements de la période (Stripe + portefeuille).
+  def refunds
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @refunds_summary = Order.refunds_summary_between(@start_date, @end_date)
+    @refund_details = Order.detailed_refunds_between(@start_date, @end_date)
+  end
+
   private
 
   def parsed_date(value)

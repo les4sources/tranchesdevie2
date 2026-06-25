@@ -28,4 +28,48 @@ RSpec.describe ProductVariant, type: :model do
       expect(variant.available_on?(date)).to be false
     end
   end
+
+  # #90 : prix coûtant historisé par date d'activation.
+  describe '#cost_price_cents' do
+    let(:variant) { create(:product_variant) }
+
+    it 'returns the amount of the most recent tier active on the given date' do
+      create(:variant_cost_price, product_variant: variant, amount_cents: 67, active_from: Date.new(2026, 1, 1))
+      create(:variant_cost_price, product_variant: variant, amount_cents: 80, active_from: Date.new(2026, 3, 1))
+
+      expect(variant.cost_price_cents(on: Date.new(2026, 2, 15))).to eq(67)
+      expect(variant.cost_price_cents(on: Date.new(2026, 3, 1))).to eq(80)
+      expect(variant.cost_price_cents(on: Date.new(2026, 4, 10))).to eq(80)
+    end
+
+    it 'is insensitive to tiers activated after the requested date (versioning)' do
+      create(:variant_cost_price, product_variant: variant, amount_cents: 67, active_from: Date.new(2026, 1, 1))
+
+      cost_before = variant.cost_price_cents(on: Date.new(2026, 2, 1))
+      create(:variant_cost_price, product_variant: variant, amount_cents: 99, active_from: Date.new(2026, 6, 1))
+
+      expect(cost_before).to eq(67)
+      expect(variant.cost_price_cents(on: Date.new(2026, 2, 1))).to eq(67)
+    end
+
+    it 'returns nil when no tier is active on the date (missing cost, not a misleading zero)' do
+      create(:variant_cost_price, product_variant: variant, amount_cents: 67, active_from: Date.new(2026, 3, 1))
+
+      expect(variant.cost_price_cents(on: Date.new(2026, 1, 1))).to be_nil
+    end
+
+    it 'returns nil when the variant has no cost price at all' do
+      expect(variant.cost_price_cents(on: Date.current)).to be_nil
+    end
+  end
+
+  describe '#cost_price_euros' do
+    it 'converts the applicable cost from cents to euros, nil when missing' do
+      variant = create(:product_variant)
+      create(:variant_cost_price, product_variant: variant, amount_cents: 67, active_from: Date.new(2026, 1, 1))
+
+      expect(variant.cost_price_euros(on: Date.new(2026, 2, 1))).to eq(0.67)
+      expect(variant.cost_price_euros(on: Date.new(2025, 1, 1))).to be_nil
+    end
+  end
 end

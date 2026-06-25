@@ -12,5 +12,9 @@ test:
   <<: *default
 
 production:
-  database: cache
+  # Solid Cache utilise la connexion primaire (comme Solid Queue), pas une base
+  # `cache` séparée : la table solid_cache_entries vit dans le schéma primaire et
+  # est créée par une migration normale. Sans ça, le déploiement Hatchbox
+  # (db:migrate sur la primaire uniquement) ne crée jamais la table et le 1er
+  # appel à Rails.cache lève PG::UndefinedTable.
   <<: *default

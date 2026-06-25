@@ -42,15 +42,20 @@
 <% end %>
 
 <%# Synthèse de période %>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-6">
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Chiffre d'affaires</h2>
     <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_revenue_cents) %></p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Commissions Stripe</h2>
+    <p class="mt-2 text-2xl font-bold text-gray-900">- <%= reports_currency(@report.total_commission_cents) %></p>
+    <p class="mt-1 text-xs text-gray-500">Commandes en ligne uniquement</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Marge brute</h2>
     <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.gross_margin_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">CA − coûtant − sacs − transport</p>
+    <p class="mt-1 text-xs text-gray-500">CA − coûtant − sacs − transport − commissions</p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Part Les 4 Sources</h2>
@@ -106,6 +111,7 @@
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Coûtant</th>
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Sacs</th>
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Transport</th>
+            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Commissions</th>
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Marge brute</th>
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part 4S</th>
             <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Pool</th>
@@ -120,6 +126,7 @@
               <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.cost_price_cents) %></td>
               <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.bread_bags_cents) %></td>
               <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.transport_cents) %></td>
+              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.commission_cents) %></td>
               <td class="px-3 py-3 text-gray-900 text-right font-semibold"><%= reports_currency(day.gross_margin_cents) %></td>
               <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(day.four_sources_cents) %></td>
               <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(day.baker_pool_cents) %></td>
@@ -155,6 +162,7 @@
             <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_cost_price_cents) %></td>
             <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_bread_bags_cents) %></td>
             <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_transport_cents) %></td>
+            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_commission_cents) %></td>
             <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(@report.gross_margin_cents) %></td>
             <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(@report.four_sources_cents) %></td>
             <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(@report.baker_pool_cents) %></td>

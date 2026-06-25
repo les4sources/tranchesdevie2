@@ -8,7 +8,10 @@
 #                     sur les articles de PAIN produits maison
 #   - sacs          = Σ coût des sacs à pains des commandes du jour (#52)
 #   - transport     = coût de transport du jour (paramètre historisé #54)
-#   - marge brute   = CA − coûtant − sacs − transport
+#   - commissions   = Σ commissions Stripe des commandes EN LIGNE du jour
+#                     (cohérent avec Order.stripe_fees_between ; cash/portefeuille
+#                     n'ont pas de commission)
+#   - marge brute   = CA − coûtant − sacs − transport − commissions
 #   - part 4 Sources = taux 4S (historisé, réf. 30 %) × marge brute
 #   - pool boulangers = marge brute − part 4 Sources (réf. 70 %)
 #   - revenu/artisan  = pool × (part littérale de l'artisan présent / 100)
@@ -47,6 +50,7 @@ class BakerRevenueService
     :cost_price_cents,
     :bread_bags_cents,
     :transport_cents,
+    :commission_cents,
     :gross_margin_cents,
     :four_sources_cents,
     :baker_pool_cents,
@@ -72,6 +76,7 @@ class BakerRevenueService
     :total_cost_price_cents,
     :total_bread_bags_cents,
     :total_transport_cents,
+    :total_commission_cents,
     :gross_margin_cents,
     :four_sources_cents,
     :baker_pool_cents,
@@ -99,6 +104,7 @@ class BakerRevenueService
       total_cost_price_cents: sum(days, :cost_price_cents),
       total_bread_bags_cents: sum(days, :bread_bags_cents),
       total_transport_cents: sum(days, :transport_cents),
+      total_commission_cents: sum(days, :commission_cents),
       gross_margin_cents: sum(days, :gross_margin_cents),
       four_sources_cents: sum(days, :four_sources_cents),
       baker_pool_cents: sum(days, :baker_pool_cents),
@@ -125,8 +131,12 @@ class BakerRevenueService
     # Pas de vente ce jour-là (CA = 0) → aucun transport facturé : pas de
     # fournée, donc pas de tournée. La marge brute (et le revenu net) reste à 0.
     transport_cents = revenue_cents.zero? ? 0 : RevenueParameter.transport_cents_on(date)
+    # Commissions Stripe des commandes EN LIGNE du jour (CA = 0 → aucune commande
+    # → commission naturellement 0 : pas de paiement Stripe à déduire).
+    commission_cents = day_commission_cents(date)
 
-    gross_margin_cents = revenue_cents - cost_price_cents - bread_bags_cents - transport_cents
+    gross_margin_cents =
+      revenue_cents - cost_price_cents - bread_bags_cents - transport_cents - commission_cents
     four_sources_cents = four_sources_cut(gross_margin_cents, date)
     baker_pool_cents = gross_margin_cents - four_sources_cents
 
@@ -141,6 +151,7 @@ class BakerRevenueService
       cost_price_cents: cost_price_cents,
       bread_bags_cents: bread_bags_cents,
       transport_cents: transport_cents,
+      commission_cents: commission_cents,
       gross_margin_cents: gross_margin_cents,
       four_sources_cents: four_sources_cents,
       baker_pool_cents: baker_pool_cents,
@@ -173,6 +184,16 @@ class BakerRevenueService
       unit_cost = item.product_variant.cost_price_cents(on: date) || 0
       unit_cost * item.qty
     end
+  end
+
+  # Commissions Stripe du jour : somme des `payments.stripe_fee_cents` des
+  # commandes finalisées EN LIGNE rattachées au jour de cuisson. Même logique
+  # que Order.stripe_fees_between, restreinte à une seule date (`baked_on`).
+  # Les commandes cash/portefeuille n'ont pas de Payment Stripe (le `joins`
+  # les exclut) et une commission non encore connue est NULL (non sommée) → un
+  # jour sans paiement Stripe donne naturellement 0.
+  def day_commission_cents(date)
+    Order.stripe_fees_between(date, date)
   end
 
   # Coût total des sacs à pains du jour (#52), à la date de cuisson.

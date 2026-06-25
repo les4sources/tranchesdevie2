@@ -3,7 +3,7 @@ require "rails_helper"
 # Moteur de calcul des revenus boulangers (#54).
 #
 # Invariants couverts :
-#   - marge brute = CA − coûtant (#90) − sacs (#52) − transport (#54)
+#   - marge brute = CA − coûtant (#90) − sacs (#52) − transport (#54) − commissions Stripe
 #   - split 30 % aux 4 Sources / 70 % pool boulangers (sur la marge brute)
 #   - répartition du pool par artisan PRÉSENT (#26) au % LITTÉRAL (sans normalisation)
 #   - historisation : un nouveau palier de paramètre n'affecte pas le passé
@@ -70,7 +70,9 @@ RSpec.describe BakerRevenueService do
       expect(day.bread_bags_cents).to eq(40)
       # transport = 1500
       expect(day.transport_cents).to eq(1_500)
-      # marge brute = 10000 − 4000 − 40 − 1500 = 4460
+      # commission = 0 (commande sans paiement Stripe enregistré)
+      expect(day.commission_cents).to eq(0)
+      # marge brute = 10000 − 4000 − 40 − 1500 − 0 = 4460
       expect(day.gross_margin_cents).to eq(4_460)
     end
 
@@ -127,6 +129,48 @@ RSpec.describe BakerRevenueService do
       expect(day.gross_margin_cents).to eq(0)
       expect(day.four_sources_cents).to eq(0)
       expect(day.baker_pool_cents).to eq(0)
+    end
+  end
+
+  # --- Commissions Stripe -----------------------------------------------------
+
+  describe "déduction des commissions Stripe (commandes en ligne)" do
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+    let(:variant) { bread_variant(price_cents: 1_000, cost_cents: 400) }
+
+    before do
+      create(:revenue_parameter, :transport, value: 1_500, active_from: Date.new(2026, 1, 1))
+      create(:revenue_parameter, :four_sources_rate, value: 3_000, active_from: Date.new(2026, 1, 1))
+    end
+
+    it "déduit la commission Stripe du jour de la marge brute (et donc du split 30/70)" do
+      order = completed_order(bake_day: bake_day, variant: variant, qty: 10)
+      # Paiement Stripe en ligne avec une commission connue (#90).
+      create(:payment, order: order, stripe_fee_cents: 200)
+
+      day = report.days.first
+
+      # CA = 10000, coûtant = 4000, sacs = 40, transport = 1500, commission = 200.
+      expect(day.commission_cents).to eq(200)
+      # marge brute = 10000 − 4000 − 40 − 1500 − 200 = 4260
+      expect(day.gross_margin_cents).to eq(4_260)
+      # split 30/70 sur la nouvelle marge brute.
+      expect(day.four_sources_cents).to eq(1_278) # 30 % × 4260
+      expect(day.baker_pool_cents).to eq(2_982)   # 4260 − 1278
+
+      # Totaux de période cohérents.
+      expect(report.total_commission_cents).to eq(200)
+      expect(report.gross_margin_cents).to eq(4_260)
+    end
+
+    it "n'a aucune commission un jour sans vente (CA = 0 → revenu net 0)" do
+      create(:bake_day, baked_on: Date.new(2026, 5, 15)) # aucune commande
+
+      day = report.days.find { |d| d.date == Date.new(2026, 5, 15) }
+
+      expect(day.revenue_cents).to eq(0)
+      expect(day.commission_cents).to eq(0)
+      expect(day.gross_margin_cents).to eq(0)
     end
   end
 

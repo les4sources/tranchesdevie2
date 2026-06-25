@@ -34,6 +34,16 @@ production:
     schedule: every wednesday at 6:05 pm Europe/Brussels
     description: "Process planned orders and debit wallets after Wednesday cut-off"
 
+  # Rattrape les commissions Stripe manquantes (stripe_fee_cents NULL).
+  # La BalanceTransaction Stripe n'est pas toujours disponible au moment du
+  # finalize (notamment pour Bancontact, asynchrone) : ce passage récurrent
+  # comble les trous. Borné et idempotent (ne traite que Payment.succeeded avec
+  # stripe_fee_cents NULL), toutes les 3 heures.
+  backfill_stripe_fees:
+    class: BackfillStripeFeesJob
+    schedule: "0 */3 * * *"
+    description: "Backfill missing Stripe fees (stripe_fee_cents NULL) every 3 hours"
+
   # Check insufficient balance warnings (6 hours before cut-off)
   check_balance_sunday:
     class: CheckInsufficientBalanceJob

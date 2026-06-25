@@ -101,6 +101,12 @@ class StripePayoutReportService
     Rails.logger.error("StripePayoutReportService: erreur Stripe (#{start_date}..#{end_date}): #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
     empty_report("La récupération des versements depuis Stripe est momentanément impossible. Réessayez dans quelques minutes.")
+  rescue StandardError => e
+    # Filet de sécurité : toute autre erreur (ex. structure d'objet Stripe
+    # inattendue → NoMethodError) ne doit JAMAIS faire tomber la page en 500.
+    Rails.logger.error("StripePayoutReportService: erreur inattendue (#{start_date}..#{end_date}): #{e.class} #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    empty_report("Le reporting des versements est momentanément indisponible.")
   end
 
   def empty_report(error_message)

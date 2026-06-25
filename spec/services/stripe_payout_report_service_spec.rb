@@ -164,6 +164,19 @@ RSpec.describe StripePayoutReportService do
       expect(report.payouts).to eq([])
     end
 
+    it "renvoie un résultat d'erreur (sans lever) sur une erreur NON-Stripe inattendue" do
+      # Sur données réelles, une structure d'objet Stripe inattendue peut lever
+      # un NoMethodError (et non une Stripe::StripeError). La page ne doit jamais
+      # tomber en 500 : le service renvoie un Report avec #error et payouts: [].
+      allow(Stripe::Payout).to receive(:list).and_raise(NoMethodError.new("undefined method `foo'"))
+
+      report = described_class.new(start_date: start_date, end_date: end_date).call
+
+      expect(report.error).to be_present
+      expect(report.payouts).to eq([])
+      expect(report.total_net_cents).to eq(0)
+    end
+
     it "met en cache le résultat (un seul appel Stripe pour deux exécutions identiques)" do
       payout = stub_payout(id: "po_cache", amount: 9_750)
       stub_payout_list([ payout ])

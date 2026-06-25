@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_25_150000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_25_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -108,6 +108,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_150000) do
     t.boolean "billable", default: false, null: false
     t.datetime "calendar_intro_seen_at"
     t.boolean "email_opt_out", default: false, null: false
+    t.boolean "cash_payment_allowed", default: false, null: false
     t.index "lower((email)::text)", name: "index_customers_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end

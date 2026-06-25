@@ -70,8 +70,8 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
     end
   end
 
-  describe 'GET /checkout/new — méthode de paiement par défaut' do
-    it 'sélectionne « en ligne » par défaut et non « liquide »' do
+  describe 'GET /checkout/new — méthode de paiement (#36)' do
+    it 'ne propose pas l\'option cash par défaut (paiement en ligne uniquement)' do
       get '/checkout/new'
 
       expect(response).to have_http_status(:ok)
@@ -80,7 +80,39 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
       cash_radio = response.body[%r{<input[^>]*value="cash"[^>]*>}]
 
       expect(online_radio).to include('checked')
-      expect(cash_radio).not_to include('checked')
+      expect(cash_radio).to be_nil
+    end
+
+    context 'pour un client autorisé au paiement cash' do
+      let(:customer) { create(:customer, first_name: 'Léa', cash_payment_allowed: true) }
+
+      it 'propose l\'option « payer en liquide »' do
+        get '/checkout/new'
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body[%r{<input[^>]*value="cash"[^>]*>}]).to be_present
+      end
+    end
+  end
+
+  describe 'POST /checkout/create_cash_order (#36)' do
+    def create_cash_order(body = { first_name: 'Léa' })
+      post '/checkout/create_cash_order', params: body.to_json,
+           headers: { 'CONTENT_TYPE' => 'application/json' }
+    end
+
+    it 'refuse la commande sans paiement en ligne pour un client non autorisé' do
+      expect { create_cash_order }.not_to change(Order, :count)
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    context 'pour un client autorisé au paiement cash' do
+      let(:customer) { create(:customer, first_name: 'Léa', cash_payment_allowed: true) }
+
+      it 'crée une commande unpaid' do
+        expect { create_cash_order }.to change { Order.where(status: :unpaid).count }.by(1)
+        expect(response).to have_http_status(:ok)
+      end
     end
   end
 end

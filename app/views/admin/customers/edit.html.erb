@@ -87,6 +87,14 @@
 
     <div class="mt-6">
       <div class="flex items-center">
+        <%= f.check_box :cash_payment_allowed, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+        <%= f.label :cash_payment_allowed, "Paiement cash autorisé", class: "ml-2 block text-sm text-gray-900" %>
+      </div>
+      <p class="mt-1 text-sm text-gray-500">Autorise ce client à commander sans payer en ligne (paiement en liquide / facture). Par défaut, le paiement en ligne est obligatoire.</p>
+    </div>
+
+    <div class="mt-6">
+      <div class="flex items-center">
         <%= f.check_box :skip_wallet_check, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
         <%= f.label :skip_wallet_check, "Client interne (pas de vérification de solde)", class: "ml-2 block text-sm text-gray-900" %>
       </div>

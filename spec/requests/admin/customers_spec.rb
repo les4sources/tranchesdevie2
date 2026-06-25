@@ -10,6 +10,22 @@ RSpec.describe "Admin::Customers", type: :request do
 
   before { post admin_login_path, params: { password: "test-admin-pw" } }
 
+  describe "GET /admin/customers (colonnes d'état)" do
+    it "affiche les colonnes Cash OK / Fact. / Interne avec une icône d'état par client" do
+      create(:customer, first_name: "Pro", cash_payment_allowed: true, billable: true, skip_wallet_check: false)
+
+      get admin_customers_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Cash OK")
+      expect(response.body).to include("Fact.")
+      expect(response.body).to include("Interne")
+      # Icône active (verte) pour une option activée, grisée sinon.
+      expect(response.body).to include("Paiement cash autorisé : actif")
+      expect(response.body).to include("Client interne : inactif")
+    end
+  end
+
   # #36 : réglage admin « paiement cash autorisé » sur le client.
   describe "PATCH /admin/customers/:id" do
     it "autorise le paiement cash pour le client" do

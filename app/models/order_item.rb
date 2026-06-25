@@ -5,6 +5,12 @@ class OrderItem < ApplicationRecord
   validates :qty, presence: true, numericality: { greater_than: 0, only_integer: true }
   validates :unit_price_cents, presence: true, numericality: { greater_than: 0 }
 
+  # Libellé complet « Produit — Variante » (ex. « Pain froment — Petit 600 g »),
+  # utilisé pour le détail des commandes de la facturation (#98).
+  def full_name
+    "#{product_variant.product.name} — #{product_variant.name}"
+  end
+
   def subtotal_cents
     qty * unit_price_cents
   end

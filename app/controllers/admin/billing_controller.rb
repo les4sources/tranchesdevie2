@@ -53,7 +53,7 @@ class Admin::BillingController < Admin::BaseController
 
   def csv_items(order)
     order.order_items.map do |item|
-      "#{item.qty}x #{item.product_variant.name}"
+      "#{item.qty}x #{item.full_name}"
     end.join(", ")
   end
 end

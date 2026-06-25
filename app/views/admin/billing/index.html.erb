@@ -95,7 +95,7 @@
                   <td class="px-4 py-2 text-gray-600">
                     <ul class="space-y-0.5">
                       <% order.order_items.each do |item| %>
-                        <li><%= item.qty %>x <%= item.product_variant.name %></li>
+                        <li><%= item.qty %>x <%= item.full_name %></li>
                       <% end %>
                     </ul>
                   </td>

@@ -391,4 +391,59 @@ RSpec.describe Order, type: :model do
       expect(result).to be_empty
     end
   end
+
+  describe '#bread_bags_count (#52)' do
+    it 'counts one bag per produced-bread unit, excluding dough balls and resales' do
+      order = create(:order)
+      bread = create(:product_variant, product: create(:product, category: :breads, internal_category: :boulangerie))
+      dough = create(:product_variant, product: create(:product, :dough_ball, internal_category: :boulangerie))
+      resale = create(:product_variant, product: create(:product, category: :breads, internal_category: :epicerie))
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+      create(:order_item, order: order, product_variant: dough, qty: 2)
+      create(:order_item, order: order, product_variant: resale, qty: 5)
+
+      expect(order.reload.bread_bags_count).to eq(3)
+    end
+
+    it 'is zero for an order with only dough balls' do
+      order = create(:order)
+      dough = create(:product_variant, product: create(:product, :dough_ball))
+      create(:order_item, order: order, product_variant: dough, qty: 4)
+
+      expect(order.reload.bread_bags_count).to eq(0)
+    end
+  end
+
+  describe '#bread_bags_cost_cents (#52)' do
+    let(:bread) { create(:product_variant, product: create(:product, category: :breads, internal_category: :boulangerie)) }
+
+    it 'is the bag count times the bag price applicable on the bake day' do
+      bake_day = create(:bake_day, baked_on: Date.new(2026, 2, 1))
+      order = create(:order, bake_day: bake_day)
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+      create(:bread_bag_price, amount_cents: 4, active_from: Date.new(2026, 1, 1))
+
+      expect(order.reload.bread_bags_cost_cents).to eq(12)
+    end
+
+    it 'uses the price versioned by date (later tiers do not affect earlier bake days)' do
+      create(:bread_bag_price, amount_cents: 4, active_from: Date.new(2026, 1, 1))
+      create(:bread_bag_price, amount_cents: 6, active_from: Date.new(2026, 3, 1))
+
+      early = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 2, 1)))
+      create(:order_item, order: early, product_variant: bread, qty: 2)
+      late = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 3, 15)))
+      create(:order_item, order: late, product_variant: bread, qty: 2)
+
+      expect(early.reload.bread_bags_cost_cents).to eq(8)  # 2 × 4
+      expect(late.reload.bread_bags_cost_cents).to eq(12) # 2 × 6
+    end
+
+    it 'is zero when no bag price is configured for the date' do
+      order = create(:order, bake_day: create(:bake_day, baked_on: Date.new(2026, 2, 1)))
+      create(:order_item, order: order, product_variant: bread, qty: 3)
+
+      expect(order.reload.bread_bags_cost_cents).to eq(0)
+    end
+  end
 end

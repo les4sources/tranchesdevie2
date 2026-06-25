@@ -65,6 +65,23 @@ class Order < ApplicationRecord
     (total_cents / 100.0).round(2)
   end
 
+  # Nombre de sacs à pains pour la commande (#52) : 1 sac par unité de pain
+  # produit (catégorie « breads » en production maison), pâtons/reventes exclus.
+  def bread_bags_count
+    order_items.includes(product_variant: :product).sum do |item|
+      item.product_variant.product.incurs_bag_cost? ? item.qty : 0
+    end
+  end
+
+  # Coût total des sacs à pains de la commande à une date donnée (par défaut le
+  # jour de cuisson). `nb_sacs × prix_du_sac(à la date)`. Exposé pour le calcul
+  # des bénéfices (#54). Si aucun prix de sac n'est défini à la date, le coût
+  # est nul (aucune déduction).
+  def bread_bags_cost_cents(on: bake_day&.baked_on || Date.current)
+    price_cents = BreadBagPrice.amount_cents_on(on) || 0
+    bread_bags_count * price_cents
+  end
+
   def can_be_cancelled_by_customer?
     !bake_day.cut_off_passed? && (paid? || unpaid?)
   end

@@ -226,12 +226,18 @@ class InvoicePdfService
 
   # URL de l'espace client (liste de ses commandes). Le chemin est résolu via le
   # routeur ; l'hôte vient de APP_HOST (cohérent avec les liens des e-mails).
+  # HTTPS en production (lien public scanné par le client) ; http ailleurs pour
+  # rester compatible avec localhost / lvh.me en développement et test.
   def customer_space_url
-    Rails.application.routes.url_helpers.customers_account_url(host: app_host)
+    Rails.application.routes.url_helpers.customers_account_url(host: app_host, protocol: url_protocol)
   end
 
   def app_host
     ENV.fetch("APP_HOST", "tranchesdevie.be")
+  end
+
+  def url_protocol
+    Rails.env.production? ? "https" : "http"
   end
 
   # PNG (binaire) du QR code encodant l'URL fournie. `size` fixe le côté en

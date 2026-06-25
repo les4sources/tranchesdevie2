@@ -5,6 +5,7 @@ class Customer < ApplicationRecord
   has_many :orders, dependent: :restrict_with_error
   has_many :sms_messages, dependent: :nullify
   has_many :email_messages, dependent: :nullify
+  has_many :invoices, dependent: :destroy
 
   # Attribut virtuel pour permettre de sauter la validation du téléphone (utilisé par l'admin)
   attr_accessor :skip_phone_validation

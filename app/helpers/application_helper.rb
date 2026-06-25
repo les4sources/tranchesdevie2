@@ -14,6 +14,26 @@ module ApplicationHelper
     labels[status.to_s] || status.to_s.tr("_", " ").capitalize
   end
 
+  def payment_status_label(payment_status)
+    labels = {
+      "unpaid" => "Non payée",
+      "paid" => "Payée",
+      "partially_paid" => "Partiellement payée",
+      "refunded" => "Remboursée"
+    }
+
+    labels[payment_status.to_s] || payment_status.to_s.tr("_", " ").capitalize
+  end
+
+  def invoice_status_label(invoice_status)
+    labels = {
+      "not_invoiced" => "Non facturée",
+      "invoiced" => "Facturée"
+    }
+
+    labels[invoice_status.to_s] || invoice_status.to_s.tr("_", " ").capitalize
+  end
+
   def order_source_label(source)
     labels = {
       "checkout" => "Client (en ligne)",

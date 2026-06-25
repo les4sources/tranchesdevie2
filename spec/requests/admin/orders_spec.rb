@@ -34,6 +34,49 @@ RSpec.describe "Admin::Orders", type: :request do
     end
   end
 
+  describe "GET /admin/orders (index, #41)" do
+    it "displays both a logistic status column and a payment status column" do
+      create(:order, :paid, :payment_paid, :with_items)
+
+      get admin_orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(">Statut<")
+      expect(response.body).to include(">Paiement<")
+    end
+
+    it "filters orders by payment status (incl. refunded)" do
+      bake_day = create(:bake_day)
+      paid_order = create(:order, :paid, :payment_paid, :with_items, bake_day: bake_day)
+      refunded_order = create(:order, :cancelled, :payment_refunded, :with_items, bake_day: bake_day)
+
+      get admin_orders_path, params: { payment_status: "refunded" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(refunded_order.order_number)
+      expect(response.body).not_to include(paid_order.order_number)
+    end
+  end
+
+  describe "PATCH /admin/orders/:id (manual payment marking, #41)" do
+    it "lets an admin mark an offline order as paid" do
+      offline_order = create(:order, :unpaid, :with_items)
+
+      patch admin_order_path(offline_order), params: {
+        order: {
+          customer_id: offline_order.customer_id,
+          bake_day_id: offline_order.bake_day_id,
+          status: "unpaid",
+          payment_status: "paid",
+          final_total_euros: (offline_order.total_cents / 100.0).to_s,
+          variant_quantities: offline_order.order_items.each_with_object({}) { |i, h| h[i.product_variant_id] = i.qty }
+        }
+      }
+
+      expect(offline_order.reload.payment_status).to eq("paid")
+    end
+  end
+
   describe "GET /admin/orders/:id (show)" do
     it "displays the manually recorded payment date for an offline payment" do
       order.update!(status: :paid, paid_at: Time.zone.local(2026, 5, 12))

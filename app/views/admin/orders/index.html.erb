@@ -68,7 +68,12 @@
             <%= order.order_number %>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-            <%= order.customer.full_name %>
+            <% if order.group_name.present? %>
+              <div class="font-medium text-gray-900"><%= order.group_name %></div>
+              <div class="text-xs text-gray-500"><%= order.customer.full_name %></div>
+            <% else %>
+              <%= order.customer.full_name %>
+            <% end %>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
             <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %>

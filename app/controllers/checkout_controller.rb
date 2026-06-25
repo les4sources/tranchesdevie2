@@ -121,7 +121,8 @@ class CheckoutController < ApplicationController
       customer: customer,
       bake_day: @bake_day,
       cart_items: @cart,
-      payment_method: "online"
+      payment_method: "online",
+      group_name: json_params["group_name"]
     )
     order = service.call
 
@@ -244,7 +245,8 @@ class CheckoutController < ApplicationController
       customer: customer,
       bake_day: bake_day,
       cart_items: cart_items,
-      payment_method: "cash"
+      payment_method: "cash",
+      group_name: json_params["group_name"]
     )
 
     order = service.call

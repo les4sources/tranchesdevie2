@@ -67,8 +67,8 @@
             </p>
           </div>
           <div>
-            <%# Facture mensuelle groupée (par jour de cuisson) du client — #38. %>
-            <%= link_to "Facture PDF du mois",
+            <%# Relevé mensuel groupé (par jour de cuisson) du client — #38. %>
+            <%= link_to "Relevé de commandes (PDF) du mois",
                   admin_period_invoice_path(customer_id: billing.customer.id, month: @month.strftime("%Y-%m")),
                   class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
           </div>
@@ -89,7 +89,7 @@
                 <tr>
                   <td class="px-4 py-2 text-gray-900 whitespace-nowrap">
                     <%= link_to l(order.bake_day.baked_on), admin_order_path(order), class: "hover:underline" %>
-                    <%= link_to "Facture PDF",
+                    <%= link_to "Relevé de commandes (PDF)",
                           admin_order_invoice_path(order_id: order.id),
                           class: "block text-xs text-blue-600 hover:underline mt-0.5" %>
                   </td>

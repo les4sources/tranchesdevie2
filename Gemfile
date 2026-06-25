@@ -69,9 +69,11 @@ gem "draper"
 # Soft deletion for models
 gem "soft_deletion"
 
-# Génération de PDF en Ruby pur (factures) — aucun binaire système requis (#38)
+# Génération de PDF en Ruby pur (relevé de commandes) — aucun binaire système requis (#38)
 gem "prawn"
 gem "prawn-table"
+# QR code (Ruby pur) intégré au relevé de commandes, pointant vers l'espace client (#38)
+gem "rqrcode"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

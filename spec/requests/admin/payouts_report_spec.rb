@@ -1,8 +1,9 @@
 require "rails_helper"
 
-# Admin : reporting des versements Stripe (#49). Vérifie que la page rend,
-# affiche brut / frais / net + le détail des commandes incluses, filtre par
-# période, et gère une erreur Stripe SANS 500 (message propre).
+# Admin : reporting des versements Stripe (#49). Vérifie que la page rend les deux
+# sections — versements reçus (net) et activité en ligne de la période (brut /
+# frais / net + détail des commandes) —, filtre par période, et gère une erreur
+# Stripe SANS 500 (message propre).
 RSpec.describe "Admin::Reports payouts", type: :request do
   around do |ex|
     original = ENV["ADMIN_PASSWORD"]
@@ -22,36 +23,36 @@ RSpec.describe "Admin::Reports payouts", type: :request do
     )
   end
 
-  def payout_order(order)
-    StripePayoutReportService::PayoutOrder.new(
+  def online_order_row(order, amount:, fee:)
+    StripePayoutReportService::OnlineOrderRow.new(
       order: order,
       order_number: order.order_number,
       customer_name: order.customer.full_name,
-      amount_cents: order.total_cents,
-      fee_cents: 250
+      baked_on: order.bake_day.baked_on,
+      amount_cents: amount,
+      fee_cents: fee
     )
   end
 
-  def build_payout_row(stripe_id:, gross:, fee:, net:, orders: [], arrival_date: Date.new(2026, 5, 15))
+  def payout_row(stripe_id:, net:, status: "paid", arrival_date: Date.new(2026, 5, 15))
     StripePayoutReportService::PayoutRow.new(
       stripe_id: stripe_id,
       arrival_date: arrival_date,
-      status: "paid",
-      gross_cents: gross,
-      fee_cents: fee,
-      net_cents: net,
-      orders: orders.map { |o| payout_order(o) }
+      status: status,
+      net_cents: net
     )
   end
 
-  def build_report(payouts:, error: nil)
+  def build_report(payouts: [], orders: [], error: nil)
     StripePayoutReportService::Report.new(
       start_date: Date.new(2026, 5, 1),
       end_date: Date.new(2026, 5, 31),
       payouts: payouts,
-      total_gross_cents: payouts.sum(&:gross_cents),
-      total_fee_cents: payouts.sum(&:fee_cents),
-      total_net_cents: payouts.sum(&:net_cents),
+      total_net_paid_cents: payouts.sum(&:net_cents),
+      period_gross_cents: orders.sum(&:amount_cents),
+      period_fee_cents: orders.sum(&:fee_cents),
+      period_net_cents: orders.sum(&:amount_cents) - orders.sum(&:fee_cents),
+      period_orders: orders,
       error: error
     )
   end
@@ -64,45 +65,43 @@ RSpec.describe "Admin::Reports payouts", type: :request do
   context "when authenticated" do
     before { login_admin }
 
-    it "rend la page avec brut / frais / net et le détail des commandes" do
+    it "affiche les versements (net) et l'activité en ligne de la période" do
       bake_day = create(:bake_day, baked_on: Date.new(2026, 5, 12))
       order = create(:order, :paid, source: :checkout, bake_day: bake_day, total_cents: 10_000)
 
-      report = build_report(payouts: [
-        build_payout_row(stripe_id: "po_1", gross: 10_000, fee: 250, net: 9_750, orders: [ order ])
-      ])
+      report = build_report(
+        payouts: [ payout_row(stripe_id: "po_1", net: 9_750) ],
+        orders: [ online_order_row(order, amount: 10_000, fee: 250) ]
+      )
       stub_report(report)
 
       get payouts_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Versements Stripe")
+      # Versement : identifiant + net versé (97,50)
       expect(response.body).to include("po_1")
-      expect(response.body).to include("Brut").or include("brut")
-      expect(response.body).to include("Frais").or include("frais")
-      expect(response.body).to include("Net").or include("net")
-      # Montants : brut 100,00 / frais 2,50 / net 97,50
+      expect(response.body).to include("97,50")
+      # Activité en ligne : brut 100,00 / frais 2,50
       expect(response.body).to include("100,00")
       expect(response.body).to include("2,50")
-      expect(response.body).to include("97,50")
-      # Le détail des commandes incluses référence le numéro de commande.
+      # Le détail des commandes référence le numéro de commande.
       expect(response.body).to include(order.order_number)
     end
 
     it "affiche un message propre (pas de 500) quand Stripe échoue" do
-      report = build_report(payouts: [], error: "Connexion à Stripe impossible")
-      stub_report(report)
+      stub_report(build_report(error: "Connexion à Stripe impossible"))
 
       get payouts_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Stripe").and include("impossible").or include("indisponible")
+      expect(response.body).to include("impossible").or include("indisponible")
     end
 
     it "passe les dates de la période filtrée au service" do
       expect(StripePayoutReportService).to receive(:new)
         .with(start_date: Date.new(2026, 5, 1), end_date: Date.new(2026, 5, 31))
-        .and_return(instance_double(StripePayoutReportService, call: build_report(payouts: [])))
+        .and_return(instance_double(StripePayoutReportService, call: build_report))
 
       get payouts_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
 
@@ -110,7 +109,7 @@ RSpec.describe "Admin::Reports payouts", type: :request do
     end
 
     it "affiche un état vide quand il n'y a aucun versement sur la période" do
-      stub_report(build_report(payouts: []))
+      stub_report(build_report)
 
       get payouts_admin_reports_path(start_date: "2026-05-01", end_date: "2026-05-31")
 

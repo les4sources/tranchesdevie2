@@ -7,9 +7,11 @@
     <p class="text-sm text-gray-600">
       Période du <%= l(@start_date) %> au <%= l(@end_date) %>
     </p>
-    <p class="mt-1 text-xs text-gray-400">
-      Données récupérées en direct depuis Stripe (mises en cache quelques minutes).
-      Détail limité aux commandes payées en ligne.
+    <p class="mt-1 text-xs text-gray-400 max-w-2xl">
+      Deux lectures complémentaires : les <strong>versements</strong> réellement reçus en banque
+      (source Stripe) et l'<strong>activité en ligne</strong> de la période (nos commandes payées en
+      ligne). Les deux totaux ne s'égalisent pas au centime : axes de temps différents (date d'arrivée
+      du versement vs jour de cuisson) et les recharges de portefeuille passent aussi par les versements.
     </p>
   </div>
   <div class="flex flex-col items-stretch gap-3 md:items-end">
@@ -29,83 +31,101 @@
 <% end %>
 
 <% unless @report.error.present? %>
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Brut versé</h2>
-      <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.total_gross_cents) %></p>
+  <%# ── Section 1 : Versements Stripe (ce qui est tombé en banque) ───────────── %>
+  <section class="mb-8">
+    <div class="flex items-end justify-between mb-3">
+      <h2 class="text-lg font-semibold text-gray-900">Versements reçus en banque</h2>
+      <div class="text-right">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Net total versé</p>
+        <p class="text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_net_paid_cents) %></p>
+      </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Frais Stripe</h2>
-      <p class="mt-2 text-3xl font-bold text-red-600">- <%= reports_currency(@report.total_fee_cents) %></p>
-    </div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Net versé</h2>
-      <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.total_net_cents) %></p>
-    </div>
-  </div>
-<% end %>
 
-<% if @report.payouts.any? %>
-  <div class="space-y-6">
-    <% @report.payouts.each do |payout| %>
-      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-          <div>
-            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Versement Stripe</p>
-            <p class="text-lg font-semibold text-gray-900"><%= payout.stripe_id %></p>
-            <p class="text-sm text-gray-500">
-              <% if payout.arrival_date %>Arrivée le <%= l(payout.arrival_date) %> · <% end %>Statut : <%= payout.status %>
-            </p>
-          </div>
-          <dl class="grid grid-cols-3 gap-x-6 text-right">
-            <div>
-              <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Brut</dt>
-              <dd class="mt-1 text-base font-semibold text-gray-900"><%= reports_currency(payout.gross_cents) %></dd>
-            </div>
-            <div>
-              <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Frais</dt>
-              <dd class="mt-1 text-base font-semibold text-red-600">- <%= reports_currency(payout.fee_cents) %></dd>
-            </div>
-            <div>
-              <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Net</dt>
-              <dd class="mt-1 text-base font-semibold text-gray-900"><%= reports_currency(payout.net_cents) %></dd>
-            </div>
-          </dl>
-        </div>
-
-        <% if payout.orders.any? %>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Frais</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <% payout.orders.each do |line| %>
-                  <tr>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm">
-                      <%= link_to line.order_number, admin_order_path(line.order), class: "text-blue-600 hover:text-blue-800" %>
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"><%= line.customer_name.presence || "—" %></td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900"><%= reports_currency(line.amount_cents) %></td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-600">- <%= reports_currency(line.fee_cents) %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        <% else %>
-          <p class="text-sm text-gray-500">Aucune commande en ligne reliée à ce versement (top-ups de portefeuille ou paiements hors boutique).</p>
-        <% end %>
-      </section>
+    <% if @report.payouts.any? %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'arrivée</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Versement</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net versé</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @report.payouts.each do |payout| %>
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  <%= payout.arrival_date ? l(payout.arrival_date) : "—" %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono"><%= payout.stripe_id %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= payout.status %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold text-gray-900"><%= reports_currency(payout.net_cents) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <p class="text-sm text-gray-500">Aucun versement Stripe sur cette période.</p>
+      </div>
     <% end %>
-  </div>
-<% elsif !@report.error.present? %>
-  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <p class="text-sm text-gray-500">Aucun versement Stripe sur cette période.</p>
+  </section>
+
+  <%# ── Section 2 : Activité en ligne de la période (notre base) ─────────────── %>
+  <section>
+    <div class="flex items-end justify-between mb-3">
+      <h2 class="text-lg font-semibold text-gray-900">Activité en ligne de la période</h2>
+      <p class="text-sm text-gray-500"><%= @report.period_orders_count %> commande<%= "s" if @report.period_orders_count > 1 %> en ligne</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Brut ventes en ligne</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.period_gross_cents) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Frais Stripe</h3>
+        <p class="mt-2 text-3xl font-bold text-red-600">- <%= reports_currency(@report.period_fee_cents) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Net</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.period_net_cents) %></p>
+      </div>
+    </div>
+
+    <% if @report.period_orders.any? %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jour de cuisson</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Frais</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @report.period_orders.each do |line| %>
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <%= link_to line.order_number, admin_order_path(line.order), class: "text-blue-600 hover:text-blue-800" %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"><%= line.customer_name.presence || "—" %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= line.baked_on ? l(line.baked_on) : "—" %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900"><%= reports_currency(line.amount_cents) %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-600">- <%= reports_currency(line.fee_cents) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <p class="text-sm text-gray-500">Aucune commande en ligne finalisée sur cette période.</p>
+      </div>
+    <% end %>
   </section>
 <% end %>

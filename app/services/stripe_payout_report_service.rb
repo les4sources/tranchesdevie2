@@ -2,71 +2,79 @@
 
 # Reporting des versements Stripe (#49).
 #
-# Pour une période donnée, interroge l'API Stripe EN DIRECT et reconstruit, par
-# versement (`Stripe::Payout`) :
-#   - le n° de versement, sa date d'arrivée et son statut ;
-#   - le brut / les frais / le net (sommes sur les BalanceTransactions du versement) ;
-#   - le détail des commandes EN LIGNE incluses dans le versement.
+# Ce compte Stripe verse en mode "auto-debits" : Stripe ne fournit PAS le rapport
+# de reconciliation par versement. Concrètement, `BalanceTransaction.list(payout:)`
+# lève `Stripe::InvalidRequestError: The payout reconciliation report is not
+# supported for auto-debits.`. On ne peut donc pas détailler, via l'API, quelles
+# transactions composent chaque versement.
 #
-# Pipeline de données :
-#   Stripe::Payout.list(arrival_date: période)
-#     └─ Stripe::BalanceTransaction.list(payout: id, expand: source)
-#          └─ source = Stripe::Charge → charge.payment_intent
-#               └─ notre Payment (stripe_payment_intent_id) → Order
+# Le report présente donc DEUX lentilles complémentaires (et volontairement
+# distinctes — voir plus bas) :
 #
-# Décisions de design (issue #49) :
-#   - Détail des commandes : `source: checkout` UNIQUEMENT. Les top-ups de
-#     portefeuille sont aussi des PaymentIntents Stripe et apparaissent dans le
-#     versement, mais ne correspondent à aucune commande en ligne : on les exclut
-#     du DÉTAIL. Le brut/frais/net du versement, lui, reste calculé sur TOUTES les
-#     transactions (Stripe verse le net global, top-ups compris).
-#   - Frais : somme des `fee` des BalanceTransactions du versement, cohérent avec
-#     StripeFeeService (qui lit `BalanceTransaction#fee` pour un paiement).
-#   - Appels live à chaque chargement, enveloppés dans Rails.cache (TTL court) :
-#     une page rechargée ne refrappe pas l'API. La clé inclut la période.
-#   - Robustesse : toute Stripe::StripeError est capturée et transformée en
-#     `Report#error` (message FR) ; la page n'émet jamais de 500.
+#   1. VERSEMENTS — ce qui est réellement tombé sur le compte bancaire.
+#      Source : `Stripe::Payout.list(arrival_date: période)` (supporté pour tous
+#      les comptes). Par versement : date d'arrivée, statut, montant NET versé
+#      (`payout.amount`).
+#
+#   2. ACTIVITÉ EN LIGNE de la période — depuis NOTRE base, pas Stripe.
+#      Les commandes payées en ligne (`source: checkout`) finalisées, ventilées
+#      par jour de cuisson : brut (somme `total_cents`), frais Stripe RÉELS
+#      (somme `payments.stripe_fee_cents`), net, nombre et détail des commandes.
+#
+# Pourquoi deux totaux qui ne s'égalisent pas au centime : axes temporels
+# différents (date d'ARRIVÉE du versement vs JOUR DE CUISSON de la commande) et
+# les top-ups de portefeuille passent aussi par les versements Stripe sans être
+# des commandes. C'est une réconciliation indicative, pas une égalité comptable.
+#
+# Robustesse : toute Stripe::StripeError (ou erreur inattendue) est capturée et
+# transformée en `Report#error` (message FR) ; la page n'émet jamais de 500.
 #
 # Usage :
 #   report = StripePayoutReportService.new(start_date: d1, end_date: d2).call
-#   report.payouts            # => [ PayoutRow, ... ]
-#   report.total_net_cents
-#   report.error              # => nil, ou message FR si Stripe a échoué
+#   report.payouts                 # => [ PayoutRow, ... ] (date, statut, net)
+#   report.total_net_paid_cents    # net total réellement versé par Stripe
+#   report.period_gross_cents      # brut des ventes en ligne de la période
+#   report.period_orders           # => [ OnlineOrderRow, ... ]
+#   report.error                   # => nil, ou message FR si Stripe a échoué
 class StripePayoutReportService
   CACHE_TTL = 5.minutes
 
-  # Une commande en ligne reliée à une transaction du versement.
-  PayoutOrder = Struct.new(
-    :order,
-    :order_number,
-    :customer_name,
-    :amount_cents,   # montant brut de la charge (avant frais)
-    :fee_cents,      # frais Stripe de la charge
-    keyword_init: true
-  )
-
-  # Une ligne de versement.
+  # Une ligne de versement (ce qui est tombé en banque).
   PayoutRow = Struct.new(
     :stripe_id,
     :arrival_date,   # Date (date d'arrivée du versement sur le compte bancaire)
     :status,         # statut Stripe (paid, pending, in_transit, failed, …)
-    :gross_cents,    # somme des montants bruts des transactions du versement
-    :fee_cents,      # somme des frais des transactions du versement
-    :net_cents,      # montant réellement versé (gross − fees)
-    :orders,         # [ PayoutOrder, ... ] commandes en ligne incluses
+    :net_cents,      # montant réellement versé (payout.amount)
+    keyword_init: true
+  )
+
+  # Une commande payée en ligne, incluse dans l'activité de la période.
+  OnlineOrderRow = Struct.new(
+    :order,
+    :order_number,
+    :customer_name,
+    :baked_on,       # Date (jour de cuisson, axe temporel de la période)
+    :amount_cents,   # brut de la commande (total_cents)
+    :fee_cents,      # frais Stripe réels (payments.stripe_fee_cents)
     keyword_init: true
   )
 
   Report = Struct.new(
     :start_date,
     :end_date,
-    :payouts,
-    :total_gross_cents,
-    :total_fee_cents,
-    :total_net_cents,
-    :error,          # nil, ou message FR si l'appel Stripe a échoué
+    :payouts,                # [ PayoutRow ]
+    :total_net_paid_cents,   # somme des nets versés (Stripe)
+    :period_gross_cents,     # brut ventes en ligne (notre base)
+    :period_fee_cents,       # frais Stripe réels (notre base)
+    :period_net_cents,       # brut − frais
+    :period_orders,          # [ OnlineOrderRow ]
+    :error,                  # nil, ou message FR si l'appel Stripe a échoué
     keyword_init: true
-  )
+  ) do
+    def period_orders_count
+      period_orders.size
+    end
+  end
 
   def initialize(start_date:, end_date:)
     @start_date = start_date
@@ -82,19 +90,24 @@ class StripePayoutReportService
   attr_reader :start_date, :end_date
 
   def cache_key
-    [ "stripe_payout_report", start_date.iso8601, end_date.iso8601 ].join(":")
+    # `v2` : la forme du Report a changé (reconciliation niveau période). Évite de
+    # désérialiser un ancien Report mis en cache par la version précédente.
+    [ "stripe_payout_report", "v2", start_date.iso8601, end_date.iso8601 ].join(":")
   end
 
   def build_report
     payouts = fetch_payouts.map { |payout| build_payout_row(payout) }
+    orders = online_orders
 
     Report.new(
       start_date: start_date,
       end_date: end_date,
       payouts: payouts,
-      total_gross_cents: payouts.sum(&:gross_cents),
-      total_fee_cents: payouts.sum(&:fee_cents),
-      total_net_cents: payouts.sum(&:net_cents),
+      total_net_paid_cents: payouts.sum(&:net_cents),
+      period_gross_cents: orders.sum(&:amount_cents),
+      period_fee_cents: orders.sum(&:fee_cents),
+      period_net_cents: orders.sum(&:amount_cents) - orders.sum(&:fee_cents),
+      period_orders: orders,
       error: nil
     )
   rescue Stripe::StripeError => e
@@ -114,9 +127,11 @@ class StripePayoutReportService
       start_date: start_date,
       end_date: end_date,
       payouts: [],
-      total_gross_cents: 0,
-      total_fee_cents: 0,
-      total_net_cents: 0,
+      total_net_paid_cents: 0,
+      period_gross_cents: 0,
+      period_fee_cents: 0,
+      period_net_cents: 0,
+      period_orders: [],
       error: error_message
     )
   end
@@ -135,70 +150,37 @@ class StripePayoutReportService
   end
 
   def build_payout_row(payout)
-    transactions = fetch_balance_transactions(payout.id)
-
-    gross_cents = transactions.sum { |txn| txn.amount.to_i }
-    fee_cents = transactions.sum { |txn| txn.fee.to_i }
-
     PayoutRow.new(
       stripe_id: payout.id,
       arrival_date: arrival_date_for(payout),
       status: payout.status,
-      gross_cents: gross_cents,
-      fee_cents: fee_cents,
-      net_cents: gross_cents - fee_cents,
-      orders: checkout_orders_for(transactions)
+      net_cents: payout.amount.to_i
     )
   end
 
-  def fetch_balance_transactions(payout_id)
-    transactions = []
-    Stripe::BalanceTransaction.list(
-      payout: payout_id,
-      type: "charge",
-      limit: 100,
-      expand: [ "data.source" ]
-    ).auto_paging_each { |txn| transactions << txn }
-    transactions
+  # Commandes payées EN LIGNE (source: checkout) finalisées sur la période,
+  # ventilées par jour de cuisson — depuis notre base, sans appel Stripe. Triées
+  # du jour de cuisson le plus récent au plus ancien.
+  def online_orders
+    Order
+      .from_checkout
+      .completed
+      .in_bake_day_range(start_date, end_date)
+      .preload(:customer, :payment, :bake_day)
+      .map { |order| online_order_row(order) }
+      .sort_by { |row| [ row.baked_on || Date.new(0), row.order_number.to_s ] }
+      .reverse
   end
 
-  # Relie les transactions à nos commandes EN LIGNE (source: checkout) et
-  # ignore tout le reste (top-ups portefeuille, commandes calendar, PI inconnus).
-  def checkout_orders_for(transactions)
-    payment_intent_ids = transactions.filter_map { |txn| payment_intent_id_for(txn) }
-    return [] if payment_intent_ids.empty?
-
-    payments_by_pi = Payment
-      .where(stripe_payment_intent_id: payment_intent_ids)
-      .includes(order: :customer)
-      .index_by(&:stripe_payment_intent_id)
-
-    transactions.filter_map do |txn|
-      pi = payment_intent_id_for(txn)
-      next if pi.blank?
-
-      payment = payments_by_pi[pi]
-      order = payment&.order
-      next if order.nil? || !order.checkout?
-
-      PayoutOrder.new(
-        order: order,
-        order_number: order.order_number,
-        customer_name: order.customer&.full_name,
-        amount_cents: txn.amount.to_i,
-        fee_cents: txn.fee.to_i
-      )
-    end
-  end
-
-  # La `source` d'une BalanceTransaction de type charge est la Charge ; on en
-  # tire le PaymentIntent. Tolère une source non expandée (id String) ou absente.
-  def payment_intent_id_for(txn)
-    source = txn.source
-    return nil if source.blank?
-    return nil if source.is_a?(String) # source non expandée : on ne peut pas relier
-
-    source.respond_to?(:payment_intent) ? source.payment_intent : nil
+  def online_order_row(order)
+    OnlineOrderRow.new(
+      order: order,
+      order_number: order.order_number,
+      customer_name: order.customer&.full_name,
+      baked_on: order.bake_day&.baked_on,
+      amount_cents: order.total_cents.to_i,
+      fee_cents: order.payment&.stripe_fee_cents.to_i
+    )
   end
 
   def arrival_date_for(payout)

@@ -1,6 +1,7 @@
 class CartController < ApplicationController
   def show
     remove_unavailable_cart_items!
+    sync_pizza_party_forfait!
     @cart = session[:cart] || []
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
@@ -58,6 +59,8 @@ class CartController < ApplicationController
       }
     end
 
+    sync_pizza_party_forfait!
+
     respond_to do |format|
       format.html { redirect_to catalog_path, notice: "Produit ajouté au panier" }
       format.json do
@@ -89,6 +92,7 @@ class CartController < ApplicationController
     if item && params[:qty].to_i > 0
       item["qty"] = params[:qty].to_i
       session[:cart] = cart
+      sync_pizza_party_forfait!
       redirect_to cart_path, notice: "Panier mis à jour"
     else
       redirect_to cart_path, alert: "Quantité invalide"
@@ -97,6 +101,7 @@ class CartController < ApplicationController
 
   def remove
     session[:cart] = (session[:cart] || []).reject { |item| item["product_variant_id"] == params[:id] }
+    sync_pizza_party_forfait!
     redirect_to cart_path, notice: "Produit retiré du panier"
   end
 
@@ -127,6 +132,12 @@ class CartController < ApplicationController
   end
 
   private
+
+  # Maintient la ligne « forfait Pizza party » (#68) cohérente avec le panier.
+  # Idempotent : sans danger même appelé plusieurs fois par requête.
+  def sync_pizza_party_forfait!
+    session[:cart] = PizzaPartyForfaitService.sync(session[:cart])
+  end
 
   def calculate_subtotal
     (session[:cart] || []).sum do |item|

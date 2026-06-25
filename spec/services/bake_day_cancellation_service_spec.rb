@@ -87,7 +87,9 @@ RSpec.describe BakeDayCancellationService do
     end
 
     context "with a paid order with no online payment trace (offline cash)" do
-      let!(:order) { create(:order, :paid, bake_day: bake_day) }
+      # Paiement hors-ligne marqué manuellement payé (payment_status), sans trace
+      # Stripe/portefeuille (#97 : « payé » = paiement réel/marquage, pas le statut).
+      let!(:order) { create(:order, :paid, :payment_paid, bake_day: bake_day) }
 
       it "cancels it and flags it for a manual refund" do
         result = described_class.new(bake_day).call

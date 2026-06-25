@@ -41,8 +41,6 @@ class Order < ApplicationRecord
   validates :requires_invoice, inclusion: { in: [ true, false ] }
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
-  # Statuts qui ne sont atteints qu'une fois le paiement encaissé (Stripe ou portefeuille).
-  PAID_STATUSES = %w[paid ready picked_up no_show].freeze
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
@@ -56,6 +54,12 @@ class Order < ApplicationRecord
   }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }
+  # Commandes logistiquement avancées (prêtes / récupérées / non-récupérées) sans
+  # paiement réel : ce sont celles affichées « payé » à tort avant #97
+  # (clients à facture, Sémisto, épicerie). Identifiables pour nettoyage.
+  scope :marked_paid_without_real_payment, lambda {
+    where(status: %w[ready picked_up no_show]).where(payment_status: payment_statuses[:unpaid])
+  }
 
   def total_euros
     (total_cents / 100.0).round(2)
@@ -69,9 +73,13 @@ class Order < ApplicationRecord
     ready? && payment.nil?
   end
 
-  # Le paiement est considéré comme encaissé dès que le statut le sous-entend.
+  # Le paiement est considéré comme encaissé UNIQUEMENT s'il y a eu un paiement
+  # réel (Stripe / portefeuille) ou un marquage explicite admin — jamais par le
+  # simple passage logistique à « prêt » (#97). S'appuie sur `payment_status`
+  # (#41), qui est synchronisé depuis les transactions réelles et n'est jamais
+  # positionné par une transition de statut.
   def payment_received?
-    PAID_STATUSES.include?(status)
+    payment_status_paid?
   end
 
   def wallet_order_debit
@@ -119,6 +127,15 @@ class Order < ApplicationRecord
     return if payment_status == new_status
 
     update_column(:payment_status, self.class.payment_statuses[new_status])
+  end
+
+  # Recalcule `payment_status` depuis les transactions réelles, en autorisant le
+  # retour à "unpaid" — corrige les commandes marquées « payé » à tort (#97).
+  # Contrairement à `sync_payment_status!`, peut RÉTROGRADER : à n'utiliser que
+  # pour un nettoyage ponctuel (un marquage manuel admin sans transaction serait
+  # réinitialisé). Cf. la tâche `orders:resync_payment_status`.
+  def recompute_payment_status!
+    update_column(:payment_status, self.class.payment_statuses[derived_payment_status])
   end
 
   # Date d'encaissement du paiement.

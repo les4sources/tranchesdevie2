@@ -60,6 +60,17 @@ class InvoicePresenter
     ].compact
   end
 
+  # Identifiant(s) de connexion à rappeler au client sur le relevé : le numéro
+  # de téléphone et/ou l'e-mail, selon ce dont il dispose (#38). Sert à lui
+  # indiquer avec quoi se connecter pour retrouver le détail en ligne.
+  def login_identifiers
+    customer = invoice.customer
+    [
+      customer.phone_e164.presence,
+      customer.email.presence
+    ].compact
+  end
+
   # Lignes « à plat » (facture commande unique, ou usage tabulaire simple).
   def lines
     ordered_orders.flat_map { |order| lines_for(order) }

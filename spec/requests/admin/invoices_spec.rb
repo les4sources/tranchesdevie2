@@ -50,8 +50,8 @@ RSpec.describe "Admin::Invoices", type: :request do
       end
     end
 
-    describe "GET facture de période (mensuelle groupée)" do
-      it "renvoie un PDF groupé par jour de cuisson" do
+    describe "GET relevé de période (mensuel groupé)" do
+      it "renvoie un relevé PDF groupé par jour de cuisson, sans mention fiscale" do
         get admin_period_invoice_path(customer_id: customer.id, month: "2026-05")
 
         expect(response).to have_http_status(:ok)
@@ -59,6 +59,8 @@ RSpec.describe "Admin::Invoices", type: :request do
         expect(response.body).to start_with("%PDF")
 
         text = PDF::Reader.new(StringIO.new(response.body)).pages.map(&:text).join("\n")
+        expect(text).to include("Relevé de commandes")
+        expect(text).not_to match(/facture/i)
         expect(text).to include(I18n.l(Date.new(2026, 5, 12)))
         expect(text).to include(I18n.l(Date.new(2026, 5, 15)))
       end

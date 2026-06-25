@@ -114,10 +114,10 @@
                     <%= order_status_label(order.status) %>
                   </span>
                   <% if @customer.billable? %>
-                    <%# Facture PDF du détail réservée aux clients facturables (#38).
+                    <%# Relevé de commandes (PDF) réservé aux clients facturables (#38).
                         `order-modal#download` stoppe la propagation pour ne pas
                         ouvrir la modale de la carte au clic sur le lien. %>
-                    <%= link_to "Télécharger la facture (PDF)",
+                    <%= link_to "Télécharger le relevé (PDF)",
                           customers_order_invoice_path(order_id: order.id),
                           class: "block text-xs text-blue-600 hover:underline mt-1",
                           data: { turbo: false, action: "click->order-modal#download" } %>

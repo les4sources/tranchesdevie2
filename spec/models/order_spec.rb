@@ -155,6 +155,39 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe '.detailed_refunds_between (#100)' do
+    let(:range_start) { Date.new(2026, 5, 1) }
+    let(:range_end) { Date.new(2026, 5, 31) }
+    let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
+
+    it 'lists each Stripe and wallet refund with customer, amount, order and source' do
+      customer = create(:customer, first_name: "Jo", last_name: "Martin")
+      stripe_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 2000)
+      create(:payment, :refunded, order: stripe_order)
+      wallet_order = create(:order, :cancelled, customer: customer, bake_day: bake_day, total_cents: 1500)
+      create(:wallet_transaction, :order_refund, order: wallet_order, amount_cents: 1500, description: "Remboursement")
+
+      details = described_class.detailed_refunds_between(range_start, range_end)
+
+      expect(details.size).to eq(2)
+      expect(details.map { |r| r[:source] }).to contain_exactly(:stripe, :wallet)
+      stripe = details.find { |r| r[:source] == :stripe }
+      wallet = details.find { |r| r[:source] == :wallet }
+      expect(stripe[:amount_cents]).to eq(2000)
+      expect(stripe[:customer_name]).to eq("Jo Martin")
+      expect(stripe[:order]).to eq(stripe_order)
+      expect(wallet[:amount_cents]).to eq(1500)
+      expect(wallet[:reason]).to eq("Remboursement")
+    end
+
+    it 'excludes refunds whose bake day is outside the range' do
+      out = create(:order, :cancelled, bake_day: create(:bake_day, baked_on: Date.new(2026, 4, 1)), total_cents: 2000)
+      create(:payment, :refunded, order: out)
+
+      expect(described_class.detailed_refunds_between(range_start, range_end)).to be_empty
+    end
+  end
+
   describe '#paid_at' do
     it 'uses the Stripe payment timestamp' do
       order = create(:order)

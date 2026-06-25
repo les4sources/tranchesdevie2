@@ -165,6 +165,52 @@ class Order < ApplicationRecord
       }
     end
 
+    # Détail ligne à ligne des remboursements de la période (#100), pour le
+    # drill-down depuis le total. Même périmètre que `refunds_summary_between`
+    # (ventilé par jour de cuisson) pour rester cohérent avec les totaux.
+    # Chaque entrée : client, montant remboursé, date du remboursement, commande
+    # liée, source (stripe/wallet) et motif si disponible. Trié du plus récent.
+    def detailed_refunds_between(start_date, end_date)
+      (stripe_refund_details_between(start_date, end_date) +
+        wallet_refund_details_between(start_date, end_date))
+        .sort_by { |refund| refund[:refunded_at] }
+        .reverse
+    end
+
+    def stripe_refund_details_between(start_date, end_date)
+      in_bake_day_range(start_date, end_date)
+        .joins(:payment)
+        .merge(Payment.refunded)
+        .preload(:customer, :payment)
+        .map do |order|
+          {
+            source: :stripe,
+            customer_name: order.customer.full_name,
+            amount_cents: order.total_cents,
+            refunded_at: order.payment.updated_at,
+            order: order,
+            reason: nil
+          }
+        end
+    end
+
+    def wallet_refund_details_between(start_date, end_date)
+      WalletTransaction.order_refund
+        .joins(order: :bake_day)
+        .where(bake_days: { baked_on: start_date..end_date })
+        .preload(order: :customer)
+        .map do |transaction|
+          {
+            source: :wallet,
+            customer_name: transaction.order.customer.full_name,
+            amount_cents: transaction.amount_cents,
+            refunded_at: transaction.created_at,
+            order: transaction.order,
+            reason: transaction.description
+          }
+        end
+    end
+
     def sales_by_product_between(start_date, end_date)
       total_quantity = Arel.sql("SUM(order_items.qty)")
       total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")

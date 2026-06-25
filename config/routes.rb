@@ -114,7 +114,11 @@ Rails.application.routes.draw do
     post "login", to: "sessions#create"
     delete "logout", to: "sessions#destroy"
 
-    resources :reports, only: [ :index ]
+    resources :reports, only: [ :index ] do
+      collection do
+        get :refunds
+      end
+    end
     get "billing", to: "billing#index", as: :billing
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do

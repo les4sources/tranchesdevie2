@@ -41,9 +41,18 @@
         </th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SMS</th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Groupes</th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Paiement cash autorisé">Cash OK</th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Client facturable (facture mensuelle)">Fact.</th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Client interne (pas de vérification de solde)">Interne</th>
+        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Cash OK : le client peut régler ses commandes en espèces au comptoir. Sinon, paiement en ligne obligatoire à la commande.">Cash OK</span>
+        </th>
+        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Fact. : client facturable — reçoit un relevé mensuel groupé de ses commandes (à joindre à sa facture).">Fact.</span>
+        </th>
+        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Interne : client interne/collectif — ses commandes ne sont pas bloquées par la vérification du solde de portefeuille (peut commander sans provision).">Interne</span>
+        </th>
+        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Portf. : solde du portefeuille (prépaiement) du client. Vide si le solde est nul ou jamais utilisé.">Portf.</span>
+        </th>
         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           <%= link_to admin_customers_path(search: params[:search], sort: "last_order"),
               class: "hover:text-gray-700 #{'text-gray-900 font-bold' if params[:sort] == 'last_order'}" do %>
@@ -83,6 +92,10 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <%= boolean_status_icon(customer.skip_wallet_check?, label: "Client interne") %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+              <% wallet_balance = customer.wallet&.balance_cents.to_i %>
+              <%= number_to_currency(wallet_balance / 100.0, unit: "€", separator: ",", delimiter: " ", format: "%n %u") if wallet_balance.positive? %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
               <% last_order = customer.orders.max_by(&:created_at) %>

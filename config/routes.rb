@@ -47,6 +47,10 @@ Rails.application.routes.draw do
     patch "mon-compte", to: "account#update"
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
 
+    # Facture PDF du détail d'une commande, téléchargeable par les clients
+    # « facturables » (#38). Gating « billable » + propriété dans le contrôleur.
+    get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
+
     # Wallet routes
     get "portefeuille", to: "wallets#show", as: :wallet
     get "portefeuille/recharger", to: "wallets#reload", as: :wallet_reload
@@ -114,8 +118,17 @@ Rails.application.routes.draw do
     post "login", to: "sessions#create"
     delete "logout", to: "sessions#destroy"
 
-    resources :reports, only: [ :index ]
+    resources :reports, only: [ :index ] do
+      collection do
+        get :refunds
+        get :baker_revenue
+      end
+    end
     get "billing", to: "billing#index", as: :billing
+
+    # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
+    get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
+    get "factures/periode", to: "invoices#period", as: :period_invoice
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do
       member do
@@ -155,16 +168,26 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ]
+    resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+      member do
+        post :cancel
+      end
+    end
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"
-      resources :artisans
+      resources :artisans do
+        resources :revenue_shares, only: [ :index, :new, :create, :edit, :update, :destroy ],
+                                   controller: "artisan_revenue_shares", path: "parts-de-revenu"
+      end
       resources :ingredients
-      resources :dough_ratios, path: "ratios-de-panification", only: [ :index, :edit, :update ]
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
+      # Paramètres généraux historisés du calcul des revenus boulangers (#54) :
+      # transport (15 €/jour) et taux 4 Sources (30 %). Un seul contrôleur gère
+      # les deux clés via le paramètre `:key`.
+      resources :revenue_parameters, path: "revenus-boulangers", only: [ :index, :new, :create, :edit, :update, :destroy ]
     end
   end
 end

@@ -10,6 +10,22 @@ class Order < ApplicationRecord
     planned: 7
   }
 
+  # Statut de paiement (axe financier) — distinct du `status` logistique.
+  # `prefix: :payment_status` évite la collision de méthodes (`paid?`, `unpaid?`)
+  # avec l'enum `status` ci-dessus. `partially_paid` est réservé (non implémenté).
+  enum :payment_status, {
+    unpaid: 0,
+    paid: 1,
+    partially_paid: 2,
+    refunded: 3
+  }, prefix: :payment_status
+
+  # Statut de facturation (axe comptable) — a-t-on émis la facture ?
+  enum :invoice_status, {
+    not_invoiced: 0,
+    invoiced: 1
+  }, prefix: :invoice_status
+
   enum :source, { checkout: 0, calendar: 1, admin: 2 }
 
   belongs_to :customer
@@ -17,6 +33,8 @@ class Order < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
   has_one :payment, dependent: :destroy
+  has_many :invoice_orders, dependent: :destroy
+  has_many :invoices, through: :invoice_orders
 
   validates :total_cents, presence: true, numericality: { greater_than: 0 }
   validates :public_token, presence: true, uniqueness: true
@@ -25,8 +43,6 @@ class Order < ApplicationRecord
   validates :requires_invoice, inclusion: { in: [ true, false ] }
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
-  # Statuts qui ne sont atteints qu'une fois le paiement encaissé (Stripe ou portefeuille).
-  PAID_STATUSES = %w[paid ready picked_up no_show].freeze
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
@@ -40,9 +56,32 @@ class Order < ApplicationRecord
   }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }
+  # Commandes logistiquement avancées (prêtes / récupérées / non-récupérées) sans
+  # paiement réel : ce sont celles affichées « payé » à tort avant #97
+  # (clients à facture, Sémisto, épicerie). Identifiables pour nettoyage.
+  scope :marked_paid_without_real_payment, lambda {
+    where(status: %w[ready picked_up no_show]).where(payment_status: payment_statuses[:unpaid])
+  }
 
   def total_euros
     (total_cents / 100.0).round(2)
+  end
+
+  # Nombre de sacs à pains pour la commande (#52) : 1 sac par unité de pain
+  # produit (catégorie « breads » en production maison), pâtons/reventes exclus.
+  def bread_bags_count
+    order_items.includes(product_variant: :product).sum do |item|
+      item.product_variant.product.incurs_bag_cost? ? item.qty : 0
+    end
+  end
+
+  # Coût total des sacs à pains de la commande à une date donnée (par défaut le
+  # jour de cuisson). `nb_sacs × prix_du_sac(à la date)`. Exposé pour le calcul
+  # des bénéfices (#54). Si aucun prix de sac n'est défini à la date, le coût
+  # est nul (aucune déduction).
+  def bread_bags_cost_cents(on: bake_day&.baked_on || Date.current)
+    price_cents = BreadBagPrice.amount_cents_on(on) || 0
+    bread_bags_count * price_cents
   end
 
   def can_be_cancelled_by_customer?
@@ -53,9 +92,13 @@ class Order < ApplicationRecord
     ready? && payment.nil?
   end
 
-  # Le paiement est considéré comme encaissé dès que le statut le sous-entend.
+  # Le paiement est considéré comme encaissé UNIQUEMENT s'il y a eu un paiement
+  # réel (Stripe / portefeuille) ou un marquage explicite admin — jamais par le
+  # simple passage logistique à « prêt » (#97). S'appuie sur `payment_status`
+  # (#41), qui est synchronisé depuis les transactions réelles et n'est jamais
+  # positionné par une transition de statut.
   def payment_received?
-    PAID_STATUSES.include?(status)
+    payment_status_paid?
   end
 
   def wallet_order_debit
@@ -73,6 +116,45 @@ class Order < ApplicationRecord
   def payment_refunded?
     payment&.refunded? ||
       wallet_transactions.any? { |transaction| transaction.transaction_type == "order_refund" }
+  end
+
+  # Statut de paiement déduit des transactions RÉELLES (Stripe + portefeuille),
+  # indépendamment du `status` logistique. C'est la source de vérité automatique
+  # pour `payment_status` (cf. #41) :
+  #   - "refunded" si un remboursement réel existe (prime sur le reste) ;
+  #   - "paid"     si un encaissement réel existe (Stripe succeeded ou débit wallet) ;
+  #   - "unpaid"   sinon.
+  def derived_payment_status
+    return "refunded" if payment_refunded?
+    return "paid" if real_payment_received?
+
+    "unpaid"
+  end
+
+  # Recalcule `payment_status` à partir des transactions réelles et le persiste
+  # si nécessaire. Appelé automatiquement lorsqu'un paiement ou une transaction
+  # de portefeuille est enregistré (cf. Payment / WalletTransaction). Les
+  # commandes hors-ligne (cash) sans transaction ne sont jamais touchées ici :
+  # le marquage manuel admin reste donc préservé.
+  def sync_payment_status!
+    new_status = derived_payment_status
+
+    # La synchronisation automatique ne fait que refléter un encaissement ou un
+    # remboursement RÉEL. Elle ne repasse jamais à "unpaid" : un marquage manuel
+    # admin (paiement hors-ligne cash / client à facture) reste donc préservé.
+    return if new_status == "unpaid"
+    return if payment_status == new_status
+
+    update_column(:payment_status, self.class.payment_statuses[new_status])
+  end
+
+  # Recalcule `payment_status` depuis les transactions réelles, en autorisant le
+  # retour à "unpaid" — corrige les commandes marquées « payé » à tort (#97).
+  # Contrairement à `sync_payment_status!`, peut RÉTROGRADER : à n'utiliser que
+  # pour un nettoyage ponctuel (un marquage manuel admin sans transaction serait
+  # réinitialisé). Cf. la tâche `orders:resync_payment_status`.
+  def recompute_payment_status!
+    update_column(:payment_status, self.class.payment_statuses[derived_payment_status])
   end
 
   # Date d'encaissement du paiement.
@@ -94,7 +176,7 @@ class Order < ApplicationRecord
     when :unpaid
       [ :paid, :ready, :cancelled ].include?(new_status.to_sym)
     when :ready
-      [ :picked_up, :no_show ].include?(new_status.to_sym)
+      [ :picked_up, :no_show, :cancelled ].include?(new_status.to_sym)
     else
       false
     end
@@ -163,6 +245,52 @@ class Order < ApplicationRecord
         count: scope.count,
         amount_cents: scope.sum(:amount_cents)
       }
+    end
+
+    # Détail ligne à ligne des remboursements de la période (#100), pour le
+    # drill-down depuis le total. Même périmètre que `refunds_summary_between`
+    # (ventilé par jour de cuisson) pour rester cohérent avec les totaux.
+    # Chaque entrée : client, montant remboursé, date du remboursement, commande
+    # liée, source (stripe/wallet) et motif si disponible. Trié du plus récent.
+    def detailed_refunds_between(start_date, end_date)
+      (stripe_refund_details_between(start_date, end_date) +
+        wallet_refund_details_between(start_date, end_date))
+        .sort_by { |refund| refund[:refunded_at] }
+        .reverse
+    end
+
+    def stripe_refund_details_between(start_date, end_date)
+      in_bake_day_range(start_date, end_date)
+        .joins(:payment)
+        .merge(Payment.refunded)
+        .preload(:customer, :payment)
+        .map do |order|
+          {
+            source: :stripe,
+            customer_name: order.customer.full_name,
+            amount_cents: order.total_cents,
+            refunded_at: order.payment.updated_at,
+            order: order,
+            reason: nil
+          }
+        end
+    end
+
+    def wallet_refund_details_between(start_date, end_date)
+      WalletTransaction.order_refund
+        .joins(order: :bake_day)
+        .where(bake_days: { baked_on: start_date..end_date })
+        .preload(order: :customer)
+        .map do |transaction|
+          {
+            source: :wallet,
+            customer_name: transaction.order.customer.full_name,
+            amount_cents: transaction.amount_cents,
+            refunded_at: transaction.created_at,
+            order: transaction.order,
+            reason: transaction.description
+          }
+        end
     end
 
     def sales_by_product_between(start_date, end_date)
@@ -279,6 +407,13 @@ class Order < ApplicationRecord
   end
 
   private
+
+  # Encaissement réel (par opposition au `status` logistique) : un paiement
+  # Stripe abouti, ou un débit du portefeuille.
+  def real_payment_received?
+    (payment.present? && payment.succeeded?) ||
+      wallet_transactions.any? { |transaction| transaction.transaction_type == "order_debit" }
+  end
 
   def generate_public_token
     return if public_token.present?

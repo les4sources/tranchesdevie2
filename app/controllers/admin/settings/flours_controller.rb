@@ -50,7 +50,11 @@ module Admin
       end
 
       def flour_params
-        params.require(:flour).permit(:name, :position, :kneader_limit_grams)
+        params.require(:flour).permit(
+          :name, :position, :kneader_limit_grams,
+          :flour_ratio, :water_ratio, :salt_ratio, :levain_ratio, :levain_type,
+          :origin, :grade, :notes, :price_per_kg_euros
+        )
       end
     end
   end

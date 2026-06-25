@@ -1,5 +1,5 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :cancel ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
@@ -89,7 +89,32 @@ class Admin::BakeDaysController < Admin::BaseController
     redirect_to admin_bake_days_path, notice: "Jour de cuisson supprimé"
   end
 
+  # Annule la fournée : rembourse tous les clients ayant payé (carte ou
+  # portefeuille) et bascule leurs commandes en « annulée ».
+  def cancel
+    result = BakeDayCancellationService.new(@bake_day).call
+
+    if result.success?
+      redirect_to admin_bake_day_path(@bake_day), notice: cancellation_summary(result)
+    else
+      redirect_to admin_bake_day_path(@bake_day),
+                  alert: "#{cancellation_summary(result)} — #{result.failures.size} échec(s) à reprendre : " \
+                         "#{result.failures.map { |f| "#{f[:order]} (#{f[:error]})" }.join(', ')}"
+    end
+  end
+
   private
+
+  def cancellation_summary(result)
+    parts = [ "Fournée annulée : #{result.refunded_count} remboursement(s) " \
+              "(#{format('%.2f', result.refunded_cents / 100.0)} €)" ]
+    if result.manual_refund_orders.any?
+      parts << "#{result.manual_refund_orders.size} à rembourser à la main " \
+               "(#{result.manual_refund_orders.join(', ')})"
+    end
+    parts << "#{result.cancelled_without_refund_count} sans paiement" if result.cancelled_without_refund_count.positive?
+    parts.join(" · ")
+  end
 
   def set_bake_day
     @bake_day = BakeDay.find(params[:id])

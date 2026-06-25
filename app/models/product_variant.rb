@@ -8,6 +8,7 @@ class ProductVariant < ApplicationRecord
   has_many :ingredients, through: :variant_ingredients
   has_many :variant_group_restrictions, dependent: :destroy
   has_many :restricted_groups, through: :variant_group_restrictions, source: :group
+  has_many :variant_cost_prices, dependent: :destroy
 
   def group_ids
     restricted_group_ids
@@ -19,6 +20,7 @@ class ProductVariant < ApplicationRecord
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
   accepts_nested_attributes_for :variant_ingredients, allow_destroy: true, reject_if: :reject_blank_ingredient?
+  accepts_nested_attributes_for :variant_cost_prices, allow_destroy: true, reject_if: :reject_blank_cost_price?
 
   after_save :link_images_to_variant
 
@@ -83,6 +85,26 @@ class ProductVariant < ApplicationRecord
     ).exists?
   end
 
+  # Prix coûtant applicable à une date (#90), exposé pour le reporting (#54).
+  # Renvoie le montant (cents) du palier le plus récent dont la date
+  # d'activation est antérieure ou égale à `on`, ou `nil` si aucun palier n'est
+  # actif à cette date (coûtant manquant signalé explicitement — pas de zéro
+  # trompeur). Versionnement par date : insensible aux paliers postérieurs.
+  def cost_price_cents(on: Date.current)
+    variant_cost_prices
+      .where(active_from: ..on)
+      .ordered
+      .limit(1)
+      .pick(:amount_cents)
+  end
+
+  def cost_price_euros(on: Date.current)
+    cents = cost_price_cents(on: on)
+    return nil if cents.nil?
+
+    (cents / 100.0).round(2)
+  end
+
   def price_euros
     return nil if price_cents.nil?
     (price_cents / 100.0).round(2)
@@ -132,5 +154,15 @@ class ProductVariant < ApplicationRecord
 
     # Reject if ingredient_id is blank
     attributes["ingredient_id"].blank?
+  end
+
+  def reject_blank_cost_price?(attributes)
+    # Don't reject deletions or existing records.
+    return false if attributes["_destroy"].present?
+    return false if attributes["id"].present?
+
+    # Reject a brand-new blank row (no amount AND no date) so the spare
+    # "add" row in the form is ignored when left empty.
+    attributes["amount_euros"].to_s.strip.blank? && attributes["active_from"].to_s.strip.blank?
   end
 end

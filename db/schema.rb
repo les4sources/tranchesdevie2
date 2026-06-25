@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_25_170300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.index ["slug"], name: "index_admin_pages_on_slug", unique: true
   end
 
+  create_table "artisan_revenue_shares", force: :cascade do |t|
+    t.bigint "artisan_id", null: false
+    t.decimal "percent", precision: 6, scale: 3, null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id", "active_from"], name: "index_artisan_revenue_shares_on_artisan_id_and_active_from"
+    t.index ["artisan_id"], name: "index_artisan_revenue_shares_on_artisan_id"
+  end
+
   create_table "artisans", force: :cascade do |t|
     t.string "name", null: false
     t.boolean "active", default: true, null: false
@@ -78,6 +88,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
   end
 
+  create_table "bread_bag_prices", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active_from"], name: "index_bread_bag_prices_on_active_from"
+  end
+
   create_table "customer_groups", force: :cascade do |t|
     t.bigint "customer_id", null: false
     t.bigint "group_id", null: false
@@ -100,18 +118,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.boolean "billable", default: false, null: false
     t.datetime "calendar_intro_seen_at"
     t.boolean "email_opt_out", default: false, null: false
+    t.boolean "cash_payment_allowed", default: false, null: false
     t.index "lower((email)::text)", name: "index_customers_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
-  end
-
-  create_table "dough_ratios", force: :cascade do |t|
-    t.string "key", null: false
-    t.decimal "value", precision: 10, scale: 5, null: false
-    t.string "label", null: false
-    t.integer "position", default: 0
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["key"], name: "index_dough_ratios_on_key", unique: true
   end
 
   create_table "email_messages", force: :cascade do |t|
@@ -140,6 +149,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "kneader_limit_grams"
+    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.5556", null: false
+    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.655", null: false
+    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.022", null: false
+    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12095", null: false
+    t.string "levain_type", default: "froment", null: false
+    t.string "origin"
+    t.string "grade"
+    t.text "notes"
+    t.integer "price_per_kg_cents"
     t.index ["deleted_at"], name: "index_flours_on_deleted_at"
     t.index ["name"], name: "index_flours_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
@@ -160,6 +178,33 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_ingredients_on_deleted_at"
     t.index ["name"], name: "index_ingredients_on_name", unique: true, where: "(deleted_at IS NULL)"
+  end
+
+  create_table "invoice_orders", force: :cascade do |t|
+    t.bigint "invoice_id", null: false
+    t.bigint "order_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "order_id"], name: "index_invoice_orders_on_invoice_id_and_order_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_orders_on_invoice_id"
+    t.index ["order_id"], name: "index_invoice_orders_on_order_id"
+  end
+
+  create_table "invoices", force: :cascade do |t|
+    t.string "number", null: false
+    t.bigint "customer_id", null: false
+    t.date "issued_on", null: false
+    t.date "period_start"
+    t.date "period_end"
+    t.integer "subtotal_cents", default: 0, null: false
+    t.integer "vat_cents", default: 0, null: false
+    t.integer "total_cents", default: 0, null: false
+    t.decimal "vat_rate", precision: 5, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_invoices_on_customer_id"
+    t.index ["issued_on"], name: "index_invoices_on_issued_on"
+    t.index ["number"], name: "index_invoices_on_number", unique: true
   end
 
   create_table "mold_types", force: :cascade do |t|
@@ -197,10 +242,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.boolean "requires_invoice", default: false, null: false
     t.integer "source", default: 0, null: false
     t.datetime "paid_at"
+    t.integer "payment_status", default: 0, null: false
+    t.integer "invoice_status", default: 0, null: false
+    t.string "group_name"
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
+    t.index ["payment_status"], name: "index_orders_on_payment_status"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
     t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
@@ -299,10 +348,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.string "channel", default: "store", null: false
     t.datetime "deleted_at"
     t.integer "internal_category", default: 0, null: false
+    t.integer "pizza_party_role", default: 0, null: false
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
     t.index ["deleted_at"], name: "index_products_on_deleted_at"
     t.index ["internal_category"], name: "index_products_on_internal_category"
+  end
+
+  create_table "revenue_parameters", force: :cascade do |t|
+    t.string "key", null: false
+    t.integer "value", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key", "active_from"], name: "index_revenue_parameters_on_key_and_active_from"
   end
 
   create_table "sms_messages", force: :cascade do |t|
@@ -458,6 +517,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
     t.index ["tenant_id"], name: "index_stripe_events_on_tenant_id"
   end
 
+  create_table "variant_cost_prices", force: :cascade do |t|
+    t.bigint "product_variant_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_variant_id", "active_from"], name: "idx_on_product_variant_id_active_from_f6d86da26b"
+    t.index ["product_variant_id"], name: "index_variant_cost_prices_on_product_variant_id"
+  end
+
   create_table "variant_group_restrictions", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
     t.bigint "group_id", null: false
@@ -504,10 +573,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "artisan_revenue_shares", "artisans"
   add_foreign_key "bake_day_artisans", "artisans"
   add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
+  add_foreign_key "invoice_orders", "invoices"
+  add_foreign_key "invoice_orders", "orders"
+  add_foreign_key "invoices", "customers"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"
@@ -527,6 +600,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_17_090000) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "variant_cost_prices", "product_variants"
   add_foreign_key "variant_group_restrictions", "groups"
   add_foreign_key "variant_group_restrictions", "product_variants"
   add_foreign_key "variant_ingredients", "ingredients"

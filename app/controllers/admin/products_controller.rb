@@ -65,6 +65,7 @@ class Admin::ProductsController < Admin::BaseController
   def edit_variant
     @product = @variant.product
     @variant.product_images.load # Ensure images are loaded and ordered
+    @variant.variant_cost_prices.build # Ligne vierge pour saisir un nouveau prix coûtant (#90)
   end
 
   def update_variant
@@ -72,6 +73,7 @@ class Admin::ProductsController < Admin::BaseController
     if @variant.update(variant_params)
       redirect_to admin_product_path(@product), notice: "Variante mise à jour"
     else
+      @variant.variant_cost_prices.build # Ligne vierge pour re-saisir un prix coûtant (#90)
       render :edit_variant, status: :unprocessable_entity
     end
   end
@@ -117,6 +119,7 @@ class Admin::ProductsController < Admin::BaseController
       :name, :price_euros, :active, :flour_quantity, :channel, :mold_type_id,
       product_images_attributes: [ :id, :image, :_destroy, :position ],
       variant_ingredients_attributes: [ :id, :ingredient_id, :quantity, :_destroy ],
+      variant_cost_prices_attributes: [ :id, :amount_euros, :active_from, :_destroy ],
       group_ids: [],
       available_weekdays: []
     )

@@ -96,6 +96,10 @@
               <%= product.name %>
             <% end %>
 
+            <% if product.pizza_party_role_party? %>
+              <p class="mt-1 text-xs text-gray-500">Nous comptons 1 boule de pâte à pizza / personne</p>
+            <% end %>
+
             <div class="mt-4 space-y-3">
               <% variants.each do |variant| %>
                 <%= form_with url: cart_add_path, method: :post, local: true, data: { action: "submit->cart#add" }, class: "flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-terracotta/40" do |f| %>
@@ -108,7 +112,7 @@
                       <%= variant_qty > 0 ? variant_qty : "+" %>
                     </button>
                     <div class="flex flex-col">
-                      <span class="text-sm font-medium text-charcoal"><%= variant.name %></span>
+                      <span class="text-sm font-medium text-charcoal"><%= product.pizza_party_role_party? ? "Nombre de personnes" : variant.name %></span>
                       <% restriction = ProductVariantDecorator.decorate(variant).weekday_restriction_label %>
                       <% if restriction %>
                         <span class="text-xs font-medium text-amber-700"><%= restriction %></span>

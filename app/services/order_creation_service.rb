@@ -1,13 +1,14 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false)
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false, group_name: nil)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
     @payment_intent_id = payment_intent_id
     @payment_method = payment_method
     @skip_capacity_check = skip_capacity_check
+    @group_name = group_name.presence
     @errors = []
   end
 
@@ -34,7 +35,8 @@ class OrderCreationService
         bake_day: @bake_day,
         total_cents: calculate_total,
         payment_intent_id: @payment_intent_id,
-        status: initial_status
+        status: initial_status,
+        group_name: @group_name
       )
 
       create_order_items

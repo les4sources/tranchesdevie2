@@ -50,4 +50,42 @@ RSpec.describe Admin::BakeDayDashboard do
       expect(entry[:total_cents]).to eq(1100)
     end
   end
+
+  # ISC-88 : la panification utilise le ratio par farine, et expose deux totaux
+  # de levain distincts (froment / seigle).
+  describe '#dough_quantities' do
+    let(:froment) { create(:flour, name: "Froment T65", flour_ratio: 0.5, water_ratio: 0.6, salt_ratio: 0.02, levain_ratio: 0.10) }
+    let(:seigle) { create(:flour, :seigle, name: "Seigle T130", flour_ratio: 0.5, water_ratio: 0.8, salt_ratio: 0.03, levain_ratio: 0.20) }
+
+    let(:bread_froment) do
+      create(:product, :bread).tap { |p| create(:product_flour, product: p, flour: froment, percentage: 100) }
+    end
+    let(:bread_seigle) do
+      create(:product, :bread).tap { |p| create(:product_flour, product: p, flour: seigle, percentage: 100) }
+    end
+    let(:variant_froment) { create(:product_variant, product: bread_froment, flour_quantity: 1000) }
+    let(:variant_seigle) { create(:product_variant, product: bread_seigle, flour_quantity: 1000) }
+
+    let!(:dough_order) do
+      create(:order, :paid, customer: customer, bake_day: bake_day).tap do |o|
+        create(:order_item, order: o, product_variant: variant_froment, qty: 1, unit_price_cents: 550)
+        create(:order_item, order: o, product_variant: variant_seigle, qty: 1, unit_price_cents: 550)
+      end
+    end
+
+    it "uses each flour's own ratio for the panification table" do
+      data = dashboard.dough_quantities
+      froment_col = data[:per_flour].find { |c| c[:flour] == froment }
+      seigle_col = data[:per_flour].find { |c| c[:flour] == seigle }
+
+      expect(froment_col[:levain_kg]).to eq(0.1)  # 1000 g pâte * 0.10 / 1000
+      expect(seigle_col[:levain_kg]).to eq(0.2)   # 1000 g pâte * 0.20 / 1000
+    end
+
+    it 'splits the levain totals by type (base for #83)' do
+      data = dashboard.dough_quantities
+      expect(data[:levain_by_type]["froment"]).to eq(0.1)
+      expect(data[:levain_by_type]["seigle"]).to eq(0.2)
+    end
+  end
 end

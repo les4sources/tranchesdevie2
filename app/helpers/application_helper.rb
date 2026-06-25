@@ -14,6 +14,26 @@ module ApplicationHelper
     labels[status.to_s] || status.to_s.tr("_", " ").capitalize
   end
 
+  def payment_status_label(payment_status)
+    labels = {
+      "unpaid" => "Non payée",
+      "paid" => "Payée",
+      "partially_paid" => "Partiellement payée",
+      "refunded" => "Remboursée"
+    }
+
+    labels[payment_status.to_s] || payment_status.to_s.tr("_", " ").capitalize
+  end
+
+  def invoice_status_label(invoice_status)
+    labels = {
+      "not_invoiced" => "Non facturée",
+      "invoiced" => "Facturée"
+    }
+
+    labels[invoice_status.to_s] || invoice_status.to_s.tr("_", " ").capitalize
+  end
+
   def order_source_label(source)
     labels = {
       "checkout" => "Client (en ligne)",
@@ -53,6 +73,24 @@ module ApplicationHelper
       xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
       "stroke-width": "1.5", stroke: "currentColor",
       class: "w-5 h-5 text-gray-500 shrink-0", role: "img", "aria-label": label
+    )
+  end
+
+  # Icône d'état booléen pour les tableaux admin : pastille « check » verte si
+  # l'option est active, grisée sinon. `label` sert d'info-bulle et de libellé
+  # accessible (ex. « Paiement cash autorisé »).
+  CHECK_CIRCLE_ICON_PATH = "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z".freeze
+
+  def boolean_status_icon(active, label:)
+    state = active ? "actif" : "inactif"
+    color = active ? "text-green-600" : "text-gray-300"
+
+    tag.svg(
+      tag.title("#{label} : #{state}") +
+        tag.path(nil, "stroke-linecap": "round", "stroke-linejoin": "round", d: CHECK_CIRCLE_ICON_PATH),
+      xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
+      "stroke-width": "1.5", stroke: "currentColor",
+      class: "w-5 h-5 #{color} shrink-0 inline-block", role: "img", "aria-label": "#{label} : #{state}"
     )
   end
 end

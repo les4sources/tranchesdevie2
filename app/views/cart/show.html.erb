@@ -69,7 +69,9 @@
           <% variant = ProductVariant.find(item['product_variant_id']) %>
           <% product = variant.product %>
           <% qty = item['qty'].to_i %>
-          <% line_total = qty * variant.price_cents %>
+          <% line_total = qty * item['price_cents'].to_i %>
+          <% is_forfait = product&.pizza_party_role_forfait? %>
+          <% is_party = product&.pizza_party_role_party? %>
           <% if product.nil? %>
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div class="flex items-center justify-between">
@@ -98,30 +100,45 @@
                   <div class="flex items-start justify-between gap-4">
                     <div>
                       <h3 class="text-lg font-semibold text-gray-900"><%= product.name %></h3>
-                      <p class="text-sm text-gray-500"><%= variant.name %></p>
+                      <% if is_party %>
+                        <p class="text-sm text-gray-500"><%= "#{qty} #{qty > 1 ? 'personnes' : 'personne'}" %></p>
+                      <% elsif is_forfait %>
+                        <p class="text-sm text-gray-500">Ajouté automatiquement à ta Pizza party</p>
+                      <% else %>
+                        <p class="text-sm text-gray-500"><%= variant.name %></p>
+                      <% end %>
                     </div>
                     <span class="text-base font-semibold text-gray-900">
                       <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
                     </span>
                   </div>
 
-                  <div class="mt-4 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
-                        &minus;
-                      <% end %>
-                      <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
-                        <%= qty %>
-                      </span>
-                      <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
-                        +
+                  <% if is_forfait %>
+                    <%# Le forfait est piloté par PizzaPartyForfaitService : pas de
+                        contrôle de quantité ni de retrait indépendant (le sync
+                        rétablirait l'état de toute façon). %>
+                    <div class="mt-4 text-sm text-gray-500">
+                      Forfait unique par commande.
+                    </div>
+                  <% else %>
+                    <div class="mt-4 flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
+                          &minus;
+                        <% end %>
+                        <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
+                          <%= qty %>
+                        </span>
+                        <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
+                          +
+                        <% end %>
+                      </div>
+
+                      <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
+                        Retirer
                       <% end %>
                     </div>
-
-                    <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
-                      Retirer
-                    <% end %>
-                  </div>
+                  <% end %>
                 </div>
               </div>
             </div>

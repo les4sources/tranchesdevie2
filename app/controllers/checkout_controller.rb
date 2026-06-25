@@ -1,6 +1,10 @@
 class CheckoutController < ApplicationController
   before_action :ensure_cart_not_empty, except: [ :success ]
   before_action :ensure_bake_day_set, except: [ :success ]
+  # Garde-fou (#68) : on resynchronise la ligne forfait Pizza party AVANT de
+  # calculer le total / créer le PaymentIntent ou la commande, au cas où le
+  # panier aurait été modifié hors des actions du CartController. Idempotent.
+  before_action :sync_pizza_party_forfait!, only: [ :new, :create_payment_intent, :create_cash_order ]
   before_action :ensure_cutoff_not_passed, only: [ :new, :create_payment_intent, :create_cash_order ]
 
   def new
@@ -23,6 +27,9 @@ class CheckoutController < ApplicationController
     @discount_cents = calculate_discount(@subtotal_cents, @customer)
     @total_cents = @subtotal_cents - @discount_cents
     @otp_verified = phone_verified?
+    # Paiement en ligne par défaut ; le cash n'est proposé qu'aux clients
+    # explicitement autorisés par l'admin (#36).
+    @cash_payment_allowed = @customer&.cash_payment_allowed? || false
   end
 
   def verify_phone
@@ -121,7 +128,8 @@ class CheckoutController < ApplicationController
       customer: customer,
       bake_day: @bake_day,
       cart_items: @cart,
-      payment_method: "online"
+      payment_method: "online",
+      group_name: json_params["group_name"]
     )
     order = service.call
 
@@ -231,6 +239,14 @@ class CheckoutController < ApplicationController
       end
     end
 
+    # Garde-fou serveur (#36) : la commande sans paiement en ligne n'est possible
+    # que pour les clients explicitement autorisés au cash. Empêche tout
+    # contournement du paiement en ligne (page périmée, requête forgée, etc.).
+    unless customer.cash_payment_allowed?
+      render json: { success: false, error: "Le paiement en ligne est requis pour cette commande" }, status: :forbidden
+      return
+    end
+
     bake_day = BakeDay.find_by(id: session[:bake_day_id])
     unless bake_day
       render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
@@ -244,7 +260,8 @@ class CheckoutController < ApplicationController
       customer: customer,
       bake_day: bake_day,
       cart_items: cart_items,
-      payment_method: "cash"
+      payment_method: "cash",
+      group_name: json_params["group_name"]
     )
 
     order = service.call
@@ -344,6 +361,11 @@ class CheckoutController < ApplicationController
   end
 
   private
+
+  # Resynchronise la ligne forfait Pizza party (#68). Idempotent.
+  def sync_pizza_party_forfait!
+    session[:cart] = PizzaPartyForfaitService.sync(session[:cart])
+  end
 
   def find_order_by_payment_intent(payment_intent_id)
     return nil unless payment_intent_id.present?

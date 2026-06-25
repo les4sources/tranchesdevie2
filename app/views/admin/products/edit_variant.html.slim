@@ -28,6 +28,27 @@
       = f.collection_select :mold_type_id, MoldType.not_deleted.ordered, :id, :name, { include_blank: "Aucun" }, class: admin_input_class
 
   .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    span.block.text-sm.font-medium.text-gray-700 Prix coûtant (historisé par date d'activation)
+    p.text-sm.text-gray-500.mb-3
+      | Saisissez le prix coûtant de la variante et la date à partir de laquelle il s'applique. L'historique est conservé : le coûtant retenu à une date donnée est le dernier saisi dont la date d'activation est antérieure ou égale.
+    .space-y-3
+      = f.fields_for :variant_cost_prices do |cp_form|
+        - cost_price = cp_form.object
+        .flex.flex-col.gap-3.sm:flex-row.sm:items-end.sm:gap-4.border-b.border-gray-100.pb-3
+          - if cost_price.persisted?
+            = cp_form.hidden_field :id
+          .flex-1
+            = cp_form.label :amount_euros, "Montant (€)", class: "block text-xs font-medium text-gray-600"
+            = cp_form.number_field :amount_euros, step: 0.01, min: 0, class: admin_input_class
+          .flex-1
+            = cp_form.label :active_from, "Date d'activation", class: "block text-xs font-medium text-gray-600"
+            = cp_form.date_field :active_from, class: admin_input_class
+          - if cost_price.persisted?
+            .flex.items-center.gap-2
+              = cp_form.check_box :_destroy, class: "h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+              = cp_form.label :_destroy, "Supprimer", class: "text-sm text-gray-600"
+
+  .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
     span.block.text-sm.font-medium.text-gray-700 En vente en ligne
     p.text-sm.text-gray-500.mb-3 Pour qu'une variante soit visible et achetable sur le site, elle doit être « Active » et en canal « Vente en ligne ».
     .space-y-3

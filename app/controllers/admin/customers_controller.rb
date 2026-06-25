@@ -2,7 +2,7 @@ class Admin::CustomersController < Admin::BaseController
   before_action :set_customer, only: [ :show, :edit, :update, :destroy, :send_sms ]
 
   def index
-    @customers = Customer.includes(:orders, :groups)
+    @customers = Customer.includes(:orders, :groups, :wallet)
 
     if params[:search].present?
       search_term = "%#{params[:search]}%"

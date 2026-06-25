@@ -11,7 +11,7 @@ RSpec.describe BillingReportService do
 
   it "regroupe les commandes des clients facturables pour le mois donné" do
     pro = create(:customer, billable: true, first_name: "Épicerie", last_name: "Durand")
-    create(:order, :paid, customer: pro, bake_day: bake_day_in_month, total_cents: 2000)
+    create(:order, :paid, :payment_paid, customer: pro, bake_day: bake_day_in_month, total_cents: 2000)
     create(:order, :unpaid, customer: pro, bake_day: bake_day_in_month, total_cents: 1500)
 
     result = report
@@ -27,7 +27,7 @@ RSpec.describe BillingReportService do
 
   it "agrège les totaux globaux du rapport" do
     pro = create(:customer, billable: true)
-    create(:order, :paid, customer: pro, bake_day: bake_day_in_month, total_cents: 2000)
+    create(:order, :paid, :payment_paid, customer: pro, bake_day: bake_day_in_month, total_cents: 2000)
     create(:order, :unpaid, customer: pro, bake_day: bake_day_in_month, total_cents: 1500)
 
     result = report

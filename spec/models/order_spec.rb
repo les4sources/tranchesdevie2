@@ -1,17 +1,73 @@
 require 'rails_helper'
 
 RSpec.describe Order, type: :model do
+  # #97 : « payé » ne dépend QUE du paiement réel (payment_status), jamais du
+  # statut logistique. Passer une commande à « prêt » ne la rend pas « payée ».
   describe '#payment_received?' do
-    it 'is true for statuses reached after collecting payment' do
-      %i[paid ready picked_up no_show].each do |status|
-        expect(build(:order, status: status).payment_received?).to be(true)
+    it 'is true only when payment_status is paid (real payment / manual marking)' do
+      expect(build(:order, payment_status: :paid).payment_received?).to be(true)
+    end
+
+    it 'is false when payment_status is not paid, regardless of logistic status' do
+      %i[unpaid refunded].each do |payment_status|
+        expect(build(:order, payment_status: payment_status).payment_received?).to be(false)
       end
     end
 
-    it 'is false before payment is collected or once cancelled' do
-      %i[pending planned unpaid cancelled].each do |status|
-        expect(build(:order, status: status).payment_received?).to be(false)
+    it 'is false for an advanced logistic status with no real payment (#97 bug)' do
+      # Commande facturable passée à « prêt » sans paiement réel : non payée.
+      %i[ready picked_up no_show].each do |status|
+        order = build(:order, status: status, payment_status: :unpaid)
+        expect(order.payment_received?).to be(false)
       end
+    end
+  end
+
+  describe 'payment is never inferred from the "ready" transition (#97)' do
+    it 'does not mark a billable order paid when it is marked ready' do
+      order = create(:order, :unpaid, :payment_unpaid)
+
+      order.transition_to!(:ready)
+
+      expect(order.reload.payment_status).to eq('unpaid')
+      expect(order.payment_received?).to be(false)
+    end
+
+    it 'keeps reflecting a real online payment after the ready transition' do
+      order = create(:order, :paid)
+      create(:payment, order: order) # paiement Stripe réel → payment_status paid (#41)
+      order.reload.transition_to!(:ready) # paid -> ready
+
+      expect(order.reload.payment_received?).to be(true)
+    end
+  end
+
+  describe '#recompute_payment_status! and .marked_paid_without_real_payment (#97 cleanup)' do
+    it 'downgrades an order with no real payment back to unpaid' do
+      order = create(:order, :ready, :payment_paid) # marquée payée à tort
+      expect(order.payment_received?).to be(true)
+
+      order.recompute_payment_status!
+
+      expect(order.reload.payment_status).to eq('unpaid')
+    end
+
+    it 'keeps an order with a real payment as paid' do
+      order = create(:order, :ready, :payment_unpaid)
+      create(:payment, order: order)
+
+      order.recompute_payment_status!
+
+      expect(order.reload.payment_status).to eq('paid')
+    end
+
+    it 'identifies orders marked paid without a real payment' do
+      bake_day = create(:bake_day)
+      wrong = create(:order, :ready, :payment_unpaid, bake_day: bake_day)
+      really_paid = create(:order, :ready, :payment_paid, bake_day: bake_day)
+
+      expect(Order.marked_paid_without_real_payment).to include(wrong)
+      expect(Order.marked_paid_without_real_payment).not_to include(really_paid)
     end
   end
 

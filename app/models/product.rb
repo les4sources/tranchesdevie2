@@ -36,6 +36,14 @@ class Product < ApplicationRecord
     product_flours.includes(:flour).map { |pf| "#{pf.flour.name} #{pf.percentage} %" }.join(", ")
   end
 
+  # Un sac à pain est compté d'office pour chaque unité de PAIN PRODUIT (#52) :
+  # catégorie « breads » et production maison (internal_category « boulangerie »).
+  # Les pâtons (pâte à pizza, catégorie dough_balls) et les reventes (épicerie,
+  # traiteur…) n'entraînent aucun coût de sac.
+  def incurs_bag_cost?
+    breads? && internal_category_boulangerie?
+  end
+
   private
 
   def reject_empty_image?(attributes)

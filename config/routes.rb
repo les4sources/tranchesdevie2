@@ -10,6 +10,8 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
+  get "conditions-generales", to: "pages#cgv", as: :cgv
+  get "vie-privee", to: "pages#vie_privee", as: :vie_privee
   get "drapeaux", to: "flags#index", as: :flags
 
   get "panier", to: "cart#show", as: :cart
@@ -46,6 +48,7 @@ Rails.application.routes.draw do
     get "mon-compte/edit", to: "account#edit", as: :edit_account
     patch "mon-compte", to: "account#update"
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
+    patch "mon-compte/commandes/:id/recuperee", to: "account#pickup_order", as: :pickup_order
 
     # Facture PDF du détail d'une commande, téléchargeable par les clients
     # « facturables » (#38). Gating « billable » + propriété dans le contrôleur.

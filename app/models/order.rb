@@ -88,6 +88,11 @@ class Order < ApplicationRecord
     !bake_day.cut_off_passed? && (paid? || unpaid?)
   end
 
+  # Le client peut confirmer lui-même le retrait d'une commande prête (#compte).
+  def can_be_picked_up_by_customer?
+    ready?
+  end
+
   def unpaid_ready?
     ready? && payment.nil?
   end

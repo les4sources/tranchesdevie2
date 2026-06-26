@@ -83,8 +83,20 @@
   color: #1e40af;
 }
 
+/* Admin garde Pacifico ; le storefront (.tdv-storefront) passe à Caveat (police
+   du Design System). :where() = spécificité nulle, donc les utilitaires Tailwind
+   font-script / font-sans gagnent toujours sur les titres explicitement classés. */
 h1, h2, h3, h4, h5, h6 {
   font-family: "Pacifico", cursive;
+}
+
+:where(.tdv-storefront) h1,
+:where(.tdv-storefront) h2,
+:where(.tdv-storefront) h3,
+:where(.tdv-storefront) h4,
+:where(.tdv-storefront) h5,
+:where(.tdv-storefront) h6 {
+  font-family: "Caveat", cursive;
 }
 
 .color-primary {

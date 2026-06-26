@@ -1,28 +1,22 @@
 <% content_for :title, "Connexion" %>
 
-<div class="w-full mx-auto max-w-md">
-  <h1 class="text-3xl font-bold text-gray-900 mb-8">Connexion</h1>
+<div class="mx-auto w-full max-w-md">
+  <h1 class="mb-6 font-script text-4xl font-bold text-ink-900 sm:text-5xl">Connexion</h1>
 
-  <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-    <div class="flex gap-3">
-      <div class="flex-shrink-0">
-        <span class="material-symbols-outlined text-blue-600">info</span>
-      </div>
-      <div>
-        <p class="text-sm text-blue-900">
-          Connecte-toi avec ton <strong>numéro de GSM</strong> ou ton <strong>adresse e-mail</strong>, comme tu préfères&nbsp;:
-          on t'envoie un code de connexion par SMS ou par e-mail selon ce que tu saisis.
-        </p>
-      </div>
-    </div>
+  <div class="mb-6 flex gap-3 rounded-md border border-sage-200 bg-sage-100 p-4">
+    <span class="mt-0.5 flex-shrink-0 text-sage-700"><%= lucide "info", size: 18, color: "var(--sage-700)" %></span>
+    <p class="text-sm leading-relaxed text-ink-700">
+      Connecte-toi avec ton <strong class="font-semibold text-ink-900">numéro de GSM</strong> ou ton <strong class="font-semibold text-ink-900">adresse e-mail</strong>, comme tu préfères&nbsp;:
+      on t'envoie un code de connexion par SMS ou par e-mail selon ce que tu saisis.
+    </p>
   </div>
 
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div class="rounded-lg border border-flour-300 bg-warm-white p-6 shadow-sm">
     <%= form_with url: customer_login_path, local: true, data: { controller: "customer-session" } do |f| %>
       <%# Étapes 1 & 2 : identifiant puis code de vérification %>
       <div id="credentials-step" class="<%= "hidden" if @needs_name %>">
         <div class="mb-2" data-controller="phone-input" data-phone-input-default-country-value="BE">
-          <%= f.label :identifier, "Ton numéro de GSM ou ton e-mail", class: "block text-md font-medium text-gray-700 mb-2" %>
+          <%= f.label :identifier, "Ton numéro de GSM ou ton e-mail", class: "mb-2 block text-[15px] font-medium text-ink-700" %>
           <div class="relative">
             <%= f.text_field :identifier,
                 value: @identifier,
@@ -31,7 +25,7 @@
                   phone_input_target: "input",
                   action: "input->customer-session#updateChannelHint"
                 },
-                class: "w-full rounded-md border-1 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-lg pr-24",
+                class: "h-12 w-full rounded-md border border-flour-400 bg-white pl-3 pr-24 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
                 required: true,
                 autocomplete: "username",
                 placeholder: "+32 4XX XX XX XX ou prenom@exemple.be" %>
@@ -41,18 +35,18 @@
           </div>
         </div>
 
-        <p id="channel-hint" data-customer-session-target="channelHint" class="mb-4 text-sm text-gray-500 h-5"></p>
+        <p id="channel-hint" data-customer-session-target="channelHint" class="mb-4 h-5 text-sm text-ink-500"></p>
 
         <button type="button"
                 id="send-otp-btn"
                 data-action="click->customer-session#sendCode"
-                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                class="flex h-11 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
           Recevoir mon code
         </button>
 
         <div id="otp-input-section" class="hidden mt-4">
           <div class="mb-4">
-            <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
             <%= text_field_tag :otp_code, nil,
                 id: "otp_code",
                 maxlength: 6,
@@ -60,14 +54,14 @@
                 pattern: "\\d{6}",
                 autocomplete: "one-time-code",
                 data: { customer_session_target: "otpInput" },
-                class: "w-full rounded-md border-gray-300 shadow-sm p-2 text-lg tracking-[0.3em] text-center focus:border-blue-500 focus:ring-blue-500",
+                class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-center text-lg tracking-[0.3em] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
                 placeholder: "123456" %>
           </div>
 
           <button type="button"
                   id="verify-otp-btn"
                   data-action="click->customer-session#verifyOTP"
-                  class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                  class="flex h-11 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500">
             Vérifier le code
           </button>
 
@@ -75,7 +69,7 @@
             <button type="button"
                     id="resend-otp-btn"
                     data-action="click->customer-session#sendCode"
-                    class="text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+                    class="text-sm font-medium text-ember-600 underline underline-offset-2 hover:text-ember-500">
               Renvoyer le code
             </button>
           </div>
@@ -86,29 +80,29 @@
 
       <%# Étape 3 : prénom — uniquement pour un identifiant inconnu (création de compte) %>
       <div id="name-step" class="<%= "hidden" unless @needs_name %>">
-        <p class="mb-4 text-sm text-gray-700">Bienvenue&nbsp;! Il nous manque juste ton prénom pour créer ton compte.</p>
+        <p class="mb-4 text-sm text-ink-700">Bienvenue&nbsp;! Il nous manque juste ton prénom pour créer ton compte.</p>
 
         <div class="mb-4">
-          <%= label_tag :signup_first_name, "Ton prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= label_tag :signup_first_name, "Ton prénom", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
           <%= text_field_tag :first_name, nil,
               id: "signup_first_name",
               data: { customer_session_target: "firstNameInput" },
-              class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500",
+              class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
               required: true %>
         </div>
 
         <div class="mb-4">
-          <%= label_tag :signup_last_name, "Ton nom (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= label_tag :signup_last_name, "Ton nom (optionnel)", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
           <%= text_field_tag :last_name, nil,
               id: "signup_last_name",
               data: { customer_session_target: "lastNameInput" },
-              class: "w-full rounded-md border-1 border-gray-300 shadow-sm p-2 text-lg focus:border-blue-500 focus:ring-blue-500" %>
+              class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
         </div>
 
         <button type="button"
                 id="complete-signup-btn"
                 data-action="click->customer-session#completeSignup"
-                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                class="flex h-11 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
           Créer mon compte
         </button>
 

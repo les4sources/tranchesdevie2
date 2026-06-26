@@ -1,0 +1,37 @@
+<% content_for :title, "Vie privée - Tranches de Vie" %>
+
+<div class="mx-auto max-w-3xl">
+  <div class="mb-8">
+    <div class="tdv-eyebrow mb-3 text-sage-700">Informations légales</div>
+    <h1 class="font-script text-4xl font-bold leading-tight text-ink-900 md:text-5xl">Politique de vie privée</h1>
+    <p class="mt-3 text-sm text-ink-500">Dernière mise à jour : juin 2026</p>
+  </div>
+
+  <div class="mb-8 rounded-md border border-sage-200 bg-sage-100 px-4 py-3 text-sm leading-relaxed text-ink-700">
+    On ne collecte que ce qui est nécessaire pour préparer et te remettre tes commandes. On ne vend jamais tes données.
+  </div>
+
+  <% sections = [
+    [ "Responsable du traitement", "Les données sont traitées par Tranches de Vie / Les 4 Sources, à Yvoir. Contact : boulangerie@les4sources.be." ],
+    [ "Données que nous collectons", "Selon ton usage : ton numéro de GSM (identifiant de connexion), ton prénom et nom, éventuellement ton adresse e-mail, l'historique de tes commandes et de ton portefeuille, et les informations techniques de paiement gérées par notre prestataire Stripe (nous ne stockons jamais tes données de carte)." ],
+    [ "Finalités", "Tes données servent à : créer et sécuriser ton compte (codes de vérification par SMS ou e-mail), traiter et préparer tes commandes, te prévenir quand ta fournée est prête, gérer ton portefeuille et les paiements, et répondre à tes demandes." ],
+    [ "Base légale", "Le traitement repose sur l'exécution du contrat (ta commande), notre intérêt légitime (te tenir informé·e de ta commande) et, pour les communications non essentielles, ton consentement (que tu peux retirer à tout moment)." ],
+    [ "Notifications SMS et e-mail", "Tu peux désactiver les notifications SMS et les e-mails non essentiels depuis ton compte. Les codes de connexion (SMS ou e-mail) sont toujours envoyés, car ils sont nécessaires pour accéder à ton compte." ],
+    [ "Destinataires", "Tes données ne sont partagées qu'avec les prestataires strictement nécessaires au service : envoi de SMS, envoi d'e-mails et paiement (Stripe). Elles ne sont ni vendues ni cédées à des tiers à des fins commerciales." ],
+    [ "Durée de conservation", "Nous conservons tes données tant que ton compte est actif et aussi longtemps que nécessaire pour respecter nos obligations légales (notamment comptables). Tu peux demander la suppression de ton compte." ],
+    [ "Tes droits", "Conformément au RGPD, tu disposes d'un droit d'accès, de rectification, d'effacement, de limitation et d'opposition, ainsi que d'un droit à la portabilité de tes données. Pour les exercer, écris-nous. Tu peux aussi introduire une réclamation auprès de l'Autorité de protection des données (Belgique)." ],
+    [ "Cookies", "Le site utilise uniquement les cookies nécessaires à son fonctionnement (session, sécurité, panier). Aucun cookie publicitaire de pistage n'est déposé." ],
+    [ "Contact", "Pour toute question sur tes données : boulangerie@les4sources.be." ]
+  ] %>
+
+  <% sections.each do |title, body| %>
+    <section class="mb-7">
+      <h2 class="mb-2 font-sans text-lg font-bold text-ink-900"><%= title %></h2>
+      <p class="text-[15px] leading-relaxed text-ink-700"><%= body %></p>
+    </section>
+  <% end %>
+
+  <p class="mt-10 text-sm text-ink-500">
+    Une question ? Écris-nous à <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 hover:text-ember-500 hover:underline">boulangerie@les4sources.be</a>.
+  </p>
+</div>

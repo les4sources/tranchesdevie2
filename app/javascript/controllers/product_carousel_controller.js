@@ -43,10 +43,10 @@ export default class extends Controller {
     if (this.hasThumbnailTarget) {
       this.thumbnailTargets.forEach((thumbnail, i) => {
         if (i === index) {
-          thumbnail.classList.add("ring-2", "ring-terracotta")
+          thumbnail.classList.add("ring-2", "ring-sage-600")
           thumbnail.classList.remove("ring-0")
         } else {
-          thumbnail.classList.remove("ring-2", "ring-terracotta")
+          thumbnail.classList.remove("ring-2", "ring-sage-600")
           thumbnail.classList.add("ring-0")
         }
       })

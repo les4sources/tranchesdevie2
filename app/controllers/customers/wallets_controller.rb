@@ -5,6 +5,10 @@ module Customers
 
     def show
       @transactions = @wallet.wallet_transactions.order(created_at: :desc).limit(20)
+      all_tx = @wallet.wallet_transactions
+      @total_recharged_cents = all_tx.where(transaction_type: "top_up").sum(:amount_cents)
+      @total_spent_cents = all_tx.where("amount_cents < 0").sum(:amount_cents).abs
+      @orders_count = all_tx.where(transaction_type: "order_debit").count
     end
 
     def reload

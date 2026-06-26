@@ -1,138 +1,217 @@
 <% content_for :title, "Mon compte" %>
 
-<div class="w-full mx-auto" data-controller="order-modal">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">Mon compte</h1>
-    <div class="flex gap-3">
-      <%= link_to "Modifier mon profil", customers_edit_account_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
-      <%= button_to "Déconnexion",
-            customer_logout_path,
-            method: :delete,
-            form: { class: "inline" },
-            class: "px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200" %>
+<style>
+  .acct-tab.is-active { background: var(--sage-600); color: #fff; border-color: var(--sage-600); }
+  .acct-tab.is-active .acct-tab-count { background: rgba(255,255,255,0.22); color: #fff; }
+</style>
+
+<div class="w-full" data-controller="order-modal">
+  <!-- Title row -->
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <div class="tdv-eyebrow mb-1.5 text-sage-700">Mon espace</div>
+      <h1 class="font-script text-4xl font-bold text-ink-900 sm:text-5xl">Mon compte</h1>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <%= link_to customers_edit_account_path, class: "inline-flex items-center gap-1.5 rounded-md border border-flour-400 bg-warm-white px-4 py-2 text-sm font-semibold text-ink-700 shadow-xs transition hover:bg-warm-white-2" do %>
+        <%= lucide "pencil", size: 16, color: "var(--ink-700)" %> Modifier mon profil
+      <% end %>
+      <%= button_to customer_logout_path, method: :delete, form: { class: "inline" },
+            class: "inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-danger-200 bg-warm-white px-4 py-2 text-sm font-semibold text-danger-700 shadow-xs transition hover:bg-danger-100" do %>
+        <%= lucide "log-out", size: 16, color: "var(--danger-700)" %> Déconnexion
+      <% end %>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-8">
-    <!-- Informations personnelles -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Informations personnelles</h2>
-      <div class="space-y-2">
+  <!-- Greeting banner -->
+  <% initials = "#{@customer.first_name.to_s.first}#{@customer.last_name.to_s.first}".upcase.presence || "·" %>
+  <div class="relative mb-7 flex flex-wrap items-center gap-5 overflow-hidden rounded-xl border border-sage-200 bg-gradient-to-br from-sage-100 via-flour-50 to-flour-50 p-6 shadow-sm sm:flex-nowrap sm:px-8">
+    <div class="pointer-events-none absolute -right-7 -top-8 rotate-[14deg] opacity-30"><%= lucide "wheat", size: 170, color: "var(--sage-300)" %></div>
+    <span class="flex h-[68px] w-[68px] flex-shrink-0 items-center justify-center rounded-full border-2 border-warm-white bg-sage-200 text-[26px] font-bold text-sage-700 shadow-sm"><%= initials %></span>
+    <div class="relative min-w-0 flex-1">
+      <div class="mb-1 font-script text-[30px] font-bold leading-none text-ink-900">Bonjour <%= @customer.first_name %> 👋</div>
+      <div class="text-sm text-ink-500">Mangeur·se depuis <%= I18n.with_locale(:fr) { I18n.l(@member_since, format: "%B %Y") } %> · <%= @orders_count %> commande<%= "s" if @orders_count > 1 %> passée<%= "s" if @orders_count > 1 %></div>
+    </div>
+    <% if @ready_count > 0 %>
+      <div class="relative flex items-center gap-3 rounded-lg border border-success-200 bg-warm-white px-4 py-3">
+        <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-success-100"><%= lucide "package-check", size: 20, color: "var(--success-600)" %></span>
         <div>
-          <span class="text-sm font-medium text-gray-500">Prénom</span>
-          <p class="text-gray-900"><%= @customer.first_name %></p>
-        </div>
-        <% if @customer.last_name.present? %>
-          <div>
-            <span class="text-sm font-medium text-gray-500">Nom</span>
-            <p class="text-gray-900"><%= @customer.last_name %></p>
-          </div>
-        <% end %>
-        <% if @customer.phone_e164.present? %>
-          <div>
-            <span class="text-sm font-medium text-gray-500">Téléphone</span>
-            <p class="text-gray-900"><%= @customer.phone_e164 %></p>
-          </div>
-        <% end %>
-        <% if @customer.email.present? %>
-          <div>
-            <span class="text-sm font-medium text-gray-500">Email</span>
-            <p class="text-gray-900"><%= @customer.email %></p>
-          </div>
-        <% end %>
-        <div>
-          <span class="text-sm font-medium text-gray-500">Notifications SMS</span>
-          <p class="text-gray-900">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @customer.sms_enabled? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-              <%= @customer.sms_enabled? ? 'Activées' : 'Désactivées' %>
-            </span>
-          </p>
+          <div class="text-[13px] font-semibold text-ink-900"><%= @ready_count %> commande<%= "s" if @ready_count > 1 %> à récupérer</div>
+          <div class="text-[12.5px] text-ink-500">Confirme la réception ci-dessous</div>
         </div>
       </div>
-    </div>
+    <% end %>
+  </div>
 
-    <!-- Calendrier de planification -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-medium text-gray-900">Planifier mes commandes</h2>
-        <%= link_to "Ouvrir le calendrier →", calendar_path, class: "text-sm text-blue-600 hover:text-blue-800" %>
-      </div>
-      <p class="text-gray-600 mb-4">Planifiez vos commandes en avance et elles seront automatiquement validées au cut-off.</p>
-      <%= link_to "Voir le calendrier", calendar_path, class: "inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
-    </div>
-
-    <!-- Portefeuille -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-medium text-gray-900">Mon portefeuille</h2>
-        <%= link_to "Voir détails →", customers_wallet_path, class: "text-sm text-blue-600 hover:text-blue-800" %>
-      </div>
-      <% wallet = @customer.wallet %>
-      <% if wallet %>
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-gray-500">Solde disponible</p>
-            <p class="text-2xl font-bold <%= wallet.balance_cents >= 0 ? 'text-green-600' : 'text-red-600' %>">
-              <%= number_to_currency(wallet.balance_euros, unit: '€', format: '%n %u') %>
-            </p>
-          </div>
-          <%= link_to "Recharger", customers_wallet_reload_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
-        </div>
-      <% else %>
-        <p class="text-gray-600 mb-4">Créez votre portefeuille pour planifier vos commandes facilement.</p>
-        <%= link_to "Créer mon portefeuille", customers_wallet_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
-      <% end %>
-    </div>
-
-    <!-- Liste des commandes -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Mes commandes</h2>
-      <% if @orders.any? %>
-        <div class="space-y-3">
-          <% @orders.each do |order| %>
-            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition"
-                 data-action="click->order-modal#open"
-                 data-order-modal-order-id-value="<%= order.id %>"
-                 data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [:id, :baked_on, :cut_off_at] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [:id, :name, :discount_percent] } } } }) %>">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="font-medium text-gray-900">Commande <%= order.order_number %></p>
-                  <p class="text-sm text-gray-600">Cuisson le <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %></p>
-                </div>
-                <div class="text-right">
-                  <p class="font-medium text-gray-900"><%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %></p>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    <%= case order.status
-                        when 'pending' then 'bg-yellow-100 text-yellow-800'
-                        when 'paid' then 'bg-blue-100 text-blue-800'
-                        when 'ready' then 'bg-green-100 text-green-800'
-                        when 'picked_up' then 'bg-gray-100 text-gray-800'
-                        when 'no_show' then 'bg-red-100 text-red-800'
-                        when 'cancelled' then 'bg-red-100 text-red-800'
-                        else 'bg-gray-100 text-gray-800'
-                        end %>">
-                    <%= order_status_label(order.status) %>
-                  </span>
-                  <% if @customer.billable? %>
-                    <%# Relevé de commandes (PDF) réservé aux clients facturables (#38).
-                        `order-modal#download` stoppe la propagation pour ne pas
-                        ouvrir la modale de la carte au clic sur le lien. %>
-                    <%= link_to "Télécharger le relevé (PDF)",
-                          customers_order_invoice_path(order_id: order.id),
-                          class: "block text-xs text-blue-600 hover:underline mt-1",
-                          data: { turbo: false, action: "click->order-modal#download" } %>
-                  <% end %>
-                </div>
-              </div>
+  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[0.82fr_1.18fr]">
+    <!-- Left column -->
+    <div class="flex flex-col gap-[18px] lg:sticky lg:top-5">
+      <!-- Profil -->
+      <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+        <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Informations personnelles</h2>
+        <div class="px-6 pb-5 pt-1">
+          <% rows = [ [ "Prénom", @customer.first_name ], [ "Nom", @customer.last_name ], [ "Téléphone", @customer.phone_e164 ], [ "Email", @customer.email ] ].reject { |_, v| v.blank? } %>
+          <% rows.each_with_index do |(k, v), i| %>
+            <div class="flex items-center justify-between gap-3.5 py-[11px] <%= "border-t border-flour-300" if i.positive? %>">
+              <span class="text-[13px] font-medium text-ink-500"><%= k %></span>
+              <span class="text-right text-sm font-medium text-ink-900"><%= v %></span>
             </div>
           <% end %>
         </div>
-      <% else %>
-        <p class="text-gray-600">Aucune commande pour le moment.</p>
-      <% end %>
+      </div>
+
+      <!-- Portefeuille -->
+      <% wallet = @customer.wallet %>
+      <div class="relative overflow-hidden rounded-lg border border-sage-200 bg-gradient-to-br from-sage-100 to-flour-50 p-5">
+        <div class="pointer-events-none absolute -bottom-4 -right-3 opacity-40"><%= lucide "wallet", size: 84, color: "var(--sage-300)" %></div>
+        <div class="relative">
+          <div class="mb-2 text-xs font-medium uppercase tracking-[0.05em] text-sage-700">Mon portefeuille</div>
+          <div class="mb-3.5 text-[34px] font-bold leading-none text-ink-900"><%= number_to_currency((wallet&.balance_euros || 0), unit: "€", format: "%n %u") %></div>
+          <div class="flex gap-2.5">
+            <%= link_to customers_wallet_reload_path, class: "inline-flex items-center gap-1.5 rounded-md bg-sage-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500" do %>
+              <%= lucide "plus", size: 15, color: "#fff" %> Recharger
+            <% end %>
+            <%= link_to "Voir détails →", customers_wallet_path, class: "inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold text-ink-700 transition hover:bg-flour-200" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications SMS -->
+      <div class="relative overflow-hidden rounded-lg border border-ember-200 bg-gradient-to-br from-ember-100 to-flour-50 p-5">
+        <div class="pointer-events-none absolute -bottom-4 -right-3 opacity-40"><%= lucide "bell", size: 78, color: "var(--ember-200)" %></div>
+        <div class="relative">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="text-xs font-medium uppercase tracking-[0.05em] text-ember-700">Notifications SMS</div>
+            <span class="inline-flex h-[22px] w-[38px] flex-shrink-0 items-center rounded-full <%= @customer.sms_enabled? ? "justify-end bg-sage-600" : "justify-start bg-flour-400" %> px-0.5">
+              <span class="h-[18px] w-[18px] rounded-full bg-white shadow-sm"></span>
+            </span>
+          </div>
+          <div class="mb-2.5 flex items-center gap-2.5">
+            <span class="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full border border-ember-200 bg-warm-white"><%= lucide "bell", size: 17, color: "var(--ember-600)" %></span>
+            <div>
+              <div class="text-lg font-bold leading-none text-ink-900"><%= @customer.sms_enabled? ? "Activées" : "Désactivées" %></div>
+              <div class="text-[12.5px] text-ink-500"><%= @customer.phone_e164 %></div>
+            </div>
+          </div>
+          <p class="text-[13px] leading-relaxed text-ink-700">On te prévient par SMS dès que ta fournée est <b class="font-semibold">prête à récupérer</b> aux 4 Sources.</p>
+        </div>
+      </div>
+
+      <!-- Calendrier -->
+      <div class="rounded-lg border border-flour-300 bg-warm-white p-5 shadow-xs">
+        <div class="mb-2.5 flex items-center gap-2.5">
+          <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-ember-100"><%= lucide "calendar-days", size: 18, color: "var(--ember-600)" %></span>
+          <div class="text-base font-semibold text-ink-900">Planifier mes commandes</div>
+        </div>
+        <p class="mb-3.5 text-[13.5px] leading-relaxed text-ink-500">Planifie tes fournées à l'avance — elles sont validées automatiquement au cut-off.</p>
+        <%= link_to calendar_path, class: "flex w-full items-center justify-center gap-2 rounded-md border border-flour-400 bg-warm-white px-4 py-2.5 text-sm font-semibold text-ink-700 shadow-xs transition hover:bg-warm-white-2" do %>
+          <%= lucide "calendar-days", size: 16, color: "var(--ink-700)" %> Voir le calendrier
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Right column — orders -->
+    <div>
+      <!-- Stats -->
+      <div class="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+        <div class="flex flex-col gap-1 rounded-md border border-flour-300 bg-warm-white p-4">
+          <span class="text-[13px] font-medium text-ink-500">Commandes</span>
+          <span class="text-[28px] font-bold leading-none text-ink-900"><%= @orders_count %></span>
+          <span class="text-xs text-ink-500">au total</span>
+        </div>
+        <div class="flex flex-col gap-1 rounded-md border border-sage-200 bg-sage-100 p-4">
+          <span class="text-[13px] font-medium text-ink-500">Prêtes à récupérer</span>
+          <span class="text-[28px] font-bold leading-none text-ink-900"><%= @ready_count %></span>
+          <span class="text-xs text-ink-500">aux 4 Sources</span>
+        </div>
+        <div class="flex flex-col gap-1 rounded-md border border-flour-300 bg-warm-white p-4">
+          <span class="text-[13px] font-medium text-ink-500">Total dépensé</span>
+          <span class="text-[28px] font-bold leading-none text-ink-900"><%= number_to_currency(@total_spent_cents / 100.0, unit: "€", format: "%n %u") %></span>
+          <span class="text-xs text-ink-500">hors annulations</span>
+        </div>
+      </div>
+
+      <!-- Mes commandes -->
+      <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+        <div class="px-6 pt-4">
+          <h2 class="mb-3.5 font-script text-2xl font-bold text-ink-900">Mes commandes</h2>
+          <% counts = { "all" => @orders.size, "ready" => @orders.count { |o| o.status == "ready" }, "paid" => @orders.count { |o| o.status == "paid" }, "picked_up" => @orders.count { |o| o.status == "picked_up" }, "cancelled" => @orders.count { |o| o.status == "cancelled" } } %>
+          <% filters = [ [ "all", "Toutes" ], [ "ready", "Prêtes" ], [ "paid", "Payées" ], [ "picked_up", "Récupérées" ], [ "cancelled", "Annulées" ] ] %>
+          <div class="flex flex-wrap gap-2 border-b border-flour-300 pb-3.5">
+            <% filters.each_with_index do |(key, label), i| %>
+              <button type="button" data-account-tab="<%= key %>" class="acct-tab inline-flex items-center gap-2 rounded-full border border-flour-400 bg-warm-white px-3 py-1.5 text-[13px] font-semibold text-ink-700 transition <%= "is-active" if i.zero? %>">
+                <%= label %><span class="acct-tab-count rounded-full bg-flour-200 px-1.5 py-0.5 text-[11px] font-bold text-ink-500"><%= counts[key] %></span>
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="flex flex-col p-3" data-account-orders>
+          <% if @orders.any? %>
+            <% @orders.each do |order| %>
+              <% tone = case order.status
+                        when "ready" then [ "bg-success-100", "text-success-700", "package-check" ]
+                        when "paid" then [ "bg-water-100", "text-water-700", "badge-euro" ]
+                        when "picked_up" then [ "bg-flour-200", "text-ink-700", "check" ]
+                        when "cancelled" then [ "bg-danger-100", "text-danger-700", "x" ]
+                        else [ "bg-flour-200", "text-ink-700", "shopping-basket" ]
+                        end %>
+              <div data-order-row data-status="<%= order.status %>"
+                   class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-3 transition hover:bg-flour-100"
+                   data-action="click->order-modal#open"
+                   data-order-modal-order-id-value="<%= order.id %>"
+                   data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [ :id, :baked_on, :cut_off_at ] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [ :id, :name, :discount_percent ] } } } }) %>">
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full <%= tone[0] %> <%= tone[1] %>"><%= lucide tone[2], size: 18, color: "currentColor" %></span>
+                  <div class="min-w-0">
+                    <p class="truncate font-semibold text-ink-900">Fournée du <%= I18n.with_locale(:fr) { I18n.l(order.bake_day.baked_on, format: "%-d %B %Y") } %></p>
+                    <p class="text-[13px] text-ink-500">Retrait aux 4 Sources</p>
+                  </div>
+                </div>
+                <div class="flex flex-shrink-0 items-center gap-3">
+                  <span class="hidden items-center rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex <%= tone[0] %> <%= tone[1] %>"><%= order_status_label(order.status) %></span>
+                  <span class="font-semibold text-ink-900"><%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %></span>
+                  <% if order.can_be_picked_up_by_customer? %>
+                    <%= button_to customers_pickup_order_path(order), method: :patch, form: { class: "inline" }, onclick: "event.stopPropagation()", class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-success-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-success-700" do %>
+                      <%= lucide "check", size: 14, color: "#fff" %> <span class="hidden sm:inline">J'ai récupéré ma commande</span><span class="sm:hidden">Récupérée</span>
+                    <% end %>
+                  <% end %>
+                  <% if @customer.billable? %>
+                    <%# Relevé PDF réservé aux clients facturables (#38). download stoppe la propagation pour ne pas ouvrir la modale. %>
+                    <%= link_to customers_order_invoice_path(order_id: order.id), class: "inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-ember-600 transition hover:text-ember-500", data: { turbo: false, action: "click->order-modal#download" } do %>
+                      <%= lucide "badge-euro", size: 14, color: "var(--ember-600)" %> Relevé PDF
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            <p data-account-empty class="hidden py-8 text-center text-ink-500">Aucune commande dans cette catégorie.</p>
+          <% else %>
+            <p class="py-8 text-center text-ink-500">Aucune commande pour le moment.</p>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
-  
+
   <%= render "customers/account/order_modal" %>
 </div>
 
+<script>
+  (function () {
+    const tabs = document.querySelectorAll('[data-account-tab]');
+    const rows = document.querySelectorAll('[data-order-row]');
+    const empty = document.querySelector('[data-account-empty]');
+    function apply(f) {
+      let shown = 0;
+      rows.forEach(r => {
+        const visible = (f === 'all' || r.dataset.status === f);
+        r.style.display = visible ? '' : 'none';
+        if (visible) shown++;
+      });
+      if (empty) empty.classList.toggle('hidden', shown !== 0);
+      tabs.forEach(t => t.classList.toggle('is-active', t.dataset.accountTab === f));
+    }
+    tabs.forEach(t => t.addEventListener('click', () => apply(t.dataset.accountTab)));
+  })();
+</script>

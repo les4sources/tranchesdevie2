@@ -1,0 +1,37 @@
+<% content_for :title, "Conditions générales de vente - Tranches de Vie" %>
+
+<div class="mx-auto max-w-3xl">
+  <div class="mb-8">
+    <div class="tdv-eyebrow mb-3 text-sage-700">Informations légales</div>
+    <h1 class="font-script text-4xl font-bold leading-tight text-ink-900 md:text-5xl">Conditions générales de vente</h1>
+    <p class="mt-3 text-sm text-ink-500">Dernière mise à jour : juin 2026</p>
+  </div>
+
+  <div class="mb-8 rounded-md border border-sage-200 bg-sage-100 px-4 py-3 text-sm leading-relaxed text-ink-700">
+    Tranches de Vie est l'activité de boulangerie artisanale des 4 Sources, à Yvoir. En passant commande sur ce site, tu acceptes les conditions ci-dessous.
+  </div>
+
+  <% sections = [
+    [ "1. Objet", "Les présentes conditions régissent la vente de pains, pâtons et autres produits proposés par Tranches de Vie, exclusivement sur commande via ce site, pour un retrait aux 4 Sources." ],
+    [ "2. Produits et jours de cuisson", "Les produits sont cuits au feu de bois lors de fournées planifiées (en général les mardis et vendredis). La disponibilité dépend de la capacité de production de chaque fournée ; une date affichée comme complète ne peut plus recevoir de commande." ],
+    [ "3. Commandes", "La commande se fait en sélectionnant des produits, puis un jour de cuisson, avant l'heure de clôture indiquée (cut-off). Toute commande est validée après vérification de ton numéro de GSM (ou e-mail) par code, et confirmation du paiement le cas échéant. Tu reçois une confirmation et, le jour venu, un SMS lorsque ta commande est prête." ],
+    [ "4. Prix et paiement", "Les prix sont indiqués en euros, toutes taxes comprises. Le paiement s'effectue en ligne par Bancontact (ou autre moyen proposé), via notre prestataire de paiement Stripe, ou en liquide au retrait lorsque cette option t'est ouverte. Le portefeuille prépayé permet de créditer ton compte à l'avance pour régler tes fournées planifiées." ],
+    [ "5. Commandes planifiées et portefeuille", "Tu peux réserver des produits pour de prochaines dates depuis ton calendrier. Le montant correspondant est engagé sur le solde de ton portefeuille. À la clôture des commandes, la commande est automatiquement confirmée et débitée. Si le solde est insuffisant, la commande est annulée sans frais et tu en es informé·e par SMS." ],
+    [ "6. Retrait", "Les commandes se retirent aux 4 Sources, le jour de cuisson ou le lendemain. Il t'appartient de venir récupérer ta commande dans les délais indiqués. Une commande non récupérée reste due." ],
+    [ "7. Annulation et remboursement", "Tu peux modifier ou annuler une commande planifiée jusqu'à l'heure de clôture du jour de cuisson concerné. Pour toute demande de remboursement, contacte-nous : nous procédons au remboursement sur le portefeuille ou le moyen de paiement initial selon le cas." ],
+    [ "8. Allergènes", "Nos produits sont élaborés dans un atelier où des noix et fruits à coque sont utilisés. En cas d'allergie, contacte-nous avant de commander." ],
+    [ "9. Responsabilité", "Tranches de Vie met tout en œuvre pour assurer la qualité et la disponibilité des produits. Notre responsabilité ne saurait être engagée en cas de force majeure ou d'indisponibilité ponctuelle d'une fournée." ],
+    [ "10. Contact", "Pour toute question relative à ta commande ou à ces conditions : boulangerie@les4sources.be." ]
+  ] %>
+
+  <% sections.each do |title, body| %>
+    <section class="mb-7">
+      <h2 class="mb-2 font-sans text-lg font-bold text-ink-900"><%= title %></h2>
+      <p class="text-[15px] leading-relaxed text-ink-700"><%= body %></p>
+    </section>
+  <% end %>
+
+  <p class="mt-10 text-sm text-ink-500">
+    Une question ? Écris-nous à <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 hover:text-ember-500 hover:underline">boulangerie@les4sources.be</a>.
+  </p>
+</div>

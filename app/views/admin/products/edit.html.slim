@@ -42,7 +42,7 @@
               = pf_form.hidden_field :id if product_flour.persisted?
               .flex-1.min-w-0
                 = pf_form.collection_select :flour_id, Flour.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner une farine" }, class: admin_input_class
-              .flex.items-center.gap-2.sm:min-w-[8rem]
+              .flex.items-center.gap-2 class="sm:min-w-[8rem]"
                 = pf_form.number_field :percentage, step: 1, min: 1, max: 100, class: "#{admin_input_class} w-20", placeholder: "%"
                 span.text-sm.text-gray-500.whitespace-nowrap %
               .flex-shrink-0

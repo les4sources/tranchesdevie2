@@ -1,159 +1,172 @@
 <% content_for :title, "À propos - Tranches de Vie" %>
 
-<div class="px-4">
-  <div class="mx-auto max-w-4xl">
-    <!-- Titre principal -->
-    <div class="mb-12 text-center">
-      <h1 class="text-4xl font-bold leading-tight tracking-[-0.015em] text-charcoal md:text-5xl">
+<div class="mx-auto max-w-4xl">
+  <!-- Hero -->
+  <section class="mb-12 grid items-center gap-8 md:grid-cols-2">
+    <div>
+      <div class="tdv-eyebrow mb-3 text-sage-700">Notre histoire</div>
+      <h1 class="font-script text-4xl font-bold leading-tight text-ink-900 md:text-5xl">
         Tranches de Vie, la boulangerie qui raconte une histoire ✨
       </h1>
-    </div>
-
-    <!-- Introduction -->
-    <div class="mb-12">
-      <p class="text-lg leading-relaxed text-gray-700">
-        Bienvenue dans l'univers de <strong>Tranches de Vie</strong>, une boulangerie unique en son genre, nichée au cœur <a href="https://www.les4sources.be" target="_blank" class="link">des 4 Sources à Yvoir</a>. Ici, chaque pain raconte une belle histoire : celle de la passion, du partage et de la reconnexion à l'essentiel.
+      <p class="mt-5 text-lg leading-relaxed text-ink-700">
+        Bienvenue dans l'univers de <strong class="font-semibold text-ink-900">Tranches de Vie</strong>, une boulangerie unique en son genre, nichée au cœur <a href="https://www.les4sources.be" target="_blank" rel="noopener" class="font-medium text-ember-600 underline underline-offset-2 hover:text-ember-500">des 4 Sources à Yvoir</a>. Ici, chaque pain raconte une belle histoire : celle de la passion, du partage et de la reconnexion à l'essentiel.
       </p>
-    </div>
-
-    <!-- Section Stéphanie -->
-    <section class="mb-16">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center md:items-start">
-        <div>
-          <h2 class="mb-6 text-3xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-            Une boulangère animée par le vivant
-          </h2>
-          <div class="space-y-4 text-base leading-relaxed">
-            <p>
-              Stéphanie, notre boulangère, est bien plus qu'une artisane du pain. Son parcours résonne comme une quête d'équilibre entre l'humain, la nature et les émotions. Après avoir traversé un burn-out, Stéphanie a découvert dans le pain un ancrage, une manière de ralentir et de se reconnecter au vivant.
-            </p>
-            <p>
-              <span class="italic">« Mettre les mains dans la pâte, observer la magie du levain, pétrir à la main et façonner chaque pain sont devenus pour moi un rituel essentiel. »</span>, confie-t-elle.
-            </p>
-
-            <p>
-              <strong>Depuis fin novembre, un duo de choc a rejoint Stéphanie pour assurer la production les mardis, </strong>
-              Thomas et Romane.</strong> Tous deux amoureux des bons produits et du potentiel rassembleur de 
-              ces derniers, ils appréhendent le métier de la boulangerie avec enthousiasme et fibre 
-              artisanale.
-            </p>
-          </div>
-
-          <h2 class="mt-12 mb-6 text-3xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-            Une philosophie artisanale et intuitive
-          </h2>
-          <div class="space-y-4 text-base leading-relaxed">
-            <p>
-              Dans notre boulangerie, pas de calculs complexes sur l'humidité ou le pH, mais une approche intuitive basée sur le toucher, l'observation et le ressenti. À travers ses gestes simples et précis, Stéphanie transmet un savoir-faire accessible à tous.
-            </p>
-            <p>
-              <span class="italic">« Le pain, c'est la vie, et il m'a permis de retrouver un nouvel équilibre »</span>, dit-elle avec conviction.
-            </p>
-          </div>
-
-        </div>
-        <div class="flex justify-center md:justify-end">
-          <%= image_tag "tranches-de-vie-1.jpg", class: "rounded-lg shadow-md max-w-full h-auto" %>
-        </div>
+      <div class="mt-7 flex flex-wrap items-center gap-4">
+        <%= link_to catalog_path, class: "inline-flex h-12 items-center gap-2 rounded-md bg-ember-600 px-6 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500" do %>
+          <%= lucide "shopping-basket", size: 18, color: "#fff" %> Je commande
+        <% end %>
+        <span class="inline-flex items-center gap-2 text-sm font-medium text-ink-700">
+          <%= lucide "map-pin", size: 17, color: "var(--sage-600)" %> Aux 4 Sources, Yvoir
+        </span>
       </div>
-    </section>
+    </div>
+    <div class="relative aspect-[4/3] overflow-hidden rounded-xl shadow-lg">
+      <%= image_tag "tranches-de-vie-4.jpg", alt: "Tranches de Vie aux 4 Sources", class: "h-full w-full object-cover" %>
+    </div>
+  </section>
 
-    <!-- Section Four à bois -->
-    <section class="mb-16">
-      <h2 class="mb-6 text-3xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-        Le four à bois : Un lieu de rencontres et de chaleur
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        <div class="md:col-span-2 space-y-4 text-base leading-relaxed text-gray-700">
-          <p>
-            Chez Tranches de Vie, le four à bois n'est pas qu'un outil de cuisson. Il est au centre d'un espace où les gens se rencontrent, discutent et partagent des moments simples et authentiques. Lors des Pizzas Parties ou des cuissons collectives, chacun peut préparer son propre pain ou sa pizza, observer la magie de la cuisson et savourer un repas convivial autour d'une grande tablée.
-          </p>
-        </div>
-        <div class="md:col-span-1">
-          <%= image_tag "tranches-de-vie-3.jpg", class: "rounded-lg shadow-md max-w-full h-auto" %>
-        </div>
+  <!-- Feature tiles -->
+  <div class="mb-14 grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <% [ [ "wheat", "Pétri à la main", "Chaque pain est façonné à la main, comme à l'ancienne." ], [ "sprout", "Levain naturel", "Longues fermentations au levain, sans levure industrielle." ], [ "flame", "Cuit au feu de bois", "Cuisson au four à bois dans la vallée du Bocq." ] ].each do |icon, title, desc| %>
+      <div class="rounded-lg border border-flour-300 bg-warm-white p-5 shadow-xs">
+        <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sage-100"><%= lucide icon, size: 20, color: "var(--sage-700)" %></span>
+        <div class="mb-1 font-semibold text-ink-900"><%= title %></div>
+        <p class="text-[13.5px] leading-relaxed text-ink-500"><%= desc %></p>
       </div>
-    </section>
-
-    <!-- Section Pains -->
-    <section class="mb-16">
-      <h2 class="mb-6 text-3xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-        Des pains qui nourrissent l'âme autant que le corps
-      </h2>
-      <p class="text-base leading-relaxed text-gray-700">
-        Produits avec des ingrédients locaux et une grande attention aux éléments naturels – eau, air, feu et terre – nos pains reflètent l'harmonie entre l'humain et son environnement. Que ce soit pour nos giteurs, les habitants de la région ou les visiteurs de passage, chaque pain est une invitation à se recentrer et à savourer l'instant présent.
-      </p>
-    </section>
-
-    <!-- Section Vision -->
-    <section class="mb-16">
-      <h2 class="mb-6 text-3xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-        Une vision pour demain
-      </h2>
-      <p class="text-base leading-relaxed text-gray-700">
-        Stéphanie rêve d'élargir la portée de Tranches de Vie en organisant des ateliers de transmission pour que chacun puisse s'initier à la boulangerie au levain. Elle imagine aussi des rendez-vous hebdomadaires où le four à bois serait au service des habitants, permettant à chacun de cuire ses plats tout en partageant un moment convivial.
-      </p>
-    </section>
-
-    <!-- Section Contact -->
-    <section class="mb-12">
-      <h2 class="mb-6 text-2xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-        Pour contacter la boulangerie
-      </h2>
-      <p class="mb-4 text-base leading-relaxed text-gray-700">
-        Les pains de Tranches de Vie sont produits chaque mardi et vendredi, uniquement sur commande via notre site.
-      </p>
-      <p class="text-lg font-medium text-charcoal">
-        <a href="mailto:boulangerie@les4sources.be" class="text-terracotta hover:underline">
-          💌 boulangerie@les4sources.be
-        </a>
-      </p>
-    </section>
-
-    <!-- Section Points de vente -->
-    <section class="mb-12">
-      <h2 class="mb-6 text-2xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-        Points de vente
-      </h2>
-      
-      <p class="mb-4 text-base leading-relaxed text-gray-700">
-        Nos pains sont aussi disponibles dans plusieurs points de vente.
-      </p>
-
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-8 items-start">
-        <div class="space-y-2 text-base text-gray-700">
-          <%= image_tag "verger-de-la-molignee.jpg", class: "rounded-lg shadow-md max-w-full h-auto" %>
-          <p class="font-medium">
-            Au Verger de la Molignée (Anhée)<br>
-            rue de la Molignée, 39<br>
-            5537 Anhée
-          </p>
-
-          <p>
-            <a href="https://maps.app.goo.gl/iwzxrBuQUQDhW7XF9" target="_blank" rel="noopener noreferrer" class="text-terracotta hover:underline">
-              🗺️ Sur Google Maps
-            </a>
-          </p>
-
-          <span class="inline-block bg-green-100 text-green-800 text-md font-semibold px-2 py-1 rounded-full align-middle">les vendredis soir et le samedi</span>
-        </div>
-        <div class="space-y-2 text-base text-gray-700">
-          <%= image_tag "epicerie-de-la-gare.jpg", class: "rounded-lg shadow-md max-w-full h-auto" %>
-          <p class="font-medium">
-            A l'Epicerie de la Gare (Dinant)<br>
-            avenue Franchet d'Esperey, 1<br>
-            5500 Dinant
-          </p>
-
-          <p>
-            <a href="https://maps.app.goo.gl/aCCAg398KFVpfbDt6" target="_blank" rel="noopener noreferrer" class="text-terracotta hover:underline">
-              🗺️ Sur Google Maps
-            </a>
-          </p>
-
-          <span class="inline-block bg-green-100 text-green-800 text-md font-semibold px-2 py-1 rounded-full align-middle">les mercredis</span>
-        </div>
-    </section>
+    <% end %>
   </div>
-</div>
 
+  <!-- Section Stéphanie -->
+  <section class="mb-16">
+    <div class="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:items-start">
+      <div>
+        <h2 class="mb-6 text-3xl font-bold leading-tight tracking-tight text-ink-900">
+          Une boulangère animée par le vivant
+        </h2>
+        <div class="space-y-4 text-base leading-relaxed text-ink-700">
+          <p>
+            Stéphanie, notre boulangère, est bien plus qu'une artisane du pain. Son parcours résonne comme une quête d'équilibre entre l'humain, la nature et les émotions. Après avoir traversé un burn-out, Stéphanie a découvert dans le pain un ancrage, une manière de ralentir et de se reconnecter au vivant.
+          </p>
+          <p>
+            <span class="italic">« Mettre les mains dans la pâte, observer la magie du levain, pétrir à la main et façonner chaque pain sont devenus pour moi un rituel essentiel. »</span>, confie-t-elle.
+          </p>
+          <p>
+            <strong class="font-semibold text-ink-900">Depuis fin novembre, un duo de choc a rejoint Stéphanie pour assurer la production les mardis,</strong>
+            Thomas et Romane. Tous deux amoureux des bons produits et du potentiel rassembleur de
+            ces derniers, ils appréhendent le métier de la boulangerie avec enthousiasme et fibre
+            artisanale.
+          </p>
+        </div>
+
+        <h2 class="mb-6 mt-12 text-3xl font-bold leading-tight tracking-tight text-ink-900">
+          Une philosophie artisanale et intuitive
+        </h2>
+        <div class="space-y-4 text-base leading-relaxed text-ink-700">
+          <p>
+            Dans notre boulangerie, pas de calculs complexes sur l'humidité ou le pH, mais une approche intuitive basée sur le toucher, l'observation et le ressenti. À travers ses gestes simples et précis, Stéphanie transmet un savoir-faire accessible à tous.
+          </p>
+          <p>
+            <span class="italic">« Le pain, c'est la vie, et il m'a permis de retrouver un nouvel équilibre »</span>, dit-elle avec conviction.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-center md:justify-end">
+        <%= image_tag "tranches-de-vie-1.jpg", class: "h-auto max-w-full rounded-xl shadow-md" %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section Four à bois -->
+  <section class="mb-16">
+    <h2 class="mb-6 text-3xl font-bold leading-tight tracking-tight text-ink-900">
+      Le four à bois : un lieu de rencontres et de chaleur
+    </h2>
+    <div class="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
+      <div class="space-y-4 text-base leading-relaxed text-ink-700 md:col-span-2">
+        <p>
+          Chez Tranches de Vie, le four à bois n'est pas qu'un outil de cuisson. Il est au centre d'un espace où les gens se rencontrent, discutent et partagent des moments simples et authentiques. Lors des Pizzas Parties ou des cuissons collectives, chacun peut préparer son propre pain ou sa pizza, observer la magie de la cuisson et savourer un repas convivial autour d'une grande tablée.
+        </p>
+      </div>
+      <div class="md:col-span-1">
+        <%= image_tag "tranches-de-vie-3.jpg", class: "h-auto max-w-full rounded-xl shadow-md" %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section Pains -->
+  <section class="mb-16">
+    <h2 class="mb-6 text-3xl font-bold leading-tight tracking-tight text-ink-900">
+      Des pains qui nourrissent l'âme autant que le corps
+    </h2>
+    <p class="text-base leading-relaxed text-ink-700">
+      Produits avec des ingrédients locaux et une grande attention aux éléments naturels – eau, air, feu et terre – nos pains reflètent l'harmonie entre l'humain et son environnement. Que ce soit pour nos giteurs, les habitants de la région ou les visiteurs de passage, chaque pain est une invitation à se recentrer et à savourer l'instant présent.
+    </p>
+  </section>
+
+  <!-- Section Vision -->
+  <section class="mb-16">
+    <h2 class="mb-6 text-3xl font-bold leading-tight tracking-tight text-ink-900">
+      Une vision pour demain
+    </h2>
+    <p class="text-base leading-relaxed text-ink-700">
+      Stéphanie rêve d'élargir la portée de Tranches de Vie en organisant des ateliers de transmission pour que chacun puisse s'initier à la boulangerie au levain. Elle imagine aussi des rendez-vous hebdomadaires où le four à bois serait au service des habitants, permettant à chacun de cuire ses plats tout en partageant un moment convivial.
+    </p>
+  </section>
+
+  <!-- Section Contact -->
+  <section class="mb-16 rounded-lg border border-flour-300 bg-sage-100 p-8">
+    <h2 class="mb-4 text-2xl font-bold leading-tight tracking-tight text-ink-900">
+      Pour contacter la boulangerie
+    </h2>
+    <p class="mb-4 text-base leading-relaxed text-ink-700">
+      Les pains de Tranches de Vie sont produits chaque mardi et vendredi, uniquement sur commande via notre site.
+    </p>
+    <p class="text-lg font-medium">
+      <a href="mailto:boulangerie@les4sources.be" class="text-ember-600 hover:text-ember-500 hover:underline">
+        💌 boulangerie@les4sources.be
+      </a>
+    </p>
+  </section>
+
+  <!-- Section Points de vente -->
+  <section class="mb-12">
+    <h2 class="mb-6 text-2xl font-bold leading-tight tracking-tight text-ink-900">
+      Points de vente
+    </h2>
+
+    <p class="mb-6 text-base leading-relaxed text-ink-700">
+      Nos pains sont aussi disponibles dans plusieurs points de vente.
+    </p>
+
+    <div class="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 md:grid-cols-3">
+      <div class="space-y-2 text-base text-ink-700">
+        <%= image_tag "verger-de-la-molignee.jpg", class: "h-auto max-w-full rounded-xl shadow-md" %>
+        <p class="font-semibold text-ink-900">
+          Au Verger de la Molignée (Anhée)<br>
+          rue de la Molignée, 39<br>
+          5537 Anhée
+        </p>
+        <p>
+          <a href="https://maps.app.goo.gl/iwzxrBuQUQDhW7XF9" target="_blank" rel="noopener noreferrer" class="text-ember-600 hover:text-ember-500 hover:underline">
+            🗺️ Sur Google Maps
+          </a>
+        </p>
+        <span class="inline-block rounded-full bg-sage-200 px-3 py-1 text-sm font-semibold text-sage-700 align-middle">les vendredis soir et le samedi</span>
+      </div>
+      <div class="space-y-2 text-base text-ink-700">
+        <%= image_tag "epicerie-de-la-gare.jpg", class: "h-auto max-w-full rounded-xl shadow-md" %>
+        <p class="font-semibold text-ink-900">
+          A l'Epicerie de la Gare (Dinant)<br>
+          avenue Franchet d'Esperey, 1<br>
+          5500 Dinant
+        </p>
+        <p>
+          <a href="https://maps.app.goo.gl/aCCAg398KFVpfbDt6" target="_blank" rel="noopener noreferrer" class="text-ember-600 hover:text-ember-500 hover:underline">
+            🗺️ Sur Google Maps
+          </a>
+        </p>
+        <span class="inline-block rounded-full bg-sage-200 px-3 py-1 text-sm font-semibold text-sage-700 align-middle">les mercredis</span>
+      </div>
+    </div>
+  </section>
+</div>

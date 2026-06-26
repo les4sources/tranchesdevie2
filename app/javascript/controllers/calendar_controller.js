@@ -119,7 +119,7 @@ export default class extends Controller {
                   </button>
                   <span class="w-8 text-center font-semibold" data-qty-display="${variant.id}">${qty}</span>
                   <button type="button"
-                          class="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center"
+                          class="w-8 h-8 rounded-full bg-sage-600 hover:bg-sage-500 text-white flex items-center justify-center"
                           data-action="click->calendar#incrementQty"
                           data-variant-id="${variant.id}">
                     <span class="text-lg font-bold">+</span>
@@ -199,12 +199,12 @@ export default class extends Controller {
           `
         } else if (remaining >= 0) {
           this.balanceIndicatorTarget.innerHTML = `
-            <p class="text-green-600">Solde restant après cette commande : ${(remaining / 100).toFixed(2)} €</p>
+            <p class="text-sage-700">Solde restant après cette commande : ${(remaining / 100).toFixed(2)} €</p>
           `
         } else {
           this.balanceIndicatorTarget.innerHTML = `
-            <p class="text-red-600 font-medium">Solde insuffisant — il manque ${(Math.abs(remaining) / 100).toFixed(2)} €</p>
-            <a href="${this.reloadUrlValue}" class="text-red-600 underline text-xs">Recharger mon portefeuille</a>
+            <p class="text-danger-700 font-medium">Solde insuffisant — il manque ${(Math.abs(remaining) / 100).toFixed(2)} €</p>
+            <a href="${this.reloadUrlValue}" class="text-danger-700 underline text-xs">Recharger mon portefeuille</a>
           `
         }
       }
@@ -305,18 +305,18 @@ export default class extends Controller {
 
       this.modalSuccessTarget.innerHTML = `
         <div class="text-center py-6">
-          <div class="w-16 h-16 ${isEmpty ? "bg-gray-100" : "bg-green-100"} rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 ${isEmpty ? "text-gray-500" : "text-green-600"}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-16 h-16 ${isEmpty ? "bg-gray-100" : "bg-sage-100"} rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 ${isEmpty ? "text-gray-500" : "text-sage-700"}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
           <p class="text-lg font-semibold text-gray-900 mb-3 whitespace-pre-line">${message}</p>
           ${!isEmpty ? `
             <p class="text-sm text-gray-600 mb-1">${summary}</p>
-            <p class="text-xl font-bold text-green-600 mb-2">${totalEuros} €</p>
+            <p class="text-xl font-bold text-sage-700 mb-2">${totalEuros} €</p>
           ` : ""}
           <button type="button"
-                  class="mt-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-base font-medium"
+                  class="mt-4 px-6 py-3 bg-sage-600 text-white rounded-lg hover:bg-sage-500 text-base font-medium"
                   data-action="click->calendar#closeModalAndReload">
             Parfait, merci !
           </button>
@@ -341,11 +341,11 @@ export default class extends Controller {
     if (!card) return
 
     card.scrollIntoView({ behavior: "smooth", block: "center" })
-    card.classList.add("ring-2", "ring-green-500", "bg-green-50")
+    card.classList.add("ring-2", "ring-sage-500", "bg-sage-100")
 
     setTimeout(() => {
       card.classList.add("transition-all", "duration-1000")
-      card.classList.remove("ring-2", "ring-green-500", "bg-green-50")
+      card.classList.remove("ring-2", "ring-sage-500", "bg-sage-100")
     }, 2000)
 
     history.replaceState(null, "", window.location.pathname)
@@ -355,7 +355,7 @@ export default class extends Controller {
     // Create toast element
     const toast = document.createElement("div")
     toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-50 ${
-      type === "error" ? "bg-red-500" : "bg-green-500"
+      type === "error" ? "bg-danger-600" : "bg-sage-600"
     }`
     toast.textContent = message
     document.body.appendChild(toast)
@@ -368,7 +368,7 @@ export default class extends Controller {
   celebrateDrop(card, productName) {
     // 1. Flash the card green with a scale pulse
     card.style.transition = "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease"
-    card.classList.add("ring-2", "ring-green-500", "bg-green-50")
+    card.classList.add("ring-2", "ring-sage-500", "bg-sage-100")
     card.style.transform = "scale(1.03)"
     card.style.boxShadow = "0 0 20px rgba(34, 197, 94, 0.4)"
 
@@ -421,7 +421,7 @@ export default class extends Controller {
     }, 1200)
 
     setTimeout(() => {
-      card.classList.remove("ring-2", "ring-green-500", "bg-green-50")
+      card.classList.remove("ring-2", "ring-sage-500", "bg-sage-100")
       badge.remove()
     }, 1600)
   }
@@ -439,17 +439,17 @@ export default class extends Controller {
   dragOver(event) {
     event.preventDefault()
     if (event.currentTarget.dataset.canOrder === "true") {
-      event.currentTarget.classList.add("ring-2", "ring-green-500")
+      event.currentTarget.classList.add("ring-2", "ring-sage-500")
     }
   }
 
   dragLeave(event) {
-    event.currentTarget.classList.remove("ring-2", "ring-green-500")
+    event.currentTarget.classList.remove("ring-2", "ring-sage-500")
   }
 
   async drop(event) {
     event.preventDefault()
-    event.currentTarget.classList.remove("ring-2", "ring-green-500")
+    event.currentTarget.classList.remove("ring-2", "ring-sage-500")
 
     const bakeDayEl = event.currentTarget
     if (bakeDayEl.dataset.canOrder !== "true") {

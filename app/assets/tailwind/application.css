@@ -1,1 +1,193 @@
 @import "tailwindcss";
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Tranches de Vie — Design System tokens
+   Imported from the "Tranches de Vie Design System" project on claude.ai/design
+   (project e950d3b5-debc-460a-87b3-ea34c230b63f). Source of truth: tokens/*.css
+   there. A warm, natural palette — flour/cream neutrals, sage as the living
+   brand voice, ember (feu/braise) as the single warm accent.
+
+   Two layers below:
+   • :root          — the raw design tokens, so design inline styles using
+                      var(--sage-600), var(--font-script)… resolve verbatim.
+   • @theme         — exposes the palette/fonts/radii/shadows as Tailwind v4
+                      utilities (bg-sage-600, text-ember-600, font-script…).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Neutrals — flour / cream / sand (warm) ─────────────────────────── */
+  --flour-50:  #FDFBF6;
+  --flour-100: #FAF5EC;
+  --flour-200: #F3ECDF;
+  --flour-300: #EADFCC;
+  --flour-400: #DBCBAF;
+
+  /* ── Ink — warm near-blacks & greys ─────────────────────────────────── */
+  --ink-900: #2B2620;
+  --ink-700: #4B443A;
+  --ink-500: #7A7062;
+  --ink-400: #9E9382;
+
+  /* ── Surfaces — warm whites ─────────────────────────────────────────── */
+  --warm-white:   #FEFCF8;
+  --warm-white-2: #FBF7EF;
+
+  /* ── Sage — primary brand (le vivant, la nature) ────────────────────── */
+  --sage-700: #54663F;
+  --sage-600: #6B7E52;
+  --sage-500: #82966A;
+  --sage-300: #C3D0AC;
+  --sage-200: #DCE4CC;
+  --sage-100: #ECF0E2;
+
+  /* ── Ember — accent (feu / braise) ──────────────────────────────────── */
+  --ember-700: #A23F18;
+  --ember-600: #C2511F;
+  --ember-500: #D2683A;
+  --ember-200: #F1D9C9;
+  --ember-100: #F8E9DF;
+
+  /* ── Crust — warm brown, for icon strokes & earthy detail ───────────── */
+  --crust-600: #8A6A45;
+  --crust-200: #E3D3BD;
+
+  /* ── Semantic — status (kept warm & soft) ───────────────────────────── */
+  --success-700: #3E6431; --success-600: #5E8C4E; --success-200: #E2EEDA; --success-100: #EEF5E8;
+  --warning-700: #8A5C14; --warning-600: #C0871F; --warning-200: #F4E6C8; --warning-100: #FAF1DC;
+  --danger-700:  #8C2D20; --danger-600:  #B23F2E; --danger-200:  #F4D9D2; --danger-100:  #FBE9E4;
+  --water-700:   #3F5B6B; --water-600:   #5C7A8C; --water-200:   #DCE7EC; --water-100:   #EBF1F4;
+
+  /* ── Semantic aliases — use these in product code ───────────────────── */
+  --bg-app:        var(--flour-100);
+  --bg-page:       var(--flour-50);
+  --surface-card:  var(--warm-white);
+  --surface-inset: var(--warm-white-2);
+  --surface-sunk:  var(--flour-200);
+
+  --border-subtle: var(--flour-300);
+  --border-strong: var(--flour-400);
+  --border-focus:  var(--sage-600);
+
+  --text-strong:   var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --text-on-brand: var(--flour-50);
+  --text-on-accent:#FFFFFF;
+
+  --brand:         var(--sage-600);
+  --brand-hover:   var(--sage-500);
+  --brand-press:   var(--sage-700);
+  --brand-tint:    var(--sage-100);
+
+  --accent:        var(--ember-600);
+  --accent-hover:  var(--ember-500);
+  --accent-press:  var(--ember-700);
+  --accent-tint:   var(--ember-100);
+
+  --link:          var(--ember-600);
+  --focus-ring:    color-mix(in srgb, var(--sage-600) 35%, transparent);
+
+  /* ── Fonts ──────────────────────────────────────────────────────────── */
+  --font-script: 'Caveat', 'Segoe Script', cursive;
+  --font-sans:   'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:   ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+
+  /* ── Radius ─────────────────────────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* ── Shadows — soft, warm-tinted, low contrast (doux) ───────────────── */
+  --shadow-xs: 0 1px 2px rgba(74, 60, 38, 0.06);
+  --shadow-sm: 0 1px 3px rgba(74, 60, 38, 0.07), 0 1px 2px rgba(74, 60, 38, 0.05);
+  --shadow-md: 0 4px 14px rgba(74, 60, 38, 0.08), 0 2px 5px rgba(74, 60, 38, 0.05);
+  --shadow-lg: 0 12px 34px rgba(58, 46, 28, 0.12), 0 4px 10px rgba(58, 46, 28, 0.06);
+  --shadow-inset: inset 0 1px 2px rgba(74, 60, 38, 0.06);
+
+  /* ── Motion — gentle, never bouncy ──────────────────────────────────── */
+  --ease-out:  cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Tailwind v4 theme — generates utilities from the tokens above ─────── */
+@theme {
+  --font-sans:   'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-script: 'Caveat', 'Segoe Script', cursive;
+
+  /* Flour / cream */
+  --color-flour-50:  #FDFBF6;
+  --color-flour-100: #FAF5EC;
+  --color-flour-200: #F3ECDF;
+  --color-flour-300: #EADFCC;
+  --color-flour-400: #DBCBAF;
+
+  /* Ink */
+  --color-ink-900: #2B2620;
+  --color-ink-700: #4B443A;
+  --color-ink-500: #7A7062;
+  --color-ink-400: #9E9382;
+
+  /* Warm whites */
+  --color-warm-white:   #FEFCF8;
+  --color-warm-white-2: #FBF7EF;
+
+  /* Sage */
+  --color-sage-700: #54663F;
+  --color-sage-600: #6B7E52;
+  --color-sage-500: #82966A;
+  --color-sage-300: #C3D0AC;
+  --color-sage-200: #DCE4CC;
+  --color-sage-100: #ECF0E2;
+
+  /* Ember */
+  --color-ember-700: #A23F18;
+  --color-ember-600: #C2511F;
+  --color-ember-500: #D2683A;
+  --color-ember-200: #F1D9C9;
+  --color-ember-100: #F8E9DF;
+
+  /* Crust */
+  --color-crust-600: #8A6A45;
+  --color-crust-200: #E3D3BD;
+
+  /* Status */
+  --color-success-700: #3E6431; --color-success-600: #5E8C4E; --color-success-200: #E2EEDA; --color-success-100: #EEF5E8;
+  --color-warning-700: #8A5C14; --color-warning-600: #C0871F; --color-warning-200: #F4E6C8; --color-warning-100: #FAF1DC;
+  --color-danger-700:  #8C2D20; --color-danger-600:  #B23F2E; --color-danger-200:  #F4D9D2; --color-danger-100:  #FBE9E4;
+  --color-water-700:   #3F5B6B; --color-water-600:   #5C7A8C; --color-water-200:   #DCE7EC; --color-water-100:   #EBF1F4;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(74, 60, 38, 0.06);
+  --shadow-sm: 0 1px 3px rgba(74, 60, 38, 0.07), 0 1px 2px rgba(74, 60, 38, 0.05);
+  --shadow-md: 0 4px 14px rgba(74, 60, 38, 0.08), 0 2px 5px rgba(74, 60, 38, 0.05);
+  --shadow-lg: 0 12px 34px rgba(58, 46, 28, 0.12), 0 4px 10px rgba(58, 46, 28, 0.06);
+}
+
+/* ── Brand voice helpers (from the design system base.css) ─────────────── */
+.tdv-script {
+  font-family: var(--font-script);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink-900);
+}
+
+.tdv-eyebrow {
+  font: 600 11px/1.2 var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/* Warm text selection + focus ring, matching the design system */
+::selection { background: var(--sage-200); color: var(--ink-900); }

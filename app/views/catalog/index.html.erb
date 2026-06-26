@@ -1,138 +1,154 @@
 <% content_for :title, "Tranches de Vie - Les 4 Sources" %>
+<% content_for :full_bleed, true %>
 
-<% if @seasonal_promotion.present? && @seasonal_promotion[:active] %>
-  <div class="px-4">
-    <div class="flex flex-col items-stretch justify-start overflow-hidden rounded-xl bg-[#fcf8dc] xl:flex-row xl:items-center">
-      <!--div
-        class="aspect-[16/9] w-full bg-cover bg-center bg-no-repeat md:h-full md:w-1/3"
-        style='background-image: url("<%= @seasonal_promotion[:image_url] || "https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&w=1200&q=80" %>");'>
-      </div-->
-
-      <div class="flex w-full min-w-72 grow flex-col items-start justify-center gap-4 p-8">
-        <div>
-          <p class="text-2xl font-bold leading-tight tracking-[-0.015em] text-charcoal">
-            <%= @seasonal_promotion[:title] || "Taste of Autumn: Our Pumpkin Spice Sourdough is Back!" %>
-          </p>
-          <p class="mt-3 text-base font-normal leading-normal text-gray-600">
-            <%= @seasonal_promotion[:description] || "Limited time only. Pre-order now for a delicious seasonal treat." %>
-          </p>
-        </div>
-
-        <% if @seasonal_promotion[:cta_path].present? %>
-          <%= link_to(@seasonal_promotion[:cta_path] || catalog_path,
-                      class: "inline-flex h-11 items-center justify-center rounded-xl bg-black px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-terracotta/90",
-                      aria: { label: @seasonal_promotion[:cta_text] || "Shop Now" }) do %>
-            <%= @seasonal_promotion[:cta_text] || "Shop Now" %>
-          <% end %>
-        <% end %>
+<%# ── Hero ──────────────────────────────────────────────────────────────── %>
+<section class="overflow-hidden border-b border-flour-300 bg-gradient-to-b from-sage-100 to-flour-50">
+  <div class="mx-auto grid max-w-[1040px] items-center gap-10 px-6 py-12 md:grid-cols-[1fr_1.02fr] md:py-14">
+    <div>
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
+        <%= lucide "flame", size: 14, color: "var(--ember-600)" %> Cuit au feu de bois
       </div>
+      <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl md:text-6xl">Du pain vivant tous les mardis et vendredis</h1>
+      <p class="mt-4 max-w-md text-[17px] leading-relaxed text-ink-700">Farines locales, levain naturel et longues fermentations. Commande pains et pâtons — on les cuit pour toi dans la vallée du Bocq.</p>
+      <div class="mt-7 flex flex-wrap items-center gap-4">
+        <a href="#produits" class="inline-flex h-12 items-center gap-2 rounded-md bg-ember-600 px-6 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500">
+          <%= lucide "shopping-basket", size: 18, color: "#fff" %> Je fais ma sélection
+        </a>
+        <span class="inline-flex items-center gap-2 text-sm font-medium text-ink-700">
+          <%= lucide "map-pin", size: 17, color: "var(--sage-600)" %> Retrait <b class="font-semibold">aux 4 Sources</b>
+        </span>
+      </div>
+    </div>
+    <div class="relative">
+      <div class="relative aspect-[4/3] overflow-hidden rounded-xl shadow-lg">
+        <%= image_tag "tranches-de-vie-2.jpg", alt: "Pains au sortir du four", class: "h-full w-full object-cover" %>
+      </div>
+      <% if @next_bake_day %>
+        <div class="absolute -bottom-4 left-2 flex items-center gap-3 rounded-lg border border-flour-300 bg-warm-white px-4 py-3 shadow-md sm:-left-4">
+          <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-ember-100">
+            <%= lucide "flame", size: 20, color: "var(--ember-600)" %>
+          </span>
+          <span>
+            <span class="block text-[15px] font-bold text-ink-900">Prochaine fournée</span>
+            <span class="block text-[13px] font-medium text-ink-500"><%= l(@next_bake_day.baked_on, format: "%A %-d %B") %></span>
+          </span>
+        </div>
+      <% end %>
     </div>
   </div>
-<% end %>
+</section>
 
-  <!-- Order process steps -->
-  <div class="mx-auto px-4">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Step 1 -->
-      <div class="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#acc037] text-lg font-bold text-white shadow-sm">
-          1
-        </div>
-        <p class="text-sm font-medium leading-relaxed text-gray-900">
-          Ajoute tes pains et autres produits dans ton panier
-        </p>
+<div class="mx-auto max-w-[1040px] px-6 py-12">
+  <% if @seasonal_promotion.present? && @seasonal_promotion[:active] %>
+    <div class="mb-12 flex flex-col items-start gap-4 rounded-lg border border-ember-200 bg-ember-100 p-8">
+      <div>
+        <p class="text-2xl font-bold leading-tight text-ink-900"><%= @seasonal_promotion[:title] %></p>
+        <p class="mt-3 text-base leading-normal text-ink-700"><%= @seasonal_promotion[:description] %></p>
       </div>
-
-      <!-- Step 2 -->
-      <div class="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#acc037] text-lg font-bold text-white shadow-sm">
-          2
-        </div>
-        <p class="text-sm font-medium leading-relaxed text-gray-900">
-          Dans le panier, sélectionne le jour de cuisson
-        </p>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#acc037] text-lg font-bold text-white shadow-sm">
-          3
-        </div>
-        <p class="text-sm font-medium leading-relaxed text-gray-900">
-          Passe commande et paie en ligne ou en cash lors de ton retrait
-        </p>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#acc037] text-lg font-bold text-white shadow-sm">
-          4
-        </div>
-        <p class="text-sm font-medium leading-relaxed text-gray-900">
-          Récupère ton pain aux 4 Sources le jour de cuisson ou le lendemain matin
-        </p>
-      </div>
+      <% if @seasonal_promotion[:cta_path].present? %>
+        <%= link_to @seasonal_promotion[:cta_text], @seasonal_promotion[:cta_path],
+              class: "inline-flex h-11 items-center justify-center rounded-md bg-ember-600 px-6 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500" %>
+      <% end %>
     </div>
-  </div>
+  <% end %>
 
-<% if @products.any? %>
-  <% @products.group_by { |product, _variants| product.category }.each do |category, grouped_products| %>
-    <div class="px-4 pt-4">
-      <h3 class="text-xl font-bold leading-tight tracking-[-0.015em] text-charcoal"><%= product_category_heading(category) %></h3>
-    </div>
-
-    <div class="grid grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 md:grid-cols-4">
-      <% grouped_products.each do |product_data| %>
-        <% product = product_data[0] %>
-        <% variants = product_data[1] %>
-        <% primary_variant = variants.min_by(&:price_cents) %>
-        <% variant_images = variant_images_for_product(product, variants) %>
-        <div class="group flex flex-col gap-3 pb-3">
-          <%= link_to product_path(product), class: "block overflow-hidden rounded-lg bg-cover bg-center" do %>
-            <div class="aspect-square w-full transform transition-transform duration-300 group-hover:scale-105" style="background-image: url('<%= variant_images.first[:url] %>'); background-size: cover; background-position: center;"></div>
-          <% end %>
+  <%# ── Comment ça marche ──────────────────────────────────────────────── %>
+  <% steps = [
+       ["Choisis tes pains", "Ajoute pains et autres produits à ton panier"],
+       ["Choisis ton jour", "Dans le panier, sélectionne le jour de cuisson"],
+       ["Commande et paie", "En ligne par Bancontact, ou en cash au retrait"],
+       ["Récupère ta commande", "Aux 4 Sources le jour de cuisson ou le lendemain"]
+     ] %>
+  <div class="mb-12 overflow-hidden rounded-lg border border-flour-300 bg-flour-300 shadow-xs">
+    <div class="grid gap-px sm:grid-cols-2 lg:grid-cols-4">
+      <% steps.each_with_index do |(title, desc), i| %>
+        <div class="flex items-start gap-3 bg-warm-white p-5">
+          <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-sage-200 bg-sage-100 text-sm font-bold text-sage-700"><%= i + 1 %></span>
           <div>
-            <%= link_to product_path(product), class: "text-lg font-medium leading-normal text-charcoal hover:text-terracotta transition" do %>
-              <%= product.name %>
-            <% end %>
-
-            <% if product.pizza_party_role_party? %>
-              <p class="mt-1 text-xs text-gray-500">Nous comptons 1 boule de pâte à pizza / personne</p>
-            <% end %>
-
-            <div class="mt-4 space-y-3">
-              <% variants.each do |variant| %>
-                <%= form_with url: cart_add_path, method: :post, local: true, data: { action: "submit->cart#add" }, class: "flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-terracotta/40" do |f| %>
-                  <%= f.hidden_field :product_variant_id, value: variant.id %>
-                  <%= f.hidden_field :qty, value: 1 %>
-
-                  <div class="flex items-center gap-3">
-                    <% variant_qty = current_cart_variant_qty(variant.id) %>
-                    <button type="submit" class="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-300 text-lg font-semibold leading-none text-charcoal shadow hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-400/60" data-cart-target="button" data-cart-variant-id="<%= variant.id %>" data-cart-current-qty="<%= variant_qty %>">
-                      <%= variant_qty > 0 ? variant_qty : "+" %>
-                    </button>
-                    <div class="flex flex-col">
-                      <span class="text-sm font-medium text-charcoal"><%= product.pizza_party_role_party? ? "Nombre de personnes" : variant.name %></span>
-                      <% restriction = ProductVariantDecorator.decorate(variant).weekday_restriction_label %>
-                      <% if restriction %>
-                        <span class="text-xs font-medium text-amber-700"><%= restriction %></span>
-                      <% end %>
-                    </div>
-                  </div>
-
-                  <span class="inline-flex items-center rounded-lg px-3 py-1 text-sm text-right font-semibold text-slate-700">
-                    <%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %>
-                  </span>
-                <% end %>
-              <% end %>
-            </div>
+            <div class="mb-1 text-sm font-semibold text-ink-900"><%= title %></div>
+            <div class="text-[12.5px] leading-snug text-ink-500"><%= desc %></div>
           </div>
         </div>
       <% end %>
     </div>
-  <% end %>
-<% else %>
-  <div class="px-4 py-16 text-center">
-    <p class="text-base text-gray-500">Aucun produit disponible pour le moment.</p>
   </div>
-<% end %>
+
+  <%# ── Produits ───────────────────────────────────────────────────────── %>
+  <div id="produits" class="scroll-mt-20">
+    <% if @products.any? %>
+      <% grouped = @products.group_by { |product, _variants| product.category } %>
+      <% grouped.each_with_index do |(category, products_in_category), gi| %>
+        <div class="<%= gi.zero? ? "mb-6" : "mb-6 mt-14" %> flex items-end justify-between gap-5">
+          <div>
+            <% if gi.zero? %>
+              <div class="tdv-eyebrow mb-2 text-sage-700">Au four cette semaine</div>
+            <% end %>
+            <h2 class="font-script text-4xl font-bold text-ink-900"><%= product_category_heading(category) %></h2>
+          </div>
+          <% if gi.zero? %>
+            <span class="hidden items-center gap-2 pb-1.5 text-[13px] font-medium text-ink-500 sm:inline-flex">
+              <%= lucide "wheat", size: 16, color: "var(--crust-600)" %> Pétris à la main comme à l'ancienne
+            </span>
+          <% end %>
+        </div>
+
+        <div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <% products_in_category.each do |product, variants| %>
+            <% variant_images = variant_images_for_product(product, variants) %>
+            <article class="flex flex-col overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-xs transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+              <%= link_to product_path(product), class: "group/img block h-52 overflow-hidden" do %>
+                <div class="h-full w-full bg-cover bg-center transition-transform duration-500 group-hover/img:scale-105" style="background-image: url('<%= variant_images.first[:url] %>');"></div>
+              <% end %>
+              <div class="flex flex-1 flex-col p-5">
+                <h3 class="<%= product.pizza_party_role_party? ? "mb-1" : "mb-4" %> text-[22px] font-semibold leading-tight text-ink-900">
+                  <%= link_to product.name, product_path(product), class: "transition-colors hover:text-ember-600" %>
+                </h3>
+                <% if product.pizza_party_role_party? %>
+                  <p class="mb-4 text-xs text-ink-500">Nous comptons 1 boule de pâte à pizza / personne</p>
+                <% end %>
+                <div class="flex flex-col gap-2">
+                  <% variants.each do |variant| %>
+                    <% variant_qty = current_cart_variant_qty(variant.id) %>
+                    <% restriction = ProductVariantDecorator.decorate(variant).weekday_restriction_label %>
+                    <%= form_with url: cart_add_path, method: :post, local: true, data: { action: "submit->cart#add" } do |f| %>
+                      <%= f.hidden_field :product_variant_id, value: variant.id %>
+                      <%= f.hidden_field :qty, value: 1 %>
+                      <button type="submit" class="group/vrow flex w-full items-center gap-3 rounded-md border border-flour-300 bg-warm-white px-3 py-2.5 text-left transition hover:border-sage-300 hover:bg-flour-100">
+                        <span class="flex-1">
+                          <span class="block text-sm font-medium text-ink-700"><%= product.pizza_party_role_party? ? "Nombre de personnes" : variant.name %></span>
+                          <% if restriction %><span class="mt-0.5 block text-xs font-medium text-warning-700"><%= restriction %></span><% end %>
+                        </span>
+                        <span class="text-[15px] font-bold text-ink-900"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %></span>
+                        <span data-cart-target="button" data-cart-variant-id="<%= variant.id %>" data-cart-current-qty="<%= variant_qty %>" class="inline-flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-sm font-bold leading-none text-white transition group-hover/vrow:bg-ember-600">
+                          <% if variant_qty > 0 %><%= variant_qty %><% else %><%= lucide "plus", size: 17, color: "#fff" %><% end %>
+                        </span>
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            </article>
+          <% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="py-16 text-center">
+        <p class="text-base text-ink-500">Aucun produit disponible pour le moment.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ── Où nous trouver ────────────────────────────────────────────────── %>
+  <div class="mt-14 grid overflow-hidden rounded-lg border border-flour-300 shadow-xs md:grid-cols-2">
+    <div class="flex flex-col justify-center bg-sage-100 p-9">
+      <div class="tdv-eyebrow mb-2.5 text-sage-700">Le point de retrait</div>
+      <h3 class="mb-3 font-script text-3xl font-bold text-ink-900">Les 4 Sources</h3>
+      <p class="mb-4 max-w-xs text-[15px] leading-relaxed text-ink-700">Récupère ta commande le jour de cuisson, ou le lendemain. Choisis bien ton jour dans le panier. On te prévient par SMS quand ta commande est prête.</p>
+      <div class="flex flex-col gap-2.5">
+        <span class="inline-flex items-center gap-2.5 text-sm font-medium text-ink-700"><%= lucide "map-pin", size: 16, color: "var(--sage-600)" %> Entre Yvoir et Crupet</span>
+        <span class="inline-flex items-center gap-2.5 text-sm font-medium text-ink-700"><%= lucide "clock", size: 16, color: "var(--sage-600)" %> Le jour de cuisson ou le lendemain</span>
+      </div>
+    </div>
+    <div class="min-h-[240px] bg-cover bg-center" style="background-image: url('<%= image_path("les4sources.jpg") %>');"></div>
+  </div>
+</div>

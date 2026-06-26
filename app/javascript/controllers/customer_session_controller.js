@@ -48,7 +48,7 @@ export default class extends Controller {
 
       const html = await response.text()
       const doc = new DOMParser().parseFromString(html, "text/html")
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
 
       if (!response.ok || alertElement) {
         this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de l'envoi du code", "error")
@@ -59,7 +59,7 @@ export default class extends Controller {
       if (otpSection) otpSection.classList.remove("hidden")
       this.otpInputTarget?.focus()
 
-      const noticeElement = doc.querySelector(".notice, [class*='notice'], .bg-green-50")
+      const noticeElement = doc.querySelector(".notice, [class*='notice'], .bg-sage-100")
       this.showMessage(noticeElement ? noticeElement.textContent.trim() : "Code envoyé", "success")
     } catch (error) {
       this.showMessage("Erreur de connexion", "error")
@@ -109,7 +109,7 @@ export default class extends Controller {
         return
       }
 
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
       this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la vérification", "error")
     } catch (error) {
       this.showMessage("Erreur de connexion", "error")
@@ -152,7 +152,7 @@ export default class extends Controller {
 
       const html = await response.text()
       const doc = new DOMParser().parseFromString(html, "text/html")
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-red-50")
+      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
       this.showNameMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la création du compte", "error")
     } catch (error) {
       this.showNameMessage("Erreur de connexion", "error")
@@ -166,7 +166,7 @@ export default class extends Controller {
     const messageEl = document.getElementById("name-message")
     if (messageEl) {
       messageEl.textContent = message
-      messageEl.className = type === "success" ? "mt-4 text-sm text-green-600" : "mt-4 text-sm text-red-600"
+      messageEl.className = type === "success" ? "mt-4 text-sm text-sage-700" : "mt-4 text-sm text-danger-700"
       messageEl.classList.remove("hidden")
     }
   }
@@ -175,7 +175,7 @@ export default class extends Controller {
     const messageEl = document.getElementById("otp-message")
     if (messageEl) {
       messageEl.textContent = message
-      messageEl.className = type === "success" ? "mt-4 text-sm text-green-600" : "mt-4 text-sm text-red-600"
+      messageEl.className = type === "success" ? "mt-4 text-sm text-sage-700" : "mt-4 text-sm text-danger-700"
       messageEl.classList.remove("hidden")
     }
   }

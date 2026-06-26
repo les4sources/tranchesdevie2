@@ -1,65 +1,66 @@
 <% content_for :title, "Commande #{@order.order_number}" %>
 
-<div class="max-w-3xl mx-auto">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Commande <%= @order.order_number %></h1>
-      <p class="text-sm text-gray-600 mt-1">
+<div class="mx-auto max-w-3xl">
+  <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+    <div class="px-6 pb-4 pt-5">
+      <h1 class="font-script text-3xl font-bold text-ink-900">Commande <%= @order.order_number %></h1>
+      <p class="mt-1 text-sm text-ink-500">
         Passée le <%= @order.created_at.strftime("%d/%m/%Y à %H:%M") %>
       </p>
     </div>
 
-    <div class="mb-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Statut</h2>
-      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-        <%= case @order.status
-            when 'pending' then 'bg-yellow-100 text-yellow-800'
-            when 'paid' then 'bg-blue-100 text-blue-800'
-            when 'ready' then 'bg-green-100 text-green-800'
-            when 'picked_up' then 'bg-gray-100 text-gray-800'
-            when 'no_show' then 'bg-red-100 text-red-800'
-            when 'cancelled' then 'bg-red-100 text-red-800'
-            else 'bg-gray-100 text-gray-800'
-            end %>">
-        <%= order_status_label(@order.status) %>
-      </span>
-    </div>
-
-    <div class="mb-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Jour de cuisson</h2>
-      <p class="text-gray-600"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></p>
-    </div>
-
-    <div class="mb-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Articles</h2>
-      <div class="space-y-3">
-        <% @order.order_items.each do |item| %>
-          <div class="flex justify-between items-center py-2 border-b border-gray-200">
-            <div>
-              <p class="font-medium text-gray-900"><%= item.product_variant.name %></p>
-              <% if item.product_variant.product %>
-                <p class="text-sm text-gray-600"><%= item.product_variant.product.name %></p>
-              <% else %>
-                <p class="text-sm text-gray-500 italic">Produit supprimé</p>
-              <% end %>
-            </div>
-            <div class="text-right">
-              <p class="text-sm text-gray-600"><%= item.qty %> x <%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %></p>
-              <p class="font-medium text-gray-900"><%= number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "") %></p>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <div class="pt-4 border-t border-gray-200">
-      <div class="flex justify-between items-center">
-        <span class="text-lg font-medium text-gray-900">Total</span>
-        <span class="text-xl font-bold text-gray-900">
-          <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+    <div class="p-6">
+      <div class="mb-6">
+        <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Statut</h2>
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold
+          <%= case @order.status
+              when "pending" then "bg-warning-100 text-warning-700"
+              when "paid" then "bg-water-100 text-water-700"
+              when "ready" then "bg-success-100 text-success-700"
+              when "picked_up" then "bg-flour-200 text-ink-700"
+              when "no_show" then "bg-danger-100 text-danger-700"
+              when "cancelled" then "bg-danger-100 text-danger-700"
+              else "bg-flour-200 text-ink-700"
+              end %>">
+          <%= order_status_label(@order.status) %>
         </span>
+      </div>
+
+      <div class="mb-6">
+        <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Jour de cuisson</h2>
+        <p class="text-ink-700"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></p>
+      </div>
+
+      <div class="mb-6">
+        <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Articles</h2>
+        <div class="space-y-1">
+          <% @order.order_items.each do |item| %>
+            <div class="flex items-center justify-between border-b border-flour-200 py-3">
+              <div>
+                <p class="font-semibold text-ink-900"><%= item.product_variant.name %></p>
+                <% if item.product_variant.product %>
+                  <p class="text-sm text-ink-500"><%= item.product_variant.product.name %></p>
+                <% else %>
+                  <p class="text-sm italic text-ink-400">Produit supprimé</p>
+                <% end %>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-ink-500"><%= item.qty %> × <%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %></p>
+                <p class="font-semibold text-ink-900"><%= number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "") %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="border-t border-flour-300 pt-4">
+        <div class="flex items-center justify-between">
+          <span class="text-lg font-semibold text-ink-900">Total</span>
+          <span class="text-xl font-bold text-ink-900">
+            <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+          </span>
+        </div>
       </div>
     </div>
   </div>
 </div>
-

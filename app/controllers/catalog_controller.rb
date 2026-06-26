@@ -2,6 +2,7 @@ class CatalogController < ApplicationController
   def index
     @products = load_all_active_products
     @seasonal_promotion = seasonal_promotion_content
+    @next_bake_day = BakeDay.future.ordered.limit(10).detect(&:can_order?)
   end
 
   private

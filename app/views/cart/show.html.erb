@@ -1,247 +1,190 @@
 <% content_for :title, "Panier" %>
 
-<div class="max-w-5xl mx-auto py-6">
-  <div class="mb-8">
-    <p class="text-sm uppercase tracking-wide text-amber-600 font-semibold mb-2">Tranches de Vie</p>
-    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Ton panier</h1>
-    
-    <% if @available_bake_days.any? %>
-      <div class="mt-4">
-        <p class="font-medium text-gray-700 mb-3">Sélectionne ton jour de cuisson :</p>
-        <div class="space-y-2">
-          <% @available_bake_days.each do |bake_day| %>
-            <% cap = @bake_day_capacities[bake_day.id] || { fill_percentage: 0, fully_booked: false } %>
-            <% is_full = cap[:fully_booked] %>
-            <% fill_pct = cap[:fill_percentage] %>
-            <% bar_color = fill_pct >= 80 ? "bg-amber-500" : "bg-emerald-500" %>
-            <label class="flex items-center p-3 rounded-lg border-2 transition <%= is_full ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : (@bake_day&.id == bake_day.id ? 'border-amber-500 bg-amber-50 cursor-pointer' : 'border-gray-200 hover:border-gray-300 cursor-pointer') %>">
-              <input
-                type="radio"
-                name="bake_day_id"
-                value="<%= bake_day.id %>"
-                class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300"
-                <%= 'checked' if @bake_day&.id == bake_day.id %>
-                <%= 'disabled' if is_full %>
-                data-bake-day-id="<%= bake_day.id %>"
-              >
-              <span class="ml-3 flex-1 text-gray-900">
-                <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %d %B") } %> (commandes jusqu'au <%= I18n.with_locale(:fr) { I18n.l(bake_day.cut_off_at, format: "%A à %H:%M") } %>)</span>
-              </span>
-              <span class="ml-3 flex items-center gap-2">
-                <% if is_full %>
-                  <span class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">Complet</span>
-                <% else %>
-                  <span class="h-2 w-16 rounded-full bg-gray-200 overflow-hidden">
-                    <span class="block h-2 rounded-full <%= bar_color %>" style="width: <%= [fill_pct, 100].min %>%"></span>
-                  </span>
-                  <span class="text-xs text-gray-500"><%= fill_pct %>%</span>
-                <% end %>
-              </span>
-            </label>
-          <% end %>
-        </div>
-        <p class="mt-3 text-sm text-gray-500">
-          <%= link_to "Planifie tes commandes pour les jours de cuisson suivants", calendar_path, class: "text-amber-600 hover:text-amber-700 underline" %>
-        </p>
-      </div>
-    <% elsif @bake_day %>
-      <p class="mt-2 text-sm text-gray-600">
-        Retrait le <span class="font-medium"><%= I18n.with_locale(:fr) { I18n.l(@bake_day.baked_on, format: "%A %d %B %Y") } %></span>
-      </p>
-    <% end %>
-  </div>
+<div class="mb-7">
+  <div class="tdv-eyebrow mb-1.5 text-sage-700">Tranches de Vie</div>
+  <h1 class="font-script text-4xl font-bold text-ink-900 sm:text-5xl">Ton panier</h1>
 
-  <% if @cart.empty? %>
-    <div class="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-200">
-      <div class="mx-auto h-14 w-14 flex items-center justify-center rounded-full bg-amber-100 text-amber-700 mb-6">
-        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
-        </svg>
-      </div>
-      <h2 class="text-2xl font-semibold text-gray-900 mb-3">Ton panier est vide</h2>
-      <p class="text-gray-500 mb-8">Découvre nos pains et pâtisseries artisanales.</p>
-      <%= link_to "Voir le catalogue", catalog_path, class: "inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition" %>
-    </div>
-  <% else %>
-    <div class="grid lg:grid-cols-[2fr_1fr] gap-8">
-      <div class="space-y-4">
-        <% @cart.each do |item| %>
-          <% variant = ProductVariant.find(item['product_variant_id']) %>
-          <% product = variant.product %>
-          <% qty = item['qty'].to_i %>
-          <% line_total = qty * item['price_cents'].to_i %>
-          <% is_forfait = product&.pizza_party_role_forfait? %>
-          <% is_party = product&.pizza_party_role_party? %>
-          <% if product.nil? %>
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-gray-500 italic">Produit supprimé</p>
-                  <p class="text-sm text-gray-600"><%= variant.name %></p>
-                </div>
-                <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
-                  Retirer
-                <% end %>
-              </div>
-            </div>
-          <% else %>
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <div class="flex items-start gap-4">
-                <div class="h-20 w-20 rounded-xl bg-amber-100 flex items-center justify-center overflow-hidden">
-                  <% image_url = product_background_image(product) %>
-                  <% if image_url.present? %>
-                    <%= image_tag image_url, alt: product.name, class: "h-full w-full object-cover" %>
-                  <% else %>
-                    <span class="text-amber-600 font-semibold text-sm">Artisan</span>
-                  <% end %>
-                </div>
-
-                <div class="flex-1">
-                  <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 class="text-lg font-semibold text-gray-900"><%= product.name %></h3>
-                      <% if is_party %>
-                        <p class="text-sm text-gray-500"><%= "#{qty} #{qty > 1 ? 'personnes' : 'personne'}" %></p>
-                      <% elsif is_forfait %>
-                        <p class="text-sm text-gray-500">Ajouté automatiquement à ta Pizza party</p>
-                      <% else %>
-                        <p class="text-sm text-gray-500"><%= variant.name %></p>
-                      <% end %>
-                    </div>
-                    <span class="text-base font-semibold text-gray-900">
-                      <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
-                    </span>
-                  </div>
-
-                  <% if is_forfait %>
-                    <%# Le forfait est piloté par PizzaPartyForfaitService : pas de
-                        contrôle de quantité ni de retrait indépendant (le sync
-                        rétablirait l'état de toute façon). %>
-                    <div class="mt-4 text-sm text-gray-500">
-                      Forfait unique par commande.
-                    </div>
-                  <% else %>
-                    <div class="mt-4 flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: [qty - 1, 1].max } do %>
-                          &minus;
-                        <% end %>
-                        <span class="inline-flex items-center justify-center h-9 min-w-[3rem] rounded-full bg-gray-100 text-sm font-semibold text-gray-900">
-                          <%= qty %>
-                        </span>
-                        <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-lg font-semibold text-gray-700 hover:bg-gray-100 transition", params: { id: item['product_variant_id'], qty: qty + 1 } do %>
-                          +
-                        <% end %>
-                      </div>
-
-                      <%= button_to cart_remove_path(item['product_variant_id']), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "text-sm font-medium text-red-500 hover:text-red-600 transition" do %>
-                        Retirer
-                      <% end %>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-
-      <aside class="lg:sticky lg:top-8 self-start space-y-6">
-        <% if phone_verified? && @phone_e164.present? %>
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between gap-3 mb-4">
-              <div class="flex items-center gap-3 flex-1">
-                <div class="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-900">Connecté avec</p>
-                  <p class="text-sm text-gray-600"><%= @phone_e164 %></p>
-                </div>
-              </div>
-            </div>
-            <%= button_to cart_logout_path, method: :delete, class: "text-sm font-medium text-gray-500 cursor-pointer hover:text-gray-700 hover:underline transition whitespace-nowrap" do %>
-              Se déconnecter
-            <% end %>
-        </div>
-        <% end %>
-
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <div class="pb-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900">Récapitulatif</h2>
-            <p class="text-sm text-gray-500 mt-1">Vérifie tes articles avant de passer commande.</p>
-          </div>
-
-          <dl class="mt-4 space-y-2 text-sm text-gray-600">
-            <div class="flex justify-between">
-              <dt>Sous-total</dt>
-              <dd class="font-medium text-gray-900">
-                <%= number_to_currency(@subtotal / 100.0, unit: "€", separator: ",", delimiter: "") %>
-              </dd>
-            </div>
-            <% if @discount_cents > 0 %>
-              <div class="flex justify-between text-green-600">
-                <dt>Remise</dt>
-                <dd class="font-medium">
-                  -<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
-                </dd>
-              </div>
-            <% end %>
-          </dl>
-
-          <div class="mt-6 flex items-center justify-between text-base font-semibold text-gray-900">
-            <span>Total</span>
-            <span>
-              <%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+  <% if @available_bake_days.any? %>
+    <div class="mt-5">
+      <p class="mb-2 text-[15px] font-medium text-ink-700">Sélectionne ton jour de cuisson :</p>
+      <div class="flex flex-col gap-2.5">
+        <% @available_bake_days.each do |bake_day| %>
+          <% cap = @bake_day_capacities[bake_day.id] || { fill_percentage: 0, fully_booked: false } %>
+          <% is_full = cap[:fully_booked] %>
+          <% fill_pct = [ cap[:fill_percentage].to_i, 100 ].min %>
+          <% bar_color = fill_pct >= 90 ? "bg-danger-600" : fill_pct >= 70 ? "bg-warning-600" : "bg-sage-600" %>
+          <label class="flex items-center gap-3.5 rounded-md border px-4 py-3.5 transition <%= is_full ? "cursor-not-allowed border-flour-300 bg-flour-200 opacity-70" : "cursor-pointer border-flour-300 bg-warm-white hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100 has-[:checked]:shadow-[0_0_0_3px_var(--focus-ring)]" %>">
+            <input type="radio" name="bake_day_id" value="<%= bake_day.id %>"
+                   class="h-[18px] w-[18px] flex-shrink-0 accent-sage-600"
+                   <%= "checked" if @bake_day&.id == bake_day.id %>
+                   <%= "disabled" if is_full %>
+                   data-bake-day-id="<%= bake_day.id %>">
+            <span class="flex-1 text-ink-900">
+              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %-d %B") } %></b>
+              <span class="text-ink-500">(commandes jusqu'au <%= I18n.with_locale(:fr) { I18n.l(bake_day.cut_off_at, format: "%A à %-Hh%M") } %>)</span>
             </span>
-          </div>
-
-          <%= link_to "Valider la commande", new_checkout_path, class: "mt-6 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 transition" %>
-          <%= link_to "Continuer tes achats", catalog_path, class: "mt-3 inline-flex w-full items-center justify-center text-sm font-semibold text-amber-600 hover:text-amber-700" %>
-        </div>
-      </aside>
+            <span class="flex w-52 flex-col gap-1.5">
+              <span class="flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide">
+                <span class="text-ink-500">Capacité de production</span>
+                <% if is_full %>
+                  <span class="inline-flex flex-shrink-0 items-center gap-1 font-bold tracking-normal text-danger-700"><%= lucide "ban", size: 12, color: "var(--danger-600)" %> Complet</span>
+                <% else %>
+                  <span class="flex-shrink-0 font-semibold normal-case tracking-normal text-sage-700">Il reste de la place</span>
+                <% end %>
+              </span>
+              <span class="flex items-center gap-2">
+                <span class="h-2 flex-1 overflow-hidden rounded-full bg-flour-300">
+                  <span class="block h-full rounded-full <%= bar_color %>" style="width: <%= fill_pct %>%"></span>
+                </span>
+                <span class="min-w-8 text-right text-[13px] font-semibold text-ink-700"><%= fill_pct %>%</span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+      <p class="mt-3 text-sm text-ink-500">
+        <%= link_to "Planifie tes commandes pour les jours de cuisson suivants", calendar_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>
+      </p>
     </div>
+  <% elsif @bake_day %>
+    <p class="mt-2 text-sm text-ink-700">
+      Retrait le <span class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@bake_day.baked_on, format: "%A %-d %B %Y") } %></span>
+    </p>
   <% end %>
 </div>
 
+<% if @cart.empty? %>
+  <div class="rounded-lg border border-flour-300 bg-warm-white py-16 text-center shadow-xs">
+    <div class="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-ember-100 text-ember-600">
+      <%= lucide "shopping-basket", size: 26, color: "var(--ember-600)" %>
+    </div>
+    <h2 class="mb-3 font-script text-3xl font-bold text-ink-900">Ton panier est vide</h2>
+    <p class="mb-8 text-ink-500">Découvre nos pains et pâtisseries artisanales.</p>
+    <%= link_to "Voir le catalogue", catalog_path, class: "inline-flex items-center justify-center rounded-md bg-ember-600 px-6 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500" %>
+  </div>
+<% else %>
+  <div class="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+    <div class="flex flex-col gap-3.5">
+      <% @cart.each do |item| %>
+        <% variant = ProductVariant.find(item["product_variant_id"]) %>
+        <% product = variant.product %>
+        <% qty = item["qty"].to_i %>
+        <% line_total = qty * item["price_cents"].to_i %>
+        <% is_forfait = product&.pizza_party_role_forfait? %>
+        <% is_party = product&.pizza_party_role_party? %>
+        <% if product.nil? %>
+          <div class="flex items-center justify-between rounded-lg border border-flour-300 bg-warm-white p-4 shadow-xs">
+            <div>
+              <p class="text-sm italic text-ink-500">Produit supprimé</p>
+              <p class="text-sm text-ink-700"><%= variant.name %></p>
+            </div>
+            <%= button_to cart_remove_path(item["product_variant_id"]), method: :delete, class: "cursor-pointer text-sm font-semibold text-danger-600 transition hover:text-danger-700" do %>
+              Retirer
+            <% end %>
+          </div>
+        <% else %>
+          <div class="flex items-center gap-4 rounded-lg border border-flour-300 bg-warm-white p-4 shadow-xs">
+            <% image_url = product_background_image(product) %>
+            <% if image_url.present? %>
+              <%= image_tag image_url, alt: product.name, class: "h-[74px] w-[74px] flex-shrink-0 rounded-md object-cover" %>
+            <% else %>
+              <div class="flex h-[74px] w-[74px] flex-shrink-0 items-center justify-center rounded-md bg-flour-200 text-xs font-semibold text-sage-600">Artisan</div>
+            <% end %>
+
+            <div class="flex-1">
+              <h3 class="font-script text-lg font-bold text-ink-900"><%= product.name %></h3>
+              <% if is_party %>
+                <p class="mb-2 text-[13px] text-ink-500"><%= "#{qty} #{qty > 1 ? "personnes" : "personne"}" %></p>
+              <% elsif is_forfait %>
+                <p class="mb-2 text-[13px] text-ink-500">Ajouté automatiquement à ta Pizza party</p>
+              <% else %>
+                <p class="mb-2 text-[13px] text-ink-500"><%= variant.name %></p>
+              <% end %>
+              <% if is_forfait %>
+                <p class="text-[13px] text-ink-500">Forfait unique par commande.</p>
+              <% else %>
+                <div class="flex items-center gap-2.5">
+                  <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border border-flour-400 bg-warm-white text-ink-700 transition hover:bg-flour-100", params: { id: item["product_variant_id"], qty: [ qty - 1, 1 ].max } do %>
+                    <%= lucide "minus", size: 16, color: "var(--ink-700)" %>
+                  <% end %>
+                  <span class="min-w-6 text-center text-sm font-semibold text-ink-900"><%= qty %></span>
+                  <%= button_to cart_update_path, method: :patch, form_class: "flex", class: "inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border border-flour-400 bg-warm-white text-ink-700 transition hover:bg-flour-100", params: { id: item["product_variant_id"], qty: qty + 1 } do %>
+                    <%= lucide "plus", size: 16, color: "var(--ink-700)" %>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="text-right">
+              <div class="<%= "mb-2.5" unless is_forfait %> text-base font-bold text-ink-900">
+                <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
+              </div>
+              <% unless is_forfait %>
+                <%= button_to cart_remove_path(item["product_variant_id"]), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "cursor-pointer text-[13px] font-semibold text-danger-600 transition hover:text-danger-700" do %>
+                  Retirer
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <aside class="flex flex-col gap-4 self-start lg:sticky lg:top-6">
+      <% if phone_verified? && @phone_e164.present? %>
+        <div class="rounded-lg border border-flour-300 bg-warm-white p-5 shadow-xs">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sage-100 text-sage-700">
+              <%= lucide "check", size: 18, color: "var(--sage-600)" %>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-ink-900">Connecté avec</p>
+              <p class="text-sm text-ink-500"><%= @phone_e164 %></p>
+            </div>
+          </div>
+          <%= button_to cart_logout_path, method: :delete, class: "cursor-pointer whitespace-nowrap text-sm font-medium text-ink-500 transition hover:text-ink-700 hover:underline" do %>
+            Se déconnecter
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+        <div class="px-5 pb-3 pt-4">
+          <h2 class="font-script text-2xl font-bold text-ink-900">Récapitulatif</h2>
+          <p class="mt-0.5 text-sm text-ink-500">Vérifie tes articles avant de passer commande.</p>
+        </div>
+        <div class="px-5 pb-5 pt-1">
+          <dl class="space-y-2 text-sm text-ink-700">
+            <div class="flex justify-between">
+              <dt>Sous-total</dt>
+              <dd class="font-medium text-ink-900"><%= number_to_currency(@subtotal / 100.0, unit: "€", separator: ",", delimiter: "") %></dd>
+            </div>
+            <% if @discount_cents > 0 %>
+              <div class="flex justify-between text-success-700">
+                <dt>Remise<% if @customer&.effective_discount_percent.to_i.positive? %> (<%= @customer.effective_discount_percent %>%)<% end %></dt>
+                <dd class="font-medium">-<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></dd>
+              </div>
+            <% end %>
+          </dl>
+          <div class="my-3 h-px bg-flour-300"></div>
+          <div class="flex items-center justify-between text-lg font-bold text-ink-900">
+            <span>Total</span>
+            <span><%= number_to_currency(@total / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+          </div>
+          <%= link_to "Valider la commande", new_checkout_path, class: "mt-4 inline-flex w-full items-center justify-center rounded-md bg-ember-600 px-6 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500" %>
+          <%= link_to "Continuer tes achats", catalog_path, class: "mt-3 inline-flex w-full items-center justify-center text-sm font-semibold text-ember-600 hover:text-ember-500" %>
+        </div>
+      </div>
+    </aside>
+  </div>
+<% end %>
+
 <script>
+  // Mise à jour AJAX du jour de cuisson sélectionné (l'état visuel est géré en CSS via has-[:checked]).
   (function() {
-    // Fonction pour mettre à jour les styles en fonction de l'état des radio buttons
-    function updateStyles() {
-      const radioButtons = document.querySelectorAll('input[name="bake_day_id"]');
-      radioButtons.forEach(function(radio) {
-        const label = radio.closest('label');
-        if (!label) return;
-        
-        if (radio.checked) {
-          label.classList.remove('border-gray-200', 'hover:border-gray-300');
-          label.classList.add('border-amber-500', 'bg-amber-50');
-        } else {
-          label.classList.remove('border-amber-500', 'bg-amber-50');
-          label.classList.add('border-gray-200', 'hover:border-gray-300');
-        }
-      });
-    }
-    
-    // Fonction pour initialiser la sélection des jours de cuisson
-    function initializeBakeDaySelection() {
-      // Appliquer les styles initiaux
-      updateStyles();
-    }
-    
-    // Gestionnaire d'événement pour le changement de sélection (délégation d'événements)
     function handleBakeDayChange(event) {
       if (event.target && event.target.name === 'bake_day_id' && event.target.checked) {
-        const bakeDayId = event.target.value;
-        
-        // Mettre à jour visuellement les labels
-        updateStyles();
-        
-        // Envoyer la requête AJAX
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        
         fetch('<%= cart_update_bake_day_path %>', {
           method: 'PATCH',
           headers: {
@@ -249,46 +192,22 @@
             'X-CSRF-Token': csrfToken,
             'Accept': 'application/json'
           },
-          body: JSON.stringify({ bake_day_id: bakeDayId }),
+          body: JSON.stringify({ bake_day_id: event.target.value }),
           credentials: 'same-origin'
         })
         .then(function(response) {
-          if (!response.ok) {
-            throw new Error('Erreur lors de la mise à jour');
-          }
+          if (!response.ok) { throw new Error('Erreur lors de la mise à jour'); }
           return response.json();
         })
         .then(function(data) {
-          if (data.success) {
-            // Jour de cuisson mis à jour avec succès
-          } else {
-            throw new Error(data.error || 'Erreur inconnue');
-          }
+          if (!data.success) { throw new Error(data.error || 'Erreur inconnue'); }
         })
         .catch(function(error) {
           console.error('Erreur:', error);
-          // Revenir à l'état précédent en cas d'erreur
           location.reload();
         });
       }
     }
-    
-    // Initialiser au chargement de la page
-    function init() {
-      initializeBakeDaySelection();
-    }
-    
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-    
-    // Utiliser la délégation d'événements au niveau du document (fonctionne avec Turbo)
     document.addEventListener('change', handleBakeDayChange);
-    
-    // Réinitialiser les styles après chaque navigation Turbo
-    document.addEventListener('turbo:load', initializeBakeDaySelection);
-    document.addEventListener('turbo:frame-load', initializeBakeDaySelection);
   })();
 </script>

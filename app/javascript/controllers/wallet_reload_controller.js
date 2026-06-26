@@ -7,6 +7,9 @@ export default class extends Controller {
   connect() {
     this.selectedAmountCents = 0
     this.bindAmountButtons()
+    // Pré-sélectionne le montant marqué data-default (ex. 40 €) au chargement.
+    const def = this.amountBtnTargets.find(b => b.dataset.default !== undefined)
+    if (def) this.selectAmount(parseInt(def.dataset.amount))
   }
 
   bindAmountButtons() {
@@ -28,9 +31,9 @@ export default class extends Controller {
     // Update UI
     this.amountBtnTargets.forEach(btn => {
       if (parseInt(btn.dataset.amount) === amountCents) {
-        btn.classList.add("ring-2", "ring-green-500", "bg-green-50")
+        btn.classList.add("ring-2", "ring-sage-500", "bg-sage-100")
       } else {
-        btn.classList.remove("ring-2", "ring-green-500", "bg-green-50")
+        btn.classList.remove("ring-2", "ring-sage-500", "bg-sage-100")
       }
     })
 

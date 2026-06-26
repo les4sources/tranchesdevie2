@@ -1,29 +1,27 @@
 <% content_for :title, "Recharge confirmée" %>
 
-<div class="w-full max-w-md mx-auto text-center" data-reload-success-page>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-      <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-      </svg>
-    </div>
+<div class="mx-auto w-full max-w-md text-center" data-reload-success-page>
+  <div class="rounded-lg border border-flour-300 bg-warm-white p-8 shadow-sm">
+    <span class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success-100 text-success-600">
+      <%= lucide "check", size: 30, stroke_width: 2.5, color: "var(--success-600)" %>
+    </span>
 
-    <h1 class="text-2xl font-bold text-gray-900 mb-4">Recharge confirmée</h1>
+    <h1 class="mb-4 font-script text-3xl font-bold text-ink-900">Recharge confirmée</h1>
 
     <% if @amount_cents %>
-      <p class="text-gray-600 mb-6">
+      <p class="mb-6 text-ink-700">
         Votre portefeuille a été rechargé de
-        <span class="font-bold text-green-600"><%= number_to_currency(@amount_cents / 100.0, unit: '€', format: '%n %u') %></span>
+        <span class="font-bold text-sage-700"><%= number_to_currency(@amount_cents / 100.0, unit: "€", format: "%n %u") %></span>
       </p>
     <% end %>
 
-    <p class="text-sm text-gray-500 mb-6">
-      Nouveau solde : <span class="font-bold"><%= number_to_currency(@wallet.balance_euros, unit: '€', format: '%n %u') %></span>
+    <p class="mb-6 text-sm text-ink-500">
+      Nouveau solde : <span class="font-bold text-ink-900"><%= number_to_currency(@wallet.balance_euros, unit: "€", format: "%n %u") %></span>
     </p>
 
-    <div class="flex gap-3 justify-center">
-      <%= link_to "Voir mon portefeuille", customers_wallet_path, class: "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" %>
-      <%= link_to "Planifier mes commandes", calendar_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200" %>
+    <div class="flex justify-center gap-3">
+      <%= link_to "Voir mon portefeuille", customers_wallet_path, class: "rounded-md bg-ember-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500" %>
+      <%= link_to "Planifier mes commandes", calendar_path, class: "rounded-md border border-flour-400 bg-warm-white px-4 py-2 text-sm font-semibold text-ink-700 shadow-xs transition hover:bg-warm-white-2" %>
     </div>
   </div>
 </div>

@@ -76,27 +76,48 @@ class CheckoutController < ApplicationController
     result = OtpService.verify_otp(phone_e164, params[:code])
 
     if result[:success]
-      # Trouver ou créer le client
-      customer = Customer.find_or_create_by(phone_e164: phone_e164)
+      # Plus de compte fantôme (cf. cliente absente des « Mangeurs »). L'ancien
+      # `find_or_create_by(phone)` échouait EN SILENCE car `first_name` est
+      # obligatoire : la session passait « vérifiée » avec un `customer_id` nil et
+      # aucun client en base. On réutilise désormais le client existant ; sinon on
+      # le crée DÈS QUE le prénom est disponible (déjà saisi dans le formulaire de
+      # checkout, transmis par le JS). Sans prénom, on ne pose AUCUN customer_id
+      # factice : le compte sera créé à la commande, où le prénom est requis et
+      # l'échec devient explicite.
+      customer = Customer.find_by(phone_e164: phone_e164)
 
-      # Bug historique rendu visible : `first_name` est obligatoire, mais
-      # `find_or_create_by` ne le fournit pas → pour un nouveau numéro le client
-      # N'EST PAS enregistré (validation échouée, aucune exception). La session
-      # passe quand même en « vérifié » (customer_id devient nil), d'où des
-      # clientes vérifiées mais absentes des « Mangeurs ». On le trace.
-      unless customer.persisted?
-        capture_checkout_issue(
-          "otp_customer_not_persisted",
-          level: :warning,
-          extra: { validation_errors: customer.errors.full_messages, phone_suffix: phone_e164.to_s.last(3) }
+      if customer.nil? && params[:first_name].to_s.strip.present?
+        customer = Customer.new(
+          phone_e164: phone_e164,
+          first_name: params[:first_name].to_s.strip,
+          last_name: params[:last_name].presence
         )
+
+        unless customer.save
+          capture_checkout_issue(
+            "otp_customer_create_failed",
+            level: :warning,
+            extra: { validation_errors: customer.errors.full_messages, phone_suffix: phone_e164.to_s.last(3) }
+          )
+          customer = nil
+        end
       end
 
-      # Créer la session client complète
-      session[:customer_id] = customer.id
-      session[:customer_authenticated_at] = Time.current.to_i
       session[:otp_verified] = true
       session[:otp_verified_at] = Time.current.to_i
+
+      if customer&.persisted?
+        session[:customer_id] = customer.id
+        session[:customer_authenticated_at] = Time.current.to_i
+        session[:first_name] = customer.first_name
+        session[:last_name] = customer.last_name
+      else
+        # Prénom pas encore fourni : on NE pose pas de customer_id factice.
+        session[:customer_id] = nil
+        session[:first_name] = params[:first_name].presence
+        session[:last_name] = params[:last_name].presence
+      end
+
       render json: { success: true }
     else
       render json: { success: false, error: result[:error] }, status: :unprocessable_entity

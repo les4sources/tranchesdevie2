@@ -131,7 +131,13 @@ export default class extends Controller {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ code: code })
+        // On transmet le prénom/nom déjà saisis pour créer le compte « Mangeur »
+        // dès la validation du code (plus de compte fantôme côté serveur).
+        body: JSON.stringify({
+          code: code,
+          first_name: document.getElementById('customer_first_name')?.value || '',
+          last_name: document.getElementById('customer_last_name')?.value || ''
+        })
       })
 
       const data = await response.json()

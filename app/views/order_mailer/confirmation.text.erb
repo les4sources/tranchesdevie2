@@ -2,6 +2,10 @@
 Merci <%= @customer.first_name.presence || "" %> !
 
 Ta commande est confirmée.
+<% if @order.requires_invoice? -%>
+
+Aucun paiement en ligne n'est nécessaire : tu recevras une facture pour cette commande.
+<% end -%>
 
 Commande : <%= @order.order_number %>
 À retirer le : <%= I18n.l(@order.bake_day.baked_on, format: :long) %>

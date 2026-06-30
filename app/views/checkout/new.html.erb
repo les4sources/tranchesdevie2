@@ -166,6 +166,26 @@
         </div>
       </div>
 
+      <% if @billable %>
+      <!-- Client facturable (#122) : aucun paiement en ligne, facture à suivre. -->
+      <div id="invoice-order-section">
+        <div class="mb-6 rounded-md border border-sage-300 bg-sage-100 p-4">
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 text-sage-600"><%= lucide "receipt", size: 20, color: "var(--sage-600)" %></span>
+            <div class="text-sm leading-relaxed text-ink-700">
+              <p class="font-semibold text-ink-900">Tu es un client facturable</p>
+              <p class="mt-1">Aucun paiement en ligne n'est nécessaire : tu recevras une <strong>facture</strong> pour cette commande.</p>
+            </div>
+          </div>
+        </div>
+
+        <button id="submit-invoice-order"
+                class="flex h-12 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+          Confirmer la commande
+        </button>
+        <p class="mt-2 text-center text-sm text-ink-500">Tu recevras une facture pour ta commande</p>
+      </div>
+      <% else %>
       <!-- Sélecteur de méthode de paiement -->
       <%# Par défaut, paiement en ligne uniquement. L'option « cash » n'apparaît
           que pour les clients explicitement autorisés par l'admin (#36). %>
@@ -214,6 +234,7 @@
           <p class="mt-2 text-center text-sm text-ink-500">Vous paierez en liquide lors du retrait de votre commande</p>
         </div>
       <% end %>
+      <% end %>
       </div>
     </div>
     <% end %>
@@ -241,6 +262,9 @@
   let elements;
   let stripeInitialized = false;
   let currentPaymentMethod = 'online'; // Par défaut, paiement en ligne (Bancontact)
+  // Client facturable (#122) : aucun paiement en ligne. On n'initialise jamais
+  // Stripe pour lui (sinon un PaymentIntent serait créé à tort).
+  const BILLABLE = <%= @billable ? "true" : "false" %>;
 
   // Initialiser l'état de la méthode de paiement
   function initializePaymentMethodState() {
@@ -350,19 +374,24 @@
     sync();
   }
 
+  // Initialise l'UI de paiement (Stripe / cash). Inopérant pour un client
+  // facturable, qui n'a aucune étape de paiement.
+  function initPaymentUI() {
+    if (BILLABLE) return;
+    initializePaymentMethodState();
+    handlePaymentMethodChange();
+    initStripe();
+  }
+
   // Initialiser au chargement de la page
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-      initializePaymentMethodState();
-      handlePaymentMethodChange();
+      initPaymentUI();
       setupGroupPurchaseToggle();
-      initStripe();
     });
   } else {
-    initializePaymentMethodState();
-    handlePaymentMethodChange();
+    initPaymentUI();
     setupGroupPurchaseToggle();
-    initStripe();
   }
 
   // Reinitialiser lors de la navigation Turbo (Turbo Drive)
@@ -370,9 +399,7 @@
     // Ne reinitialiser que si l'utilisateur est sur la page de paiement
     if (window.location.pathname.includes('/checkout')) {
       stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
-      initializePaymentMethodState();
-      handlePaymentMethodChange();
-      initStripe();
+      initPaymentUI();
     }
   });
 
@@ -542,6 +569,70 @@
     document.addEventListener('DOMContentLoaded', handleCashOrderSubmission);
   } else {
     handleCashOrderSubmission();
+  }
+
+  // Gérer la soumission de commande facturable (#122) : aucun paiement en ligne.
+  function handleInvoiceOrderSubmission() {
+    const submitInvoiceButton = document.getElementById('submit-invoice-order');
+    if (!submitInvoiceButton) return;
+
+    submitInvoiceButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      // Vérifier que les informations client sont remplies
+      const firstName = document.getElementById('customer_first_name')?.value;
+      if (!firstName || firstName.trim() === '' || firstName.trim() === 'Client') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      const lastName = document.getElementById('customer_last_name')?.value;
+      if (!lastName || lastName.trim() === '') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      submitInvoiceButton.disabled = true;
+      submitInvoiceButton.textContent = 'Traitement...';
+
+      try {
+        const response = await fetch('<%= create_invoice_order_checkout_index_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<%= form_authenticity_token %>'
+          },
+          body: JSON.stringify({
+            first_name: document.getElementById('customer_first_name')?.value || '',
+            last_name: document.getElementById('customer_last_name')?.value || '',
+            email: document.getElementById('customer_email')?.value || '',
+            group_name: groupNameValue()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.location.href = '<%= success_checkout_index_url %>?order_token=' + data.order_token;
+        } else {
+          alert(data.error || 'Erreur lors de la création de la commande');
+          submitInvoiceButton.disabled = false;
+          submitInvoiceButton.textContent = 'Confirmer la commande';
+        }
+      } catch (error) {
+        console.error("Erreur lors de la création de la commande facturable :", error);
+        alert('Erreur de connexion. Veuillez réessayer.');
+        submitInvoiceButton.disabled = false;
+        submitInvoiceButton.textContent = 'Confirmer la commande';
+      }
+    });
+  }
+
+  // Initialiser la gestion de la commande facturable
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handleInvoiceOrderSubmission);
+  } else {
+    handleInvoiceOrderSubmission();
   }
 <% end %>
 

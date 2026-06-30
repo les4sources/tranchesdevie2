@@ -122,3 +122,55 @@ RSpec.describe OrderCreationService do
     expect(order.group_name).to be_nil
   end
 end
+
+# #122 : commande facturable (client `billable`) — pas de paiement en ligne.
+RSpec.describe OrderCreationService do
+  let(:customer) { create(:customer, billable: true) }
+  let(:bake_day) { create(:bake_day, :can_order) }
+  let(:variant) { create(:product_variant) }
+  let(:cart_items) { [ { "product_variant_id" => variant.id, "qty" => 1 } ] }
+
+  def build_service(payment_method:)
+    described_class.new(
+      customer: customer,
+      bake_day: bake_day,
+      cart_items: cart_items,
+      payment_method: payment_method,
+      skip_capacity_check: true
+    )
+  end
+
+  it "creates an unpaid order flagged requires_invoice for the invoice method" do
+    order = build_service(payment_method: "invoice").call
+
+    expect(order).to be_a(Order)
+    expect(order.status).to eq("unpaid")
+    expect(order.requires_invoice).to be(true)
+  end
+
+  it "does not flag requires_invoice for cash orders" do
+    order = build_service(payment_method: "cash").call
+
+    expect(order.status).to eq("unpaid")
+    expect(order.requires_invoice).to be(false)
+  end
+
+  it "does not flag requires_invoice for online orders" do
+    order = build_service(payment_method: "online").call
+
+    expect(order.status).to eq("pending")
+    expect(order.requires_invoice).to be(false)
+  end
+
+  it "still enforces capacity checks for invoice orders" do
+    allow_any_instance_of(BakeCapacityService)
+      .to receive(:cart_fits?).and_return({ fits: false, errors: [ "Four : capacité dépassée" ] })
+
+    service = described_class.new(
+      customer: customer, bake_day: bake_day, cart_items: cart_items, payment_method: "invoice"
+    )
+
+    expect(service.call).to be false
+    expect(service.errors.join).to include("capacité dépassée")
+  end
+end

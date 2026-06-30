@@ -6,7 +6,11 @@ class SmsService
   def self.send_confirmation(order)
     return false unless order.customer.sms_enabled?
 
-    message = "Ta commande chez Tranches de Vie est confirmée. Merci !"
+    message = if order.requires_invoice?
+                "Ta commande chez Tranches de Vie est confirmée. Tu recevras une facture pour cette commande. Merci !"
+    else
+                "Ta commande chez Tranches de Vie est confirmée. Merci !"
+    end
     send_sms(
       to: order.customer.phone_e164,
       body: message,

@@ -4,8 +4,8 @@ class CheckoutController < ApplicationController
   # Garde-fou (#68) : on resynchronise la ligne forfait Pizza party AVANT de
   # calculer le total / créer le PaymentIntent ou la commande, au cas où le
   # panier aurait été modifié hors des actions du CartController. Idempotent.
-  before_action :sync_pizza_party_forfait!, only: [ :new, :create_payment_intent, :create_cash_order ]
-  before_action :ensure_cutoff_not_passed, only: [ :new, :create_payment_intent, :create_cash_order ]
+  before_action :sync_pizza_party_forfait!, only: [ :new, :create_payment_intent, :create_cash_order, :create_invoice_order ]
+  before_action :ensure_cutoff_not_passed, only: [ :new, :create_payment_intent, :create_cash_order, :create_invoice_order ]
 
   def new
     @cart = session[:cart] || []
@@ -30,6 +30,9 @@ class CheckoutController < ApplicationController
     # Paiement en ligne par défaut ; le cash n'est proposé qu'aux clients
     # explicitement autorisés par l'admin (#36).
     @cash_payment_allowed = @customer&.cash_payment_allowed? || false
+    # Clients facturables (épiceries, points de dépôt, pros) : aucun paiement en
+    # ligne, ils reçoivent une facture (#122). Ce flux prime sur le cash.
+    @billable = @customer&.billable? || false
   end
 
   def verify_phone
@@ -290,6 +293,130 @@ class CheckoutController < ApplicationController
     }
   rescue StandardError => e
     Rails.logger.error("Error creating cash order: #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
+    Sentry.capture_exception(e) if defined?(Sentry)
+    render json: { success: false, error: "Une erreur est survenue lors de la création de la commande" }, status: :internal_server_error
+  end
+
+  # Commande d'un client facturable (#122) : aucun paiement en ligne. La commande
+  # est créée en statut `unpaid` avec `requires_invoice: true` ; le client recevra
+  # une facture (gérée ailleurs dans l'admin). Calqué sur `create_cash_order`.
+  def create_invoice_order
+    unless phone_verified? || customer_signed_in?
+      render json: { success: false, error: "Phone verification required" }, status: :unauthorized
+      return
+    end
+
+    # Parse JSON body
+    begin
+      request.body.rewind
+      json_params = JSON.parse(request.body.read)
+    rescue JSON::ParserError
+      json_params = {}
+    end
+
+    # Store customer info in session if provided
+    if json_params["first_name"].present?
+      session[:first_name] = json_params["first_name"]
+    end
+    if json_params["last_name"].present?
+      session[:last_name] = json_params["last_name"]
+    end
+    if json_params["email"].present?
+      session[:email] = json_params["email"]
+    end
+
+    phone_e164 = if customer_signed_in?
+                   current_customer.phone_e164
+    else
+                   session[:phone_e164]
+    end
+
+    unless phone_e164 && session[:bake_day_id] && session[:cart]&.any?
+      render json: { success: false, error: "Informations manquantes" }, status: :unprocessable_entity
+      return
+    end
+
+    # Utiliser le client connecté si disponible, sinon trouver ou créer
+    if customer_signed_in?
+      customer = current_customer
+
+      update_attrs = {}
+      update_attrs[:first_name] = session[:first_name] if session[:first_name].present?
+      update_attrs[:last_name] = session[:last_name] if session[:last_name].present?
+      update_attrs[:email] = session[:email] if session[:email].present?
+
+      customer.update(update_attrs) if update_attrs.any?
+    else
+      customer = Customer.find_or_create_by(phone_e164: phone_e164)
+
+      if customer.new_record?
+        customer.assign_attributes(
+          first_name: session[:first_name].presence,
+          last_name: session[:last_name].presence,
+          email: session[:email].presence
+        )
+        customer.save!
+      elsif session[:first_name].present? || session[:last_name].present? || session[:email].present?
+        customer.update(
+          first_name: session[:first_name].presence || customer.first_name,
+          last_name: session[:last_name].presence || customer.last_name,
+          email: session[:email].presence || customer.email
+        )
+      end
+    end
+
+    # Garde-fou serveur (#122) : la commande facturée hors-ligne n'est possible que
+    # pour les clients explicitement marqués `billable`. On ne se fie pas au seul
+    # masquage côté vue (page périmée, requête forgée, etc.).
+    unless customer.billable?
+      render json: { success: false, error: "Le paiement en ligne est requis pour cette commande" }, status: :forbidden
+      return
+    end
+
+    bake_day = BakeDay.find_by(id: session[:bake_day_id])
+    unless bake_day
+      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+      return
+    end
+
+    cart_items = session[:cart] || []
+
+    service = OrderCreationService.new(
+      customer: customer,
+      bake_day: bake_day,
+      cart_items: cart_items,
+      payment_method: "invoice",
+      group_name: json_params["group_name"]
+    )
+
+    order = service.call
+
+    unless order
+      render json: { success: false, error: service.errors.join(", ") }, status: :unprocessable_entity
+      return
+    end
+
+    # Notifications : SMS + email de confirmation mentionnant la facture à venir.
+    SmsService.send_confirmation(order)
+    OrderNotificationService.send_confirmation(order)
+
+    # Clear cart and session data
+    session[:cart] = []
+    session[:bake_day_id] = nil
+    session[:phone_e164] = nil
+    session[:otp_verified] = false
+    session[:otp_verified_at] = nil
+    session[:first_name] = nil
+    session[:last_name] = nil
+    session[:email] = nil
+
+    render json: {
+      success: true,
+      order_token: order.public_token
+    }
+  rescue StandardError => e
+    Rails.logger.error("Error creating invoice order: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
     Sentry.capture_exception(e) if defined?(Sentry)
     render json: { success: false, error: "Une erreur est survenue lors de la création de la commande" }, status: :internal_server_error

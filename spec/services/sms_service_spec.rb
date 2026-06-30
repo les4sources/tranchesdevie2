@@ -19,6 +19,34 @@ RSpec.describe SmsService do
     )
   end
 
+  describe '.send_confirmation' do
+    it 'mentions the upcoming invoice for an order that requires one (#122)' do
+      order.update!(requires_invoice: true)
+
+      expect(HTTParty).to receive(:post).with(
+        SmsService::SMSTOOLS_API_URL,
+        hash_including(body: a_string_matching(/facture/i))
+      ).and_return(double(success?: true, code: 200, :[] => 'msg_123', body: '{}'))
+
+      SmsService.send_confirmation(order)
+    end
+
+    it 'uses the plain confirmation message for a regular order' do
+      expect(HTTParty).to receive(:post).with(
+        SmsService::SMSTOOLS_API_URL,
+        hash_including(body: a_string_matching(/confirmée/i))
+      ).and_return(double(success?: true, code: 200, :[] => 'msg_123', body: '{}'))
+
+      SmsService.send_confirmation(order)
+      expect(SmsMessage.last.body).not_to match(/facture/i)
+    end
+
+    it 'returns false if customer has SMS disabled' do
+      customer.update!(sms_opt_out: true)
+      expect(SmsService.send_confirmation(order)).to be false
+    end
+  end
+
   describe '.send_planned_order_confirmed' do
     it 'sends an SMS with the debited amount' do
       expect(HTTParty).to receive(:post).with(

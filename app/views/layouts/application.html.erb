@@ -21,6 +21,8 @@
     <!-- Charger Stripe.js globalement pour eviter les erreurs "Stripe is not defined" avec Turbo -->
     <script src="https://js.stripe.com/v3/"></script>
 
+    <%= render "layouts/sentry_browser" %>
+
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>

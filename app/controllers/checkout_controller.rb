@@ -79,6 +79,19 @@ class CheckoutController < ApplicationController
       # Trouver ou créer le client
       customer = Customer.find_or_create_by(phone_e164: phone_e164)
 
+      # Bug historique rendu visible : `first_name` est obligatoire, mais
+      # `find_or_create_by` ne le fournit pas → pour un nouveau numéro le client
+      # N'EST PAS enregistré (validation échouée, aucune exception). La session
+      # passe quand même en « vérifié » (customer_id devient nil), d'où des
+      # clientes vérifiées mais absentes des « Mangeurs ». On le trace.
+      unless customer.persisted?
+        capture_checkout_issue(
+          "otp_customer_not_persisted",
+          level: :warning,
+          extra: { validation_errors: customer.errors.full_messages, phone_suffix: phone_e164.to_s.last(3) }
+        )
+      end
+
       # Créer la session client complète
       session[:customer_id] = customer.id
       session[:customer_authenticated_at] = Time.current.to_i
@@ -115,8 +128,16 @@ class CheckoutController < ApplicationController
       session[:email] = json_params["email"]
     end
 
-    @bake_day = BakeDay.find(session[:bake_day_id])
+    @bake_day = BakeDay.find_by(id: session[:bake_day_id])
     @cart = session[:cart] || []
+
+    # Jusqu'ici `BakeDay.find` levait un 500 si la session avait perdu le jour ;
+    # on rend l'erreur explicite et tracée plutôt que muette.
+    unless @bake_day
+      capture_checkout_issue("bake_day_missing", level: :warning)
+      render json: { error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+      return
+    end
 
     customer = find_or_create_customer(json_params)
 
@@ -134,6 +155,9 @@ class CheckoutController < ApplicationController
     order = service.call
 
     unless order
+      # Rejet de validation/capacité : c'était un 422 muet (aucune trace Sentry).
+      # On le remonte avec le panier + le jour pour pouvoir diagnostiquer.
+      capture_checkout_issue("order_creation_rejected", level: :warning, extra: { service_errors: service.errors })
       render json: { error: service.errors.join(". ") }, status: :unprocessable_entity
       return
     end
@@ -156,6 +180,7 @@ class CheckoutController < ApplicationController
       })
     rescue Stripe::StripeError => e
       order.destroy # libère la capacité réservée si Stripe échoue
+      capture_checkout_issue("stripe_payment_intent_failed", exception: e)
       render json: { error: e.message }, status: :unprocessable_entity
       return
     end
@@ -167,6 +192,15 @@ class CheckoutController < ApplicationController
       client_secret: payment_intent.client_secret,
       payment_intent_id: payment_intent.id
     }
+  rescue ActiveRecord::RecordInvalid => e
+    # Échec d'enregistrement du client (first_name vide, e-mail en doublon, …) :
+    # c'était un 500 muet. On le remonte avec les erreurs de validation et on
+    # répond proprement au lieu de planter le tunnel.
+    capture_checkout_issue("customer_save_failed", exception: e, extra: { validation_errors: e.record&.errors&.full_messages })
+    render json: { error: "Impossible d'enregistrer vos informations. Vérifie ton nom et ton e-mail." }, status: :unprocessable_entity
+  rescue StandardError => e
+    capture_checkout_issue("create_payment_intent_unexpected_error", exception: e)
+    render json: { error: "Une erreur est survenue. Merci de réessayer." }, status: :internal_server_error
   end
 
   def create_cash_order
@@ -365,6 +399,44 @@ class CheckoutController < ApplicationController
   # Resynchronise la ligne forfait Pizza party (#68). Idempotent.
   def sync_pizza_party_forfait!
     session[:cart] = PizzaPartyForfaitService.sync(session[:cart])
+  end
+
+  # Journalise + remonte sur Sentry une anomalie du tunnel de paiement EN LIGNE.
+  # Ce tunnel était jusqu'ici muet : un rejet de validation/capacité ou un échec
+  # Stripe ne faisait qu'un `render json`, sans aucune trace. On y attache un
+  # contexte exploitable (panier, jour, client) sans PII (téléphone réduit au
+  # suffixe). `exception:` → capture_exception ; sinon capture_message.
+  def capture_checkout_issue(label, level: :error, exception: nil, extra: {})
+    context = checkout_sentry_context.merge(extra)
+    Rails.logger.error("[checkout] #{label} — #{context.inspect}")
+    return unless defined?(Sentry)
+
+    Sentry.with_scope do |scope|
+      scope.set_context("checkout", context)
+      scope.set_tags(checkout_step: label)
+      if exception
+        Sentry.capture_exception(exception)
+      else
+        Sentry.capture_message("[checkout] #{label}", level: level)
+      end
+    end
+  rescue StandardError => e
+    # L'observabilité ne doit jamais casser le tunnel.
+    Rails.logger.error("[checkout] capture_checkout_issue a échoué: #{e.message}")
+  end
+
+  def checkout_sentry_context
+    cart = session[:cart] || []
+    phone = (session[:phone_e164] || current_customer&.phone_e164).to_s
+    {
+      bake_day_id: session[:bake_day_id],
+      cart_variant_ids: cart.map { |item| item["product_variant_id"] },
+      cart_size: cart.sum { |item| item["qty"].to_i },
+      customer_id: session[:customer_id],
+      customer_signed_in: customer_signed_in?,
+      phone_present: phone.present?,
+      phone_suffix: phone.last(3)
+    }
   end
 
   def find_order_by_payment_intent(payment_intent_id)

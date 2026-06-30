@@ -70,6 +70,38 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
     end
   end
 
+  # Le tunnel en ligne était muet sur Sentry : ces échecs ne faisaient qu'un
+  # render JSON. On vérifie qu'ils sont désormais remontés avec un contexte.
+  describe 'remontée Sentry des échecs du tunnel en ligne' do
+    it 'trace un rejet de capacité (order_creation_rejected) et répond 422' do
+      allow_any_instance_of(BakeCapacityService)
+        .to receive(:cart_fits?).and_return({ fits: false, errors: [ 'Four : capacité dépassée' ] })
+      expect_any_instance_of(CheckoutController)
+        .to receive(:capture_checkout_issue).with('order_creation_rejected', hash_including(:level, :extra)).and_call_original
+
+      create_payment_intent
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it 'trace un échec Stripe (stripe_payment_intent_failed)' do
+      allow(Stripe::PaymentIntent).to receive(:create).and_raise(Stripe::StripeError.new('card_declined'))
+      expect_any_instance_of(CheckoutController)
+        .to receive(:capture_checkout_issue).with('stripe_payment_intent_failed', hash_including(:exception)).and_call_original
+
+      create_payment_intent
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it 'répond 422 tracé (et non plus 500 muet) quand le jour de cuisson a disparu' do
+      bake_day.destroy
+      expect_any_instance_of(CheckoutController)
+        .to receive(:capture_checkout_issue).with('bake_day_missing', hash_including(:level)).and_call_original
+
+      create_payment_intent
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
   describe 'GET /checkout/new — méthode de paiement (#36)' do
     it 'ne propose pas l\'option cash par défaut (paiement en ligne uniquement)' do
       get '/checkout/new'

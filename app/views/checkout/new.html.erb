@@ -412,6 +412,12 @@
     .then(data => {
       if (data.error) {
         console.error("Erreur d'intention de paiement :", data.error);
+        if (window.Sentry) {
+          window.Sentry.captureMessage('[checkout] create_payment_intent_error', {
+            level: 'error',
+            extra: { step: 'create_payment_intent', error: data.error }
+          });
+        }
         alert('Erreur: ' + data.error);
         return;
       }
@@ -459,6 +465,21 @@
         });
 
         if (error) {
+          // LE "moment du paiement" : échec de confirmPayment (carte/Bancontact/
+          // 3DS/réseau). Purement client-side → invisible jusqu'ici. On le remonte.
+          if (window.Sentry) {
+            window.Sentry.captureMessage('[checkout] confirm_payment_failed', {
+              level: 'error',
+              extra: {
+                step: 'confirmPayment',
+                message: error.message,
+                code: error.code,
+                decline_code: error.decline_code,
+                type: error.type,
+                payment_intent_id: paymentIntentId
+              }
+            });
+          }
           const paymentMessage = document.getElementById('payment-message');
           if (paymentMessage) {
             paymentMessage.textContent = error.message;
@@ -471,6 +492,9 @@
     })
     .catch(error => {
       console.error("Erreur lors de l'initialisation du paiement :", error);
+      if (window.Sentry) {
+        window.Sentry.captureException(error, { tags: { step: 'init_payment' } });
+      }
       const paymentMessage = document.getElementById('payment-message');
       if (paymentMessage) {
         paymentMessage.textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;

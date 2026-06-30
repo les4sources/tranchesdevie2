@@ -15,7 +15,11 @@
         Ta commande <strong class="font-semibold text-ink-900"><%= @order.order_number %></strong> a été confirmée.
       </p>
 
-      <% if @order.unpaid? %>
+      <% if @order.requires_invoice? %>
+        <p class="mb-4 text-ink-700">
+          Aucun paiement en ligne n'est nécessaire : tu recevras une facture pour cette commande.
+        </p>
+      <% elsif @order.unpaid? %>
         <p class="mb-4 text-ink-700">
           Tu paieras en liquide lors du retrait de ta commande.
         </p>

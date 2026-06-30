@@ -27,6 +27,7 @@ Rails.application.routes.draw do
       post :verify_otp
       post :create_payment_intent
       post :create_cash_order
+      post :create_invoice_order
       get :success
     end
   end

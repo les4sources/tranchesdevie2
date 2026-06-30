@@ -10,6 +10,7 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
 
   before do
     allow(OrderNotificationService).to receive(:send_confirmation)
+    allow(SmsService).to receive(:send_confirmation)
 
     # Authentifier le client (stub OTP) puis garnir le panier.
     allow(OtpService).to receive(:send_code).and_return({ success: true, channel: :sms })
@@ -112,6 +113,89 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
       it 'crée une commande unpaid' do
         expect { create_cash_order }.to change { Order.where(status: :unpaid).count }.by(1)
         expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
+  describe 'Client facturable (#122)' do
+    describe 'GET /checkout/new' do
+      context 'pour un client non facturable' do
+        it 'n\'affiche pas le callout facture et garde le sélecteur de paiement' do
+          get '/checkout/new'
+
+          expect(response).to have_http_status(:ok)
+          expect(response.body).not_to include('id="submit-invoice-order"')
+          expect(response.body[%r{<input[^>]*value="online"[^>]*>}]).to include('checked')
+        end
+      end
+
+      context 'pour un client facturable' do
+        let(:customer) { create(:customer, first_name: 'Léa', billable: true) }
+
+        it 'affiche le callout facture + bouton de confirmation, sans sélecteur de paiement' do
+          get '/checkout/new'
+
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include('id="submit-invoice-order"')
+          expect(response.body).to include('facture')
+          # Aucun sélecteur de paiement (radios) ni Payment Element Stripe visible.
+          expect(response.body[%r{<input[^>]*name="payment_method"[^>]*>}]).to be_nil
+          expect(response.body).not_to include('id="submit-cash-order"')
+        end
+      end
+
+      context 'pour un client à la fois facturable et autorisé au cash' do
+        let(:customer) { create(:customer, first_name: 'Léa', billable: true, cash_payment_allowed: true) }
+
+        it 'fait primer le flux facturable (pas d\'option cash)' do
+          get '/checkout/new'
+
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include('id="submit-invoice-order"')
+          expect(response.body).not_to include('id="submit-cash-order"')
+          expect(response.body[%r{<input[^>]*value="cash"[^>]*>}]).to be_nil
+        end
+      end
+    end
+
+    describe 'POST /checkout/create_invoice_order' do
+      def create_invoice_order(body = { first_name: 'Léa' })
+        post '/checkout/create_invoice_order', params: body.to_json,
+             headers: { 'CONTENT_TYPE' => 'application/json' }
+      end
+
+      it 'refuse la commande facturable pour un client non facturable (403)' do
+        expect { create_invoice_order }.not_to change(Order, :count)
+        expect(response).to have_http_status(:forbidden)
+      end
+
+      context 'pour un client facturable' do
+        let(:customer) { create(:customer, first_name: 'Léa', billable: true) }
+
+        it 'crée une commande unpaid + requires_invoice et renvoie le token' do
+          expect { create_invoice_order }.to change { Order.where(status: :unpaid, requires_invoice: true).count }.by(1)
+          expect(response).to have_http_status(:ok)
+
+          order = Order.order(:created_at).last
+          expect(JSON.parse(response.body)['order_token']).to eq(order.public_token)
+          expect(order.requires_invoice).to be(true)
+        end
+
+        it 'déclenche les notifications SMS et email' do
+          expect(SmsService).to receive(:send_confirmation)
+          expect(OrderNotificationService).to receive(:send_confirmation)
+
+          create_invoice_order
+        end
+      end
+
+      context 'pour un client facturable ET autorisé au cash' do
+        let(:customer) { create(:customer, first_name: 'Léa', billable: true, cash_payment_allowed: true) }
+
+        it 'crée une commande facturable (priorité facture sur cash)' do
+          expect { create_invoice_order }.to change { Order.where(requires_invoice: true).count }.by(1)
+          expect(response).to have_http_status(:ok)
+        end
       end
     end
   end

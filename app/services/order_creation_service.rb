@@ -15,7 +15,9 @@ class OrderCreationService
   def call
     return false unless valid?
 
-    initial_status = @payment_method == "cash" ? :unpaid : :pending
+    # Le cash et la facture (clients facturables) ne sont pas encaissés en ligne :
+    # la commande est valide mais en attente de paiement hors-ligne (#36, #122).
+    initial_status = %w[cash invoice].include?(@payment_method) ? :unpaid : :pending
 
     ActiveRecord::Base.transaction do
       # Advisory lock on bake_day to prevent race conditions
@@ -36,6 +38,7 @@ class OrderCreationService
         total_cents: calculate_total,
         payment_intent_id: @payment_intent_id,
         status: initial_status,
+        requires_invoice: @payment_method == "invoice",
         group_name: @group_name
       )
 

@@ -11,7 +11,7 @@
 class ExpireStalePendingOrdersJob < ApplicationJob
   queue_as :default
 
-  GRACE_PERIOD = 30.minutes
+  GRACE_PERIOD = 15.minutes
 
   # Statuts Stripe considérés comme non aboutis (la commande peut être supprimée).
   ABANDONED_PI_STATUSES = %w[requires_payment_method requires_confirmation requires_action canceled].freeze

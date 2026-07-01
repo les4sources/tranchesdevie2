@@ -49,6 +49,27 @@ RSpec.describe ExpireStalePendingOrdersJob, type: :job do
     expect(order.reload.status).to eq("pending")
   end
 
+  # Grâce raccourcie à 15 min (#124) : une réservation de 16 min est désormais
+  # traitée (elle ne l'aurait pas été sous l'ancien délai de 30 min).
+  it "processes an abandoned reservation older than the 15-minute grace" do
+    order = create(:order, :pending, :with_items, customer: customer, bake_day: bake_day, payment_intent_id: "pi_16min")
+    order.update_column(:created_at, 16.minutes.ago)
+    stub_stripe_payment_intent_retrieve(id: "pi_16min", status: "requires_payment_method")
+    allow(Stripe::PaymentIntent).to receive(:cancel).with("pi_16min")
+
+    expect { described_class.new.perform }.to change { Order.exists?(order.id) }.from(true).to(false)
+  end
+
+  it "leaves a reservation younger than the 15-minute grace" do
+    order = create(:order, :pending, :with_items, customer: customer, bake_day: bake_day, payment_intent_id: "pi_10min")
+    order.update_column(:created_at, 10.minutes.ago)
+    expect(Stripe::PaymentIntent).not_to receive(:retrieve)
+
+    described_class.new.perform
+
+    expect(order.reload.status).to eq("pending")
+  end
+
   it "ignores orders without a payment intent (e.g. cash/unpaid)" do
     order = create(:order, :unpaid, :with_items, customer: customer, bake_day: bake_day, payment_intent_id: nil)
     order.update_column(:created_at, 2.hours.ago)

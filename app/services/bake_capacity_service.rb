@@ -41,7 +41,11 @@ class BakeCapacityService
 
   # Check if adding cart_items would exceed capacity
   # cart_items: array of { variant_id:, qty: } or objects responding to product_variant_id and qty
-  def cart_fits?(cart_items)
+  # exclude_order_id: exclut l'usage déjà réservé par une commande donnée (utile lors de
+  # la mise à jour d'une commande pending existante, pour ne pas double-compter sa propre
+  # réservation).
+  def cart_fits?(cart_items, exclude_order_id: nil)
+    @exclude_order_id = exclude_order_id
     errors = []
     additional = compute_additional(cart_items)
 
@@ -75,13 +79,16 @@ class BakeCapacityService
 
   # All breads order_items for this bake_day (excluding cancelled)
   def breads_order_items
-    @breads_order_items ||= OrderItem
-      .joins(order: [], product_variant: :product)
-      .where(orders: { bake_day_id: bake_day.id })
-      .where.not(orders: { status: :cancelled })
-      .where(products: { category: :breads })
-      .includes(product_variant: { product: { product_flours: :flour } })
-      .to_a
+    @breads_order_items ||= begin
+      scope = OrderItem
+        .joins(order: [], product_variant: :product)
+        .where(orders: { bake_day_id: bake_day.id })
+        .where.not(orders: { status: :cancelled })
+        .where(products: { category: :breads })
+        .includes(product_variant: { product: { product_flours: :flour } })
+      scope = scope.where.not(orders: { id: @exclude_order_id }) if @exclude_order_id
+      scope.to_a
+    end
   end
 
   def mold_usage

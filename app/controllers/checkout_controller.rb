@@ -162,6 +162,15 @@ class CheckoutController < ApplicationController
 
     customer = find_or_create_customer(json_params)
 
+    # Idempotence (#124) : le JS rappelle ce endpoint à chaque turbo:load sur
+    # /checkout. Plutôt que d'accumuler une commande pending par visite, on
+    # réutilise la commande pending existante (même client + même jour) et on met
+    # son PaymentIntent à jour. Si la réutilisation aboutit, la réponse est déjà
+    # rendue ci-dessous.
+    if (existing = reusable_pending_order(customer)) && reuse_pending_order(existing, json_params)
+      return
+    end
+
     # Réserver la capacité AVANT de prendre l'argent : on crée la commande
     # (statut pending) sous verrou consultatif + contrôle de capacité. Une commande
     # pending compte dans la capacité, donc deux clients ne peuvent pas réserver le
@@ -464,6 +473,79 @@ class CheckoutController < ApplicationController
     return nil unless payment_intent_id.present?
 
     Order.uncached { Order.find_by(payment_intent_id: payment_intent_id) }
+  end
+
+  # Statuts Stripe dans lesquels un PaymentIntent est encore modifiable : on peut
+  # y réutiliser la commande pending et ajuster le montant.
+  REUSABLE_PI_STATUSES = %w[requires_payment_method requires_confirmation requires_action].freeze
+
+  # Statuts « paiement vivant » : en cours (Bancontact) ou déjà abouti. Le PI
+  # n'est plus modifiable, mais la commande existante ne doit surtout PAS être
+  # doublée — on renvoie simplement le client_secret existant pour que le client
+  # reprenne le même flux (Stripe.js le redirige vers success si succeeded).
+  LIVE_PI_STATUSES = %w[processing succeeded].freeze
+
+  # Commande pending réutilisable pour ce client + ce jour (la plus récente).
+  def reusable_pending_order(customer)
+    Order.pending
+         .where(customer: customer, bake_day: @bake_day)
+         .where.not(payment_intent_id: nil)
+         .order(:created_at)
+         .last
+  end
+
+  # Tente de réutiliser une commande pending existante : met à jour ses lignes et
+  # son total pour refléter le panier courant, ajuste le PaymentIntent Stripe si
+  # le montant change, et renvoie son client_secret. Retourne true si la requête a
+  # été traitée (réponse rendue), false pour laisser le flux créer une nouvelle
+  # commande + PI.
+  #
+  # Cas « paiement vivant » (processing/succeeded) : on ne modifie rien et on ne
+  # crée pas de doublon — on renvoie le client_secret existant. Cas « inutilisable »
+  # (canceled) ou erreur Stripe : on retourne false → le flux normal crée une
+  # commande fraîche (choix documenté au #124 : ne jamais bloquer le client, la
+  # commande morte est laissée au job de nettoyage).
+  def reuse_pending_order(order, json_params)
+    payment_intent = Stripe::PaymentIntent.retrieve(order.payment_intent_id)
+
+    unless REUSABLE_PI_STATUSES.include?(payment_intent.status)
+      if LIVE_PI_STATUSES.include?(payment_intent.status)
+        session[:payment_intent_id] = payment_intent.id
+        render json: {
+          client_secret: payment_intent.client_secret,
+          payment_intent_id: payment_intent.id
+        }
+        return true
+      end
+      return false
+    end
+
+    updater = PendingOrderUpdateService.new(order: order, cart_items: @cart, group_name: json_params["group_name"])
+    unless updater.call
+      capture_checkout_issue("pending_order_update_rejected", level: :warning, extra: { service_errors: updater.errors })
+      render json: { error: updater.errors.join(". ") }, status: :unprocessable_entity
+      return true
+    end
+
+    if payment_intent.amount != order.total_cents
+      payment_intent = Stripe::PaymentIntent.update(
+        payment_intent.id,
+        amount: order.total_cents,
+        metadata: { cart_items: @cart.to_json }
+      )
+    end
+
+    session[:payment_intent_id] = payment_intent.id
+    render json: {
+      client_secret: payment_intent.client_secret,
+      payment_intent_id: payment_intent.id
+    }
+    true
+  rescue Stripe::StripeError => e
+    # PI introuvable / non modifiable côté Stripe : on retombe sur la création
+    # d'une nouvelle commande + PI (le flux nominal ci-dessous).
+    capture_checkout_issue("pending_order_reuse_stripe_failed", exception: e)
+    false
   end
 
   def ensure_cart_not_empty

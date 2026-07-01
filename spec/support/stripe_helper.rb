@@ -14,17 +14,33 @@ module StripeHelper
     payment_intent
   end
 
-  def stub_stripe_payment_intent_retrieve(id:, status: 'succeeded', amount: 1000)
+  def stub_stripe_payment_intent_retrieve(id:, status: 'succeeded', amount: 1000, client_secret: 'pi_test_secret_123')
     payment_intent = double(
       'Stripe::PaymentIntent',
       id: id,
       status: status,
       amount: amount,
       currency: 'eur',
+      client_secret: client_secret,
       metadata: {}
     )
 
     allow(Stripe::PaymentIntent).to receive(:retrieve).with(id).and_return(payment_intent)
+    payment_intent
+  end
+
+  def stub_stripe_payment_intent_update(id:, amount:, client_secret: 'pi_test_secret_123')
+    payment_intent = double(
+      'Stripe::PaymentIntent',
+      id: id,
+      status: 'requires_payment_method',
+      amount: amount,
+      currency: 'eur',
+      client_secret: client_secret,
+      metadata: {}
+    )
+
+    allow(Stripe::PaymentIntent).to receive(:update).with(id, anything).and_return(payment_intent)
     payment_intent
   end
 

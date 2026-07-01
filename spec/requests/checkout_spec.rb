@@ -46,6 +46,58 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
     end
   end
 
+  # Idempotence (#124) : le JS rappelle create_payment_intent à chaque turbo:load.
+  # On ne doit pas accumuler une commande pending par visite.
+  context 'idempotence — réutilisation de la commande pending' do
+    before { stub_stripe_payment_intent_create(amount: 550) }
+
+    it 'ne crée pas de doublon et réutilise le même PI quand le panier est identique' do
+      create_payment_intent
+      order = Order.order(:created_at).last
+      pi_id = order.payment_intent_id
+
+      stub_stripe_payment_intent_retrieve(id: pi_id, status: 'requires_payment_method', amount: 550)
+      allow(Stripe::PaymentIntent).to receive(:update)
+
+      expect { create_payment_intent }.not_to change { Order.where(status: :pending).count }
+      expect(Order.where(customer: customer, bake_day: bake_day, status: :pending).count).to eq(1)
+      expect(Stripe::PaymentIntent).not_to have_received(:update)
+      expect(JSON.parse(response.body)['payment_intent_id']).to eq(pi_id)
+    end
+
+    it 'met à jour la commande pending et le montant du PI quand le panier change' do
+      create_payment_intent
+      order = Order.order(:created_at).last
+      pi_id = order.payment_intent_id
+
+      # Le panier passe à 2 unités (1100 cents).
+      post '/cart/add', params: { product_variant_id: variant.id, bake_day_id: bake_day.id, quantity: 1 }
+
+      stub_stripe_payment_intent_retrieve(id: pi_id, status: 'requires_payment_method', amount: 550)
+      stub_stripe_payment_intent_update(id: pi_id, amount: 1100)
+
+      expect { create_payment_intent }.not_to change(Order, :count)
+      order.reload
+      expect(order.total_cents).to eq(1100)
+      expect(order.order_items.sum(:qty)).to eq(2)
+      expect(Stripe::PaymentIntent).to have_received(:update).with(pi_id, hash_including(amount: 1100))
+    end
+
+    it 'ne réutilise pas et ne crée pas de doublon quand le PI est déjà succeeded (paiement vivant)' do
+      create_payment_intent
+      order = Order.order(:created_at).last
+      pi_id = order.payment_intent_id
+
+      stub_stripe_payment_intent_retrieve(id: pi_id, status: 'succeeded', amount: 550)
+      allow(Stripe::PaymentIntent).to receive(:update)
+
+      expect { create_payment_intent }.not_to change(Order, :count)
+      expect(Stripe::PaymentIntent).not_to have_received(:update)
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['payment_intent_id']).to eq(pi_id)
+    end
+  end
+
   context 'when the bake day is full' do
     before do
       allow_any_instance_of(BakeCapacityService)

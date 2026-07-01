@@ -106,6 +106,28 @@ RSpec.describe BakeCapacityService do
       end
     end
 
+    context 'when re-checking capacity for an order being updated (#124)' do
+      let(:oven_capacity_grams) { 6_000 }
+      let!(:order_being_updated) do
+        create(:order, :pending, bake_day: bake_day).tap do |o|
+          create(:order_item, order: o, product_variant: variant, qty: 5) # 5000 g déjà réservés par elle-même
+        end
+      end
+
+      it 'excludes the order own usage so a same-size update still fits' do
+        # Sans exclusion : 5000 (soi-même) + 5000 (panier) = 10 000 > 6000 → rejet à tort.
+        # Avec exclusion : 0 + 5000 = 5000 ≤ 6000 → accepté.
+        result = service.cart_fits?(cart(5), exclude_order_id: order_being_updated.id)
+        expect(result[:fits]).to be true
+      end
+
+      it 'still rejects a genuine over-reservation even when excluding the order' do
+        result = service.cart_fits?(cart(7), exclude_order_id: order_being_updated.id) # 7000 > 6000
+        expect(result[:fits]).to be false
+        expect(result[:errors].join).to include('Four')
+      end
+    end
+
     context 'when an existing order on the bake day is cancelled (ISC-24)' do
       let(:oven_capacity_grams) { 6_000 }
 

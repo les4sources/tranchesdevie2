@@ -1,0 +1,32 @@
+<%# Shim Stripe.js pour les tests système (#126).
+    Remplace le vrai https://js.stripe.com/v3/ afin qu'AUCUN appel réseau ne parte
+    vers Stripe pendant les system specs. Reproduit juste ce que le JS de checkout
+    utilise : Stripe(key).elements({clientSecret}).create('payment').mount(...) et
+    stripe.confirmPayment({confirmParams:{return_url}}) qui se résout sans erreur et
+    déclenche la navigation vers la return_url (comme le vrai redirect Stripe). %>
+<script>
+  window.Stripe = function (publishableKey) {
+    return {
+      elements: function (options) {
+        return {
+          create: function (type) {
+            return {
+              mount: function (selector) {
+                var el = document.querySelector(selector);
+                if (el) { el.setAttribute("data-stripe-mock-mounted", "true"); }
+              },
+              unmount: function () {}
+            };
+          }
+        };
+      },
+      confirmPayment: function (options) {
+        var returnUrl = options && options.confirmParams && options.confirmParams.return_url;
+        return Promise.resolve({}).then(function (result) {
+          if (returnUrl) { window.location.href = returnUrl; }
+          return result;
+        });
+      }
+    };
+  };
+</script>

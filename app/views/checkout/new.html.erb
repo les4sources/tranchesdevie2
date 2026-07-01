@@ -227,6 +227,11 @@
 </div>
 
 <%= javascript_tag do %>
+  // IIFE : garde les déclarations hors du global lexical environment.
+  // Turbo Drive fait document.body.replaceWith() sans recharger le document ;
+  // un `let stripe` top-level survivrait entre visites et lèverait
+  // "Can't create duplicate variable" à la 2e arrivée (WebKit / Chrome iOS).
+  (function() {
   // Attendre que Stripe soit charge avant l'initialisation
   function waitForStripe(callback) {
     if (typeof Stripe !== 'undefined') {
@@ -365,16 +370,21 @@
     initStripe();
   }
 
-  // Reinitialiser lors de la navigation Turbo (Turbo Drive)
-  document.addEventListener('turbo:load', function() {
-    // Ne reinitialiser que si l'utilisateur est sur la page de paiement
-    if (window.location.pathname.includes('/checkout')) {
-      stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
-      initializePaymentMethodState();
-      handlePaymentMethodChange();
-      initStripe();
-    }
-  });
+  // Reinitialiser lors de la navigation Turbo (Turbo Drive).
+  // Verrouillé sur window : le script est ré-exécuté à chaque remplacement de body,
+  // sans ce garde on empilerait un listener turbo:load à chaque navigation.
+  if (!window.__checkoutTurboLoadBound) {
+    window.__checkoutTurboLoadBound = true;
+    document.addEventListener('turbo:load', function() {
+      // Ne reinitialiser que si l'utilisateur est sur la page de paiement
+      if (window.location.pathname.includes('/checkout')) {
+        stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
+        initializePaymentMethodState();
+        handlePaymentMethodChange();
+        initStripe();
+      }
+    });
+  }
 
   function initializePayment() {
     if (!stripe) {
@@ -567,6 +577,7 @@
   } else {
     handleCashOrderSubmission();
   }
+  })(); // fin IIFE
 <% end %>
 
 

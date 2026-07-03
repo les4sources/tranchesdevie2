@@ -120,7 +120,7 @@
                 <%= number_to_currency(line_total / 100.0, unit: "€", separator: ",", delimiter: "") %>
               </div>
               <% unless is_forfait %>
-                <%= button_to cart_remove_path(item["product_variant_id"]), method: :delete, data: { confirm: "Retirer cet article ?" }, class: "cursor-pointer text-[13px] font-semibold text-danger-600 transition hover:text-danger-700" do %>
+                <%= button_to cart_remove_path(item["product_variant_id"]), method: :delete, data: { turbo_confirm: "Retirer cet article ?" }, class: "cursor-pointer text-[13px] font-semibold text-danger-600 transition hover:text-danger-700" do %>
                   Retirer
                 <% end %>
               <% end %>

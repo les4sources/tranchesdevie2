@@ -81,7 +81,7 @@
                 td.px-4.py-3.text-sm = ProductVariantDecorator.decorate(variant).channel_label
                 td.px-4.py-3.text-sm
                   = link_to "Modifier", edit_variant_admin_product_path(@product, variant), class: "text-blue-600 hover:text-blue-800 mr-3"
-                  = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { confirm: "Êtes-vous sûr ?" }, class: "text-red-600 hover:text-red-800 inline", form: { class: "inline" }
+                  = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { turbo_confirm: "Supprimer ce format ? Cette action est définitive." }, class: "text-red-600 hover:text-red-800 inline", form: { class: "inline" }
     - else
       p.text-sm.text-gray-500 Aucune variante pour ce produit
 

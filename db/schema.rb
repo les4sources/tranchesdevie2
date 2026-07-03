@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_25_190000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -233,6 +233,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_190000) do
     t.index ["name"], name: "index_mold_types_on_name", unique: true, where: "(deleted_at IS NULL)"
   end
 
+  create_table "notification_settings", force: :cascade do |t|
+    t.text "ready_sms_body"
+    t.text "ready_sms_body_unpaid"
+    t.string "ready_email_subject"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "order_items", force: :cascade do |t|
     t.bigint "order_id", null: false
     t.bigint "product_variant_id", null: false
@@ -363,6 +371,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_25_190000) do
     t.string "channel", default: "store", null: false
     t.datetime "deleted_at"
     t.integer "internal_category", default: 0, null: false
+    t.boolean "pizza_party", default: false, null: false
     t.integer "pizza_party_role", default: 0, null: false
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"

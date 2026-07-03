@@ -25,7 +25,7 @@ class MarkOrdersReadyJob < ApplicationJob
 
       begin
         order.transition_to!(:ready)
-        SmsService.send_ready(order)
+        OrderNotificationService.send_ready(order)
         @processed_count += 1
       rescue StandardError => e
         @error_count += 1

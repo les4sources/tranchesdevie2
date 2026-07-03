@@ -7,7 +7,8 @@ class EmailMessage < ApplicationRecord
   enum :kind, {
     confirmation: 0,
     otp: 1,
-    other: 2
+    other: 2,
+    ready: 3
   }
 
   belongs_to :customer, optional: true

@@ -135,13 +135,13 @@ class Admin::OrdersController < Admin::BaseController
     # (sinon la date du jour).
     @order.update!(paid_at: paid_at_from_params) if new_status.to_s == "paid"
 
-    # Send ready SMS only when marking ready on the day of the bake.
-    # If the bake day is in the past, the admin simply forgot to mark it ready earlier
-    # and notifying the customer now would be confusing.
+    # Notify the customer (SMS + email) only when marking ready on the day of the
+    # bake. If the bake day is in the past, the admin simply forgot to mark it
+    # ready earlier and notifying the customer now would be confusing.
     if @order.ready? && @order.saved_change_to_status? &&
        [ "paid", "unpaid" ].include?(@order.status_before_last_save) &&
        @order.bake_day&.baked_on == Time.zone.today
-      SmsService.send_ready(@order)
+      OrderNotificationService.send_ready(@order)
     end
 
     redirect_to admin_order_path(@order), notice: "Statut mis à jour"

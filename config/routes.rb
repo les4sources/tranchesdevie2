@@ -188,6 +188,8 @@ Rails.application.routes.draw do
       resources :ingredients
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
+      # Message « commande prête » éditable (SMS + email) — page « Notifications ».
+      resource :notification_setting, path: "notifications", only: [ :edit, :update ]
       # Paramètres généraux historisés du calcul des revenus boulangers (#54) :
       # transport (15 €/jour) et taux 4 Sources (30 %). Un seul contrôleur gère
       # les deux clés via le paramètre `:key`.

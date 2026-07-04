@@ -1,0 +1,65 @@
+- content_for :title, "Annuler la fournée du #{@bake_day.baked_on.strftime('%d/%m/%Y')}"
+- content_for :layout, "admin"
+- expected_date = @bake_day.baked_on.strftime("%d/%m/%Y")
+
+.mx-auto.max-w-2xl.space-y-6.px-4.py-6.sm:px-6
+  div
+    = link_to admin_bake_day_path(@bake_day), class: "inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-700"
+      | ← Retour à la fournée
+    h1.mt-2.text-2xl.font-bold.text-slate-900
+      | Annuler la fournée du #{expected_date}
+    p.mt-1.text-sm.text-slate-500
+      | Cette action est irréversible : elle rembourse les clients (carte ou portefeuille) et les prévient par SMS.
+
+  - if @preview.any_orders?
+    .rounded-2xl.border-2.border-rose-200.bg-rose-50.p-5.sm:p-6
+      h2.text-sm.font-semibold.uppercase.tracking-wide.text-rose-700 Impact de l'annulation
+      dl.mt-4.grid.gap-4.sm:grid-cols-2
+        .rounded-xl.bg-white.p-4.shadow-sm
+          dt.text-sm.text-slate-500 Commandes impactées
+          dd.mt-1.text-2xl.font-bold.text-slate-900 = @preview.orders_count
+        .rounded-xl.bg-white.p-4.shadow-sm
+          dt.text-sm.text-slate-500 Montant total à rembourser
+          dd.mt-1.text-2xl.font-bold.text-rose-700
+            = number_to_currency(@preview.refund_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u")
+        .rounded-xl.bg-white.p-4.shadow-sm
+          dt.text-sm.text-slate-500 SMS envoyés aux clients
+          dd.mt-1.text-2xl.font-bold.text-slate-900 = @preview.sms_count
+
+      .mt-4.rounded-xl.bg-white.p-4.shadow-sm
+        p.text-sm.font-semibold.text-slate-700 Ventilation par mode
+        dl.mt-3.space-y-2.text-sm
+          .flex.items-center.justify-between
+            dt.text-slate-600
+              | Carte (Stripe)
+              span.ml-1.text-slate-400 = "· #{@preview.stripe_count} commande#{'s' if @preview.stripe_count > 1}"
+            dd.font-semibold.text-slate-900
+              = number_to_currency(@preview.stripe_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u")
+          .flex.items-center.justify-between
+            dt.text-slate-600
+              | Portefeuille
+              span.ml-1.text-slate-400 = "· #{@preview.wallet_count} commande#{'s' if @preview.wallet_count > 1}"
+            dd.font-semibold.text-slate-900
+              = number_to_currency(@preview.wallet_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u")
+          .flex.items-center.justify-between
+            dt.text-slate-600
+              | Non encaissé en ligne
+              span.ml-1.text-slate-400 = "· #{@preview.non_online_count} commande#{'s' if @preview.non_online_count > 1}"
+            dd.font-semibold.text-slate-900 —
+        - if @preview.manual_refund_count.positive?
+          p.mt-3.text-xs.text-amber-700
+            | Dont #{@preview.manual_refund_count} payée#{'s' if @preview.manual_refund_count > 1} hors-ligne : remboursement à effectuer à la main.
+
+    = form_with url: cancel_admin_bake_day_path(@bake_day), method: :post, data: { controller: "cancel-guard", "cancel-guard-expected-value": expected_date } do |form|
+      .mt-6.rounded-2xl.border.border-slate-200.bg-white.p-5.shadow-sm.sm:p-6
+        label.block.text-sm.font-semibold.text-slate-700 for="cancel-guard-input"
+          | Pour confirmer, retapez la date de la fournée (#{expected_date})
+        = text_field_tag :confirmation, nil, id: "cancel-guard-input", autocomplete: "off", placeholder: "JJ/MM/AAAA", class: "mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-rose-500 focus:ring-rose-500", data: { "cancel-guard-target": "input", action: "input->cancel-guard#validate" }
+        .mt-5.flex.flex-wrap.items-center.gap-3
+          button.inline-flex.items-center.justify-center.gap-2.rounded-full.bg-rose-600.px-5.py-2.5.text-sm.font-semibold.text-white.hover:bg-rose-700.disabled:cursor-not-allowed.disabled:opacity-40 type="submit" data-cancel-guard-target="submit"
+            | Annuler définitivement la fournée
+          = link_to "Ne rien faire", admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+  - else
+    .rounded-2xl.border.border-slate-200.bg-white.p-6.text-center.shadow-sm
+      p.text-slate-600 Aucune commande annulable pour cette fournée.
+      = link_to "Retour à la fournée", admin_bake_day_path(@bake_day), class: "mt-4 inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"

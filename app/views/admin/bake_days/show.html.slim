@@ -27,7 +27,7 @@
         = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white whitespace-nowrap"
         button.inline-flex.items-center.justify-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white.whitespace-nowrap type="button" data-action="dashboard-export#print"
           | Imprimer la feuille
-        = button_to "Annuler la fournée", cancel_admin_bake_day_path(@bake_day), method: :post, form: { data: { turbo_confirm: "Annuler cette fournée ? Toutes les commandes payées seront remboursées (carte ou portefeuille) et les clients prévenus par SMS. Action irréversible." } }, class: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 whitespace-nowrap"
+        = link_to "Annuler la fournée", confirm_cancel_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 whitespace-nowrap"
         = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, form: { data: { turbo_confirm: "Supprimer ce jour de cuisson ? Cette action est définitive." } }, class: "inline-flex items-center justify-center gap-2 rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 whitespace-nowrap"
 
   .grid.gap-4.sm:gap-6.lg:grid-cols-3

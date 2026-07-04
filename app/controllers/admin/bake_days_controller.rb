@@ -1,5 +1,5 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :cancel ]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
@@ -89,10 +89,36 @@ class Admin::BakeDaysController < Admin::BaseController
     redirect_to admin_bake_days_path, notice: "Jour de cuisson supprimé"
   end
 
+  # Écran de confirmation renforcée avant annulation : affiche l'impact chiffré
+  # (commandes, montant à rembourser, ventilation par mode, SMS) et exige une
+  # garde délibérée avant de pouvoir déclencher l'annulation réelle (#133).
+  def confirm_cancel
+    @preview = BakeDayCancellationService.new(@bake_day).preview
+  end
+
   # Annule la fournée : rembourse tous les clients ayant payé (carte ou
   # portefeuille) et bascule leurs commandes en « annulée ».
   def cancel
-    result = BakeDayCancellationService.new(@bake_day).call
+    service = BakeDayCancellationService.new(@bake_day)
+
+    # Garde idempotente : plus aucune commande annulable → on ne rembourse rien
+    # et on n'envoie aucun SMS (pas d'erreur, message neutre).
+    unless service.preview.any_orders?
+      redirect_to admin_bake_day_path(@bake_day),
+                  notice: "Aucune commande à annuler pour cette fournée."
+      return
+    end
+
+    # Garde serveur : l'admin doit avoir retapé la date de la fournée. Sans elle,
+    # aucune action (aucun remboursement, aucun SMS) — on renvoie vers l'écran.
+    unless cancellation_confirmed?
+      redirect_to confirm_cancel_admin_bake_day_path(@bake_day),
+                  alert: "Confirmation invalide : la fournée n'a pas été annulée. " \
+                         "Retapez la date exacte pour confirmer."
+      return
+    end
+
+    result = service.call
 
     if result.success?
       redirect_to admin_bake_day_path(@bake_day), notice: cancellation_summary(result)
@@ -104,6 +130,13 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   private
+
+  # Garde délibérée : l'admin doit retaper la date de la fournée au format
+  # JJ/MM/AAAA. Rattache la confirmation à CETTE fournée précise (un clic
+  # distrait ou une confirmation générique ne suffit plus).
+  def cancellation_confirmed?
+    params[:confirmation].to_s.strip == @bake_day.baked_on.strftime("%d/%m/%Y")
+  end
 
   def cancellation_summary(result)
     parts = [ "Fournée annulée : #{result.refunded_count} remboursement(s) " \

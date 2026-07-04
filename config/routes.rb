@@ -174,6 +174,7 @@ Rails.application.routes.draw do
 
     resources :bake_days, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do
+        get :confirm_cancel
         post :cancel
       end
     end

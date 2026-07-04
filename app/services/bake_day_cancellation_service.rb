@@ -35,10 +35,86 @@ class BakeDayCancellationService
     end
   end
 
+  # Aperçu (dry-run) de ce qu'une annulation ferait, SANS rien écrire en base.
+  # Alimente l'écran de confirmation chiffré : il partage exactement la même
+  # source (`PROCESSABLE_STATUSES` + `Order#payment_method`) que `#call`, donc
+  # aucun écart n'est possible entre l'aperçu et l'exécution réelle.
+  Preview = Struct.new(
+    :orders_count,
+    :stripe_count,
+    :stripe_cents,
+    :wallet_count,
+    :wallet_cents,
+    :manual_refund_count,
+    :unpaid_count,
+    :refund_cents,
+    :sms_count,
+    keyword_init: true
+  ) do
+    def any_orders?
+      orders_count.positive?
+    end
+
+    # Total « non encaissé en ligne » : commandes sans trace Stripe/portefeuille
+    # (payées hors-ligne à rembourser à la main + jamais encaissées).
+    def non_online_count
+      manual_refund_count + unpaid_count
+    end
+
+    def refund_euros
+      refund_cents / 100.0
+    end
+
+    def stripe_euros
+      stripe_cents / 100.0
+    end
+
+    def wallet_euros
+      wallet_cents / 100.0
+    end
+  end
+
   attr_reader :bake_day
 
   def initialize(bake_day)
     @bake_day = bake_day
+  end
+
+  def preview
+    stripe_count = wallet_count = 0
+    stripe_cents = wallet_cents = 0
+    manual_refund_count = unpaid_count = sms_count = 0
+
+    preview_orders.each do |order|
+      sms_count += 1 if order.customer.sms_enabled?
+
+      case order.payment_method
+      when :stripe
+        stripe_count += 1
+        stripe_cents += order.total_cents
+      when :wallet
+        wallet_count += 1
+        wallet_cents += order.total_cents
+      else
+        if order.payment_received?
+          manual_refund_count += 1
+        else
+          unpaid_count += 1
+        end
+      end
+    end
+
+    Preview.new(
+      orders_count: stripe_count + wallet_count + manual_refund_count + unpaid_count,
+      stripe_count: stripe_count,
+      stripe_cents: stripe_cents,
+      wallet_count: wallet_count,
+      wallet_cents: wallet_cents,
+      manual_refund_count: manual_refund_count,
+      unpaid_count: unpaid_count,
+      refund_cents: stripe_cents + wallet_cents,
+      sms_count: sms_count
+    )
   end
 
   def call
@@ -65,6 +141,13 @@ class BakeDayCancellationService
 
   def orders
     bake_day.orders.where(status: PROCESSABLE_STATUSES)
+  end
+
+  # Même périmètre que `orders`, mais avec les associations nécessaires au
+  # calcul du dry-run préchargées (évite les N+1 sur `payment_method`,
+  # `payment_received?` et `customer.sms_enabled?`).
+  def preview_orders
+    orders.includes(:payment, :wallet_transactions, :customer)
   end
 
   def process(order)

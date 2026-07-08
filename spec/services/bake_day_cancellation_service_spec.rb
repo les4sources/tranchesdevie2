@@ -190,4 +190,52 @@ RSpec.describe BakeDayCancellationService do
       end
     end
   end
+
+  describe "#preview" do
+    it "counts every cohort and totals the online refund, without touching the DB" do
+      stripe = stripe_order(total_cents: 1000)
+      wallet_order(total_cents: 2000, balance_cents: 0)
+      manual = create(:order, :paid, :payment_paid, bake_day: bake_day)
+      create(:order, :unpaid, bake_day: bake_day)
+
+      preview = described_class.new(bake_day).preview
+
+      expect(preview.orders_count).to eq(4)
+      expect(preview.stripe_count).to eq(1)
+      expect(preview.stripe_cents).to eq(1000)
+      expect(preview.wallet_count).to eq(1)
+      expect(preview.wallet_cents).to eq(2000)
+      expect(preview.manual_refund_count).to eq(1)
+      expect(preview.unpaid_count).to eq(1)
+      expect(preview.refund_cents).to eq(3000)
+      expect(preview.non_online_count).to eq(2)
+
+      # Aucune mutation : la commande Stripe reste payée, aucun remboursement émis.
+      expect(Stripe::Refund).not_to receive(:create)
+      expect(stripe.reload.status).to eq("paid")
+      expect(manual.reload.status).to eq("paid")
+    end
+
+    it "counts SMS only for customers who accept them" do
+      wallet_order(balance_cents: 0)
+      silent_customer = create(:customer, :with_sms_disabled)
+      create(:order, :unpaid, customer: silent_customer, bake_day: bake_day)
+
+      preview = described_class.new(bake_day).preview
+
+      expect(preview.orders_count).to eq(2)
+      expect(preview.sms_count).to eq(1)
+    end
+
+    it "ignores already-finished orders and reports nothing to do" do
+      create(:order, :picked_up, bake_day: bake_day)
+      create(:order, :cancelled, bake_day: bake_day)
+
+      preview = described_class.new(bake_day).preview
+
+      expect(preview.orders_count).to eq(0)
+      expect(preview.any_orders?).to be(false)
+      expect(preview.refund_cents).to eq(0)
+    end
+  end
 end

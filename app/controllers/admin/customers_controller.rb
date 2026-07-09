@@ -30,6 +30,10 @@ class Admin::CustomersController < Admin::BaseController
     @orders = @customer.orders.includes(:bake_day, :payment, :wallet_transactions).order(created_at: :desc)
     @sms_messages = @customer.sms_messages.ordered_by_sent_at
     @email_messages = @customer.email_messages.ordered_by_sent_at
+    @wallet = @customer.wallet
+    # Mouvements du portefeuille en lecture seule (#138), commande préchargée pour
+    # éviter les N+1, du plus récent au plus ancien.
+    @wallet_transactions = @wallet ? @wallet.wallet_transactions.includes(:order).order(created_at: :desc) : []
   end
 
   def new

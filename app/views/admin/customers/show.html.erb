@@ -111,6 +111,43 @@
       </div>
     </dl>
   </div>
+
+  <% if @wallet %>
+    <%# Portefeuille (#138) — lecture seule : solde, solde disponible, alerte solde bas. %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Portefeuille</h2>
+
+      <dl class="space-y-3">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Solde</dt>
+          <dd class="mt-1 text-lg font-medium <%= @wallet.low_balance? ? 'text-red-700' : 'text-gray-900' %>">
+            <%= number_to_currency(@wallet.balance_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+            <% if @wallet.low_balance? %>
+              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                Solde bas
+              </span>
+            <% end %>
+          </dd>
+        </div>
+
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Solde disponible</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= number_to_currency(@wallet.available_balance_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+          </dd>
+        </div>
+
+        <% committed_cents = @wallet.balance_cents - @wallet.available_balance_cents %>
+        <% if committed_cents.positive? %>
+          <div>
+            <dd class="text-xs text-gray-500">
+              <%= number_to_currency(committed_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> engagés dans des commandes planifiées
+            </dd>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+  <% end %>
 </div>
 
 <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -285,6 +322,69 @@
     <p class="text-sm text-gray-500">Aucun e-mail pour ce mangeur.</p>
   <% end %>
 </div>
+
+<% if @wallet %>
+  <%# Mouvements du portefeuille (#138) — lecture seule, du plus récent au plus ancien. %>
+  <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Mouvements du portefeuille</h2>
+
+    <% if @wallet_transactions.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @wallet_transactions.each do |txn| %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <%= txn.created_at.strftime("%d/%m/%Y à %H:%M") %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case txn.transaction_type
+                        when 'top_up' then 'bg-green-100 text-green-800'
+                        when 'order_debit' then 'bg-orange-100 text-orange-800'
+                        when 'order_refund' then 'bg-blue-100 text-blue-800'
+                        else 'bg-gray-100 text-gray-800'
+                        end %>">
+                    <%= case txn.transaction_type
+                        when 'top_up' then 'Recharge'
+                        when 'order_debit' then 'Débit commande'
+                        when 'order_refund' then 'Remboursement'
+                        else txn.transaction_type
+                        end %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium <%= txn.amount_cents.negative? ? 'text-red-700' : 'text-green-700' %>">
+                  <%= "+" if txn.amount_cents.positive? %><%= number_to_currency(txn.amount_euros, unit: "€", separator: ",", delimiter: "") %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <% if txn.order %>
+                    <%= link_to txn.order.order_number, admin_order_path(txn.order), class: "text-blue-600 hover:text-blue-800" %>
+                  <% else %>
+                    <span class="text-gray-400">—</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  <%= txn.description.presence || content_tag(:span, "—", class: "text-gray-400") %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucun mouvement pour ce portefeuille.</p>
+    <% end %>
+  </div>
+<% end %>
 
 <div class="mt-6">
   <%= link_to "← Retour à la liste des mangeurs", admin_customers_path, class: "text-blue-600 hover:text-blue-800" %>

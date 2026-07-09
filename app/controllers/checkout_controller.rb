@@ -1,4 +1,9 @@
 class CheckoutController < ApplicationController
+  # Prénom vide pour un nouveau client (erreur utilisateur, pas un incident) :
+  # levée AVANT le save! du client pour rendre un 422 ciblé plutôt que de laisser
+  # remonter un ActiveRecord::RecordInvalid muet vers Sentry (#135, TRANCHESDEVIE-G/H).
+  class BlankFirstNameError < StandardError; end
+
   before_action :ensure_cart_not_empty, except: [ :success ]
   before_action :ensure_bake_day_set, except: [ :success ]
   # Garde-fou (#68) : on resynchronise la ligne forfait Pizza party AVANT de
@@ -213,6 +218,11 @@ class CheckoutController < ApplicationController
       client_secret: payment_intent.client_secret,
       payment_intent_id: payment_intent.id
     }
+  rescue BlankFirstNameError
+    # Prénom vide (erreur utilisateur, pas un incident) : 422 ciblé sur le champ,
+    # jamais remonté en erreur Sentry. On log en warning pour l'observabilité.
+    Rails.logger.warn("[checkout] first_name_blank — #{checkout_sentry_context.inspect}")
+    render json: { error: "Merci d'indiquer ton prénom pour continuer.", field: "first_name" }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
     # Échec d'enregistrement du client (first_name vide, e-mail en doublon, …) :
     # c'était un 500 muet. On le remonte avec les erreurs de validation et on
@@ -520,20 +530,27 @@ class CheckoutController < ApplicationController
       customer = Customer.find_or_initialize_by(phone_e164: phone_e164)
 
       if customer.new_record?
+        first_name = (json_params["first_name"] || params[:first_name] || session[:first_name]).to_s.strip
+        # Filet AVANT le save! : un prénom vide (ou seulement des espaces) est une
+        # erreur utilisateur — on la traite en 422 ciblé plutôt qu'en RecordInvalid
+        # muet remonté vers Sentry (#135).
+        raise BlankFirstNameError if first_name.blank?
+
         customer.assign_attributes(
-          first_name: json_params["first_name"] || params[:first_name] || session[:first_name],
-          last_name: json_params["last_name"] || params[:last_name] || session[:last_name],
-          email: json_params["email"] || params[:email] || session[:email]
+          first_name: first_name,
+          last_name: (json_params["last_name"] || params[:last_name] || session[:last_name]).to_s.strip.presence,
+          email: (json_params["email"] || params[:email] || session[:email]).to_s.strip.presence
         )
         customer.save!
       end
 
-      # Update customer info if provided
+      # Update customer info if provided (valeurs strippées : on n'écrase jamais
+      # avec des espaces seuls, cohérent avec la validation du prénom ci-dessus).
       if json_params["first_name"].present? || json_params["last_name"].present? || json_params["email"].present?
         customer.update(
-          first_name: json_params["first_name"] || customer.first_name,
-          last_name: json_params["last_name"] || customer.last_name,
-          email: json_params["email"] || customer.email
+          first_name: json_params["first_name"].to_s.strip.presence || customer.first_name,
+          last_name: json_params["last_name"].to_s.strip.presence || customer.last_name,
+          email: json_params["email"].to_s.strip.presence || customer.email
         ) if json_params.any?
       end
     end

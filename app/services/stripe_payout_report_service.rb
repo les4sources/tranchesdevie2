@@ -82,7 +82,14 @@ class StripePayoutReportService
   end
 
   def call
-    Rails.cache.fetch(cache_key, expires_in: CACHE_TTL) { build_report }
+    cached = Rails.cache.read(cache_key)
+    return cached if cached
+
+    report = build_report
+    # On ne met JAMAIS en cache un rapport d'erreur : une erreur Stripe transitoire
+    # ne doit pas geler la page pendant tout le TTL (le prochain appel réessaie).
+    Rails.cache.write(cache_key, report, expires_in: CACHE_TTL) if report.error.nil?
+    report
   end
 
   private

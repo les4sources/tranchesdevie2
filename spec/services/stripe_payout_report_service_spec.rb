@@ -61,6 +61,25 @@ RSpec.describe StripePayoutReportService do
 
       expect(Stripe::BalanceTransaction).not_to have_received(:list)
     end
+
+    # Un payout "auto-debit" (Stripe reprend de l'argent, ex. après remboursements)
+    # a un montant NÉGATIF. L'ancienne version crashait dessus via
+    # BalanceTransaction.list(payout:) ; désormais on lit `payout.amount` et on
+    # l'affiche comme une ligne dédiée à montant négatif, sans exception (#137).
+    it "affiche un versement auto-debit (montant négatif) sans lever d'exception" do
+      stub_payout_list([
+        stub_payout(id: "po_normal", amount: 9_750, arrival_date: Date.new(2026, 5, 10)),
+        stub_payout(id: "po_autodebit", amount: -3_200, arrival_date: Date.new(2026, 5, 18))
+      ])
+
+      report = described_class.new(start_date: start_date, end_date: end_date).call
+
+      expect(report.error).to be_nil
+      expect(report.payouts.map(&:stripe_id)).to eq(%w[po_normal po_autodebit])
+      expect(report.payouts.map(&:net_cents)).to eq([ 9_750, -3_200 ])
+      # Le total net tient compte de la reprise (auto-debit) : 9750 − 3200.
+      expect(report.total_net_paid_cents).to eq(6_550)
+    end
   end
 
   # --- Activité en ligne de la période (notre base) ---------------------------
@@ -167,6 +186,23 @@ RSpec.describe StripePayoutReportService do
       described_class.new(start_date: start_date, end_date: end_date).call
 
       expect(Stripe::Payout).to have_received(:list).once
+    end
+
+    it "ne met JAMAIS en cache un rapport d'erreur (le prochain appel réessaie)" do
+      memory_store = ActiveSupport::Cache::MemoryStore.new
+      allow(Rails).to receive(:cache).and_return(memory_store)
+
+      # 1er appel : Stripe échoue → rapport d'erreur, NON mis en cache.
+      allow(Stripe::Payout).to receive(:list).and_raise(Stripe::APIConnectionError.new("boom"))
+      first = described_class.new(start_date: start_date, end_date: end_date).call
+      expect(first.error).to be_present
+
+      # 2e appel : Stripe répond → le service NE sert PAS l'erreur cachée, il réessaie.
+      stub_payout_list([ stub_payout(id: "po_ok", amount: 9_750) ])
+      second = described_class.new(start_date: start_date, end_date: end_date).call
+
+      expect(second.error).to be_nil
+      expect(second.payouts.map(&:stripe_id)).to eq(%w[po_ok])
     end
   end
 end

@@ -442,12 +442,8 @@
       
       // Monter l'element de paiement (operation synchrone)
       paymentElement.mount('#payment-element');
-      
-      // Activer le bouton lorsque l'element de paiement est monte
+
       const submitButton = document.getElementById('submit-payment');
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
 
       // Retirer les anciens gestionnaires d'événements pour éviter les doublons
       const newSubmitButton = submitButton.cloneNode(true);
@@ -455,11 +451,38 @@
 
       const paymentIntentId = data.payment_intent_id;
       const successUrl = '<%= success_checkout_index_url %>';
+      const payLabel = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
+      const paymentMessage = document.getElementById('payment-message');
+
+      // #136 : le bouton reste désactivé tant que le Payment Element n'est pas
+      // complet (moyen de paiement sélectionné/renseigné). Sans ce garde, un clic
+      // « payer » prématuré renvoyait une validation_error Stripe remontée en error.
+      let paymentComplete = false;
+      newSubmitButton.disabled = true;
+
+      paymentElement.on('change', (event) => {
+        paymentComplete = event.complete === true;
+        newSubmitButton.disabled = !paymentComplete;
+        // L'utilisateur corrige : on masque un éventuel message d'erreur précédent.
+        if (paymentMessage && paymentComplete) {
+          paymentMessage.classList.add('hidden');
+        }
+      });
 
       // Ajouter un gestionnaire de clic pour la soumission du paiement
       newSubmitButton.addEventListener('click', async (e) => {
         e.preventDefault();
-        
+
+        // Garde-fou : si l'élément n'est pas complet (bouton réactivé autrement),
+        // on court-circuite avec un message inline plutôt que d'appeler Stripe.
+        if (!paymentComplete) {
+          if (paymentMessage) {
+            paymentMessage.textContent = 'Veuillez sélectionner et compléter votre moyen de paiement.';
+            paymentMessage.classList.remove('hidden');
+          }
+          return;
+        }
+
         newSubmitButton.disabled = true;
         newSubmitButton.textContent = 'Traitement...';
 
@@ -477,9 +500,12 @@
         if (error) {
           // LE "moment du paiement" : échec de confirmPayment (carte/Bancontact/
           // 3DS/réseau). Purement client-side → invisible jusqu'ici. On le remonte.
+          // Une validation_error (élément incomplet) est une erreur utilisateur
+          // attendue → level warning, pas error, pour ne pas polluer le signal.
+          const isValidationError = error.type === 'validation_error';
           if (window.Sentry) {
             window.Sentry.captureMessage('[checkout] confirm_payment_failed', {
-              level: 'error',
+              level: isValidationError ? 'warning' : 'error',
               extra: {
                 step: 'confirmPayment',
                 message: error.message,
@@ -490,13 +516,12 @@
               }
             });
           }
-          const paymentMessage = document.getElementById('payment-message');
           if (paymentMessage) {
             paymentMessage.textContent = error.message;
             paymentMessage.classList.remove('hidden');
           }
           newSubmitButton.disabled = false;
-          newSubmitButton.textContent = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
+          newSubmitButton.textContent = payLabel;
         }
       });
     })

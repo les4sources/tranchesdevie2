@@ -4,6 +4,7 @@ class Customers::AccountController < ApplicationController
   def show
     @customer = current_customer
     @orders = @customer.orders
+                      .visible_to_customer
                       .includes(:bake_day, order_items: { product_variant: :product })
                       .order("bake_days.baked_on DESC")
                       .to_a

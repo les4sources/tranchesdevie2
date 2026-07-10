@@ -1,6 +1,23 @@
 require 'rails_helper'
 
 RSpec.describe Order, type: :model do
+  # #144 : les commandes `pending` (réservation de capacité transitoire du paiement
+  # en ligne) ne doivent jamais être affichées côté client.
+  describe '.visible_to_customer' do
+    it 'exclut les commandes pending et garde tous les autres statuts' do
+      day = create(:bake_day)
+      pending = create(:order, :pending, bake_day: day)
+      others = %i[paid ready picked_up no_show cancelled unpaid].map do |status|
+        create(:order, status: status, bake_day: day)
+      end
+
+      visible = Order.visible_to_customer
+
+      expect(visible).not_to include(pending)
+      expect(visible).to include(*others)
+    end
+  end
+
   # #97 : « payé » ne dépend QUE du paiement réel (payment_status), jamais du
   # statut logistique. Passer une commande à « prêt » ne la rend pas « payée ».
   describe '#payment_received?' do

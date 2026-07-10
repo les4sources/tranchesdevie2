@@ -56,6 +56,11 @@ class Order < ApplicationRecord
   }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }
+  # Commandes affichables dans « Mon compte » (#144) : une commande `pending` est
+  # une réservation de capacité transitoire du paiement en ligne (elle devient
+  # `paid` ou est supprimée par ExpireStalePendingOrdersJob). Elle ne représente
+  # jamais une commande réelle côté client, donc on ne la liste jamais.
+  scope :visible_to_customer, -> { where.not(status: :pending) }
   # Commandes logistiquement avancées (prêtes / récupérées / non-récupérées) sans
   # paiement réel : ce sont celles affichées « payé » à tort avant #97
   # (clients à facture, Sémisto, épicerie). Identifiables pour nettoyage.

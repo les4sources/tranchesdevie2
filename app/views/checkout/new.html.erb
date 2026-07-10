@@ -96,7 +96,7 @@
                   value: @customer.first_name,
                   class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
                   required: true %>
-              <p id="first-name-error" class="mt-1 hidden text-sm text-danger-700">Merci d'indiquer ton prénom pour continuer.</p>
+              <p id="first-name-error" class="mt-1 hidden text-sm text-danger-700">Remplis ton prénom afin que les pains soient attribués à la bonne personne.</p>
             </div>
 
             <div>
@@ -105,6 +105,7 @@
                   value: @customer.last_name,
                   required: true,
                   class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
+              <p id="last-name-error" class="mt-1 hidden text-sm text-danger-700">Remplis ton nom afin que les pains soient attribués à la bonne personne.</p>
             </div>
 
             <div>
@@ -362,14 +363,14 @@
       initializePaymentMethodState();
       handlePaymentMethodChange();
       setupGroupPurchaseToggle();
-      setupFirstNameGuard();
+      setupNameGuard();
       initStripe();
     });
   } else {
     initializePaymentMethodState();
     handlePaymentMethodChange();
     setupGroupPurchaseToggle();
-    setupFirstNameGuard();
+    setupNameGuard();
     initStripe();
   }
 
@@ -384,47 +385,72 @@
         stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
         initializePaymentMethodState();
         handlePaymentMethodChange();
-        setupFirstNameGuard();
+        setupNameGuard();
         initStripe();
       }
     });
   }
 
-  // Prénom obligatoire (#135) : helpers de validation côté client. On considère
-  // un prénom composé uniquement d'espaces comme vide, comme le serveur (strip).
-  function isFirstNameBlank() {
-    const input = document.getElementById('customer_first_name');
-    return ((input?.value) || '').trim() === '';
+  // Prénom + nom obligatoires (#135, #143) : helpers de validation côté client,
+  // alignés sur le chemin cash (handleCashOrderSubmission). Un champ composé
+  // uniquement d'espaces est considéré comme vide (comme le serveur, qui strip),
+  // et la valeur factice 'Client' pour le prénom est rejetée.
+  function nameFieldValue(id) {
+    return ((document.getElementById(id)?.value) || '').trim();
   }
 
-  function showFirstNameError() {
-    const msg = document.getElementById('first-name-error');
-    if (msg) msg.classList.remove('hidden');
-    const input = document.getElementById('customer_first_name');
-    if (input) input.focus();
+  function isFirstNameInvalid() {
+    const value = nameFieldValue('customer_first_name');
+    return value === '' || value === 'Client';
   }
 
-  function clearFirstNameError() {
-    const msg = document.getElementById('first-name-error');
-    if (msg) msg.classList.add('hidden');
+  function isLastNameBlank() {
+    return nameFieldValue('customer_last_name') === '';
   }
 
-  // Quand le champ prénom devient valide, on (re)crée le PaymentIntent et on
-  // monte le Payment Element — car il n'a pas pu l'être au chargement si le
-  // prénom était vide. Idempotent tant que l'élément n'est pas déjà monté.
-  function setupFirstNameGuard() {
-    const input = document.getElementById('customer_first_name');
-    if (!input || input.dataset.guardBound === 'true') return;
-    input.dataset.guardBound = 'true';
+  function isNameInvalid() {
+    return isFirstNameInvalid() || isLastNameBlank();
+  }
 
-    input.addEventListener('input', () => {
-      if (!isFirstNameBlank()) clearFirstNameError();
-    });
+  function toggleNameError(id, show) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !show);
+  }
 
-    input.addEventListener('blur', () => {
-      if (currentPaymentMethod === 'online' && !isFirstNameBlank() && !paymentElement) {
-        initializePayment();
-      }
+  // Affiche les messages inline sur les champs invalides et place le focus sur
+  // le premier champ à corriger.
+  function showNameErrors() {
+    const firstBad = isFirstNameInvalid();
+    const lastBad = isLastNameBlank();
+    toggleNameError('first-name-error', firstBad);
+    toggleNameError('last-name-error', lastBad);
+    const focusId = firstBad ? 'customer_first_name' : (lastBad ? 'customer_last_name' : null);
+    if (focusId) document.getElementById(focusId)?.focus();
+  }
+
+  function clearNameErrors() {
+    toggleNameError('first-name-error', false);
+    toggleNameError('last-name-error', false);
+  }
+
+  // Quand le prénom ET le nom deviennent valides, on (re)crée le PaymentIntent et
+  // on monte le Payment Element — car il n'a pas pu l'être au chargement si un
+  // champ était vide. Idempotent tant que l'élément n'est pas déjà monté.
+  function setupNameGuard() {
+    ['customer_first_name', 'customer_last_name'].forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input || input.dataset.guardBound === 'true') return;
+      input.dataset.guardBound = 'true';
+
+      input.addEventListener('input', () => {
+        if (!isNameInvalid()) clearNameErrors();
+      });
+
+      input.addEventListener('blur', () => {
+        if (currentPaymentMethod === 'online' && !isNameInvalid() && !paymentElement) {
+          initializePayment();
+        }
+      });
     });
   }
 
@@ -439,15 +465,16 @@
       return;
     }
 
-    // Bloquer la création du PaymentIntent tant que le prénom est vide (ou
-    // seulement des espaces) : sinon le serveur tente de créer un client sans
-    // prénom et lève un RecordInvalid (#135). On affiche un message inline et on
-    // réessaiera quand le champ sera rempli (cf. setupFirstNameGuard).
-    if (isFirstNameBlank()) {
-      showFirstNameError();
+    // Bloquer la création du PaymentIntent tant que le prénom ou le nom est vide
+    // (ou seulement des espaces), ou que le prénom vaut la valeur factice
+    // 'Client' : sinon le serveur tente de créer un client incomplet et lève un
+    // RecordInvalid (#135, #143). On affiche un message inline et on réessaiera
+    // quand les champs seront remplis (cf. setupNameGuard).
+    if (isNameInvalid()) {
+      showNameErrors();
       return;
     }
-    clearFirstNameError();
+    clearNameErrors();
 
     fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',

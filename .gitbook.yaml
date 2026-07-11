@@ -1,0 +1,14 @@
+# Configuration GitBook Git Sync.
+#
+# Ce fichier dit à GitBook où trouver la documentation dans ce dépôt.
+# GitBook resynchronise l'espace au push et permet aussi l'édition depuis
+# son éditeur — les changements sont commités automatiquement.
+#
+# Docs officielles :
+#   https://gitbook.com/docs/integrations/git-sync/gitbook-git-sync
+
+root: ./docs/admin/
+
+structure:
+  readme: README.md
+  summary: SUMMARY.md

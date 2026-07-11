@@ -1,0 +1,155 @@
+# Manifest des captures d'écran de la documentation boulanger.
+#
+# Chaque entrée décrit UNE capture. Le script `generate_screenshots.mjs`
+# la traite ainsi :
+#   1. Visite l'URL indiquée par `path` (relatif à http://localhost:4567).
+#   2. Optionnellement attend un sélecteur (`wait_for`) et clique
+#      (`click`) pour ouvrir un menu, un onglet, etc.
+#   3. Prend un screenshot :
+#      - de la page entière (par défaut, `full_page: true`)
+#      - OU seulement d'un sélecteur CSS (`crop_to`)
+#   4. Sauve le PNG dans docs/admin/images/<slug>.png.
+#
+# Éditer ce fichier suffit pour ajouter, retirer ou refocaliser une capture.
+# Le nom `slug` DOIT correspondre au nom d'image référencé dans les .md
+# (ex. `bake-days-new.png` ↔ slug `bake-days-new`).
+
+viewport:
+  width: 1280
+  height: 900
+
+# Zones à masquer avant la capture — évite du bruit dans les diffs de
+# fichiers PNG (dates courantes, statuts « il y a 3 min », etc.).
+mask_selectors:
+  - "[data-testid='current-time']"
+  - ".relative-time"
+
+screenshots:
+  # ---- Nav & vues transverses ---------------------------------------------
+  - slug: nav-jours-de-cuisson
+    path: /admin/bake_days
+    crop_to: "nav.bg-white"
+    description: "Menu principal avec l'onglet Jours de cuisson actif"
+
+  # ---- Jours de cuisson ---------------------------------------------------
+  - slug: bake-days-index
+    path: /admin/bake_days
+    description: "Liste des jours de cuisson planifiés"
+
+  - slug: bake-days-new
+    path: /admin/bake_days/new
+    description: "Formulaire de création d'un jour de cuisson"
+
+  - slug: bake-days-show
+    path: /admin/bake_days/FIRST_BAKE_DAY_ID
+    description: "Fiche complète d'un jour de cuisson avec charge de production"
+
+  # ---- Commandes ----------------------------------------------------------
+  - slug: orders-index
+    path: /admin/orders
+    description: "Liste des commandes du jour"
+
+  - slug: orders-new-button
+    path: /admin/orders
+    crop_to: "a[href$='/admin/orders/new'], a[href*='orders/new']"
+    description: "Bouton Nouvelle commande, en gros plan"
+
+  - slug: orders-new
+    path: /admin/orders/new
+    description: "Formulaire de nouvelle commande"
+
+  - slug: order-show
+    path: /admin/orders/FIRST_ORDER_ID
+    description: "Fiche d'une commande"
+
+  - slug: order-show-actions
+    path: /admin/orders/FIRST_PAID_ORDER_ID
+    crop_to: ".bg-white:has(h2:has-text('Actions'))"
+    description: "Panneau Actions d'une commande payée (avec bouton Rembourser)"
+
+  # ---- Mangeurs -----------------------------------------------------------
+  - slug: customers-index
+    path: /admin/customers
+    description: "Liste des mangeurs"
+
+  - slug: customers-show
+    path: /admin/customers/FIRST_CUSTOMER_ID
+    description: "Fiche d'un mangeur"
+
+  - slug: customers-new
+    path: /admin/customers/new
+    description: "Formulaire de création d'un mangeur"
+
+  # ---- Produits -----------------------------------------------------------
+  - slug: products-index
+    path: /admin/products
+    description: "Catalogue produits"
+
+  - slug: products-new
+    path: /admin/products/new
+    description: "Formulaire de création d'un produit"
+
+  - slug: products-show
+    path: /admin/products/FIRST_PRODUCT_ID
+    description: "Fiche produit avec ses variantes"
+
+  # ---- Facturation --------------------------------------------------------
+  - slug: billing-index
+    path: /admin/billing
+    description: "Tableau de bord facturation"
+
+  # ---- Reporting ----------------------------------------------------------
+  - slug: reports-index
+    path: /admin/reports
+    description: "Tableau de bord reporting"
+
+  - slug: reports-refunds
+    path: /admin/reports/refunds
+    description: "Suivi des remboursements"
+
+  - slug: reports-baker-revenue
+    path: /admin/reports/baker_revenue
+    description: "Revenus par artisan"
+
+  - slug: reports-payouts
+    path: /admin/reports/payouts
+    description: "Payouts Stripe"
+
+  # ---- Paramètres ---------------------------------------------------------
+  - slug: settings-index
+    path: /admin/parametres
+    description: "Index des paramètres"
+
+  - slug: settings-flours
+    path: /admin/parametres/farines
+    description: "Gestion des farines"
+
+  - slug: settings-mold-types
+    path: /admin/parametres/types-de-moules
+    description: "Types de moules"
+
+  - slug: settings-ingredients
+    path: /admin/parametres/ingredients
+    description: "Ingrédients"
+
+  - slug: settings-artisans
+    path: /admin/parametres/artisans
+    description: "Artisans et parts de revenu"
+
+  - slug: settings-production
+    path: /admin/parametres/capacites-de-production/edit
+    description: "Réglage des capacités du four"
+
+  - slug: settings-notifications
+    path: /admin/parametres/notifications/edit
+    description: "Message envoyé pour les commandes prêtes"
+
+  - slug: settings-revenue-parameters
+    path: /admin/parametres/revenus-boulangers
+    description: "Paramètres généraux du calcul des revenus artisans"
+
+  # ---- Login --------------------------------------------------------------
+  - slug: login
+    path: /admin/login
+    no_auth: true
+    description: "Écran de connexion admin"

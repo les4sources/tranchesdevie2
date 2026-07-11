@@ -1,0 +1,113 @@
+name: Documentation boulanger — captures d'écran
+
+# Regénère les captures d'écran de la documentation à chaque évolution
+# de l'interface d'administration ou de la doc elle-même. Ouvre une pull
+# request pour relecture — jamais de push direct sur `main`.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "app/controllers/admin/**"
+      - "app/views/admin/**"
+      - "app/views/layouts/admin.html.erb"
+      - "app/helpers/admin/**"
+      - "docs/admin/**"
+      - "script/docs/**"
+      - "db/seeds/demo.rb"
+      - ".github/workflows/docs-screenshots.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docs-screenshots
+  cancel-in-progress: true
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tranchesdevie2_test
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tranchesdevie2_test
+      ADMIN_PASSWORD: demo
+      # Playwright utilise le Chromium officiel installé plus bas
+      PLAYWRIGHT_BROWSERS_PATH: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright (script deps + Chromium)
+        run: |
+          npm --prefix script/docs init -y
+          npm --prefix script/docs install --no-audit --no-fund playwright js-yaml
+          npx --prefix script/docs playwright install --with-deps chromium
+
+      - name: Set up database
+        run: bin/rails db:schema:load
+
+      - name: Regenerate screenshots
+        run: bundle exec rake docs:screenshots
+        env:
+          # rake docs:screenshots invoque node script/docs/generate_screenshots.mjs
+          # via un chemin absolu — on ne dépend pas du PATH npm.
+          NODE_PATH: script/docs/node_modules
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet docs/admin/images; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open pull request with new screenshots
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: bot/docs-screenshots-refresh
+          base: main
+          title: "Doc boulanger — mise à jour des captures d'écran"
+          commit-message: "docs(admin): regen screenshots"
+          body: |
+            Cette pull request a été créée automatiquement par le workflow
+            **Documentation boulanger — captures d'écran**.
+
+            Elle met à jour les copies d'écran de `docs/admin/images/` pour
+            refléter les évolutions les plus récentes de l'interface
+            d'administration.
+
+            **À faire avant de merger :**
+            - Ouvrir un ou deux PNG pour vérifier qu'ils rendent bien.
+            - Relire les pages `.md` associées s'il y a eu un changement de
+              texte à faire côté didactique (le workflow ne change pas
+              le texte — c'est intentionnel).
+
+            Une fois mergée, GitBook synchronisera automatiquement.
+          add-paths: |
+            docs/admin/images

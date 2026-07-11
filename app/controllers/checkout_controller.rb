@@ -200,8 +200,7 @@ class CheckoutController < ApplicationController
         metadata: {
           order_id: order.id,
           bake_day_id: @bake_day.id,
-          phone_e164: phone_e164,
-          cart_items: @cart.to_json
+          phone_e164: phone_e164
         }
       })
     rescue Stripe::StripeError => e

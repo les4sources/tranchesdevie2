@@ -147,4 +147,92 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
       end
     end
   end
+
+  describe 'GET /checkout/new — affichage de l\'option portefeuille' do
+    it 'affiche le radio + le bouton portefeuille quand le solde couvre le total' do
+      create(:wallet, customer: customer, balance_cents: 5_000)
+      get '/checkout/new'
+      expect(response.body).to include('value="wallet"')
+      # id="…" cible l'élément bouton rendu (la chaîne 'submit-wallet-order' est
+      # aussi présente dans le JS inline, indépendamment de l'affichage du bouton).
+      expect(response.body).to include('id="submit-wallet-order"')
+      expect(response.body).to include('Payer avec mon portefeuille')
+    end
+
+    it 'n\'affiche pas l\'option portefeuille quand le solde est insuffisant' do
+      create(:wallet, customer: customer, balance_cents: 100)
+      get '/checkout/new'
+      expect(response.body).not_to include('value="wallet"')
+      expect(response.body).not_to include('id="submit-wallet-order"')
+    end
+
+    it 'n\'affiche pas l\'option quand le client n\'a pas de portefeuille' do
+      get '/checkout/new'
+      expect(response.body).not_to include('value="wallet"')
+    end
+  end
+
+  describe 'POST /checkout/create_wallet_order (paiement portefeuille)' do
+    def create_wallet_order(body = { first_name: 'Léa', last_name: 'Boulanger' })
+      post '/checkout/create_wallet_order', params: body.to_json,
+           headers: { 'CONTENT_TYPE' => 'application/json' }
+    end
+
+    context 'quand le solde disponible couvre le total' do
+      let!(:wallet) { create(:wallet, customer: customer, balance_cents: 5_000) }
+
+      it 'crée une commande payée et la débite du portefeuille' do
+        expect { create_wallet_order }.to change { Order.where(status: :paid, source: :checkout).count }.by(1)
+        expect(response).to have_http_status(:ok)
+
+        body = JSON.parse(response.body)
+        expect(body['success']).to be(true)
+        expect(body['order_token']).to be_present
+
+        order = Order.find_by(public_token: body['order_token'])
+        expect(order.payment_method).to eq(:wallet)
+        expect(wallet.reload.balance_cents).to eq(5_000 - order.total_cents)
+      end
+
+      it 'envoie la confirmation email comme le paiement en ligne' do
+        expect(OrderNotificationService).to receive(:send_confirmation)
+        create_wallet_order
+      end
+    end
+
+    context 'quand le solde est insuffisant' do
+      let!(:wallet) { create(:wallet, customer: customer, balance_cents: 100) }
+
+      it 'ne crée aucune commande persistée et renvoie 422' do
+        expect { create_wallet_order }.not_to change(Order, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(wallet.reload.balance_cents).to eq(100)
+      end
+    end
+
+    context 'quand le client n\'a pas de portefeuille' do
+      it 'renvoie 422 sans créer de commande' do
+        expect { create_wallet_order }.not_to change(Order, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
+    context 'idempotence (double soumission)' do
+      let!(:wallet) { create(:wallet, customer: customer, balance_cents: 5_000) }
+
+      it 'une 2e soumission ne recrée pas de commande ni ne re-débite' do
+        create_wallet_order
+        first_token = JSON.parse(response.body)['order_token']
+        balance_after_first = wallet.reload.balance_cents
+
+        # La 2e requête simule un onglet concurrent : on remet le panier en session
+        # (le succès de la 1re l'a vidé) pour rejouer la soumission telle quelle.
+        post '/cart/add', params: { product_variant_id: variant.id, bake_day_id: bake_day.id, quantity: 1 }
+
+        expect { create_wallet_order }.not_to change { Order.where(status: :paid).count }
+        expect(JSON.parse(response.body)['order_token']).to eq(first_token)
+        expect(wallet.reload.balance_cents).to eq(balance_after_first)
+      end
+    end
+  end
 end

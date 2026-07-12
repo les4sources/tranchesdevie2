@@ -170,19 +170,28 @@
 
       <!-- Sélecteur de méthode de paiement -->
       <%# Par défaut, paiement en ligne uniquement. L'option « cash » n'apparaît
-          que pour les clients explicitement autorisés par l'admin (#36). %>
-      <% if @cash_payment_allowed %>
+          que pour les clients autorisés par l'admin (#36) ; l'option
+          « portefeuille » qu'aux clients dont le solde disponible couvre le total. %>
+      <% if @cash_payment_allowed || @wallet_payment_available %>
         <div class="mb-6">
           <label class="mb-3 block text-[13px] font-medium text-ink-700">Méthode de paiement</label>
           <div class="space-y-2.5">
-            <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="cash">
-              <input type="radio" name="payment_method" value="cash" class="h-[18px] w-[18px] accent-sage-600">
-              <span class="font-medium text-ink-900">Payer ma commande en liquide au retrait</span>
-            </label>
             <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="online">
               <input type="radio" name="payment_method" value="online" class="h-[18px] w-[18px] accent-sage-600" checked>
               <span class="font-medium text-ink-900">Payer en ligne avec Bancontact ou autre</span>
             </label>
+            <% if @wallet_payment_available %>
+              <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="wallet">
+                <input type="radio" name="payment_method" value="wallet" class="h-[18px] w-[18px] accent-sage-600">
+                <span class="font-medium text-ink-900">Payer avec mon portefeuille<span class="font-normal text-ink-500"> (solde : <%= number_to_currency(@wallet_available_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>)</span></span>
+              </label>
+            <% end %>
+            <% if @cash_payment_allowed %>
+              <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="cash">
+                <input type="radio" name="payment_method" value="cash" class="h-[18px] w-[18px] accent-sage-600">
+                <span class="font-medium text-ink-900">Payer ma commande en liquide au retrait</span>
+              </label>
+            <% end %>
           </div>
         </div>
       <% else %>
@@ -214,6 +223,17 @@
             Confirmer la commande
           </button>
           <p class="mt-2 text-center text-sm text-ink-500">Vous paierez en liquide lors du retrait de votre commande</p>
+        </div>
+      <% end %>
+
+      <!-- Bouton pour paiement portefeuille (solde disponible suffisant) -->
+      <% if @wallet_payment_available %>
+        <div id="wallet-order-section" class="hidden">
+          <button id="submit-wallet-order"
+                  class="flex h-12 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+            Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> avec mon portefeuille
+          </button>
+          <p class="mt-2 text-center text-sm text-ink-500">Le montant sera débité de votre portefeuille (solde : <%= number_to_currency(@wallet_available_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>)</p>
         </div>
       <% end %>
       </div>
@@ -249,60 +269,52 @@
   let stripeInitialized = false;
   let currentPaymentMethod = 'online'; // Par défaut, paiement en ligne (Bancontact)
 
+  // Affiche la bonne section (stripe / cash / wallet) selon la méthode et
+  // masque les autres. 'online' = Stripe/Bancontact ; toute autre valeur affiche
+  // le bouton de confirmation dédié (cash ou wallet).
+  function showSectionForMethod(method) {
+    const stripeSection = document.getElementById('stripe-payment-section');
+    const cashSection = document.getElementById('cash-order-section');
+    const walletSection = document.getElementById('wallet-order-section');
+
+    if (stripeSection) stripeSection.classList.toggle('hidden', method !== 'online');
+    if (cashSection) cashSection.classList.toggle('hidden', method !== 'cash');
+    if (walletSection) walletSection.classList.toggle('hidden', method !== 'wallet');
+  }
+
   // Initialiser l'état de la méthode de paiement
   function initializePaymentMethodState() {
     const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
-    const stripeSection = document.getElementById('stripe-payment-section');
-    const cashSection = document.getElementById('cash-order-section');
-    
+
     // Trouver le radio button sélectionné
     const selectedRadio = Array.from(paymentMethodRadios).find(radio => radio.checked);
     if (selectedRadio) {
       currentPaymentMethod = selectedRadio.value;
     }
-    
-    // Ajuster l'affichage selon la méthode sélectionnée
-    if (currentPaymentMethod === 'online') {
-      if (stripeSection) stripeSection.classList.remove('hidden');
-      if (cashSection) cashSection.classList.add('hidden');
-    } else {
-      if (stripeSection) stripeSection.classList.add('hidden');
-      if (cashSection) cashSection.classList.remove('hidden');
-    }
+
+    showSectionForMethod(currentPaymentMethod);
   }
 
   // Gérer le changement de méthode de paiement
   function handlePaymentMethodChange() {
     const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
-    const stripeSection = document.getElementById('stripe-payment-section');
-    const cashSection = document.getElementById('cash-order-section');
 
     paymentMethodRadios.forEach(radio => {
       radio.addEventListener('change', function() {
         currentPaymentMethod = this.value;
-        
+        showSectionForMethod(this.value);
+
         if (this.value === 'online') {
-          // Afficher la section Stripe et masquer le bouton cash
-          if (stripeSection) stripeSection.classList.remove('hidden');
-          if (cashSection) cashSection.classList.add('hidden');
-          
-          // Initialiser Stripe si pas déjà fait
+          // Initialiser Stripe si pas déjà fait, sinon réinitialiser le paiement
           if (!stripeInitialized) {
             initStripe();
           } else {
-            // Réinitialiser le paiement Stripe
             initializePayment();
           }
-        } else {
-          // Masquer la section Stripe et afficher le bouton cash
-          if (stripeSection) stripeSection.classList.add('hidden');
-          if (cashSection) cashSection.classList.remove('hidden');
-          
-          // Démontrer l'élément Stripe si présent
-          if (paymentElement) {
-            paymentElement.unmount();
-            paymentElement = null;
-          }
+        } else if (paymentElement) {
+          // Démonter l'élément Stripe si on quitte le paiement en ligne
+          paymentElement.unmount();
+          paymentElement = null;
         }
       });
     });
@@ -675,11 +687,74 @@
     });
   }
 
-  // Initialiser la gestion de la commande cash
+  // Gérer la soumission de commande payée par portefeuille
+  function handleWalletOrderSubmission() {
+    const submitWalletButton = document.getElementById('submit-wallet-order');
+    if (!submitWalletButton) return;
+
+    const defaultLabel = submitWalletButton.textContent;
+
+    submitWalletButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      // Vérifier que les informations client sont remplies
+      const firstName = document.getElementById('customer_first_name')?.value;
+      if (!firstName || firstName.trim() === '' || firstName.trim() === 'Client') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      const lastName = document.getElementById('customer_last_name')?.value;
+      if (!lastName || lastName.trim() === '') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      submitWalletButton.disabled = true;
+      submitWalletButton.textContent = 'Traitement...';
+
+      try {
+        const response = await fetch('<%= create_wallet_order_checkout_index_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<%= form_authenticity_token %>'
+          },
+          body: JSON.stringify({
+            first_name: document.getElementById('customer_first_name')?.value || '',
+            last_name: document.getElementById('customer_last_name')?.value || '',
+            email: document.getElementById('customer_email')?.value || '',
+            group_name: groupNameValue()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.location.href = '<%= success_checkout_index_url %>?order_token=' + data.order_token;
+        } else {
+          alert(data.error || 'Erreur lors du paiement par portefeuille');
+          submitWalletButton.disabled = false;
+          submitWalletButton.textContent = defaultLabel;
+        }
+      } catch (error) {
+        console.error("Erreur lors du paiement par portefeuille :", error);
+        alert('Erreur de connexion. Veuillez réessayer.');
+        submitWalletButton.disabled = false;
+        submitWalletButton.textContent = defaultLabel;
+      }
+    });
+  }
+
+  // Initialiser la gestion des commandes cash + portefeuille
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', handleCashOrderSubmission);
+    document.addEventListener('DOMContentLoaded', function() {
+      handleCashOrderSubmission();
+      handleWalletOrderSubmission();
+    });
   } else {
     handleCashOrderSubmission();
+    handleWalletOrderSubmission();
   }
   })(); // fin IIFE
 <% end %>

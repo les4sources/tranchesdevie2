@@ -334,8 +334,10 @@
                       span.ml-2.rounded-full.bg-amber-100.px-2.py-0.5.text-xs.font-semibold.text-amber-700 Lieu supprimé
                   - if location.description.present?
                     p.text-xs.text-slate-500 = location.description
+                  / `pluralize` n'accorde pas en locale fr (aucune règle d'inflexion
+                  / française) : on passe le pluriel explicitement.
                   p.mt-1.text-xs.text-slate-500
-                    = "#{pluralize(entry[:orders_count], 'commande')} · #{number_to_currency(entry[:total_cents] / 100.0, unit: '€', format: '%n %u')}"
+                    = "#{pluralize(entry[:orders_count], 'commande', 'commandes')} · #{number_to_currency(entry[:total_cents] / 100.0, unit: '€', format: '%n %u')}"
                 = link_to pickup_sheet_admin_bake_day_path(@bake_day, pickup_location_id: location.id),
                   class: "rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
                   | Feuille de retrait (PDF)

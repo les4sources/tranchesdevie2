@@ -464,6 +464,32 @@ RSpec.describe Order, type: :model do
     end
   end
 
+  describe 'point de retrait (#148)' do
+    let!(:default_location) { create(:pickup_location, :default) }
+    let(:anhee) { create(:pickup_location, name: "Marché d'Anhée") }
+    let(:bake_day) { create(:bake_day, :can_order) }
+
+    it "rejette un lieu qui n'est pas ouvert sur la fournée de la commande" do
+      order = build(:order, bake_day: bake_day, pickup_location: anhee)
+
+      expect(order).not_to be_valid
+      expect(order.errors[:pickup_location].join).to include("n'est pas disponible pour cette fournée")
+    end
+
+    it 'accepte un lieu ouvert sur la fournée' do
+      bake_day.pickup_location_ids = [ default_location.id, anhee.id ]
+      bake_day.save!
+
+      expect(build(:order, bake_day: bake_day, pickup_location: anhee)).to be_valid
+    end
+
+    it 'retombe sur le lieu par défaut de la fournée quand aucun lieu n\'est fourni' do
+      order = create(:order, bake_day: bake_day)
+
+      expect(order.pickup_location).to eq(default_location)
+    end
+  end
+
   describe '#bread_bags_cost_cents (#52)' do
     let(:bread) { create(:product_variant, product: create(:product, category: :breads, internal_category: :boulangerie)) }
 

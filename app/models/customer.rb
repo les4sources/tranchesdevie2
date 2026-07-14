@@ -44,6 +44,19 @@ class Customer < ApplicationRecord
     groups.maximum(:discount_percent) || 0
   end
 
+  # Dernier point de retrait choisi par le client (#148) : sert à pré-remplir le
+  # sélecteur du calendrier. On ignore les commandes annulées et les lieux
+  # supprimés. Retombe sur nil — l'appelant utilise alors le lieu par défaut.
+  def last_pickup_location
+    orders.where.not(status: :cancelled)
+          .where.not(pickup_location_id: nil)
+          .order(created_at: :desc)
+          .joins(:pickup_location)
+          .merge(PickupLocation.not_deleted)
+          .first
+          &.pickup_location
+  end
+
   # Returns the group with the highest discount (for display purposes).
   # When multiple groups have discounts, this is the one that determines the applied rate.
   def best_discount_group

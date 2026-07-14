@@ -126,6 +126,28 @@
       <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Paiement</h2>
       <div class="px-6 pb-6 pt-1">
 
+      <!-- Point de retrait (#148) : uniquement les lieux ouverts sur la fournée choisie. -->
+      <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
+        <p class="mb-2 text-sm font-medium text-ink-700">Où récupérez-vous votre commande&nbsp;?</p>
+        <div class="space-y-2" id="pickup_location_choices">
+          <% @pickup_locations.each do |location| %>
+            <label class="flex cursor-pointer items-start gap-2 rounded-md border border-flour-400 bg-white p-3 transition hover:border-sage-600">
+              <input type="radio"
+                     name="pickup_location_id"
+                     value="<%= location.id %>"
+                     class="mt-0.5 h-[18px] w-[18px] accent-sage-600"
+                     <%= "checked" if location == @selected_pickup_location %>>
+              <span>
+                <span class="block text-sm font-semibold text-ink-900"><%= location.name %></span>
+                <% if location.description.present? %>
+                  <span class="block text-[13px] text-ink-500"><%= location.description %></span>
+                <% end %>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
       <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
         <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
           <input type="checkbox" id="group_purchase_checkbox" class="h-[18px] w-[18px] rounded accent-sage-600">
@@ -345,6 +367,12 @@
     });
   }
 
+  // Point de retrait choisi (#148) : envoyé sur les 3 chemins de paiement.
+  function pickupLocationValue() {
+    const checked = document.querySelector('input[name="pickup_location_id"]:checked');
+    return checked ? checked.value : '';
+  }
+
   // Achat pour un groupe « 4 Sources » (#99) : valeur envoyée à la commande.
   function groupNameValue() {
     const cb = document.getElementById('group_purchase_checkbox');
@@ -498,7 +526,8 @@
         first_name: document.getElementById('customer_first_name')?.value || '',
         last_name: document.getElementById('customer_last_name')?.value || '',
         email: document.getElementById('customer_email')?.value || '',
-        group_name: groupNameValue()
+        group_name: groupNameValue(),
+        pickup_location_id: pickupLocationValue()
       })
     })
     .then(response => {
@@ -664,7 +693,8 @@
             first_name: document.getElementById('customer_first_name')?.value || '',
             last_name: document.getElementById('customer_last_name')?.value || '',
             email: document.getElementById('customer_email')?.value || '',
-            group_name: groupNameValue()
+            group_name: groupNameValue(),
+            pickup_location_id: pickupLocationValue()
           })
         });
 
@@ -724,7 +754,8 @@
             first_name: document.getElementById('customer_first_name')?.value || '',
             last_name: document.getElementById('customer_last_name')?.value || '',
             email: document.getElementById('customer_email')?.value || '',
-            group_name: groupNameValue()
+            group_name: groupNameValue(),
+            pickup_location_id: pickupLocationValue()
           })
         });
 

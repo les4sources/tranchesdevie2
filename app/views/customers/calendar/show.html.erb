@@ -7,6 +7,8 @@
      data-calendar-skip-wallet-value="<%= current_customer.skip_wallet_check? %>"
      data-calendar-intro-auto-open-value="<%= current_customer.calendar_intro_seen_at.nil? %>"
      data-calendar-intro-mark-seen-url-value="<%= calendar_intro_seen_path %>"
+     data-calendar-pickup-locations-value="<%= @pickup_locations_by_bake_day.map { |bake_day, locations| [bake_day.id, locations.map { |l| { id: l.id, name: l.name, description: l.description } }] }.to_h.to_json %>"
+     data-calendar-preferred-pickup-location-value="<%= @preferred_pickup_location&.id %>"
 >
   <div class="mb-7 flex flex-wrap items-end justify-between gap-3">
     <div>
@@ -90,6 +92,7 @@
                  data-bake-date="<%= l(bake_day.baked_on, format: '%A %d/%m').downcase %>"
                  <% if order %>
                  data-order-items="<%= order.order_items.map { |i| { product_variant_id: i.product_variant_id, qty: i.qty } }.to_json %>"
+                 data-order-pickup-location-id="<%= order&.pickup_location_id %>"
                  <% end %>
                  <% if can_order %>
                  data-action="dragover->calendar#dragOver dragleave->calendar#dragLeave drop->calendar#drop"
@@ -204,6 +207,7 @@
              data-bake-date="<%= l(bake_day.baked_on, format: '%A %d/%m').downcase %>"
              <% if order %>
              data-order-items="<%= order.order_items.map { |i| { product_variant_id: i.product_variant_id, qty: i.qty } }.to_json %>"
+                 data-order-pickup-location-id="<%= order&.pickup_location_id %>"
              <% end %>>
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
@@ -272,6 +276,9 @@
             <div class="max-h-[50vh] space-y-3 overflow-y-auto" data-calendar-target="productList">
               <!-- Products will be rendered here by Stimulus -->
             </div>
+
+            <!-- Point de retrait (#148) : rempli par Stimulus, limité aux lieux ouverts sur cette date -->
+            <div class="mt-4 border-t border-flour-300 pt-4" data-calendar-target="pickupLocation"></div>
 
             <!-- Total -->
             <div class="mt-4 flex items-center justify-between border-t border-flour-300 pt-4">

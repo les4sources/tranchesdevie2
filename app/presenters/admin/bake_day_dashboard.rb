@@ -9,6 +9,7 @@ module Admin
     def orders
       @orders ||= bake_day.orders
                            .includes(:customer,
+                                     :pickup_location,
                                      order_items: {
                                        product_variant: [
                                          :mold_type,
@@ -90,6 +91,33 @@ module Admin
           statuses: customer_orders.group_by(&:status).transform_values(&:count)
         }
       end.sort_by { |entry| [ entry[:customer].last_name.to_s.downcase, entry[:customer].first_name.to_s.downcase ] }
+    end
+
+    # Répartition par point de retrait (#148) : ce que les boulangers utilisent
+    # pour ventiler les produits entre les lieux le jour de la fournée.
+    #
+    # Renvoie une entrée par lieu OUVERT sur la fournée (même sans commande, pour
+    # que l'absence soit explicite), plus tout lieu qui porte des commandes sans
+    # être ouvert (cas d'un lieu supprimé depuis) — sans quoi ces commandes
+    # disparaîtraient silencieusement du tableau.
+    def pickup_location_breakdown
+      @pickup_location_breakdown ||= begin
+        orders_by_location = production_orders.group_by(&:pickup_location)
+
+        locations = (bake_day.open_pickup_locations.to_a + orders_by_location.keys.compact).uniq
+
+        locations.map do |location|
+          location_orders = orders_by_location[location] || []
+
+          {
+            pickup_location: location,
+            orders: location_orders.sort_by { |order| order.customer.full_name.to_s.downcase },
+            orders_count: location_orders.size,
+            total_cents: location_orders.sum(&:total_cents),
+            variant_stats: variant_stats_for(location_orders)
+          }
+        end.sort_by { |entry| [ entry[:pickup_location].position || 0, entry[:pickup_location].name.downcase ] }
+      end
     end
 
     def status_distribution
@@ -240,6 +268,22 @@ module Admin
     end
 
     private
+
+    # Récapitulatif agrégé des articles par variante, sur un sous-ensemble de
+    # commandes (celles d'un point de retrait). Même forme que `variant_stats`.
+    def variant_stats_for(subset_orders)
+      subset_orders
+        .flat_map(&:order_items)
+        .group_by(&:product_variant)
+        .map do |variant, items|
+          {
+            variant: variant,
+            product: variant.product,
+            units_count: items.sum(&:qty)
+          }
+        end
+        .sort_by { |stat| [ stat[:product].name.downcase, stat[:variant].name.downcase ] }
+    end
 
     PRODUCTION_STATUSES = %i[unpaid paid ready picked_up planned].freeze
 

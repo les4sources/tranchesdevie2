@@ -1,7 +1,7 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false, group_name: nil)
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false, group_name: nil, pickup_location: nil)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
@@ -9,6 +9,7 @@ class OrderCreationService
     @payment_method = payment_method
     @skip_capacity_check = skip_capacity_check
     @group_name = group_name.presence
+    @pickup_location = pickup_location
     @errors = []
   end
 
@@ -30,13 +31,16 @@ class OrderCreationService
         end
       end
 
+      # `pickup_location` nil → le modèle retombe sur le lieu par défaut de la
+      # fournée (cf. Order#assign_default_pickup_location).
       @order = Order.create!(
         customer: @customer,
         bake_day: @bake_day,
         total_cents: calculate_total,
         payment_intent_id: @payment_intent_id,
         status: initial_status,
-        group_name: @group_name
+        group_name: @group_name,
+        pickup_location: @pickup_location
       )
 
       create_order_items
@@ -53,6 +57,13 @@ class OrderCreationService
     @errors << "Bake day cut-off has passed" unless BakeDayService.can_order_for?(@bake_day.baked_on)
     @errors << "Cart is empty" if @cart_items.empty?
     @errors << "Customer is required" unless @customer
+
+    # Garde-fou serveur (#148) : un lieu non ouvert sur la fournée est rejeté ici,
+    # proprement, plutôt que de laisser la validation du modèle lever un
+    # RecordInvalid (500) au moment du `create!`.
+    if @pickup_location && !@bake_day.pickup_location_ids.include?(@pickup_location.id)
+      @errors << "Le point de retrait choisi n'est pas disponible pour cette fournée"
+    end
 
     # Check if order with same payment_intent_id already exists (idempotency)
     # Only check for online payments (cash orders don't have payment_intent_id)

@@ -1,13 +1,17 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["modal", "modalTitle", "modalItems", "modalTotal", "productList", "toast", "balanceIndicator", "saveBtn", "modalForm", "modalSuccess"]
+  static targets = ["modal", "modalTitle", "modalItems", "modalTotal", "productList", "toast", "balanceIndicator", "saveBtn", "modalForm", "modalSuccess", "pickupLocation"]
   static values = {
     updateUrl: { type: String, default: "/calendrier/update_day" },
     walletBalance: { type: Number, default: 0 },
     committed: { type: Number, default: 0 },
     reloadUrl: { type: String, default: "/portefeuille/recharger" },
-    skipWallet: { type: Boolean, default: false }
+    skipWallet: { type: Boolean, default: false },
+    // Lieux de retrait ouverts, indexés par id de fournée (#148).
+    pickupLocations: { type: Object, default: {} },
+    // Dernier lieu choisi par le client (à défaut, le lieu par défaut).
+    preferredPickupLocation: { type: String, default: "" }
   }
 
   connect() {
@@ -44,6 +48,7 @@ export default class extends Controller {
 
     this.currentBakeDayId = bakeDayId
     this.currentItems = this.loadExistingItems(bakeDayId)
+    this.currentPickupLocationId = this.resolvePickupLocationId(bakeDayId)
 
     // Calculate original total of this order (to exclude from committed)
     this.currentOrderOriginalTotal = this.calculateItemsTotal(this.currentItems)
@@ -56,6 +61,70 @@ export default class extends Controller {
 
     this.renderModal()
     this.showModal()
+  }
+
+  // Lieux de retrait ouverts sur cette date (#148).
+  pickupLocationsFor(bakeDayId) {
+    return this.pickupLocationsValue[String(bakeDayId)] || []
+  }
+
+  // Lieu pré-sélectionné pour une date : celui déjà choisi sur la commande
+  // planifiée, sinon le dernier lieu choisi par le client (ou le lieu par
+  // défaut) — et seulement s'il est ouvert sur cette date.
+  resolvePickupLocationId(bakeDayId) {
+    const open = this.pickupLocationsFor(bakeDayId)
+    if (open.length === 0) return ""
+
+    const bakeDayEl = document.querySelector(`[data-bake-day-id="${bakeDayId}"]`)
+    const candidates = [bakeDayEl?.dataset.orderPickupLocationId, this.preferredPickupLocationValue]
+
+    for (const candidate of candidates) {
+      if (candidate && open.some(l => String(l.id) === String(candidate))) return String(candidate)
+    }
+    return String(open[0].id)
+  }
+
+  renderPickupLocations() {
+    if (!this.hasPickupLocationTarget) return
+
+    const open = this.pickupLocationsFor(this.currentBakeDayId)
+
+    if (open.length === 0) {
+      this.pickupLocationTarget.innerHTML = ""
+      return
+    }
+
+    const choices = open.map(location => {
+      const checked = String(location.id) === String(this.currentPickupLocationId) ? "checked" : ""
+      const description = location.description
+        ? `<span class="block text-[13px] text-ink-500">${this.escapeHtml(location.description)}</span>`
+        : ""
+
+      return `
+        <label class="flex cursor-pointer items-start gap-2 rounded-md border border-flour-400 bg-white p-2.5 transition hover:border-sage-600">
+          <input type="radio" name="calendar_pickup_location" value="${location.id}" ${checked}
+                 class="mt-0.5 h-[18px] w-[18px] accent-sage-600"
+                 data-action="change->calendar#selectPickupLocation">
+          <span>
+            <span class="block text-sm font-semibold text-ink-900">${this.escapeHtml(location.name)}</span>
+            ${description}
+          </span>
+        </label>`
+    }).join("")
+
+    this.pickupLocationTarget.innerHTML = `
+      <p class="mb-2 text-sm font-semibold text-ink-900">Point de retrait</p>
+      <div class="space-y-2">${choices}</div>`
+  }
+
+  selectPickupLocation(event) {
+    this.currentPickupLocationId = event.target.value
+  }
+
+  escapeHtml(value) {
+    const div = document.createElement("div")
+    div.textContent = value
+    return div.innerHTML
   }
 
   loadExistingItems(bakeDayId) {
@@ -84,6 +153,8 @@ export default class extends Controller {
 
   renderModal() {
     if (!this.hasModalTarget) return
+
+    this.renderPickupLocations()
 
     if (this.hasProductListTarget) {
       // Group variants by category then by product name
@@ -253,7 +324,8 @@ export default class extends Controller {
         },
         body: JSON.stringify({
           bake_day_id: this.currentBakeDayId,
-          items: this.currentItems
+          items: this.currentItems,
+          pickup_location_id: this.currentPickupLocationId
         })
       })
 
@@ -489,7 +561,11 @@ export default class extends Controller {
         },
         body: JSON.stringify({
           bake_day_id: bakeDayId,
-          items: existingItems
+          items: existingItems,
+          // Glisser-déposer : pas de modale, donc pas de choix explicite. On
+          // conserve le lieu déjà choisi sur cette date (à défaut, le lieu
+          // habituel du client).
+          pickup_location_id: this.resolvePickupLocationId(bakeDayId)
         })
       })
 

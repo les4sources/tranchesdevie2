@@ -57,6 +57,7 @@ module Api
             id: "integer", baked_on: "date", cut_off_at: "datetime", can_order: "boolean",
             market_day: "boolean", internal_note: "string|null", total_breads_count: "integer",
             total_sales_euros: "number", oven_capacity_grams: "integer", artisans: "array (détail)",
+            pickup_locations: "array<pickup_location> — lieux de retrait ouverts sur cette fournée (détail)",
             capacity: "object {molds,kneader,oven,fill_percentage,fully_booked} (détail)",
             created_at: "datetime", updated_at: "datetime"
           },
@@ -83,7 +84,9 @@ module Api
             source: "enum: checkout|calendar|admin", total_cents: "integer", total_euros: "number",
             requires_invoice: "boolean", payment_method: "enum: stripe|wallet|null",
             payment_received: "boolean", paid_at: "datetime|null", customer_id: "integer",
-            bake_day_id: "integer", items: "array<order_item>", payment: "object|null (détail)",
+            bake_day_id: "integer", pickup_location_id: "integer",
+            pickup_location: "object {id,name,description} (lieu de retrait)",
+            items: "array<order_item>", payment: "object|null (détail)",
             created_at: "datetime", updated_at: "datetime"
           },
           filters: {
@@ -137,6 +140,18 @@ module Api
           key: "mold_types", singular: "mold_type", title: "Types de moules", pii: false, collection: true,
           description: "Types de moules avec limite d'unités par jour de fournée.",
           fields: { id: "integer", name: "string", limit: "integer", position: "integer", created_at: "datetime", updated_at: "datetime" }
+        },
+        {
+          key: "pickup_locations", singular: "pickup_location", title: "Points de retrait", pii: false, collection: true,
+          description: "Lieux où le client récupère sa commande. Chaque fournée n'ouvre qu'un sous-ensemble de lieux " \
+                       "(« Marché d'Anhée » les jours de marché, par exemple). Un seul lieu est le lieu par défaut. " \
+                       "La collection masque les lieux supprimés ; leur fiche reste consultable car des commandes les référencent.",
+          fields: {
+            id: "integer", name: "string", description: "string|null (affichée au client)",
+            default: "boolean (lieu par défaut, un seul)", position: "integer (ordre d'affichage)",
+            deleted: "boolean (supprimé — masqué des sélecteurs client)",
+            created_at: "datetime", updated_at: "datetime"
+          }
         },
         {
           key: "ingredients", singular: "ingredient", title: "Ingrédients", pii: false, collection: true,

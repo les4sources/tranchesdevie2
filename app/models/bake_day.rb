@@ -17,13 +17,36 @@ class BakeDay < ApplicationRecord
   has_many :orders, dependent: :restrict_with_error
   has_many :bake_day_artisans, dependent: :destroy
   has_many :baking_artisans, through: :bake_day_artisans, source: :artisan
+  has_many :bake_day_pickup_locations, dependent: :destroy
+  has_many :pickup_locations, through: :bake_day_pickup_locations
 
   validates :baked_on, presence: true, uniqueness: true
   validates :cut_off_at, presence: true
+  validate :pickup_locations_in_use_still_open
+
+  after_save :sync_pickup_locations
 
   scope :future, -> { where("baked_on >= ?", Date.current) }
   scope :past, -> { where("baked_on < ?", Date.current) }
   scope :ordered, -> { order(:baked_on) }
+
+  # Lieux de retrait proposables au client sur cette fournée : les lieux ouverts,
+  # non supprimés, dans l'ordre d'affichage.
+  def open_pickup_locations
+    pickup_locations.not_deleted.ordered
+  end
+
+  # Le setter d'ActiveRecord écrirait les jointures IMMÉDIATEMENT, avant même la
+  # validation — un lieu déjà commandé serait donc décoché en base avant qu'on
+  # puisse le refuser. On met les ids en attente, on valide, puis on applique en
+  # `after_save` (cf. `sync_pickup_locations`).
+  def pickup_location_ids=(ids)
+    @staged_pickup_location_ids = Array(ids).reject(&:blank?).map(&:to_i)
+  end
+
+  def pickup_location_ids
+    @staged_pickup_location_ids || super
+  end
 
   def can_order?
     Time.current < cut_off_at
@@ -64,5 +87,72 @@ class BakeDay < ApplicationRecord
       cut_off_date = date - days_before.days
       Time.zone.parse("#{cut_off_date} 18:00:00")
     end
+  end
+
+  private
+
+  # Ids réellement ouverts en base (indépendamment des ids mis en attente par le
+  # formulaire), source de vérité pour détecter un décochage.
+  def persisted_pickup_location_ids
+    return [] if new_record?
+
+    BakeDayPickupLocation.where(bake_day_id: id).pluck(:pickup_location_id)
+  end
+
+  # Refus bloquant : on ne retire pas d'une fournée un lieu auquel des commandes
+  # de cette même fournée sont déjà rattachées (elles deviendraient incohérentes).
+  def pickup_locations_in_use_still_open
+    return if @staged_pickup_location_ids.nil? || new_record?
+
+    removed_ids = persisted_pickup_location_ids - @staged_pickup_location_ids
+    return if removed_ids.empty?
+
+    PickupLocation.where(id: removed_ids).each do |location|
+      count = orders.where(pickup_location_id: location.id).count
+      next if count.zero?
+
+      errors.add(
+        :pickup_locations,
+        "« #{location.name} » ne peut pas être retiré de cette fournée : " \
+        "#{pluralize(count, 'commande y est rattachée', 'commandes y sont rattachées')}."
+      )
+    end
+  end
+
+  # `ActionView::Helpers::TextHelper#pluralize` n'est pas disponible dans un
+  # modèle ; on garde la même forme (nombre + libellé accordé) sans l'inclure.
+  def pluralize(count, singular, plural)
+    "#{count} #{count == 1 ? singular : plural}"
+  end
+
+  # Applique les lieux mis en attente (une fois la validation passée), puis
+  # garantit qu'à la création le lieu par défaut est toujours ouvert.
+  def sync_pickup_locations
+    staged = @staged_pickup_location_ids
+    @staged_pickup_location_ids = nil
+
+    apply_staged_pickup_locations(staged) if staged
+    open_default_pickup_location if saved_change_to_id?
+
+    association(:bake_day_pickup_locations).reset
+    association(:pickup_locations).reset
+  end
+
+  def apply_staged_pickup_locations(staged_ids)
+    scope = BakeDayPickupLocation.where(bake_day_id: id)
+    scope.where.not(pickup_location_id: staged_ids).destroy_all
+
+    already_open = BakeDayPickupLocation.where(bake_day_id: id).pluck(:pickup_location_id)
+    (staged_ids - already_open).each do |location_id|
+      BakeDayPickupLocation.create!(bake_day_id: id, pickup_location_id: location_id)
+    end
+  end
+
+  # À la création d'une fournée, le lieu par défaut est automatiquement coché.
+  def open_default_pickup_location
+    default = PickupLocation.default_location
+    return unless default
+
+    BakeDayPickupLocation.find_or_create_by!(bake_day_id: id, pickup_location_id: default.id)
   end
 end

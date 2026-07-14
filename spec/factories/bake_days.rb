@@ -4,6 +4,14 @@ FactoryBot.define do
     baked_on { Date.current.next_occurring(:tuesday) }
     cut_off_at { BakeDay.calculate_cut_off_for(baked_on) || 2.days.ago }
 
+    # Toute fournée ouvre au moins le lieu de retrait par défaut (#148) — comme
+    # en production, où « Les 4 Sources » est créé par migration et coché
+    # automatiquement sur chaque nouvelle fournée. Sans lui, les commandes n'ont
+    # aucun lieu où retomber.
+    before(:create) do
+      PickupLocation.default_location || FactoryBot.create(:pickup_location, :default)
+    end
+
     trait :tuesday do
       baked_on { Date.current.next_occurring(:tuesday) }
       cut_off_at { BakeDay.calculate_cut_off_for(baked_on) }

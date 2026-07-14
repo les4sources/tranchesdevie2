@@ -31,6 +31,16 @@
         <p class="text-ink-700"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></p>
       </div>
 
+      <% if @order.pickup_location %>
+        <div class="mb-6">
+          <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Point de retrait</h2>
+          <p class="font-semibold text-ink-900"><%= @order.pickup_location.name %></p>
+          <% if @order.pickup_location.description.present? %>
+            <p class="text-sm text-ink-500"><%= @order.pickup_location.description %></p>
+          <% end %>
+        </div>
+      <% end %>
+
       <div class="mb-6">
         <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Articles</h2>
         <div class="space-y-1">

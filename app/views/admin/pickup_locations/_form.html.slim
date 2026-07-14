@@ -1,0 +1,45 @@
+= form_with model: [:admin, pickup_location], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if pickup_location.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - pickup_location.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-3.gap-6
+    .space-y-2.md:col-span-2
+      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :name, class: admin_input_class
+    .space-y-2
+      = f.label :position, "Ordre d'affichage", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :position, class: admin_input_class
+
+  .space-y-2
+    = f.label :description, "Description affichée au client", class: "block text-sm font-medium text-gray-700"
+    = f.text_area :description, rows: 3, class: admin_input_class
+    p.text-xs.text-gray-500 Courte phrase affichée sous le nom du lieu, au checkout et dans le calendrier.
+
+  .space-y-2
+    label.flex.items-center.gap-2.cursor-pointer
+      = f.check_box :default, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      span.text-sm.font-medium.text-gray-700 Point de retrait par défaut
+    p.text-xs.text-gray-500
+      | Un seul lieu peut être par défaut. Il est pré-sélectionné au checkout et automatiquement ouvert sur chaque nouvelle fournée.
+
+  / Cochage bidirectionnel (#148) : on ouvre/ferme ce lieu sur les fournées à venir.
+  / Les fournées passées ne sont pas listées — leur rattachement est conservé tel quel.
+  .space-y-2
+    span.block.text-sm.font-medium.text-gray-700 Fournées à venir sur lesquelles ce lieu est ouvert
+    - assignable = PickupLocation.assignable_bake_days
+    - if assignable.any?
+      .mt-2.grid.grid-cols-1.sm:grid-cols-2.lg:grid-cols-3.gap-2
+        = f.collection_check_boxes :bake_day_ids, assignable, :id, ->(bake_day) { l(bake_day.baked_on, format: :long) } do |b|
+          label.flex.items-center.gap-2.rounded-md.border.border-gray-200.px-3.py-2.cursor-pointer.hover:bg-gray-50
+            = b.check_box class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            = b.text
+    - else
+      p.text-sm.text-gray-500 Aucune fournée à venir.
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_pickup_locations_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

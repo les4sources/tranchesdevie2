@@ -7,6 +7,7 @@
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Commandes
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Capacité
           th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Artisans
+          th.px-6.py-3.text-left.text-xs.font-medium.text-gray-500.uppercase Points de retrait
       tbody.bg-white.divide-y.divide-gray-200
         - bake_days.each do |bake_day|
           tr
@@ -44,6 +45,12 @@
             td.px-6.py-4.text-gray-600
               - if bake_day.baking_artisans.any?
                 = bake_day.baking_artisans.map(&:name).join(", ")
+              - else
+                span.text-gray-400 —
+            td.px-6.py-4.text-gray-600
+              - locations = bake_day.pickup_locations.reject(&:deleted_at).sort_by { |l| [ l.position || 0, l.name ] }
+              - if locations.any?
+                = locations.map(&:name).join(", ")
               - else
                 span.text-gray-400 —
             td.px-6.py-4.whitespace-nowrap

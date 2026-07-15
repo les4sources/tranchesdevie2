@@ -6,6 +6,27 @@ RSpec.describe "Admin::BakeDays", type: :request do
     post admin_login_path, params: { password: "test-admin-pw" }
   end
 
+  # #148 : le tableau des fournées expose une colonne « Points de retrait » listant
+  # les lieux ouverts sur chaque fournée. Un lieu soft-deleted encore rattaché à une
+  # fournée passée ne doit pas apparaître (cf. PickupLocation#not_deleted).
+  describe "GET /admin/bake_days — colonne points de retrait" do
+    it "liste les lieux ouverts de la fournée et masque les lieux supprimés" do
+      bake_day = create(:bake_day, :tuesday) # ouvre « Les 4 Sources » (défaut) automatiquement
+      marche = create(:pickup_location, name: "Marché d'Anhée")
+      supprime = create(:pickup_location, :deleted, name: "Ancien dépôt")
+      BakeDayPickupLocation.create!(bake_day: bake_day, pickup_location: marche)
+      BakeDayPickupLocation.create!(bake_day: bake_day, pickup_location: supprime)
+
+      get admin_bake_days_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Points de retrait")
+      expect(response.body).to include("Les 4 Sources")
+      expect(response.body).to include("Marché d&#39;Anhée")
+      expect(response.body).not_to include("Ancien dépôt")
+    end
+  end
+
   # #71 : le planning du jour de cuisson contient la matrice « Commandes par client »
   # (produits en colonnes) dont l'en-tête doit rester figé au défilement. On vérifie
   # ici que la page rend sans erreur quand il y a au moins une commande (la matrice

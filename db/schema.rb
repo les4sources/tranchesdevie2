@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_14_010001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -76,6 +76,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
     t.index ["artisan_id"], name: "index_bake_day_artisans_on_artisan_id"
     t.index ["bake_day_id", "artisan_id"], name: "index_bake_day_artisans_on_bake_day_id_and_artisan_id", unique: true
     t.index ["bake_day_id"], name: "index_bake_day_artisans_on_bake_day_id"
+  end
+
+  create_table "bake_day_pickup_locations", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.bigint "pickup_location_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bake_day_id", "pickup_location_id"], name: "index_bake_day_pickup_locations_on_pair", unique: true
+    t.index ["bake_day_id"], name: "index_bake_day_pickup_locations_on_bake_day_id"
+    t.index ["pickup_location_id"], name: "index_bake_day_pickup_locations_on_pickup_location_id"
   end
 
   create_table "bake_days", force: :cascade do |t|
@@ -268,11 +278,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
     t.integer "payment_status", default: 0, null: false
     t.integer "invoice_status", default: 0, null: false
     t.string "group_name"
+    t.bigint "pickup_location_id", null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
     t.index ["payment_status"], name: "index_orders_on_payment_status"
+    t.index ["pickup_location_id"], name: "index_orders_on_pickup_location_id"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
     t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
@@ -301,6 +313,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
     t.index ["code"], name: "index_phone_verifications_on_code"
     t.index ["email"], name: "index_phone_verifications_on_email"
     t.index ["phone_e164"], name: "index_phone_verifications_on_phone_e164"
+  end
+
+  create_table "pickup_locations", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.boolean "default", default: false, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["default"], name: "index_pickup_locations_on_single_default", unique: true, where: "((\"default\" = true) AND (deleted_at IS NULL))"
+    t.index ["deleted_at"], name: "index_pickup_locations_on_deleted_at"
   end
 
   create_table "product_availabilities", force: :cascade do |t|
@@ -371,7 +395,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
     t.string "channel", default: "store", null: false
     t.datetime "deleted_at"
     t.integer "internal_category", default: 0, null: false
-    t.boolean "pizza_party", default: false, null: false
     t.integer "pizza_party_role", default: 0, null: false
     t.index ["category", "position", "name"], name: "index_products_on_category_and_position_and_name"
     t.index ["category"], name: "index_products_on_category"
@@ -611,6 +634,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
   add_foreign_key "artisan_revenue_shares", "artisans"
   add_foreign_key "bake_day_artisans", "artisans"
   add_foreign_key "bake_day_artisans", "bake_days"
+  add_foreign_key "bake_day_pickup_locations", "bake_days"
+  add_foreign_key "bake_day_pickup_locations", "pickup_locations"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
   add_foreign_key "group_product_discounts", "groups"
@@ -623,6 +648,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_120000) do
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"
   add_foreign_key "orders", "customers"
+  add_foreign_key "orders", "pickup_locations"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"
   add_foreign_key "product_flours", "flours"

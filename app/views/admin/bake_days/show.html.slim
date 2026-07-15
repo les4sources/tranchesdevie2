@@ -313,8 +313,74 @@
         | Articles & variantes
       button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="timeline" data-action="dashboard-tabs#show"
         | Flux des commandes
+      button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="pickup" data-action="dashboard-tabs#show"
+        | Par point de retrait
       button.rounded-full.bg-gray-100.px-4.py-2.text-sm.font-semibold.text-slate-600 type="button" data-dashboard-tabs-target="tab" data-tab="flags" data-action="dashboard-tabs#show"
         | Drapeaux
+
+    / Répartition par point de retrait (#148) : commandes + récapitulatif agrégé
+    / des articles pour chaque lieu, et la feuille d'émargement PDF à imprimer.
+    .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="pickup"
+      - if @dashboard.pickup_location_breakdown.any?
+        .space-y-6
+          - @dashboard.pickup_location_breakdown.each do |entry|
+            - location = entry[:pickup_location]
+            .rounded-xl.border.border-slate-200.overflow-hidden
+              .flex.flex-wrap.items-center.justify-between.gap-3.border-b.border-slate-200.bg-slate-50.px-4.py-3
+                div
+                  p.font-semibold.text-slate-900
+                    = location.name
+                    - if location.deleted_at.present?
+                      span.ml-2.rounded-full.bg-amber-100.px-2.py-0.5.text-xs.font-semibold.text-amber-700 Lieu supprimé
+                  - if location.description.present?
+                    p.text-xs.text-slate-500 = location.description
+                  / `pluralize` n'accorde pas en locale fr (aucune règle d'inflexion
+                  / française) : on passe le pluriel explicitement.
+                  p.mt-1.text-xs.text-slate-500
+                    = "#{pluralize(entry[:orders_count], 'commande', 'commandes')} · #{number_to_currency(entry[:total_cents] / 100.0, unit: '€', format: '%n %u')}"
+                = link_to pickup_sheet_admin_bake_day_path(@bake_day, pickup_location_id: location.id),
+                  class: "rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                  | Feuille de retrait (PDF)
+
+              - if entry[:orders].any?
+                .grid.grid-cols-1.gap-4.p-4.lg:grid-cols-2
+                  / Récapitulatif agrégé : ce qui permet de répartir les produits.
+                  div
+                    p.mb-2.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500 Articles à préparer pour ce lieu
+                    .overflow-x-auto.rounded-lg.border.border-slate-100
+                      table.min-w-full.divide-y.divide-slate-100.text-sm
+                        thead.bg-slate-50.text-xs.uppercase.tracking-wide.text-slate-500
+                          tr
+                            th.px-3.py-2.text-left Article
+                            th.px-3.py-2.text-right Quantité
+                        tbody.divide-y.divide-slate-50.bg-white
+                          - entry[:variant_stats].each do |stat|
+                            tr
+                              td.px-3.py-2.text-slate-700
+                                | #{stat[:product].name} (#{stat[:variant].name})
+                              td.px-3.py-2.text-right.font-semibold.text-slate-900 = stat[:units_count]
+
+                  / Détail des commandes du lieu.
+                  div
+                    p.mb-2.text-xs.font-semibold.uppercase.tracking-wide.text-slate-500 Commandes
+                    .space-y-2
+                      - entry[:orders].each do |order|
+                        .rounded-lg.border.border-slate-100.p-3
+                          .flex.items-start.justify-between.gap-3
+                            div
+                              p.text-sm.font-semibold.text-slate-900 = order.customer.full_name
+                              p.text-xs.text-slate-500 = order.order_number
+                            p.text-sm.font-semibold.text-slate-900.whitespace-nowrap
+                              = number_to_currency(order.total_cents / 100.0, unit: "€", format: "%n %u")
+                          ul.mt-2.space-y-0.5
+                            - order.order_items.each do |item|
+                              li.text-xs.text-slate-600
+                                | #{item.qty} × #{item.product_variant.product&.name || 'Produit supprimé'} (#{item.product_variant.name})
+              - else
+                p.px-4.py-6.text-center.text-sm.text-slate-500
+                  | Aucune commande sur ce point de retrait pour cette fournée.
+      - else
+        p.text-center.text-sm.text-slate-500 Aucun point de retrait ouvert sur cette fournée.
 
     .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="products"
       .flex.flex-wrap.items-center.justify-between.gap-3 data-controller="dashboard-filter"

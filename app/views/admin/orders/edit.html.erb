@@ -44,6 +44,19 @@
                      { include_blank: "Sélectionner un jour" },
                      class: "mt-1 #{admin_input_class}" %>
       </div>
+
+      <%# Point de retrait (#148) : restreint aux lieux ouverts sur la fournée de
+          cette commande. Si la fournée est changée ci-dessus, la liste ne se met
+          pas à jour dynamiquement — la validation du modèle refuse alors un lieu
+          incohérent à l'enregistrement. %>
+      <div>
+        <%= f.label :pickup_location_id, "Point de retrait", class: "block text-sm font-medium text-gray-700" %>
+        <% pickup_options = @order.bake_day.open_pickup_locations.map { |location| [location.name, location.id] } %>
+        <%= f.select :pickup_location_id,
+                     options_for_select(pickup_options, @order.pickup_location_id),
+                     { include_blank: "Sélectionner un point de retrait" },
+                     class: "mt-1 #{admin_input_class}" %>
+      </div>
     </div>
 
     <div class="mt-8">

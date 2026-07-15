@@ -1,0 +1,21 @@
+/ Points de retrait ouverts sur cette fournée (#148). Partial partagé par `new`
+/ et `edit`, qui sont sinon dupliquées.
+/
+/ Un lieu déjà utilisé par des commandes de cette fournée ne peut pas être
+/ décoché : la validation du modèle refuse l'enregistrement et le formulaire est
+/ ré-affiché avec le nombre de commandes concernées.
+.mb-4
+  span.block.text-gray-700.font-medium.mb-2 Points de retrait ouverts sur cette fournée
+  - locations = PickupLocation.not_deleted.ordered
+  - if locations.any?
+    .grid.grid-cols-1.sm:grid-cols-2.lg:grid-cols-3.gap-2
+      = f.collection_check_boxes :pickup_location_ids, locations, :id, :name do |b|
+        label.flex.items-center.gap-2.rounded-md.border.border-gray-200.px-3.py-2.cursor-pointer.hover:bg-gray-50
+          = b.check_box class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          = b.text
+    p.mt-2.text-xs.text-gray-500
+      | Le lieu par défaut est toujours ouvert à la création d'une fournée.
+  - else
+    p.text-sm.text-gray-500
+      | Aucun point de retrait défini.
+      =< link_to "En créer un", new_admin_pickup_location_path, class: "text-blue-600 hover:underline"

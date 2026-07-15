@@ -205,6 +205,7 @@ class Admin::OrdersController < Admin::BaseController
     params.require(:order).permit(
       :customer_id,
       :bake_day_id,
+      :pickup_location_id,
       :status,
       :payment_status,
       :requires_invoice,

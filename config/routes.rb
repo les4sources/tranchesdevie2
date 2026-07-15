@@ -104,6 +104,7 @@ Rails.application.routes.draw do
       resources :groups, only: [ :index, :show ]
       resources :flours, only: [ :index, :show ]
       resources :mold_types, only: [ :index, :show ]
+      resources :pickup_locations, only: [ :index, :show ]
       resources :ingredients, only: [ :index, :show ]
       resources :artisans, only: [ :index, :show ]
       resource :production_setting, only: [ :show ]
@@ -177,8 +178,15 @@ Rails.application.routes.draw do
       member do
         get :confirm_cancel
         post :cancel
+        # Feuille d'émargement PDF d'un point de retrait (#148), paramétrée par
+        # ?pickup_location_id= — même pattern que Admin::InvoicesController.
+        get :pickup_sheet
       end
     end
+
+    # Points de retrait (#148) : CRUD + cochage des fournées ouvertes.
+    resources :pickup_locations, path: "points-de-retrait",
+      only: [ :index, :new, :create, :edit, :update, :destroy ]
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do

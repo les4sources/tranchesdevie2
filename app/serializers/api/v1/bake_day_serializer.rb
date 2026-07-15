@@ -24,6 +24,9 @@ module Api
 
         if detail?
           data[:artisans] = object.baking_artisans.map { |a| { id: a.id, name: a.name } }
+          data[:pickup_locations] = object.open_pickup_locations.map do |location|
+            { id: location.id, name: location.name, description: location.description, default: location.default? }
+          end
           data[:capacity] = capacity_hash
         end
 

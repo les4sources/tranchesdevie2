@@ -4,6 +4,13 @@ class CheckoutController < ApplicationController
   # remonter un ActiveRecord::RecordInvalid muet vers Sentry (#135, TRANCHESDEVIE-G/H).
   class BlankFirstNameError < StandardError; end
 
+  # Point de retrait inconnu ou supprimé (#148). Erreur utilisateur (page périmée,
+  # requête forgée) → 422 ciblé, jamais un 500. Le lieu simplement « non ouvert
+  # sur la fournée » est lui rejeté par OrderCreationService.
+  class UnknownPickupLocationError < StandardError; end
+
+  PICKUP_LOCATION_ERROR = "Le point de retrait choisi n'est pas disponible.".freeze
+
   # Espace de nommage du verrou consultatif « paiement portefeuille » (forme à
   # deux entiers). Postgres traite pg_advisory_xact_lock(int8) et (int4,int4)
   # dans des espaces DISTINCTS : aucune collision possible avec le verrou
@@ -48,6 +55,11 @@ class CheckoutController < ApplicationController
     @wallet = @customer&.persisted? ? @customer.wallet : nil
     @wallet_available_cents = @wallet&.available_balance_cents || 0
     @wallet_payment_available = @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
+
+    # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
+    # est pré-sélectionné.
+    @pickup_locations = @bake_day.open_pickup_locations
+    @selected_pickup_location = @pickup_locations.find(&:default?) || @pickup_locations.first
   end
 
   def verify_phone
@@ -189,7 +201,8 @@ class CheckoutController < ApplicationController
       bake_day: @bake_day,
       cart_items: @cart,
       payment_method: "online",
-      group_name: json_params["group_name"]
+      group_name: json_params["group_name"],
+      pickup_location: requested_pickup_location(json_params)
     )
     order = service.call
 
@@ -230,6 +243,8 @@ class CheckoutController < ApplicationController
       client_secret: payment_intent.client_secret,
       payment_intent_id: payment_intent.id
     }
+  rescue UnknownPickupLocationError
+    render json: { error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
   rescue BlankFirstNameError
     # Prénom vide (erreur utilisateur, pas un incident) : 422 ciblé sur le champ,
     # jamais remonté en erreur Sentry. On log en warning pour l'observabilité.
@@ -338,7 +353,8 @@ class CheckoutController < ApplicationController
       bake_day: bake_day,
       cart_items: cart_items,
       payment_method: "cash",
-      group_name: json_params["group_name"]
+      group_name: json_params["group_name"],
+      pickup_location: requested_pickup_location(json_params)
     )
 
     order = service.call
@@ -365,6 +381,8 @@ class CheckoutController < ApplicationController
       success: true,
       order_token: order.public_token
     }
+  rescue UnknownPickupLocationError
+    render json: { success: false, error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
   rescue StandardError => e
     Rails.logger.error("Error creating cash order: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
@@ -413,6 +431,10 @@ class CheckoutController < ApplicationController
       return
     end
 
+    # Résolu AVANT la transaction : une levée sous le verrou consultatif ne doit
+    # pas remonter au travers du rollback.
+    pickup_location = requested_pickup_location(json_params)
+
     paid_order = nil
     wallet_error = nil
 
@@ -438,7 +460,8 @@ class CheckoutController < ApplicationController
           bake_day: @bake_day,
           cart_items: session[:cart] || [],
           payment_method: "wallet",
-          group_name: json_params["group_name"]
+          group_name: json_params["group_name"],
+          pickup_location: pickup_location
         )
         created = service.call
 
@@ -484,6 +507,8 @@ class CheckoutController < ApplicationController
     session[:email] = nil
 
     render json: { success: true, order_token: order.public_token }
+  rescue UnknownPickupLocationError
+    render json: { success: false, error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
   rescue BlankFirstNameError
     # Prénom vide (erreur utilisateur) : 422 ciblé, comme le tunnel Stripe (#135/#143).
     Rails.logger.warn("[checkout] first_name_blank (wallet) — #{checkout_sentry_context.inspect}")
@@ -621,6 +646,16 @@ class CheckoutController < ApplicationController
     return nil unless payment_intent_id.present?
 
     Order.uncached { Order.find_by(payment_intent_id: payment_intent_id) }
+  end
+
+  # Point de retrait demandé par le client (#148). Absent → nil, et le modèle
+  # retombe alors sur le lieu par défaut de la fournée. Inconnu ou supprimé →
+  # on lève, plutôt que de retomber silencieusement sur un autre lieu.
+  def requested_pickup_location(json_params)
+    id = json_params["pickup_location_id"]
+    return nil if id.blank?
+
+    PickupLocation.not_deleted.find_by(id: id) || raise(UnknownPickupLocationError)
   end
 
   def ensure_cart_not_empty

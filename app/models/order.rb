@@ -30,6 +30,7 @@ class Order < ApplicationRecord
 
   belongs_to :customer
   belongs_to :bake_day
+  belongs_to :pickup_location
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
   has_one :payment, dependent: :destroy
@@ -41,11 +42,13 @@ class Order < ApplicationRecord
   validates :order_number, presence: true, uniqueness: true
   validates :status, presence: true
   validates :requires_invoice, inclusion: { in: [ true, false ] }
+  validate :pickup_location_open_on_bake_day
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
+  before_validation :assign_default_pickup_location, on: :create
 
   scope :recent, -> { order(created_at: :desc) }
   scope :by_bake_day, ->(bake_day) { where(bake_day: bake_day) }
@@ -417,6 +420,28 @@ class Order < ApplicationRecord
   end
 
   private
+
+  # Toute commande a un point de retrait (#148). Les chemins qui n'en fournissent
+  # pas (création admin, reprise d'une commande historique) retombent sur le lieu
+  # par défaut de la fournée — « Les 4 Sources » dans les faits.
+  def assign_default_pickup_location
+    return if pickup_location_id.present?
+
+    open_locations = bake_day ? bake_day.open_pickup_locations.to_a : []
+    fallback = open_locations.find(&:default?) || open_locations.first || PickupLocation.default_location
+
+    self.pickup_location_id = fallback&.id
+  end
+
+  # Une commande ne peut pas être retirée dans un lieu qui n'est pas ouvert sur
+  # sa fournée. Garde-fou serveur : le sélecteur client masque déjà ces lieux,
+  # mais une requête forgée ou une page périmée doit être rejetée ici.
+  def pickup_location_open_on_bake_day
+    return if pickup_location_id.blank? || bake_day.nil?
+    return if bake_day.pickup_location_ids.include?(pickup_location_id)
+
+    errors.add(:pickup_location, "n'est pas disponible pour cette fournée")
+  end
 
   # Encaissement réel (par opposition au `status` logistique) : un paiement
   # Stripe abouti, ou un débit du portefeuille.

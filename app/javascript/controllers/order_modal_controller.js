@@ -168,6 +168,14 @@ export default class extends Controller {
           <p class="text-gray-900">${new Date(bakeDay.baked_on).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
         </div>
 
+        ${order.pickup_location ? `
+          <div>
+            <h4 class="text-sm font-medium text-gray-500 mb-1">Point de retrait</h4>
+            <p class="text-gray-900 font-semibold">${order.pickup_location.name}</p>
+            ${order.pickup_location.description ? `<p class="text-sm text-gray-500">${order.pickup_location.description}</p>` : ""}
+          </div>
+        ` : ""}
+
         <div>
           <h4 class="text-sm font-medium text-gray-500 mb-2">Articles</h4>
           <div class="space-y-2">

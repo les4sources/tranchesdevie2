@@ -1,5 +1,5 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel ]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel, :pickup_sheet ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
@@ -43,6 +43,9 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def new
     @bake_day = BakeDay.new
+    # Le lieu par défaut est pré-coché (il sera de toute façon ouvert à la
+    # création — cf. BakeDay#open_default_pickup_location).
+    @bake_day.pickup_location_ids = [ PickupLocation.default_location&.id ].compact
   end
 
   def create
@@ -87,6 +90,18 @@ class Admin::BakeDaysController < Admin::BaseController
   def destroy
     @bake_day.destroy
     redirect_to admin_bake_days_path, notice: "Jour de cuisson supprimé"
+  end
+
+  # Feuille d'émargement PDF d'un point de retrait pour cette fournée (#148).
+  # Un lieu supprimé reste imprimable tant qu'il porte des commandes.
+  def pickup_sheet
+    pickup_location = PickupLocation.find(params[:pickup_location_id])
+    service = PickupSheetPdfService.new(@bake_day, pickup_location)
+
+    send_data service.render,
+      filename: service.filename,
+      type: "application/pdf",
+      disposition: "attachment"
   end
 
   # Écran de confirmation renforcée avant annulation : affiche l'impact chiffré
@@ -154,6 +169,7 @@ class Admin::BakeDaysController < Admin::BaseController
   end
 
   def bake_day_params
-    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, :market_day, baking_artisan_ids: [])
+    params.require(:bake_day).permit(:baked_on, :cut_off_at, :internal_note, :market_day,
+      baking_artisan_ids: [], pickup_location_ids: [])
   end
 end

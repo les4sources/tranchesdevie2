@@ -195,6 +195,11 @@ Rails.application.routes.draw do
         resources :revenue_shares, only: [ :index, :new, :create, :edit, :update, :destroy ],
                                    controller: "artisan_revenue_shares", path: "parts-de-revenu"
       end
+      # Partenariats de revenu (#54) : regroupent des artisans qui mettent en
+      # commun leur revenu brut puis se le répartissent (ex. Romane & Stéphanie
+      # à 50/50).
+      resources :revenue_partnerships, path: "partenariats",
+                only: [ :index, :new, :create, :edit, :update, :destroy ]
       resources :ingredients
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]

@@ -1,0 +1,14 @@
+- content_for :title, "Modifier le partenariat"
+- content_for :layout, "admin"
+
+.mb-6.flex.items-center.gap-3
+  = link_to "Partenariats", admin_settings_revenue_partnerships_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+  h1.text-2xl.font-bold.text-gray-900 = "Partenariat : #{@partnership.name}"
+
+.bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-6.max-w-2xl
+  = render "form",
+    partnership: @partnership,
+    form_url: admin_settings_revenue_partnership_path(@partnership),
+    form_method: :patch,
+    submit_label: "Enregistrer",
+    eligible_artisans: eligible_artisans(@partnership)

@@ -36,6 +36,23 @@ RSpec.describe BakerRevenueService do
     create(:artisan_revenue_share, artisan: artisan, percent: percent, active_from: from)
   end
 
+  # Crée un partenariat regroupant des artisans, avec des poids optionnels
+  # (parts égales par défaut). Ex. partner(claire, stephanie) => 50/50 ;
+  # partner([a, 3], [b, 1]) => 75/25.
+  def partner(*members, name: "Partenariat")
+    partnership = create(:revenue_partnership, name: name)
+    members.each do |member|
+      artisan, weight = member.is_a?(Array) ? member : [ member, 1 ]
+      create(:revenue_partnership_membership,
+             revenue_partnership: partnership, artisan: artisan, weight: weight)
+    end
+    partnership
+  end
+
+  def settlement_for(report, artisan)
+    report.artisan_settlements.find { |s| s.artisan == artisan }
+  end
+
   # Prix de sac par défaut (#52) : 0,04 €.
   before do
     create(:bread_bag_price, amount_cents: 4, active_from: Date.new(2026, 1, 1))
@@ -365,6 +382,144 @@ RSpec.describe BakerRevenueService do
       expect(may_total).to eq(3_122)
       expect(june_total).to eq(3_122)
       expect(may_total + june_total).to eq(6_244)
+    end
+  end
+
+  # --- Mise en commun par partenariat (#54 — évolution) -----------------------
+  #
+  # Deux boulangers d'un même partenariat additionnent le revenu de LEURS jours
+  # respectifs sur la période, puis se le répartissent (parts égales par défaut).
+  # Un boulanger hors partenariat garde le revenu de ses propres jours.
+  describe "mise en commun du revenu par partenariat" do
+    let(:variant) { bread_variant(price_cents: 1_000, cost_cents: 400) }
+
+    before do
+      create(:revenue_parameter, :transport, value: 1_500, active_from: Date.new(2026, 1, 1))
+      create(:revenue_parameter, :four_sources_rate, value: 3_000, active_from: Date.new(2026, 1, 1))
+    end
+
+    # Romane (mardi) et Stéphanie (vendredi), chacune à 100 % du pool de SON jour,
+    # puis mise en commun 50/50 sur le mois.
+    it "additionne les jours des deux partenaires et les répartit à parts égales" do
+      romane = create(:artisan, name: "Romane")
+      stephanie = create(:artisan, name: "Stéphanie")
+      configure_share(artisan: romane, percent: 100)
+      configure_share(artisan: stephanie, percent: 100)
+      partner(romane, stephanie, name: "Romane & Stéphanie")
+
+      tuesday = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      friday = create(:bake_day, baked_on: Date.new(2026, 5, 15))
+      completed_order(bake_day: tuesday, variant: variant, qty: 10) # pool 3122
+      completed_order(bake_day: friday, variant: variant, qty: 20)  # pool 7294
+      assign_artisan(bake_day: tuesday, artisan: romane)
+      assign_artisan(bake_day: friday, artisan: stephanie)
+
+      # Brut : chacune touche le pool de son jour.
+      expect(settlement_for(report, romane).raw_cents).to eq(3_122)
+      expect(settlement_for(report, stephanie).raw_cents).to eq(7_294)
+
+      # Final : mise en commun (3122 + 7294 = 10416) répartie 50/50 → 5208 chacune.
+      expect(settlement_for(report, romane).settled_cents).to eq(5_208)
+      expect(settlement_for(report, stephanie).settled_cents).to eq(5_208)
+
+      # Le partenariat est renseigné sur chaque règlement.
+      expect(settlement_for(report, romane).partnership.name).to eq("Romane & Stéphanie")
+    end
+
+    # « Toujours 50/50, même absent » : si un seul partenaire boulange, l'autre
+    # touche quand même sa moitié.
+    it "répartit 50/50 même si un membre est absent sur la période" do
+      romane = create(:artisan, name: "Romane")
+      stephanie = create(:artisan, name: "Stéphanie")
+      configure_share(artisan: romane, percent: 100)
+      configure_share(artisan: stephanie, percent: 100)
+      partner(romane, stephanie)
+
+      tuesday = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      completed_order(bake_day: tuesday, variant: variant, qty: 10) # pool 3122
+      assign_artisan(bake_day: tuesday, artisan: romane)
+      # Stéphanie ne boulange pas ce mois-ci.
+
+      expect(settlement_for(report, romane).raw_cents).to eq(3_122)
+      expect(settlement_for(report, romane).settled_cents).to eq(1_561)
+
+      stephanie_settlement = settlement_for(report, stephanie)
+      expect(stephanie_settlement.raw_cents).to eq(0)
+      expect(stephanie_settlement.days_count).to eq(0)
+      expect(stephanie_settlement.settled_cents).to eq(1_561)
+    end
+
+    # Claire remplace ponctuellement et n'est dans aucun partenariat : elle garde
+    # 100 % du pool de son jour.
+    it "laisse un artisan hors partenariat garder son revenu brut (solo)" do
+      claire = create(:artisan, name: "Claire")
+      configure_share(artisan: claire, percent: 100)
+
+      day = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      completed_order(bake_day: day, variant: variant, qty: 10) # pool 3122
+      assign_artisan(bake_day: day, artisan: claire)
+
+      settlement = settlement_for(report, claire)
+      expect(settlement.partnership).to be_nil
+      expect(settlement.raw_cents).to eq(3_122)
+      expect(settlement.settled_cents).to eq(3_122)
+    end
+
+    # Le partenariat n'apparaît pas si aucun de ses membres n'a boulangé.
+    it "n'ajoute pas de règlement pour un partenariat inactif sur la période" do
+      romane = create(:artisan, name: "Romane")
+      stephanie = create(:artisan, name: "Stéphanie")
+      partner(romane, stephanie)
+
+      # Personne ne boulange : aucune commande, aucun jour.
+      expect(report.artisan_settlements).to be_empty
+    end
+
+    # Le modèle porte un poids par membre → partage pondéré (ex. 75/25).
+    it "répartit au prorata des poids quand ils diffèrent" do
+      a = create(:artisan, name: "A")
+      b = create(:artisan, name: "B")
+      configure_share(artisan: a, percent: 100)
+      configure_share(artisan: b, percent: 100)
+      partner([ a, 3 ], [ b, 1 ]) # 75 / 25
+
+      tuesday = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      friday = create(:bake_day, baked_on: Date.new(2026, 5, 15))
+      completed_order(bake_day: tuesday, variant: variant, qty: 10) # pool 3122
+      completed_order(bake_day: friday, variant: variant, qty: 20)  # pool 7294
+      assign_artisan(bake_day: tuesday, artisan: a)
+      assign_artisan(bake_day: friday, artisan: b)
+
+      # pool commun = 10416 → 75 % = 7812, 25 % = 2604.
+      expect(settlement_for(report, a).settled_cents).to eq(7_812)
+      expect(settlement_for(report, b).settled_cents).to eq(2_604)
+    end
+
+    # Conservation : la somme des parts finales égale exactement la somme des
+    # bruts (aucun cent créé ni perdu à l'arrondi), y compris sur un pool impair.
+    it "conserve le total mis en commun au cent près malgré l'arrondi" do
+      romane = create(:artisan, name: "Romane")
+      stephanie = create(:artisan, name: "Stéphanie")
+      configure_share(artisan: romane, percent: 100)
+      configure_share(artisan: stephanie, percent: 100)
+      partner(romane, stephanie)
+
+      tuesday = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      completed_order(bake_day: tuesday, variant: variant, qty: 10) # pool impair 3122? pair
+      # Ajoute un centime d'écart via un second petit jour pour un pool total impair.
+      friday = create(:bake_day, baked_on: Date.new(2026, 5, 15))
+      odd_variant = bread_variant(price_cents: 1_001, cost_cents: 0, cost_from: Date.new(2026, 1, 1))
+      completed_order(bake_day: friday, variant: odd_variant, qty: 1)
+      assign_artisan(bake_day: tuesday, artisan: romane)
+      assign_artisan(bake_day: friday, artisan: stephanie)
+
+      pooled = settlement_for(report, romane).raw_cents + settlement_for(report, stephanie).raw_cents
+      settled_sum = settlement_for(report, romane).settled_cents + settlement_for(report, stephanie).settled_cents
+
+      expect(settled_sum).to eq(pooled)
+      # Les deux parts ne diffèrent que d'un cent au plus.
+      diff = (settlement_for(report, romane).settled_cents - settlement_for(report, stephanie).settled_cents).abs
+      expect(diff).to be <= 1
     end
   end
 end

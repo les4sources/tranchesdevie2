@@ -1,0 +1,32 @@
+= form_with model: partnership, url: form_url, method: form_method, class: "space-y-6" do |f|
+  - if partnership.errors.any?
+    .rounded-md.bg-red-50.border.border-red-200.p-4
+      ul.list-disc.list-inside.text-sm.text-red-700.space-y-1
+        - partnership.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = f.label :name, "Nom du partenariat", class: "block text-sm font-medium text-gray-700"
+    = f.text_field :name, class: "mt-1 #{admin_input_class}", placeholder: "ex. Romane & Stéphanie"
+
+  div
+    label.flex.items-center.gap-2.text-sm.font-medium.text-gray-700
+      = f.check_box :active, class: "rounded border-gray-300"
+      | Actif
+
+  fieldset
+    legend.block.text-sm.font-medium.text-gray-700.mb-2 Membres (répartition à parts égales)
+    p.text-xs.text-gray-500.mb-3
+      | Les boulangers cochés mettent en commun le revenu de leurs jours et se le partagent à parts égales. Un boulanger déjà membre d'un autre partenariat n'apparaît pas ici.
+    - if eligible_artisans.any?
+      .space-y-2
+        = f.collection_check_boxes :artisan_ids, eligible_artisans, :id, :name do |b|
+          label.flex.items-center.gap-2.text-sm.text-gray-800
+            = b.check_box class: "rounded border-gray-300"
+            = b.text
+    - else
+      p.text-sm.text-gray-500 Aucun boulanger disponible. Crée d'abord des artisans, ou libère-les de leur partenariat actuel.
+
+  .flex.items-center.gap-3
+    = f.submit submit_label, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    = link_to "Annuler", admin_settings_revenue_partnerships_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"

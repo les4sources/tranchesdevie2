@@ -60,11 +60,28 @@ class BakerRevenueService
     keyword_init: true
   )
 
-  # Cumul d'un artisan sur la période (additionnable par mois).
+  # Cumul BRUT d'un artisan sur la période (avant mise en commun des
+  # partenariats) : somme des parts de SES propres jours de production.
+  # Additionnable par mois.
   ArtisanTotal = Struct.new(
     :artisan,
     :amount_cents,
     :days_count,
+    keyword_init: true
+  )
+
+  # Revenu FINAL d'un artisan sur la période, après application de la couche
+  # partenariat (#54). Pour un artisan hors partenariat, `settled_cents` égale
+  # `raw_cents` (il garde son brut). Pour un membre de partenariat, le brut de
+  # tous les membres est mis en commun puis réparti au poids : `settled_cents`
+  # peut donc différer de `raw_cents` (c'est tout l'intérêt : égaliser les bons
+  # et les mauvais jours entre partenaires).
+  ArtisanSettlement = Struct.new(
+    :artisan,
+    :partnership,     # RevenuePartnership, ou nil si l'artisan est solo
+    :raw_cents,       # brut de ses propres jours (avant mise en commun)
+    :settled_cents,   # revenu final après mise en commun/répartition
+    :days_count,      # nombre de ses jours de production sur la période
     keyword_init: true
   )
 
@@ -80,7 +97,8 @@ class BakerRevenueService
     :gross_margin_cents,
     :four_sources_cents,
     :baker_pool_cents,
-    :artisan_totals,
+    :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
+    :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
     keyword_init: true
   )
@@ -95,6 +113,7 @@ class BakerRevenueService
 
   def call
     days = bake_days.map { |bake_day| build_day(bake_day) }
+    artisan_totals = consolidate_artisans(days)
 
     Report.new(
       start_date: @start_date,
@@ -108,7 +127,8 @@ class BakerRevenueService
       gross_margin_cents: sum(days, :gross_margin_cents),
       four_sources_cents: sum(days, :four_sources_cents),
       baker_pool_cents: sum(days, :baker_pool_cents),
-      artisan_totals: consolidate_artisans(days),
+      artisan_totals: artisan_totals,
+      artisan_settlements: build_settlements(artisan_totals),
       warnings: build_warnings(days)
     )
   end
@@ -239,6 +259,83 @@ class BakerRevenueService
       .values
       .map { |bucket| ArtisanTotal.new(**bucket) }
       .sort_by { |total| total.artisan.name }
+  end
+
+  # Couche partenariat (#54) : à partir des cumuls BRUTS par artisan, produit le
+  # revenu FINAL par artisan.
+  #   - Membres d'un même partenariat : leurs bruts sont mis en commun puis
+  #     répartis au poids (parts égales par défaut). Tous les membres du
+  #     partenariat reçoivent une part, même absents sur la période (brut 0) —
+  #     tant qu'AU MOINS un membre a produit (sinon le partenariat n'apparaît
+  #     pas). C'est le partage « toujours 50/50, même absent ».
+  #   - Artisan hors partenariat : son revenu final = son brut (solo).
+  # Trié par nom pour un affichage stable.
+  def build_settlements(artisan_totals)
+    raw_by_id = artisan_totals.index_by { |total| total.artisan.id }
+    settlements = []
+    covered_ids = []
+
+    partnerships.each do |partnership|
+      memberships = partnership.revenue_partnership_memberships.to_a
+      next if memberships.empty?
+      # Le partenariat n'apparaît que si au moins un membre a produit sur la
+      # période (évite d'afficher des lignes à 0 pour un mois où le duo n'a pas
+      # boulangé).
+      next unless memberships.any? { |ms| raw_by_id.key?(ms.artisan_id) }
+
+      pooled_cents = memberships.sum { |ms| raw_by_id[ms.artisan_id]&.amount_cents || 0 }
+      shares = distribute(pooled_cents, memberships.map(&:weight))
+
+      memberships.each_with_index do |ms, index|
+        raw = raw_by_id[ms.artisan_id]
+        settlements << ArtisanSettlement.new(
+          artisan: ms.artisan,
+          partnership: partnership,
+          raw_cents: raw&.amount_cents || 0,
+          settled_cents: shares[index],
+          days_count: raw&.days_count || 0
+        )
+        covered_ids << ms.artisan_id
+      end
+    end
+
+    # Artisans ayant produit mais membres d'aucun partenariat → solo, brut = final.
+    artisan_totals.each do |total|
+      next if covered_ids.include?(total.artisan.id)
+
+      settlements << ArtisanSettlement.new(
+        artisan: total.artisan,
+        partnership: nil,
+        raw_cents: total.amount_cents,
+        settled_cents: total.amount_cents,
+        days_count: total.days_count
+      )
+    end
+
+    settlements.sort_by { |settlement| settlement.artisan.name }
+  end
+
+  # Partenariats actifs, avec membres et artisans préchargés.
+  def partnerships
+    RevenuePartnership
+      .active
+      .ordered
+      .includes(revenue_partnership_memberships: :artisan)
+  end
+
+  # Répartit `total_cents` (peut être négatif : partage des pertes) entre des
+  # membres au prorata de `weights`, en cents entiers dont la somme égale
+  # EXACTEMENT `total_cents`. La dérive d'arrondi (au plus quelques cents) est
+  # absorbée par le membre au poids le plus élevé.
+  def distribute(total_cents, weights)
+    weight_sum = weights.sum
+    return Array.new(weights.size, 0) if weights.empty? || weight_sum.zero?
+
+    shares = weights.map { |weight| (total_cents * weight / weight_sum.to_f).round }
+    drift = total_cents - shares.sum
+    heaviest_index = weights.each_with_index.max_by { |weight, _| weight }.last
+    shares[heaviest_index] += drift
+    shares
   end
 
   def build_warnings(days)

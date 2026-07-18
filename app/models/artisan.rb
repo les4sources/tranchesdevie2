@@ -5,6 +5,12 @@ class Artisan < ApplicationRecord
   has_many :bake_days, through: :bake_day_artisans
   has_many :artisan_revenue_shares, dependent: :destroy
 
+  # Un artisan appartient à au plus un partenariat de revenu (#54). En faire
+  # partie fait que son revenu brut est mis en commun avec celui des autres
+  # membres puis réparti (cf. RevenuePartnership / BakerRevenueService).
+  has_one :revenue_partnership_membership, dependent: :destroy
+  has_one :revenue_partnership, through: :revenue_partnership_membership
+
   validates :name, presence: true
 
   scope :active, -> { where(active: true) }

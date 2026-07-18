@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_14_010001) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -411,6 +411,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_14_010001) do
     t.index ["key", "active_from"], name: "index_revenue_parameters_on_key_and_active_from"
   end
 
+  create_table "revenue_partnership_memberships", force: :cascade do |t|
+    t.bigint "revenue_partnership_id", null: false
+    t.bigint "artisan_id", null: false
+    t.decimal "weight", precision: 8, scale: 3, default: "1.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id"], name: "index_partnership_memberships_on_artisan_uniqueness", unique: true
+    t.index ["revenue_partnership_id"], name: "idx_on_revenue_partnership_id_1c2b27e305"
+  end
+
+  create_table "revenue_partnerships", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "sms_messages", force: :cascade do |t|
     t.integer "direction", default: 0, null: false
     t.string "to_e164", null: false
@@ -657,6 +674,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_14_010001) do
   add_foreign_key "product_images", "products"
   add_foreign_key "product_variants", "mold_types"
   add_foreign_key "product_variants", "products"
+  add_foreign_key "revenue_partnership_memberships", "artisans"
+  add_foreign_key "revenue_partnership_memberships", "revenue_partnerships"
   add_foreign_key "sms_messages", "customers"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

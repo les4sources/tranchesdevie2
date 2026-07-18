@@ -12,8 +12,8 @@
         - bake_days.each do |bake_day|
           tr
             td.px-6.py-4.whitespace-nowrap.font-medium.text-gray-900
-              = link_to bake_day.baked_on.strftime("%d/%m/%Y"),
-                        admin_bake_day_path(bake_day), 
+              = link_to "#{l(bake_day.baked_on, format: '%A').capitalize} #{bake_day.baked_on.strftime('%d/%m/%Y')}",
+                        admin_bake_day_path(bake_day),
                         class: "text-blue-600 hover:text-blue-800 hover:underline"
               - if bake_day.baked_on == Date.current
                 span.ml-2.inline-flex.items-center.rounded-md.bg-green-50.px-2.py-1.text-xs.font-medium.text-green-700.ring-1.ring-inset.ring-green-600/20

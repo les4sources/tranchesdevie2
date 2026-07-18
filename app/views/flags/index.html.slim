@@ -41,8 +41,8 @@
           - customer_order[:items].each do |item|
             - variant = item[:variant]
             - product = variant.product
-            - customer_items << { product: product, variant: variant, qty: item[:qty], label: "#{product.name} — #{variant.name}" }
-        - grouped = customer_items.group_by { |i| i[:label] }.map { |label, items| { label: label, qty: items.sum { |i| i[:qty] }, product: items.first[:product], variant: items.first[:variant] } }.sort_by { |i| i[:label].downcase }
+            - customer_items << { product: product, variant: variant, qty: item[:qty], paid_unit_cents: item[:paid_unit_cents], label: "#{product.name} — #{variant.name}" }
+        - grouped = customer_items.group_by { |i| i[:label] }.map { |label, items| { label: label, qty: items.sum { |i| i[:qty] }, product: items.first[:product], variant: items.first[:variant], paid_unit_cents: items.first[:paid_unit_cents] } }.sort_by { |i| i[:label].downcase }
         - total_items = grouped.sum { |i| i[:qty] }
 
         .relative.rounded-2xl.border-2.p-5.transition-shadow.hover:shadow-md class=color
@@ -57,9 +57,13 @@
               .flex.items-center.gap-3.rounded-xl.bg-white/70.px-3.py-2
                 .flex.items-center.justify-center.h-8.w-8.rounded-lg.bg-white.shadow-sm.text-sm.font-bold class=accent
                   = item[:qty]
-                .min-w-0
+                .min-w-0.flex-1
                   p.text-sm.font-semibold.text-slate-800.truncate = item[:product].name
                   p.text-xs.text-slate-500.truncate = item[:variant].name
+                .shrink-0.text-right
+                  p.text-sm.font-bold.text-slate-800 = number_to_currency(item[:paid_unit_cents] * item[:qty] / 100.0, unit: "€", separator: ",", delimiter: " ")
+                  - if item[:qty] > 1
+                    p.text-slate-400 class="text-[10px]" = "#{number_to_currency(item[:paid_unit_cents] / 100.0, unit: '€', separator: ',', delimiter: ' ')} / u"
   - elsif @bake_day && @dashboard
     .rounded-xl.border.border-slate-200.bg-white.p-8.text-center.shadow-sm
       p.text-lg.text-slate-500

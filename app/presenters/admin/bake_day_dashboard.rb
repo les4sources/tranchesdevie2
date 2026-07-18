@@ -8,7 +8,7 @@ module Admin
 
     def orders
       @orders ||= bake_day.orders
-                           .includes(:customer,
+                           .includes({ customer: { groups: :group_product_discounts } },
                                      :pickup_location,
                                      order_items: {
                                        product_variant: [
@@ -74,15 +74,21 @@ module Admin
 
     def customer_breakdown
       @customer_breakdown ||= production_orders.group_by(&:customer).map do |customer, customer_orders|
+        # Prix réellement payé par ligne (#drapeaux) : prix public de la variante
+        # moins la meilleure remise applicable aux groupes du client. Le service
+        # opère sur les groupes préchargés (cf. `orders`), pas de N+1.
+        discount_service = GroupDiscountService.new(customer)
         {
           customer: customer,
           orders: customer_orders.map do |order|
             {
               order: order,
               items: order.order_items.map do |item|
+                variant = item.product_variant
                 {
-                  variant: item.product_variant,
-                  qty: item.qty
+                  variant: variant,
+                  qty: item.qty,
+                  paid_unit_cents: variant.price_cents - discount_service.unit_discount_cents(variant)
                 }
               end
             }

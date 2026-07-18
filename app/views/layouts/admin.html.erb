@@ -32,6 +32,12 @@
               <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
               <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
               <%= link_to "Facturation", admin_billing_path, class: admin_nav_link_class("billing") %>
+              <%= link_to baker_revenue_admin_reports_path, class: admin_nav_link_class("reports"), title: "Revenus boulangers", aria: { label: "Revenus boulangers" } do %>
+                <span class="md:hidden">Revenus boulangers</span>
+                <svg class="hidden md:block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 7.629A3 3 0 009.017 9.43c-.023.212-.002.425.028.636l.506 3.541a4.5 4.5 0 01-.43 2.65L9 16.5l1.539-.513a2.25 2.25 0 011.422 0l.655.218a2.25 2.25 0 001.718-.122L15 15.75M8.25 12H12m9 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              <% end %>
               <%= link_to admin_reports_path, class: admin_nav_link_class("reports"), title: "Reporting", aria: { label: "Reporting" } do %>
                 <span class="md:hidden">Reporting</span>
                 <svg class="hidden md:block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -81,6 +87,7 @@
             <%= link_to "Mangeurs", admin_customers_path, class: admin_mobile_nav_link_class("customers"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Produits", admin_products_path, class: admin_mobile_nav_link_class("products"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Facturation", admin_billing_path, class: admin_mobile_nav_link_class("billing"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Revenus boulangers", baker_revenue_admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Reporting", admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Paramètres", admin_settings_path, class: admin_mobile_nav_link_class("settings"), data: { action: "click->mobile-menu#close" } %>
             <div class="mt-4 border-t border-gray-200 pt-4">

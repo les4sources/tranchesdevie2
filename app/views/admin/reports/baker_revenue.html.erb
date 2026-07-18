@@ -44,26 +44,26 @@
 <%# Synthèse de période %>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-6">
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Chiffre d'affaires</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Chiffre d'affaires</h2>
     <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_revenue_cents) %></p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Commissions Stripe</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Commissions Stripe</h2>
     <p class="mt-2 text-2xl font-bold text-gray-900">- <%= reports_currency(@report.total_commission_cents) %></p>
     <p class="mt-1 text-xs text-gray-500">Commandes en ligne uniquement</p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Marge brute</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Marge brute</h2>
     <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.gross_margin_cents) %></p>
     <p class="mt-1 text-xs text-gray-500">CA − coûtant − sacs − transport − commissions</p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Part Les 4 Sources</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Part Les 4 Sources</h2>
     <p class="mt-2 text-2xl font-bold text-emerald-700"><%= reports_currency(@report.four_sources_cents) %></p>
     <p class="mt-1 text-xs text-gray-500">30 % de la marge brute</p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Pool boulangers</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Pool boulangers</h2>
     <p class="mt-2 text-2xl font-bold text-blue-700"><%= reports_currency(@report.baker_pool_cents) %></p>
     <p class="mt-1 text-xs text-gray-500">70 % de la marge brute</p>
   </div>

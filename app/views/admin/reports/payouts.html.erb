@@ -82,15 +82,15 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Brut ventes en ligne</h3>
+        <h3 class="text-sm font-medium text-gray-500 tracking-wide">Brut ventes en ligne</h3>
         <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.period_gross_cents) %></p>
       </div>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Frais Stripe</h3>
+        <h3 class="text-sm font-medium text-gray-500 tracking-wide">Frais Stripe</h3>
         <p class="mt-2 text-3xl font-bold text-red-600">- <%= reports_currency(@report.period_fee_cents) %></p>
       </div>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Net</h3>
+        <h3 class="text-sm font-medium text-gray-500 tracking-wide">Net</h3>
         <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@report.period_net_cents) %></p>
       </div>
     </div>

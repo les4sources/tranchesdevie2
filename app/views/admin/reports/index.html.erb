@@ -23,19 +23,19 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Chiffre d'affaires</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Chiffre d'affaires</h2>
     <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></p>
     <p class="mt-1 text-sm text-gray-500">Commandes prises en compte : <%= @orders_count %></p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Panier moyen</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Panier moyen</h2>
     <p class="mt-2 text-3xl font-bold text-gray-900">
       <%= reports_currency(@average_order_value_cents) %>
     </p>
     <p class="mt-1 text-sm text-gray-500">Calculé sur les commandes payées, prêtes ou récupérées</p>
   </div>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Produits suivis</h2>
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Produits suivis</h2>
     <p class="mt-2 text-3xl font-bold text-gray-900"><%= @sales_by_product.size %></p>
     <p class="mt-1 text-sm text-gray-500">Nombre de produits vendus sur la période</p>
   </div>
@@ -48,11 +48,11 @@
   </p>
   <dl class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">CA brut</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">CA brut</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></dd>
     </div>
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Commissions Stripe</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Commissions Stripe</dt>
       <dd class="mt-2 text-2xl font-bold text-red-600">- <%= reports_currency(@total_stripe_fees_cents) %></dd>
       <dd class="mt-1 text-sm text-gray-500"><%= revenue_share(@total_stripe_fees_cents, @revenue_cents) %> % du CA brut</dd>
       <% if @refund_stripe_fees_cents.positive? %>
@@ -62,7 +62,7 @@
       <% end %>
     </div>
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">CA net</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">CA net</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@net_revenue_cents) %></dd>
       <dd class="mt-1 text-sm text-gray-500">Après commissions Stripe (ventes et remboursements)</dd>
     </div>
@@ -83,7 +83,7 @@
   </p>
   <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursements</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursements</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900">
         <%= link_to @refunds[:count], refunds_admin_reports_path(start_date: @start_date, end_date: @end_date), class: "text-gray-900 hover:text-blue-700 underline decoration-dotted" %>
       </dd>
@@ -92,19 +92,19 @@
       </dd>
     </div>
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Montant total remboursé</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Montant total remboursé</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:amount_cents]) %></dd>
       <dd class="mt-1 text-sm text-gray-500">Stripe + portefeuille</dd>
     </div>
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursé via Stripe</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursé via Stripe</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:stripe][:amount_cents]) %></dd>
       <dd class="mt-1 text-sm text-red-600">
         commission non récupérée : <%= reports_currency(@refunds[:stripe][:stripe_fee_cents]) %>
       </dd>
     </div>
     <div>
-      <dt class="text-sm font-medium text-gray-500 uppercase tracking-wide">Remboursé sur portefeuille</dt>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursé sur portefeuille</dt>
       <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:wallet][:amount_cents]) %></dd>
       <dd class="mt-1 text-sm text-gray-500">Crédité au portefeuille client</dd>
     </div>

@@ -48,5 +48,12 @@ FactoryBot.define do
       channel { 'admin' }
       pizza_party_role { :forfait }
     end
+
+    # Produit « Pizza party publique » (#pizza-parties) : variantes adulte/enfant,
+    # pas de forfait, barème compta dédié (base 4S par variante).
+    trait :pizza_party_public do
+      category { :dough_balls }
+      pizza_party_role { :public_party }
+    end
   end
 end

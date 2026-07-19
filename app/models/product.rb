@@ -12,7 +12,10 @@ class Product < ApplicationRecord
   #             personne) ; sa présence au panier déclenche le forfait.
   # - forfait : le forfait Pizza party (40 €), compté UNE seule fois par
   #             commande, synchronisé automatiquement par PizzaPartyForfaitService.
-  enum :pizza_party_role, { none: 0, party: 1, forfait: 2 }, prefix: true
+  # - public_party : produit « Pizza party publique » (variantes adulte / enfant,
+  #                  #pizza-parties). Pas de forfait ; barème compta dédié
+  #                  (PublicPartyRevenueService, base 4S par variante).
+  enum :pizza_party_role, { none: 0, party: 1, forfait: 2, public_party: 3 }, prefix: true
 
   has_many :product_variants, dependent: :destroy
   has_many :product_availabilities, through: :product_variants

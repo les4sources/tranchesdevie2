@@ -57,6 +57,13 @@ class BakerRevenueService
     :gross_margin_cents,
     :four_sources_cents,
     :baker_pool_cents,
+    # Pizza parties privées (#pizza-parties) : part calculée hors 70/30, via le
+    # barème spécial (PizzaPartyRevenueService), et INCLUSE dans four_sources_cents
+    # / baker_pool_cents ci-dessus. Ces champs isolent la contribution party.
+    :party_persons,
+    :party_revenue_cents,
+    :party_four_sources_cents,
+    :party_bakers_cents,
     :artisan_shares,        # [ ArtisanShare, ... ]
     :percent_sum,           # somme des parts des artisans présents (BigDecimal)
     :percent_overflow,      # true si percent_sum > 100
@@ -101,6 +108,11 @@ class BakerRevenueService
     :gross_margin_cents,
     :four_sources_cents,
     :baker_pool_cents,
+    # Cumuls pizza parties privées (inclus dans four_sources_cents / baker_pool_cents).
+    :total_party_persons,
+    :total_party_revenue_cents,
+    :total_party_four_sources_cents,
+    :total_party_bakers_cents,
     :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
     :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
@@ -132,6 +144,10 @@ class BakerRevenueService
       gross_margin_cents: sum(days, :gross_margin_cents),
       four_sources_cents: sum(days, :four_sources_cents),
       baker_pool_cents: sum(days, :baker_pool_cents),
+      total_party_persons: sum(days, :party_persons),
+      total_party_revenue_cents: sum(days, :party_revenue_cents),
+      total_party_four_sources_cents: sum(days, :party_four_sources_cents),
+      total_party_bakers_cents: sum(days, :party_bakers_cents),
       artisan_totals: artisan_totals,
       artisan_settlements: build_settlements(artisan_totals),
       warnings: build_warnings(days)
@@ -163,11 +179,22 @@ class BakerRevenueService
     # cuisson. 0 si aucun lieu lié → déduction neutre, chiffres inchangés.
     sales_locations_cents = day_sales_locations_cents(bake_day, date)
 
-    gross_margin_cents =
-      revenue_cents - cost_price_cents - bread_bags_cents - transport_cents -
-      commission_cents - sales_locations_cents
-    four_sources_cents = four_sources_cut(gross_margin_cents, date)
-    baker_pool_cents = gross_margin_cents - four_sources_cents
+    # Pizza parties privées (#pizza-parties) : barème spécial, HORS 70/30. On
+    # isole leur CA et leur split (part 4S / part boulangers) ; le coûtant des
+    # pâtons est déjà absorbé dans ce split. Les coûts partagés (coûtant pain,
+    # sacs, transport, commissions, lieux de vente) restent sur la marge du reste.
+    party = PizzaPartyRevenueService.call(day_party_orders(bake_day))
+
+    non_party_margin_cents =
+      revenue_cents - party.sale_cents - cost_price_cents - bread_bags_cents -
+      transport_cents - commission_cents - sales_locations_cents
+    non_party_four_sources_cents = four_sources_cut(non_party_margin_cents, date)
+    non_party_pool_cents = non_party_margin_cents - non_party_four_sources_cents
+
+    four_sources_cents = non_party_four_sources_cents + party.four_sources_cents
+    baker_pool_cents = non_party_pool_cents + party.bakers_cents
+    # Marge brute totale (pain + party) = ce qui est effectivement réparti.
+    gross_margin_cents = four_sources_cents + baker_pool_cents
 
     artisans = bake_day.baking_artisans.to_a
     shares = artisan_shares(artisans, baker_pool_cents, date)
@@ -185,10 +212,21 @@ class BakerRevenueService
       gross_margin_cents: gross_margin_cents,
       four_sources_cents: four_sources_cents,
       baker_pool_cents: baker_pool_cents,
+      party_persons: party.persons,
+      party_revenue_cents: party.sale_cents,
+      party_four_sources_cents: party.four_sources_cents,
+      party_bakers_cents: party.bakers_cents,
       artisan_shares: shares,
       percent_sum: percent_sum,
       percent_overflow: percent_sum > 100
     )
+  end
+
+  # Commandes finalisées du jour, préchargées pour le barème party
+  # (PizzaPartyRevenueService itère les articles + le coûtant historisé).
+  def day_party_orders(bake_day)
+    bake_day.orders.completed
+            .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
   end
 
   # CA du jour : somme des commandes finalisées rattachées au jour de cuisson.

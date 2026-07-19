@@ -42,6 +42,31 @@ class Admin::ReportsController < Admin::BaseController
     @report = BakerRevenueService.new(start_date: @start_date, end_date: @end_date).call
   end
 
+  # Reporting dédié aux PIZZA PARTIES PRIVÉES (#pizza-parties) : sert à évaluer
+  # l'intérêt de l'offre. Barème spécial (PizzaPartyRevenueService) : part 4S et
+  # part boulangers calculées hors 70/30 générique. Ventilé par commande party.
+  def pizza_parties
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    party_role = Product.pizza_party_roles[:party]
+    party_order_ids = OrderItem.joins(product_variant: :product)
+                               .where(products: { pizza_party_role: party_role })
+                               .select(:order_id)
+
+    @orders = Order.completed
+                   .in_bake_day_range(@start_date, @end_date)
+                   .where(id: party_order_ids)
+                   .includes(:customer, :bake_day,
+                             order_items: { product_variant: [ :variant_cost_prices, :product ] })
+                   .sort_by { |order| [ order.bake_day.baked_on, order.created_at ] }
+
+    @summary = PizzaPartyRevenueService.call(@orders)
+    # Détail par commande party (une party = une commande) pour le tableau.
+    @rows = @orders.map { |order| [ order, PizzaPartyRevenueService.call([ order ]) ] }
+  end
+
   # Reporting des versements Stripe (#49). Appels Stripe live (mis en cache court
   # par le service) ; en cas d'échec Stripe, `@report.error` porte un message FR
   # et la vue affiche une alerte propre — jamais de 500.

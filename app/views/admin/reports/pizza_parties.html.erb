@@ -1,0 +1,107 @@
+<% content_for :title, "Pizza parties privées" %>
+<% content_for :layout, "admin" %>
+
+<% euro = ->(cents) { number_to_currency((cents || 0) / 100.0, unit: "€", format: "%n %u", separator: ",", delimiter: " ") } %>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div>
+    <%= link_to "← Reporting", admin_reports_path(start_date: @start_date, end_date: @end_date),
+                class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
+    <h1 class="text-2xl font-bold text-gray-900">Pizza parties privées</h1>
+    <p class="text-sm text-gray-600">
+      Période du <%= l(@start_date) %> au <%= l(@end_date) %> — pour évaluer l'intérêt de l'offre.
+    </p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <%= form_with url: pizza_parties_admin_reports_path, method: :get, local: true,
+                  class: "flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0" do |f| %>
+      <div>
+        <%= f.label :start_date, "Date de début", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.date_field :start_date, value: @start_date, class: "mt-1 #{admin_input_class}" %>
+      </div>
+      <div>
+        <%= f.label :end_date, "Date de fin", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.date_field :end_date, value: @end_date, class: "mt-1 #{admin_input_class}" %>
+      </div>
+      <div>
+        <%= f.submit "Actualiser", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-4 rounded-md bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
+  Barème parties privées : <strong>4 Sources</strong> = 1 €/pers + 30 % du prix pâton (0,60 €) + 10 € du forfait ·
+  <strong>boulangers</strong> = 4 €/pers − coûtant pâton − 0,60 € + 30 € du forfait. Hors partage 70/30 des pains.
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+  <% [
+       ["Parties", @summary.party_orders_count.to_s],
+       ["Personnes", @summary.persons.to_s],
+       ["CA parties", euro.(@summary.sale_cents)],
+       ["Coûtant pâtons", euro.(@summary.dough_cost_cents)],
+       ["Part boulangers", euro.(@summary.bakers_cents)],
+       ["Part 4 Sources", euro.(@summary.four_sources_cents)]
+     ].each do |label, value| %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide"><%= label %></p>
+      <p class="mt-1 text-xl font-bold text-gray-900"><%= value %></p>
+    </div>
+  <% end %>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200">
+    <h2 class="text-sm font-semibold text-gray-900">Détail par party</h2>
+    <p class="text-xs text-gray-500">Une party = une commande contenant le produit « Pizza party privée ».</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-100 text-sm">
+      <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+        <tr>
+          <th class="px-4 py-3 text-left">Date</th>
+          <th class="px-4 py-3 text-left">Client</th>
+          <th class="px-4 py-3 text-right">Pers.</th>
+          <th class="px-4 py-3 text-right">CA</th>
+          <th class="px-4 py-3 text-right">Coûtant</th>
+          <th class="px-4 py-3 text-right">Boulangers</th>
+          <th class="px-4 py-3 text-right">4 Sources</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50 bg-white">
+        <% if @rows.any? %>
+          <% @rows.each do |order, r| %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 text-gray-700"><%= l(order.bake_day.baked_on) %></td>
+              <td class="px-4 py-3 font-medium text-gray-900">
+                <%= link_to order.customer.full_name, admin_order_path(order), class: "text-blue-600 hover:text-blue-800" %>
+              </td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= r.persons %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= euro.(r.sale_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-500"><%= euro.(r.dough_cost_cents) %></td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.bakers_cents) %></td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.four_sources_cents) %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aucune pizza party privée sur cette période.</td>
+          </tr>
+        <% end %>
+      </tbody>
+      <% if @rows.any? %>
+        <tfoot class="bg-gray-50 font-semibold text-gray-900">
+          <tr>
+            <td class="px-4 py-3" colspan="2">Total</td>
+            <td class="px-4 py-3 text-right"><%= @summary.persons %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@summary.sale_cents) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@summary.dough_cost_cents) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@summary.bakers_cents) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@summary.four_sources_cents) %></td>
+          </tr>
+        </tfoot>
+      <% end %>
+    </table>
+  </div>
+</div>

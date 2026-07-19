@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_19_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
     t.index ["bake_day_id", "pickup_location_id"], name: "index_bake_day_pickup_locations_on_pair", unique: true
     t.index ["bake_day_id"], name: "index_bake_day_pickup_locations_on_bake_day_id"
     t.index ["pickup_location_id"], name: "index_bake_day_pickup_locations_on_pickup_location_id"
+  end
+
+  create_table "bake_day_sales_locations", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.bigint "sales_location_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bake_day_id", "sales_location_id"], name: "index_bake_day_sales_locations_on_pair", unique: true
+    t.index ["bake_day_id"], name: "index_bake_day_sales_locations_on_bake_day_id"
+    t.index ["sales_location_id"], name: "index_bake_day_sales_locations_on_sales_location_id"
   end
 
   create_table "bake_days", force: :cascade do |t|
@@ -370,6 +380,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
     t.string "channel", default: "store", null: false
     t.bigint "mold_type_id"
     t.integer "available_weekdays", default: [], null: false, array: true
+    t.boolean "track_capacity_separately", default: false, null: false
     t.index ["mold_type_id"], name: "index_product_variants_on_mold_type_id"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
   end
@@ -426,6 +437,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "sales_location_costs", force: :cascade do |t|
+    t.bigint "sales_location_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "valid_from", null: false
+    t.date "valid_until"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sales_location_id", "valid_from"], name: "index_sales_location_costs_on_sales_location_id_and_valid_from"
+    t.index ["sales_location_id"], name: "index_sales_location_costs_on_sales_location_id"
+  end
+
+  create_table "sales_locations", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_sales_locations_on_deleted_at"
+    t.index ["name"], name: "index_sales_locations_on_name_unique", unique: true, where: "(deleted_at IS NULL)"
   end
 
   create_table "sms_messages", force: :cascade do |t|
@@ -653,6 +686,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
   add_foreign_key "bake_day_artisans", "bake_days"
   add_foreign_key "bake_day_pickup_locations", "bake_days"
   add_foreign_key "bake_day_pickup_locations", "pickup_locations"
+  add_foreign_key "bake_day_sales_locations", "bake_days"
+  add_foreign_key "bake_day_sales_locations", "sales_locations"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
   add_foreign_key "group_product_discounts", "groups"
@@ -676,6 +711,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_154405) do
   add_foreign_key "product_variants", "products"
   add_foreign_key "revenue_partnership_memberships", "artisans"
   add_foreign_key "revenue_partnership_memberships", "revenue_partnerships"
+  add_foreign_key "sales_location_costs", "sales_locations"
   add_foreign_key "sms_messages", "customers"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

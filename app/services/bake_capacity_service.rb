@@ -88,13 +88,31 @@ class BakeCapacityService
     @mold_usage ||= begin
       # Count units per mold_type_id
       counts = Hash.new(0)
+      # Décompte séparé (#151) : par moule, les variantes marquées
+      # `track_capacity_separately` et leur nombre d'unités. Elles restent
+      # comptées dans `counts` (donc dans la capacité du moule) mais sont aussi
+      # listées à part pour l'affichage.
+      separate = Hash.new { |hash, mt_id| hash[mt_id] = {} }
+
       breads_order_items.each do |item|
-        mt_id = item.product_variant.mold_type_id
-        counts[mt_id] += item.qty if mt_id
+        variant = item.product_variant
+        mt_id = variant.mold_type_id
+        next unless mt_id
+
+        counts[mt_id] += item.qty
+        next unless variant.track_capacity_separately?
+
+        entry = (separate[mt_id][variant.id] ||= { variant: variant, qty: 0 })
+        entry[:qty] += item.qty
       end
 
       MoldType.not_deleted.ordered.map do |mt|
-        { mold_type: mt, used: counts[mt.id], limit: mt.limit }
+        {
+          mold_type: mt,
+          used: counts[mt.id],
+          limit: mt.limit,
+          separate_tracking: separate[mt.id].values.sort_by { |e| e[:variant].name.downcase }
+        }
       end
     end
   end

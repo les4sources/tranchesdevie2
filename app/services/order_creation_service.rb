@@ -65,6 +65,15 @@ class OrderCreationService
       @errors << "Le point de retrait choisi n'est pas disponible pour cette fournée"
     end
 
+    # Garde-fou serveur (#152) : un produit exclu pour le lieu de retrait choisi
+    # ne peut pas être commandé à ce lieu. Message dédié nommant le produit, le
+    # lieu et l'action possible (retirer le produit OU changer de lieu).
+    excluded_products_for_pickup.each do |product|
+      @errors << "« #{product.name} » n'est pas disponible au point de retrait " \
+                 "« #{@pickup_location.name} ». Retirez ce produit du panier ou " \
+                 "choisissez un autre point de retrait."
+    end
+
     # Check if order with same payment_intent_id already exists (idempotency)
     # Only check for online payments (cash orders don't have payment_intent_id)
     if @payment_method == "online" && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
@@ -92,6 +101,18 @@ class OrderCreationService
     end
 
     @errors.empty?
+  end
+
+  # Produits distincts du panier exclus pour le lieu de retrait choisi (#152).
+  # Vide si aucun lieu choisi ou aucune exclusion → aucune régression.
+  def excluded_products_for_pickup
+    return [] if @pickup_location.nil?
+
+    products = @cart_items.filter_map do |item|
+      ProductVariant.find(item["product_variant_id"]).product
+    end
+
+    products.uniq.reject { |product| product.orderable_at?(@pickup_location) }
   end
 
   def calculate_total

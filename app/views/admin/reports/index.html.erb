@@ -113,7 +113,8 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par produit</h2>
+    <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par produit</h2>
+    <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites — réconcilié avec le CA de la période.</p>
     <% if @sales_by_product.any? %>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -175,7 +176,7 @@
 
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
   <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par catégorie interne</h2>
-  <p class="text-sm text-gray-500 mb-4">Distingue la production maison des reventes (épicerie, traiteur…).</p>
+  <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites. Distingue la production maison des reventes (épicerie, traiteur…).</p>
   <% if @sales_by_internal_category.any? %>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 text-sm">

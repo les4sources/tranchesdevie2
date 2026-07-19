@@ -1,0 +1,44 @@
+- content_for :title, "Lieux de vente"
+- content_for :layout, "admin"
+
+.mb-6.flex.justify-between.items-center
+  .flex.items-center.gap-3
+    = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+    h1.text-2xl.font-bold.text-gray-900 Lieux de vente
+  = link_to "Nouveau lieu de vente", new_admin_settings_sales_location_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+
+p.text-sm.text-gray-600.mb-6
+  | Un lieu de vente (ex. un marché) porte un coût d'emplacement, déduit du bénéfice des fournées qui y sont vendues. Concept distinct des points de retrait.
+
+.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+  - if @sales_locations.any?
+    .overflow-x-auto
+      table.min-w-full.divide-y.divide-gray-200
+        thead.bg-gray-100
+          tr
+            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
+            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actif
+            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Coût actuel
+            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
+        tbody.divide-y.divide-gray-200
+          - @sales_locations.each do |location|
+            tr
+              td.px-4.py-3.text-sm.text-gray-900.font-medium = location.name
+              td.px-4.py-3.text-sm.text-gray-600
+                - if location.active?
+                  span.inline-flex.items-center.rounded-full.bg-emerald-100.px-2.5.py-0.5.text-xs.font-medium.text-emerald-800 Oui
+                - else
+                  span.inline-flex.items-center.rounded-full.bg-gray-100.px-2.5.py-0.5.text-xs.font-medium.text-gray-600 Inactif
+              td.px-4.py-3.text-sm.text-gray-600
+                - current_cost = location.cost_cents
+                - if current_cost
+                  = number_to_currency(current_cost / 100.0, unit: "€", format: "%n %u", separator: ",", delimiter: " ")
+                - else
+                  span.text-gray-400 —
+              td.px-4.py-3.text-sm
+                = link_to "Modifier", edit_admin_settings_sales_location_path(location), class: "text-blue-600 hover:text-blue-800 mr-3"
+                = link_to "Coûts", admin_settings_sales_location_sales_location_costs_path(location), class: "text-blue-600 hover:text-blue-800 mr-3"
+                = link_to "Supprimer", admin_settings_sales_location_path(location), data: { turbo_method: :delete, turbo_confirm: "Supprimer ce lieu de vente ?" }, class: "text-red-600 hover:text-red-800"
+  - else
+    .px-4.py-8.text-center.text-sm.text-gray-500
+      | Aucun lieu de vente enregistré.

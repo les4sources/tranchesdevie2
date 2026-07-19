@@ -60,6 +60,11 @@ class CheckoutController < ApplicationController
     # est pré-sélectionné.
     @pickup_locations = @bake_day.open_pickup_locations
     @selected_pickup_location = @pickup_locations.find(&:default?) || @pickup_locations.first
+
+    # Exclusions produit ↔ lieu de retrait (#152) : pour chaque lieu, les noms
+    # des produits DU PANIER qui y sont exclus. Sert au feedback client immédiat
+    # (avertissement + blocage du paiement) sans soumettre le formulaire.
+    @pickup_location_exclusions = pickup_location_exclusions_for_cart(@cart, @pickup_locations)
   end
 
   def verify_phone
@@ -656,6 +661,25 @@ class CheckoutController < ApplicationController
     return nil if id.blank?
 
     PickupLocation.not_deleted.find_by(id: id) || raise(UnknownPickupLocationError)
+  end
+
+  # Pour chaque lieu de retrait, la liste des noms de produits du panier qui y
+  # sont exclus (#152). Renvoie un hash { location_id => [nom, ...] } (uniquement
+  # les lieux ayant au moins un produit exclu). Vide si aucune exclusion.
+  def pickup_location_exclusions_for_cart(cart, pickup_locations)
+    variant_ids = cart.map { |item| item["product_variant_id"] }.compact.uniq
+    return {} if variant_ids.empty?
+
+    products = ProductVariant
+                 .where(id: variant_ids)
+                 .includes(product: :excluded_pickup_locations)
+                 .map(&:product)
+                 .uniq
+
+    pickup_locations.each_with_object({}) do |location, map|
+      names = products.reject { |product| product.orderable_at?(location) }.map(&:name).uniq
+      map[location.id] = names if names.any?
+    end
   end
 
   def ensure_cart_not_empty

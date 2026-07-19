@@ -209,6 +209,11 @@ Rails.application.routes.draw do
       # transport (15 €/jour) et taux 4 Sources (30 %). Un seul contrôleur gère
       # les deux clés via le paramètre `:key`.
       resources :revenue_parameters, path: "revenus-boulangers", only: [ :index, :new, :create, :edit, :update, :destroy ]
+      # Lieux de vente (#150) : CRUD + coûts historisés par période de validité.
+      resources :sales_locations, path: "lieux-de-vente" do
+        resources :sales_location_costs, controller: "sales_location_costs",
+          path: "couts", only: [ :index, :new, :create, :edit, :update, :destroy ]
+      end
     end
   end
 end

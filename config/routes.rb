@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
+  get "evenements", to: "events#index", as: :evenements
   get "conditions-generales", to: "pages#cgv", as: :cgv
   get "vie-privee", to: "pages#vie_privee", as: :vie_privee
   get "drapeaux", to: "flags#index", as: :flags

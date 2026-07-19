@@ -10,7 +10,9 @@ class CatalogController < ApplicationController
   def load_all_active_products
     selected_wday = selected_bake_day_wday
 
-    Product.not_deleted.active.store_channel.ordered.includes(
+    # La pizza party privée est retirée du catalogue : elle se réserve depuis la
+    # page Événements (#pizza-parties). Le forfait (channel admin) est déjà exclu.
+    Product.not_deleted.active.store_channel.where.not(pizza_party_role: :party).ordered.includes(
       product_variants: [ :variant_group_restrictions, { product_images: :image_attachment } ],
       product_images: :image_attachment
     ).map do |product|

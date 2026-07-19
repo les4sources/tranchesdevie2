@@ -1,0 +1,73 @@
+<% content_for :title, "Événements — Pizza Party privée" %>
+
+<section class="border-b border-flour-300 bg-gradient-to-b from-sage-100 to-flour-50">
+  <div class="mx-auto max-w-[1040px] px-6 py-12 md:py-14">
+    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
+      <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Événements
+    </div>
+    <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Organise ta Pizza Party privée</h1>
+    <p class="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-700">
+      On prépare les pâtons, tu t'occupes de la fête. Réserve le nombre de personnes ci-dessous —
+      chacun repart avec sa boule de pâte à pizza, prête à garnir et enfourner.
+    </p>
+  </div>
+</section>
+
+<div class="mx-auto max-w-[1040px] px-6 py-10">
+  <% if @product && @selected_variant %>
+    <div class="grid gap-8 md:grid-cols-[1.1fr_0.9fr] md:items-start">
+      <div>
+        <h2 class="text-2xl font-semibold text-ink-900"><%= @product.name.split("–").first.strip %></h2>
+        <p class="mt-3 text-base leading-relaxed text-ink-700"><%= @product.description %></p>
+        <ul class="mt-6 space-y-2 text-sm text-ink-700">
+          <li class="flex items-center gap-2">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %> 1 boule de pâte à pizza par personne
+          </li>
+          <li class="flex items-center gap-2">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %> Un forfait de 40 € est ajouté automatiquement à ta réservation
+          </li>
+          <li class="flex items-center gap-2">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %> Récupération avec ta commande, sur le lieu choisi au paiement
+          </li>
+        </ul>
+      </div>
+
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs" data-controller="quantity-selector">
+        <h3 class="text-lg font-semibold text-ink-900">Réserver</h3>
+        <p class="mt-1 text-sm text-ink-500">
+          <%= number_to_currency(@selected_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> / personne
+          <span class="text-ink-400">·</span> forfait 40 €
+        </p>
+
+        <%= form_with url: cart_add_path, method: :post, local: true, data: { action: "submit->cart#add" }, class: "mt-5 flex flex-col gap-5" do |f| %>
+          <%= f.hidden_field :product_variant_id, value: @selected_variant.id %>
+          <%= f.hidden_field :qty, value: 1, data: { quantity_selector_target: "input" } %>
+
+          <div>
+            <span class="text-sm font-medium text-ink-900">Nombre de personnes</span>
+            <div class="mt-2 flex items-center gap-2">
+              <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
+                <%= lucide "minus", size: 16, color: "var(--ink-700)" %>
+              </button>
+              <span class="inline-flex h-10 min-w-12 items-center justify-center rounded-md bg-flour-100 text-sm font-semibold text-ink-900" data-quantity-selector-target="display">1</span>
+              <button type="button" data-action="click->quantity-selector#increment" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
+                <%= lucide "plus", size: 16, color: "var(--ink-700)" %>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500">
+            <%= lucide "shopping-basket", size: 18, color: "#fff" %> Réserver ma Pizza Party
+          </button>
+          <p class="text-center text-xs text-ink-500">Le forfait de 40 € est ajouté automatiquement au panier.</p>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <div class="rounded-2xl border border-flour-300 bg-warm-white p-10 text-center">
+      <p class="text-lg font-semibold text-ink-900">Nos événements arrivent bientôt.</p>
+      <p class="mt-2 text-sm text-ink-600">La réservation de Pizza Party privée n'est pas ouverte pour le moment.</p>
+      <%= link_to "Voir la boutique", catalog_path, class: "mt-6 inline-flex items-center gap-2 rounded-md bg-ember-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-500" %>
+    </div>
+  <% end %>
+</div>

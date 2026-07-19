@@ -44,6 +44,7 @@
               <% if customer_signed_in? %>
                 <%= link_to "Calendrier", calendar_path, class: "text-[15px] font-medium leading-none text-ink-700 transition-colors hover:text-ink-900" %>
               <% end %>
+              <%= link_to "Événements", evenements_path, class: "text-[15px] font-medium leading-none text-ink-700 transition-colors hover:text-ink-900" %>
               <%= link_to "À propos", a_propos_path, class: "text-[15px] font-medium leading-none text-ink-700 transition-colors hover:text-ink-900" %>
               <% if customer_signed_in? %>
                 <%= link_to "Mon compte", customers_account_path, class: "text-[15px] font-medium leading-none text-ink-700 transition-colors hover:text-ink-900" %>
@@ -92,6 +93,7 @@
             <% if customer_signed_in? %>
               <%= link_to "Calendrier", calendar_path, class: "rounded-md px-4 py-3 text-base font-medium text-ink-900 hover:bg-flour-100", data: { action: "click->mobile-menu#close" } %>
             <% end %>
+            <%= link_to "Événements", evenements_path, class: "rounded-md px-4 py-3 text-base font-medium text-ink-900 hover:bg-flour-100", data: { action: "click->mobile-menu#close" } %>
             <%= link_to "À propos", a_propos_path, class: "rounded-md px-4 py-3 text-base font-medium text-ink-900 hover:bg-flour-100", data: { action: "click->mobile-menu#close" } %>
             <% if customer_signed_in? %>
               <%= link_to "Mon compte", customers_account_path, class: "rounded-md px-4 py-3 text-base font-medium text-ink-900 hover:bg-flour-100", data: { action: "click->mobile-menu#close" } %>

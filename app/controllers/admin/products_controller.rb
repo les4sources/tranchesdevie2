@@ -110,7 +110,8 @@ class Admin::ProductsController < Admin::BaseController
   def product_params
     params.require(:product).permit(
       :name, :short_name, :description, :category, :internal_category, :position, :active, :flour, :channel,
-      product_flours_attributes: [ :id, :flour_id, :percentage, :_destroy ]
+      product_flours_attributes: [ :id, :flour_id, :percentage, :_destroy ],
+      excluded_pickup_location_ids: []
     )
   end
 

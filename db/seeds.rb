@@ -171,6 +171,39 @@ ProductVariant.find_or_create_by!(product: forfait_product, name: "forfait") do 
   v.active = true
   v.channel = "store"
 end
+
+# --- Pizza party publique (#pizza-parties) ----------------------------------
+# Produit public (variantes adulte/enfant), réservable depuis /evenements, hors
+# catalogue. Base 4 Sources par variante (3 € adulte, 2 € enfant) ; base
+# boulangers = prix − base. Pas de forfait.
+public_party_product =
+  Product.find_by(pizza_party_role: :public_party) ||
+  Product.find_by(name: "Pizza party publique") ||
+  Product.new(name: "Pizza party publique")
+
+public_party_product.update!(
+  name: "Pizza party publique",
+  description: "Rejoins-nous pour une Pizza party ouverte à tous : chacun garnit et enfourne son pâton.",
+  category: :dough_balls,
+  position: 4,
+  active: true,
+  channel: "store",
+  pizza_party_role: :public_party
+)
+
+ProductVariant.find_or_create_by!(product: public_party_product, name: "adulte") do |v|
+  v.price_cents = 1000
+  v.party_four_sources_base_cents = 300
+  v.active = true
+  v.channel = "store"
+end
+
+ProductVariant.find_or_create_by!(product: public_party_product, name: "enfant") do |v|
+  v.price_cents = 600
+  v.party_four_sources_base_cents = 200
+  v.active = true
+  v.channel = "store"
+end
 # ---------------------------------------------------------------------------
 
 puts "✅ Products and variants created"

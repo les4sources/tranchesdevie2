@@ -1,15 +1,28 @@
 class EventsController < ApplicationController
-  # Page publique « Événements » (#pizza-parties) : la réservation d'une pizza
-  # party privée vit ICI, hors du catalogue produits normal. Elle réutilise le
-  # flux panier → checkout existant (le forfait 40 € est auto-synchronisé par
-  # PizzaPartyForfaitService dès qu'un pâton party est au panier).
+  # Page publique « Événements » (#pizza-parties) : les pizza parties (privée ET
+  # publique) se réservent ICI, hors du catalogue produits normal. Elles
+  # réutilisent le flux panier → checkout existant (le forfait 40 € de la party
+  # privée est auto-synchronisé par PizzaPartyForfaitService).
   def index
-    @product = Product.not_deleted.active.store_channel
-                      .find_by(pizza_party_role: :party)
-    return if @product.nil?
+    @product = party_product(:party)
+    @variants = variants_for(@product)
+    @selected_variant = @variants&.first
 
-    @variants = @product.product_variants.active.store_channel
-                        .visible_to_customer(current_customer).order(:name)
-    @selected_variant = @variants.first
+    @public_product = party_product(:public_party)
+    @public_variants = variants_for(@public_product)
+  end
+
+  private
+
+  def party_product(role)
+    Product.not_deleted.active.store_channel.find_by(pizza_party_role: role)
+  end
+
+  def variants_for(product)
+    return nil if product.nil?
+
+    variants = product.product_variants.active.store_channel
+                      .visible_to_customer(current_customer).order(:name)
+    variants.presence
   end
 end

@@ -29,6 +29,20 @@ RSpec.describe "Événements", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Nos événements arrivent bientôt.")
     end
+
+    it "affiche aussi la réservation publique (adulte / enfant)" do
+      public_product = create(:product, :pizza_party_public, name: "Pizza party publique", description: "Ouvert à tous.")
+      create(:product_variant, product: public_product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
+      create(:product_variant, product: public_product, name: "enfant", price_cents: 600, party_four_sources_base_cents: 200)
+
+      get evenements_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Pizza party publique")
+      expect(response.body).to include("Adulte")
+      expect(response.body).to include("Enfant")
+      expect(response.body).to include(cart_add_path)
+    end
   end
 
   describe "catalogue" do

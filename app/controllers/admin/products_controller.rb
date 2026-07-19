@@ -118,7 +118,7 @@ class Admin::ProductsController < Admin::BaseController
   def variant_params
     params.require(:product_variant).permit(
       :name, :price_euros, :active, :flour_quantity, :channel, :mold_type_id,
-      :track_capacity_separately,
+      :track_capacity_separately, :party_four_sources_base_euros,
       product_images_attributes: [ :id, :image, :_destroy, :position ],
       variant_ingredients_attributes: [ :id, :ingredient_id, :quantity, :_destroy ],
       variant_cost_prices_attributes: [ :id, :amount_euros, :active_from, :_destroy ],

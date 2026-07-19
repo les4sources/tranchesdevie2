@@ -64,6 +64,12 @@ class BakerRevenueService
     :party_revenue_cents,
     :party_four_sources_cents,
     :party_bakers_cents,
+    # Idem pour la party PUBLIQUE (variantes adulte/enfant), également incluse
+    # dans four_sources_cents / baker_pool_cents.
+    :public_party_persons,
+    :public_party_revenue_cents,
+    :public_party_four_sources_cents,
+    :public_party_bakers_cents,
     :artisan_shares,        # [ ArtisanShare, ... ]
     :percent_sum,           # somme des parts des artisans présents (BigDecimal)
     :percent_overflow,      # true si percent_sum > 100
@@ -113,6 +119,10 @@ class BakerRevenueService
     :total_party_revenue_cents,
     :total_party_four_sources_cents,
     :total_party_bakers_cents,
+    :total_public_party_persons,
+    :total_public_party_revenue_cents,
+    :total_public_party_four_sources_cents,
+    :total_public_party_bakers_cents,
     :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
     :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
@@ -148,6 +158,10 @@ class BakerRevenueService
       total_party_revenue_cents: sum(days, :party_revenue_cents),
       total_party_four_sources_cents: sum(days, :party_four_sources_cents),
       total_party_bakers_cents: sum(days, :party_bakers_cents),
+      total_public_party_persons: sum(days, :public_party_persons),
+      total_public_party_revenue_cents: sum(days, :public_party_revenue_cents),
+      total_public_party_four_sources_cents: sum(days, :public_party_four_sources_cents),
+      total_public_party_bakers_cents: sum(days, :public_party_bakers_cents),
       artisan_totals: artisan_totals,
       artisan_settlements: build_settlements(artisan_totals),
       warnings: build_warnings(days)
@@ -179,21 +193,26 @@ class BakerRevenueService
     # cuisson. 0 si aucun lieu lié → déduction neutre, chiffres inchangés.
     sales_locations_cents = day_sales_locations_cents(bake_day, date)
 
-    # Pizza parties privées (#pizza-parties) : barème spécial, HORS 70/30. On
-    # isole leur CA et leur split (part 4S / part boulangers) ; le coûtant des
-    # pâtons est déjà absorbé dans ce split. Les coûts partagés (coûtant pain,
-    # sacs, transport, commissions, lieux de vente) restent sur la marge du reste.
-    party = PizzaPartyRevenueService.call(day_party_orders(bake_day))
+    # Pizza parties (#pizza-parties) : barème spécial, HORS 70/30 — privée ET
+    # publique. On isole leur CA et leur split (part 4S / part boulangers) ; le
+    # coûtant des pâtons est absorbé dans ces splits. Les coûts partagés (coûtant
+    # pain, sacs, transport, commissions, lieux de vente) restent sur le reste.
+    party_orders = day_party_orders(bake_day)
+    private_party = PizzaPartyRevenueService.call(party_orders)
+    public_party = PublicPartyRevenueService.call(party_orders)
+    party_sale_cents = private_party.sale_cents + public_party.sale_cents
+    party_four_sources_cents = private_party.four_sources_cents + public_party.four_sources_cents
+    party_bakers_cents = private_party.bakers_cents + public_party.bakers_cents
 
     non_party_margin_cents =
-      revenue_cents - party.sale_cents - cost_price_cents - bread_bags_cents -
+      revenue_cents - party_sale_cents - cost_price_cents - bread_bags_cents -
       transport_cents - commission_cents - sales_locations_cents
     non_party_four_sources_cents = four_sources_cut(non_party_margin_cents, date)
     non_party_pool_cents = non_party_margin_cents - non_party_four_sources_cents
 
-    four_sources_cents = non_party_four_sources_cents + party.four_sources_cents
-    baker_pool_cents = non_party_pool_cents + party.bakers_cents
-    # Marge brute totale (pain + party) = ce qui est effectivement réparti.
+    four_sources_cents = non_party_four_sources_cents + party_four_sources_cents
+    baker_pool_cents = non_party_pool_cents + party_bakers_cents
+    # Marge brute totale (pain + parties) = ce qui est effectivement réparti.
     gross_margin_cents = four_sources_cents + baker_pool_cents
 
     artisans = bake_day.baking_artisans.to_a
@@ -212,10 +231,14 @@ class BakerRevenueService
       gross_margin_cents: gross_margin_cents,
       four_sources_cents: four_sources_cents,
       baker_pool_cents: baker_pool_cents,
-      party_persons: party.persons,
-      party_revenue_cents: party.sale_cents,
-      party_four_sources_cents: party.four_sources_cents,
-      party_bakers_cents: party.bakers_cents,
+      party_persons: private_party.persons,
+      party_revenue_cents: private_party.sale_cents,
+      party_four_sources_cents: private_party.four_sources_cents,
+      party_bakers_cents: private_party.bakers_cents,
+      public_party_persons: public_party.persons,
+      public_party_revenue_cents: public_party.sale_cents,
+      public_party_four_sources_cents: public_party.four_sources_cents,
+      public_party_bakers_cents: public_party.bakers_cents,
       artisan_shares: shares,
       percent_sum: percent_sum,
       percent_overflow: percent_sum > 100

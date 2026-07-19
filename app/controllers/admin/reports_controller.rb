@@ -50,21 +50,13 @@ class Admin::ReportsController < Admin::BaseController
     @end_date = parsed_date(params[:end_date]) || Date.current
     @end_date = @start_date if @end_date < @start_date
 
-    party_role = Product.pizza_party_roles[:party]
-    party_order_ids = OrderItem.joins(product_variant: :product)
-                               .where(products: { pizza_party_role: party_role })
-                               .select(:order_id)
-
-    @orders = Order.completed
-                   .in_bake_day_range(@start_date, @end_date)
-                   .where(id: party_order_ids)
-                   .includes(:customer, :bake_day,
-                             order_items: { product_variant: [ :variant_cost_prices, :product ] })
-                   .sort_by { |order| [ order.bake_day.baked_on, order.created_at ] }
-
+    @orders = party_orders_with_role(:party)
     @summary = PizzaPartyRevenueService.call(@orders)
-    # Détail par commande party (une party = une commande) pour le tableau.
     @rows = @orders.map { |order| [ order, PizzaPartyRevenueService.call([ order ]) ] }
+
+    @public_orders = party_orders_with_role(:public_party)
+    @public_summary = PublicPartyRevenueService.call(@public_orders)
+    @public_rows = @public_orders.map { |order| [ order, PublicPartyRevenueService.call([ order ]) ] }
   end
 
   # Reporting des versements Stripe (#49). Appels Stripe live (mis en cache court
@@ -79,6 +71,21 @@ class Admin::ReportsController < Admin::BaseController
   end
 
   private
+
+  # Commandes finalisées de la période contenant un article d'un produit au rôle
+  # pizza party donné (:party ou :public_party), préchargées pour le calcul.
+  def party_orders_with_role(role)
+    order_ids = OrderItem.joins(product_variant: :product)
+                         .where(products: { pizza_party_role: Product.pizza_party_roles[role] })
+                         .select(:order_id)
+
+    Order.completed
+         .in_bake_day_range(@start_date, @end_date)
+         .where(id: order_ids)
+         .includes(:customer, :bake_day,
+                   order_items: { product_variant: [ :variant_cost_prices, :product ] })
+         .sort_by { |order| [ order.bake_day.baked_on, order.created_at ] }
+  end
 
   def parsed_date(value)
     return nil if value.blank?

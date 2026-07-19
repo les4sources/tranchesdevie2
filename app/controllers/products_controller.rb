@@ -2,9 +2,10 @@ class ProductsController < ApplicationController
   def show
     @product = Product.not_deleted.active.store_channel.find(params[:id])
 
-    # La pizza party privée se réserve depuis la page Événements, pas depuis le
-    # catalogue (#pizza-parties). On y redirige toute arrivée directe.
-    if @product.pizza_party_role_party?
+    # Les pizza parties (privée & publique) se réservent depuis la page
+    # Événements, pas depuis le catalogue (#pizza-parties). On y redirige toute
+    # arrivée directe.
+    if @product.pizza_party_role_party? || @product.pizza_party_role_public_party?
       redirect_to evenements_path and return
     end
 

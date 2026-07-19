@@ -114,6 +114,17 @@ class ProductVariant < ApplicationRecord
     self.price_cents = value.to_s.blank? ? nil : (value.to_f * 100).round
   end
 
+  # Base 4 Sources d'une variante de party PUBLIQUE (#pizza-parties), en euros.
+  def party_four_sources_base_euros
+    return nil if party_four_sources_base_cents.nil?
+
+    (party_four_sources_base_cents / 100.0).round(2)
+  end
+
+  def party_four_sources_base_euros=(value)
+    self.party_four_sources_base_cents = value.to_s.blank? ? nil : (value.to_f * 100).round
+  end
+
   def restricted?
     variant_group_restrictions.any?
   end

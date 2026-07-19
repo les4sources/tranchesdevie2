@@ -47,6 +47,18 @@ RSpec.describe "BakerRevenueService — pizza parties privées", type: :model do
     order
   end
 
+  def add_public_party_order(adults:, children:)
+    product = create(:product, :pizza_party_public)
+    adulte = create(:product_variant, product: product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
+    enfant = create(:product_variant, product: product, name: "enfant", price_cents: 600, party_four_sources_base_cents: 200)
+    create(:variant_cost_price, product_variant: adulte, amount_cents: 26, active_from: date - 30)
+    create(:variant_cost_price, product_variant: enfant, amount_cents: 26, active_from: date - 30)
+    order = create(:order, :paid, bake_day: bake_day, total_cents: adults * 1_000 + children * 600)
+    create(:order_item, order: order, product_variant: adulte, qty: adults, unit_price_cents: 1_000) if adults.positive?
+    create(:order_item, order: order, product_variant: enfant, qty: children, unit_price_cents: 600) if children.positive?
+    order
+  end
+
   context "journée avec UNIQUEMENT une pizza party (10 pers, coûtant 0,26 €)" do
     before { add_party_order(persons: 10) }
 
@@ -100,9 +112,27 @@ RSpec.describe "BakerRevenueService — pizza parties privées", type: :model do
       day = report.days.first
       expect(day.party_persons).to eq(0)
       expect(day.party_bakers_cents).to eq(0)
+      expect(day.public_party_persons).to eq(0)
       # marge pain = 10000 − 4000 = 6000 ; 4S 1800 ; pool 4200
       expect(day.four_sources_cents).to eq(1_800)
       expect(day.baker_pool_cents).to eq(4_200)
+    end
+  end
+
+  context "journée avec une party PUBLIQUE (1 adulte + 1 enfant)" do
+    before { add_public_party_order(adults: 1, children: 1) }
+
+    it "applique le barème public, isolé dans les champs public_party" do
+      day = report.days.first
+      expect(day.public_party_persons).to eq(2)
+      # adulte : 4S 502 / boulangers 472 ; enfant : 4S 312 / boulangers 262
+      expect(day.public_party_four_sources_cents).to eq(502 + 312)
+      expect(day.public_party_bakers_cents).to eq(472 + 262)
+    end
+
+    it "verse la part boulangers publique à l'artisan présent (100 %)" do
+      settlement = report.artisan_settlements.find { |s| s.artisan == artisan }
+      expect(settlement.settled_cents).to eq(472 + 262)
     end
   end
 end

@@ -26,6 +26,11 @@
     .space-y-2
       = f.label :mold_type_id, "Type de moule", class: "block text-sm font-medium text-gray-700"
       = f.collection_select :mold_type_id, MoldType.not_deleted.ordered, :id, :name, { include_blank: "Aucun" }, class: admin_input_class
+    - if @product.pizza_party_role_public_party?
+      .space-y-2
+        = f.label :party_four_sources_base_euros, "Base 4 Sources (€)", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :party_four_sources_base_euros, step: 0.01, min: 0, class: admin_input_class
+        p.text-xs.text-gray-500 Part fixe 4 Sources / personne (ex. 3 € adulte, 2 € enfant). Base boulangers = prix − cette base.
     .space-y-2.flex.items-start.md:col-span-2
       .flex.items-center.h-5
         = f.check_box :track_capacity_separately, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"

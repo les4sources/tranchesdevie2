@@ -45,4 +45,26 @@ RSpec.describe "Admin::Reports pizza parties", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Aucune pizza party privée sur cette période.")
   end
+
+  it "affiche la section parties publiques avec le barème public" do
+    bake_day = create(:bake_day, baked_on: date)
+    customer = create(:customer, first_name: "Bob", last_name: "Martin")
+    product = create(:product, :pizza_party_public, name: "Pizza party publique")
+    adulte = create(:product_variant, product: product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
+    enfant = create(:product_variant, product: product, name: "enfant", price_cents: 600, party_four_sources_base_cents: 200)
+    create(:variant_cost_price, product_variant: adulte, amount_cents: 26, active_from: date - 30)
+    create(:variant_cost_price, product_variant: enfant, amount_cents: 26, active_from: date - 30)
+    create(:revenue_parameter, :four_sources_rate, value: 3_000, active_from: date - 60)
+    order = create(:order, :paid, customer: customer, bake_day: bake_day, total_cents: 1_600)
+    create(:order_item, order: order, product_variant: adulte, qty: 1, unit_price_cents: 1_000)
+    create(:order_item, order: order, product_variant: enfant, qty: 1, unit_price_cents: 600)
+
+    get pizza_parties_admin_reports_path, params: { start_date: "2026-07-01", end_date: "2026-07-31" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Parties publiques")
+    expect(response.body).to include("Bob Martin")
+    expect(response.body).to include("7,34 €")  # boulangers 472 + 262
+    expect(response.body).to include("8,14 €")  # 4 Sources 502 + 312
+  end
 end

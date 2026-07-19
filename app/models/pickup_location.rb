@@ -14,6 +14,9 @@ class PickupLocation < ApplicationRecord
   has_many :bake_day_pickup_locations, dependent: :destroy
   has_many :bake_days, through: :bake_day_pickup_locations
   has_many :orders, dependent: :restrict_with_error
+  # Produits exclus de ce lieu de retrait (#152) : non commandables ici.
+  has_many :product_pickup_location_exclusions, dependent: :destroy
+  has_many :excluded_products, through: :product_pickup_location_exclusions, source: :product
 
   validates :name, presence: true, uniqueness: { conditions: -> { where(deleted_at: nil) } }
   validate :single_default_location

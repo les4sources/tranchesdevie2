@@ -1,0 +1,17 @@
+/ Lieux de retrait EXCLUS pour ce produit (#152). Cocher un lieu = ce produit
+/ n'est PAS commandable pour ce lieu de retrait. Partial partagé par `new` et
+/ `edit`. Sans rapport avec les restrictions par groupe client.
+.space-y-3
+  span.block.text-sm.font-medium.text-gray-700 Lieux de retrait exclus
+  p.text-sm.text-gray-500.mb-2
+    | Cochez les points de retrait où ce produit n'est PAS commandable. Laissez tout décoché pour l'autoriser partout. Le client sera averti au moment du choix du lieu de retrait.
+  .border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    - locations = PickupLocation.not_deleted.ordered
+    - if locations.any?
+      - locations.each do |location|
+        .flex.items-center.mb-2
+          = check_box_tag "product[excluded_pickup_location_ids][]", location.id, product.excluded_pickup_location_ids.include?(location.id), id: "excluded_pickup_#{location.id}", class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          = label_tag "excluded_pickup_#{location.id}", location.name, class: "ml-2 text-sm font-medium text-gray-700"
+      = hidden_field_tag "product[excluded_pickup_location_ids][]", ""
+    - else
+      p.text-sm.text-gray-500.italic Aucun point de retrait défini.

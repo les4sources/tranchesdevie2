@@ -146,7 +146,67 @@
             </label>
           <% end %>
         </div>
+
+        <%# Avertissement d'exclusion produit ↔ lieu de retrait (#152), affiché sans soumettre. %>
+        <div id="pickup_exclusion_warning" class="mt-3 hidden rounded-md border border-danger-300 bg-danger-50 p-3 text-sm text-danger-700">
+          <p class="font-semibold">Ce point de retrait n'est pas disponible pour certains produits de votre panier&nbsp;:</p>
+          <ul id="pickup_exclusion_products" class="mt-1 list-disc list-inside"></ul>
+          <p class="mt-2">Pour continuer, retirez ce(s) produit(s) du panier <span class="whitespace-nowrap">ou choisissez un autre point de retrait.</span></p>
+        </div>
+        <script type="application/json" id="pickup_exclusions_data"><%= raw @pickup_location_exclusions.to_json %></script>
       </div>
+
+      <script>
+        // Feedback immédiat (#152) : quand le lieu de retrait choisi exclut un
+        // produit du panier, on affiche un avertissement et on bloque le paiement,
+        // sans soumettre le formulaire. Le serveur revérifie de toute façon.
+        (function () {
+          function initPickupExclusions() {
+            var dataEl = document.getElementById('pickup_exclusions_data');
+            if (!dataEl) return;
+            var exclusions = {};
+            try { exclusions = JSON.parse(dataEl.textContent || '{}'); } catch (e) { exclusions = {}; }
+
+            var warning = document.getElementById('pickup_exclusion_warning');
+            var list = document.getElementById('pickup_exclusion_products');
+            var radios = document.querySelectorAll('input[name="pickup_location_id"]');
+            var payButtonIds = ['submit-payment', 'submit-cash-order', 'submit-wallet-order'];
+
+            function update() {
+              var selected = Array.prototype.find.call(radios, function (r) { return r.checked; });
+              var names = selected ? (exclusions[selected.value] || []) : [];
+              var blocked = names.length > 0;
+
+              if (warning) warning.classList.toggle('hidden', !blocked);
+              if (list) {
+                list.innerHTML = '';
+                names.forEach(function (name) {
+                  var li = document.createElement('li');
+                  li.textContent = name;
+                  list.appendChild(li);
+                });
+              }
+
+              payButtonIds.forEach(function (id) {
+                var btn = document.getElementById(id);
+                if (!btn) return;
+                btn.disabled = blocked;
+                btn.classList.toggle('opacity-50', blocked);
+                btn.classList.toggle('cursor-not-allowed', blocked);
+              });
+            }
+
+            radios.forEach(function (r) { r.addEventListener('change', update); });
+            update();
+          }
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPickupExclusions);
+          } else {
+            initPickupExclusions();
+          }
+        })();
+      </script>
 
       <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
         <label class="flex items-center gap-2 text-sm font-medium text-ink-700">

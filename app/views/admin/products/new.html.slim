@@ -82,6 +82,8 @@
         = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
         = f.label :channel, "Boulangers uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
 
+  = render "admin/products/pickup_exclusions", f: f, product: @product
+
   .flex.justify-end.space-x-3
     = link_to "Annuler", admin_products_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
     = f.submit "Créer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

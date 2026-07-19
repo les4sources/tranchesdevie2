@@ -19,6 +19,10 @@ class Product < ApplicationRecord
   has_many :product_images, dependent: :destroy
   has_many :product_flours, dependent: :destroy
   has_many :flours, through: :product_flours
+  # Lieux de retrait pour lesquels ce produit N'EST PAS commandable (#152).
+  has_many :product_pickup_location_exclusions, dependent: :destroy
+  has_many :excluded_pickup_locations, through: :product_pickup_location_exclusions,
+                                       source: :pickup_location
 
   accepts_nested_attributes_for :product_images, allow_destroy: true, reject_if: :reject_empty_image?
   accepts_nested_attributes_for :product_flours, allow_destroy: true
@@ -35,6 +39,15 @@ class Product < ApplicationRecord
   scope :not_deleted, -> { where(deleted_at: nil) }
   # Le produit forfait de la Pizza party (#68) — un seul attendu en base.
   scope :pizza_party_forfait, -> { where(pizza_party_role: :forfait) }
+
+  # Vrai si ce produit est commandable pour le lieu de retrait donné (#152).
+  # `nil` (aucun lieu) → commandable (pas de contrainte). Un produit sans aucune
+  # exclusion est toujours commandable.
+  def orderable_at?(pickup_location)
+    return true if pickup_location.nil?
+
+    excluded_pickup_location_ids.exclude?(pickup_location.id)
+  end
 
   def display_name
     name

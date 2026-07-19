@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <%= csrf_meta_tags %>
+    <%# En prod/dev, csrf_meta_tags rend le vrai token. En test, la protection CSRF
+        est désactivée (allow_forgery_protection = false) → csrf_meta_tags ne rend
+        RIEN, ce qui fait planter le JS lisant meta[name="csrf-token"].content
+        (connexion OTP, checkout). On injecte alors un meta factice — jamais vérifié
+        côté serveur — pour que les system specs pilotent le vrai JS (#126). %>
+    <% if protect_against_forgery? %>
+      <%= csrf_meta_tags %>
+    <% else %>
+      <meta name="csrf-param" content="authenticity_token">
+      <meta name="csrf-token" content="test-token">
+    <% end %>
     <%= csp_meta_tag %>
     <meta name="stripe-key" content="<%= ENV['STRIPE_PUBLIC_KEY'] %>">
 
@@ -19,7 +29,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
     <!-- Charger Stripe.js globalement pour eviter les erreurs "Stripe is not defined" avec Turbo -->
-    <script src="https://js.stripe.com/v3/"></script>
+    <%# En test système, on ne charge PAS le vrai Stripe.js (aucun appel réseau) :
+        un shim window.Stripe est injecté à la place (cf. #126). %>
+    <% if Rails.env.test? %>
+      <%= render "layouts/stripe_test_stub" %>
+    <% else %>
+      <script src="https://js.stripe.com/v3/"></script>
+    <% end %>
 
     <%= render "layouts/sentry_browser" %>
 

@@ -53,3 +53,50 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+  system:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tranchesdevie_test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # Chrome est préinstallé sur les runners ubuntu-latest ; Selenium Manager
+      # récupère le chromedriver compatible au runtime.
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Prepare the test database
+        run: bin/rails db:test:prepare
+
+      - name: Build CSS (Tailwind) for asset rendering
+        run: bin/rails tailwindcss:build
+
+      - name: Run system specs
+        run: bundle exec rspec spec/system/
+

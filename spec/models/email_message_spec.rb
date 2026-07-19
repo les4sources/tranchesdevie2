@@ -13,8 +13,8 @@ RSpec.describe EmailMessage, type: :model do
     expect(message.errors[:body_html]).to be_present
   end
 
-  it 'exposes confirmation, otp and other kinds' do
-    expect(EmailMessage.kinds.keys).to contain_exactly("confirmation", "otp", "other")
+  it 'exposes confirmation, otp, ready and other kinds' do
+    expect(EmailMessage.kinds.keys).to contain_exactly("confirmation", "otp", "other", "ready")
   end
 
   it 'belongs optionally to a customer and an order' do

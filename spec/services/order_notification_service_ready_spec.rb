@@ -46,7 +46,7 @@ RSpec.describe OrderMailer, type: :mailer do
       mail = OrderMailer.ready(order)
 
       expect(mail.subject).to eq('Ta commande est prête !')
-      expect(mail.to).to eq([customer.email])
+      expect(mail.to).to eq([ customer.email ])
       expect(mail.body.encoded).to include('Corps de message éditable')
       expect(mail['X-Email-Kind'].value).to eq('ready')
     end

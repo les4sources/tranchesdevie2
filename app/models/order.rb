@@ -306,53 +306,48 @@ class Order < ApplicationRecord
         end
     end
 
+    # CA NET par produit (#153) : la remise éventuelle de chaque commande est
+    # répartie au prorata du poids brut de ses lignes, si bien que la somme du CA
+    # par produit se réconcilie EXACTEMENT avec `revenue_between` (net). Le prix
+    # brut n'étant pas stocké au net par ligne, on répartit `total_cents` (net)
+    # de la commande sur ses lignes (cf. `each_net_order_line`). Trié par CA net.
     def sales_by_product_between(start_date, end_date)
-      total_quantity = Arel.sql("SUM(order_items.qty)")
-      total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")
+      acc = Hash.new { |hash, key| hash[key] = { name: nil, total_quantity: 0, total_cents: 0 } }
 
-      completed
-        .in_bake_day_range(start_date, end_date)
-        .joins(order_items: { product_variant: :product })
-        .group("products.id", "products.name")
-        .order(total_revenue.desc)
-        .pluck(
-          "products.name",
-          total_quantity,
-          total_revenue
-        ).map do |name, total_quantity, total_cents|
-          {
-            product_name: name,
-            total_quantity: total_quantity.to_i,
-            total_cents: total_cents.to_i
-          }
-        end
+      each_net_order_line(start_date, end_date) do |_order, item, net_cents|
+        product = item.product_variant.product
+        bucket = acc[product.id]
+        bucket[:name] = product.name
+        bucket[:total_quantity] += item.qty
+        bucket[:total_cents] += net_cents
+      end
+
+      acc.values
+         .map { |bucket| { product_name: bucket[:name], total_quantity: bucket[:total_quantity], total_cents: bucket[:total_cents] } }
+         .sort_by { |entry| -entry[:total_cents] }
     end
 
+    # CA NET par catégorie interne (#153). Même répartition de la remise que
+    # `sales_by_product_between` : la somme se réconcilie avec `revenue_between`.
     def sales_by_internal_category_between(start_date, end_date)
-      total_quantity = Arel.sql("SUM(order_items.qty)")
-      total_revenue = Arel.sql("SUM(order_items.qty * order_items.unit_price_cents)")
-      orders_count = Arel.sql("COUNT(DISTINCT orders.id)")
+      acc = Hash.new { |hash, key| hash[key] = { total_quantity: 0, total_cents: 0, order_ids: Set.new } }
 
-      completed
-        .in_bake_day_range(start_date, end_date)
-        .joins(order_items: { product_variant: :product })
-        .group("products.internal_category")
-        .order(total_revenue.desc)
-        .pluck(
-          "products.internal_category",
-          orders_count,
-          total_quantity,
-          total_revenue
-        ).map do |internal_category, orders_count, total_quantity, total_cents|
-          {
-            # `pluck` renvoie déjà le nom de l'enum (ex. "boulangerie") ; on
-            # retombe sur la conversion depuis l'entier au cas où.
-            internal_category: Product.internal_categories.key(internal_category) || internal_category.to_s,
-            orders_count: orders_count.to_i,
-            total_quantity: total_quantity.to_i,
-            total_cents: total_cents.to_i
-          }
-        end
+      each_net_order_line(start_date, end_date) do |order, item, net_cents|
+        category = item.product_variant.product.internal_category
+        bucket = acc[category]
+        bucket[:total_quantity] += item.qty
+        bucket[:total_cents] += net_cents
+        bucket[:order_ids] << order.id
+      end
+
+      acc.map do |category, bucket|
+        {
+          internal_category: category,
+          orders_count: bucket[:order_ids].size,
+          total_quantity: bucket[:total_quantity],
+          total_cents: bucket[:total_cents]
+        }
+      end.sort_by { |entry| -entry[:total_cents] }
     end
 
     def top_customers_between(start_date, end_date, limit: 10)
@@ -416,6 +411,53 @@ class Order < ApplicationRecord
             total_cents: total_cents.to_i
           }
         end
+    end
+
+    private
+
+    # Parcourt chaque ligne des commandes finalisées de la période en fournissant
+    # son CA NET (#153). Pour chaque commande, la remise (Σ prix bruts −
+    # total_cents) est répartie au prorata du poids brut de ses lignes, en cents
+    # entiers dont la somme égale EXACTEMENT le total net de la commande. La
+    # ventilation par produit/catégorie se réconcilie donc avec `revenue_between`.
+    # Yield : (order, order_item, net_cents_de_la_ligne).
+    def each_net_order_line(start_date, end_date)
+      completed
+        .in_bake_day_range(start_date, end_date)
+        .includes(order_items: { product_variant: :product })
+        .find_each do |order|
+          items = order.order_items.to_a
+          next if items.empty?
+
+          gross_line_cents = items.map { |item| item.qty * item.unit_price_cents }
+          net_line_cents = distribute_net_cents(gross_line_cents, order.total_cents)
+
+          items.each_with_index do |item, index|
+            yield order, item, net_line_cents[index]
+          end
+        end
+    end
+
+    # Répartit `total_cents` (net) sur des lignes au prorata de `weights` (poids
+    # bruts), en cents entiers dont la somme égale EXACTEMENT `total_cents`. La
+    # dérive d'arrondi (au plus quelques cents) est absorbée par la ligne au poids
+    # le plus élevé. Poids tous nuls (commande entièrement offerte) → tout le net
+    # est porté par la première ligne (cas dégénéré, reste réconcilié).
+    def distribute_net_cents(weights, total_cents)
+      return [] if weights.empty?
+
+      weight_sum = weights.sum
+      if weight_sum.zero?
+        shares = Array.new(weights.size, 0)
+        shares[0] = total_cents
+        return shares
+      end
+
+      shares = weights.map { |weight| (total_cents * weight / weight_sum.to_f).round }
+      drift = total_cents - shares.sum
+      heaviest_index = weights.each_with_index.max_by { |weight, _| weight }.last
+      shares[heaviest_index] += drift
+      shares
     end
   end
 

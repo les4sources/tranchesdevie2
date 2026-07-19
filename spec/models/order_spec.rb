@@ -412,12 +412,14 @@ RSpec.describe Order, type: :model do
       create(:product_variant, product: create(:product, :epicerie))
     end
 
-    it 'agrège le CA, les quantités et le nombre de commandes par catégorie interne' do
-      order1 = create(:order, :paid, bake_day: bake_day)
+    it 'agrège le CA NET, les quantités et le nombre de commandes par catégorie interne' do
+      # Sans remise : total_cents = somme brute des lignes → le CA net par
+      # catégorie égale le brut (#153).
+      order1 = create(:order, :paid, bake_day: bake_day, total_cents: 1300)
       create(:order_item, order: order1, product_variant: bakery_variant, qty: 2, unit_price_cents: 500)
       create(:order_item, order: order1, product_variant: grocery_variant, qty: 1, unit_price_cents: 300)
 
-      order2 = create(:order, :ready, bake_day: bake_day)
+      order2 = create(:order, :ready, bake_day: bake_day, total_cents: 1500)
       create(:order_item, order: order2, product_variant: bakery_variant, qty: 3, unit_price_cents: 500)
 
       result = described_class.sales_by_internal_category_between(start_date, end_date)

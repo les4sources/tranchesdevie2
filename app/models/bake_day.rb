@@ -19,6 +19,12 @@ class BakeDay < ApplicationRecord
   has_many :baking_artisans, through: :bake_day_artisans, source: :artisan
   has_many :bake_day_pickup_locations, dependent: :destroy
   has_many :pickup_locations, through: :bake_day_pickup_locations
+  # Lieux de vente liés à la fournée (#150) : leur coût du jour est déduit de la
+  # marge brute avant le partage 70/30. Contrairement aux lieux de RETRAIT, rien
+  # n'empêche de décocher un lieu de vente (aucune commande ne s'y rattache) :
+  # l'affectation standard `sales_location_ids=` d'ActiveRecord suffit.
+  has_many :bake_day_sales_locations, dependent: :destroy
+  has_many :sales_locations, through: :bake_day_sales_locations
 
   validates :baked_on, presence: true, uniqueness: true
   validates :cut_off_at, presence: true
@@ -34,6 +40,13 @@ class BakeDay < ApplicationRecord
   # non supprimés, dans l'ordre d'affichage.
   def open_pickup_locations
     pickup_locations.not_deleted.ordered
+  end
+
+  # Coût total des lieux de vente liés à la fournée (#150), résolu à la date de
+  # cuisson (`baked_on`). Chaque lieu contribue le coût de la période qui couvre
+  # ce jour (ou 0 s'il n'en a aucune). 0 si aucun lieu n'est lié → neutre.
+  def sales_locations_cost_cents(on: baked_on)
+    sales_locations.sum { |location| location.cost_cents(on: on) || 0 }
   end
 
   # Le setter d'ActiveRecord écrirait les jointures IMMÉDIATEMENT, avant même la

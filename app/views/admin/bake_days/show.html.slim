@@ -112,6 +112,11 @@
             .mt-2.h-2.w-full.rounded-full.bg-slate-200
               .h-2.rounded-full class=bar_color style="width: #{[pct, 100].min}%"
             p.mt-1.text-xs.font-semibold class=text_color = "#{pct}%"
+            - if entry[:separate_tracking].present? && entry[:separate_tracking].any?
+              .mt-2.space-y-0.5.border-t.border-indigo-100.pt-2
+                - entry[:separate_tracking].each do |sep|
+                  p.text-xs.font-medium.text-indigo-700
+                    = "dont #{sep[:variant].name} : #{sep[:qty]}"
         - if mold_requirements[:unassigned] > 0
           .rounded-2xl.border.border-amber-200.bg-amber-50.p-4.shadow.sm:p-5
             p.text-sm.font-semibold.text-amber-900 Non assignés

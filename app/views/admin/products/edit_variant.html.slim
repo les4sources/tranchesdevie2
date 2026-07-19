@@ -26,6 +26,12 @@
     .space-y-2
       = f.label :mold_type_id, "Type de moule", class: "block text-sm font-medium text-gray-700"
       = f.collection_select :mold_type_id, MoldType.not_deleted.ordered, :id, :name, { include_blank: "Aucun" }, class: admin_input_class
+    .space-y-2.flex.items-start.md:col-span-2
+      .flex.items-center.h-5
+        = f.check_box :track_capacity_separately, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+      .ml-3.text-sm
+        = f.label :track_capacity_separately, "Compter séparément dans le planning (bloc « Moules »)", class: "font-medium text-gray-700"
+        p.text-gray-500 La variante reste comptée dans la capacité de son moule, mais son nombre apparaît en plus sur une ligne dédiée (« dont … »).
 
   .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
     span.block.text-sm.font-medium.text-gray-700 Prix coûtant (historisé par date d'activation)

@@ -23,6 +23,7 @@ class PartyEvent < ApplicationRecord
   scope :public_events, -> { kind_public_party }
   scope :private_events, -> { kind_private_party }
   scope :upcoming, -> { not_deleted.where(held_on: Date.current..).order(:held_on, :slot) }
+  scope :past, -> { not_deleted.where(held_on: ...Date.current).order(held_on: :desc) }
 
   SLOT_LABELS = { "midi" => "Midi", "soir" => "Soir" }.freeze
 

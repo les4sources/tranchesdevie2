@@ -39,6 +39,16 @@ RSpec.describe "Admin party events (#pizza-parties)", type: :request do
       expect(response.body).to include("Grande Pizza Party")
     end
 
+    it "liste aussi les événements publics passés" do
+      create(:party_event, :public_party, title: "Pizza Party de juin", held_on: Date.current - 40)
+
+      get admin_party_events_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Événements publics passés")
+      expect(response.body).to include("Pizza Party de juin")
+    end
+
     it "supprime (soft) un événement" do
       event = create(:party_event, :public_party)
 

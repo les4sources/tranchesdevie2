@@ -8,6 +8,7 @@ module Admin
 
     def index
       @public_events = PartyEvent.public_events.upcoming
+      @past_public_events = PartyEvent.public_events.past
       @private_events = PartyEvent.private_events.upcoming.includes(:orders)
     end
 

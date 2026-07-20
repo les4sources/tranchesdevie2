@@ -68,6 +68,7 @@ class Admin::ReportsController < Admin::BaseController
       acc[:persons] += r.persons
       acc[:adults] += r.adults
       acc[:children] += r.children
+      acc[:sourciers] += r.sourciers
       acc[:sale_cents] += r.sale_cents
       acc[:bakers_cents] += r.bakers_cents
       acc[:four_sources_cents] += r.four_sources_cents

@@ -204,6 +204,7 @@
             <th class="px-4 py-3 text-left">Événement</th>
             <th class="px-4 py-3 text-right">Adultes</th>
             <th class="px-4 py-3 text-right">Enfants</th>
+            <th class="px-4 py-3 text-right">Sourciers</th>
             <th class="px-4 py-3 text-right">CA places</th>
             <th class="px-4 py-3 text-right">Frais</th>
             <th class="px-4 py-3 text-right">Boulangers dus</th>
@@ -218,9 +219,10 @@
               <td class="px-4 py-3 font-medium text-gray-900"><%= event.title %></td>
               <td class="px-4 py-3 text-right text-gray-900"><%= r.adults %></td>
               <td class="px-4 py-3 text-right text-gray-900"><%= r.children %></td>
+              <td class="px-4 py-3 text-right text-gray-500" title="2 €/boule aux boulangers"><%= r.sourciers %></td>
               <td class="px-4 py-3 text-right text-gray-900"><%= euro.(r.sale_cents) %></td>
               <td class="px-4 py-3 text-right text-gray-500"><%= euro.(r.fees_cents) %></td>
-              <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.bakers_cents) %></td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900" title="Places <%= euro.(r.bakers_places_cents) %> + sourciers <%= euro.(r.bakers_sourciers_cents) %>"><%= euro.(r.bakers_cents) %></td>
               <td class="px-4 py-3 text-right text-gray-900"><%= euro.(r.net_to_four_sources_cents) %></td>
               <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.four_sources_effective_cents) %></td>
             </tr>
@@ -231,6 +233,7 @@
             <td class="px-4 py-3" colspan="2">Total</td>
             <td class="px-4 py-3 text-right"><%= @historical_totals[:adults] %></td>
             <td class="px-4 py-3 text-right"><%= @historical_totals[:children] %></td>
+            <td class="px-4 py-3 text-right"><%= @historical_totals[:sourciers] %></td>
             <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:sale_cents]) %></td>
             <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:fees_cents]) %></td>
             <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:bakers_cents]) %></td>

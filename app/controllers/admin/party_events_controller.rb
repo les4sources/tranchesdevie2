@@ -49,7 +49,7 @@ module Admin
     def event_params
       params.require(:party_event)
             .permit(:title, :held_on, :slot, :capacity, :description, :registration_closes_at, :active,
-                    :historical_source, :historical_adults, :historical_children, :historical_fees_euros)
+                    :historical_source, :historical_adults, :historical_children, :historical_sourciers, :historical_fees_euros)
     end
   end
 end

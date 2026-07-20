@@ -41,7 +41,7 @@
       .space-y-2
         = f.label :historical_source, "Source", class: "block text-sm font-medium text-gray-700"
         = f.select :historical_source, [ [ "— (aucun)", "" ], [ "BilletWeb", "billetweb" ] ], {}, class: admin_input_class
-      .grid.grid-cols-1.sm:grid-cols-3.gap-4
+      .grid.grid-cols-2.sm:grid-cols-4.gap-4
         .space-y-2
           = f.label :historical_adults, "Adultes", class: "block text-sm font-medium text-gray-700"
           = f.number_field :historical_adults, min: 0, class: admin_input_class
@@ -49,8 +49,12 @@
           = f.label :historical_children, "Enfants", class: "block text-sm font-medium text-gray-700"
           = f.number_field :historical_children, min: 0, class: admin_input_class
         .space-y-2
+          = f.label :historical_sourciers, "Boules sourciers", class: "block text-sm font-medium text-gray-700"
+          = f.number_field :historical_sourciers, min: 0, class: admin_input_class
+        .space-y-2
           = f.label :historical_fees_euros, "Frais BilletWeb (€)", class: "block text-sm font-medium text-gray-700"
           = f.number_field :historical_fees_euros, step: "0.01", min: 0, class: admin_input_class
+      p.text-xs.text-gray-500 Sourciers : boules non payantes produites pour les sourciers → 2 €/boule, intégralement aux boulangers.
 
   .flex.gap-3
     = f.submit "Enregistrer", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

@@ -19,14 +19,20 @@
 #
 # Usage : HistoricalPartyRevenueService.call(party_event)
 class HistoricalPartyRevenueService
+  # Boule « sourcier » (non payante) : 2 €, intégralement aux boulangers.
+  SOURCIER_BAKER_CENTS = 200
+
   Result = Struct.new(
     :persons,
     :adults,
     :children,
+    :sourciers,           # boules sourciers (non payantes)
     :sale_cents,          # CA brut des places (adultes + enfants)
     :dough_cost_cents,    # coûtant total (pâtons)
     :four_sources_cents,  # part 4 Sources selon le barème
-    :bakers_cents,        # part boulangers due selon le barème
+    :bakers_places_cents, # part boulangers due sur les places (barème public)
+    :bakers_sourciers_cents, # part boulangers due sur les sourciers (2 €/boule)
+    :bakers_cents,        # total boulangers dû (places + sourciers)
     :fees_cents,          # frais BilletWeb absorbés par 4S
     :net_to_four_sources_cents,        # ce que 4S a réellement encaissé (CA − frais)
     :four_sources_effective_cents,     # ce que 4S garde après paiement des boulangers
@@ -44,6 +50,7 @@ class HistoricalPartyRevenueService
   def call
     adults = @event.historical_adults.to_i
     children = @event.historical_children.to_i
+    sourciers = @event.historical_sourciers.to_i
     fees = @event.historical_fees_cents.to_i
     date = @event.held_on
     rate = PublicPartyRevenueService.rate_on(date)
@@ -51,7 +58,7 @@ class HistoricalPartyRevenueService
     adulte = variant_for("adulte")
     enfant = variant_for("enfant")
 
-    sale = dough = four_sources = bakers = 0
+    sale = dough = four_sources = bakers_places = 0
 
     [ [ adulte, adults ], [ enfant, children ] ].each do |variant, count|
       next if variant.nil? || count.zero?
@@ -60,18 +67,23 @@ class HistoricalPartyRevenueService
       sale += variant.price_cents * count
       dough += split[:cost] * count
       four_sources += split[:four_sources] * count
-      bakers += split[:bakers] * count
+      bakers_places += split[:bakers] * count
     end
 
+    bakers_sourciers = sourciers * SOURCIER_BAKER_CENTS
+    bakers = bakers_places + bakers_sourciers
     net_to_4s = sale - fees
 
     Result.new(
       persons: adults + children,
       adults: adults,
       children: children,
+      sourciers: sourciers,
       sale_cents: sale,
       dough_cost_cents: dough,
       four_sources_cents: four_sources,
+      bakers_places_cents: bakers_places,
+      bakers_sourciers_cents: bakers_sourciers,
       bakers_cents: bakers,
       fees_cents: fees,
       net_to_four_sources_cents: net_to_4s,

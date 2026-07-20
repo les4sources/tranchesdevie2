@@ -34,7 +34,7 @@ class PartyEvent < ApplicationRecord
   # Ventes agrégées importées (BilletWeb) : capacité/clôture obligatoires ne
   # s'appliquent qu'aux inscriptions du site — un import historique renseigne
   # ses comptes adultes/enfants + frais à la place.
-  validates :historical_adults, :historical_children, :historical_fees_cents,
+  validates :historical_adults, :historical_children, :historical_fees_cents, :historical_sourciers,
             numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :historical_adults, :historical_children, :historical_fees_cents,
             presence: true, if: :historical?

@@ -1,0 +1,38 @@
+= form_with model: [ :admin, @event ], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-5" do |f|
+  - if @event.errors.any?
+    .rounded-md.bg-red-50.p-4
+      ul.list-disc.list-inside.text-sm.text-red-700
+        - @event.errors.full_messages.each do |message|
+          li= message
+
+  .space-y-2
+    = f.label :title, "Titre", class: "block text-sm font-medium text-gray-700"
+    = f.text_field :title, required: true, class: admin_input_class
+
+  .grid.grid-cols-1.sm:grid-cols-2.gap-4
+    .space-y-2
+      = f.label :held_on, "Date", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :held_on, required: true, class: admin_input_class
+    .space-y-2
+      = f.label :slot, "Créneau (optionnel)", class: "block text-sm font-medium text-gray-700"
+      = f.select :slot, [ [ "—", "" ], [ "Midi", "midi" ], [ "Soir", "soir" ] ], {}, class: admin_input_class
+
+  .grid.grid-cols-1.sm:grid-cols-2.gap-4
+    .space-y-2
+      = f.label :capacity, "Capacité (personnes, optionnel)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :capacity, min: 1, class: admin_input_class
+    .space-y-2
+      = f.label :registration_closes_at, "Clôture des inscriptions (optionnel)", class: "block text-sm font-medium text-gray-700"
+      = f.datetime_local_field :registration_closes_at, class: admin_input_class
+
+  .space-y-2
+    = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
+    = f.text_area :description, rows: 4, class: admin_input_class
+
+  label.flex.items-center.gap-2.cursor-pointer
+    = f.check_box :active, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    span.text-sm.font-medium.text-gray-700 Actif (visible et inscriptible)
+
+  .flex.gap-3
+    = f.submit "Enregistrer", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    = link_to "Annuler", admin_party_events_path, class: "inline-block text-gray-600 hover:underline py-2 px-4"

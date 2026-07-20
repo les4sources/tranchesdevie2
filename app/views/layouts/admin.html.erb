@@ -31,6 +31,7 @@
               <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_nav_link_class("bake_days") %>
               <%= link_to "Mangeurs", admin_customers_path, class: admin_nav_link_class("customers") %>
               <%= link_to "Produits", admin_products_path, class: admin_nav_link_class("products") %>
+              <%= link_to "Parties", admin_party_events_path, class: admin_nav_link_class("party_events") %>
               <%= link_to "Facturation", admin_billing_path, class: admin_nav_link_class("billing") %>
               <%= link_to baker_revenue_admin_reports_path, class: admin_nav_link_class("reports"), title: "Revenus boulangers", aria: { label: "Revenus boulangers" } do %>
                 <span class="md:hidden">Revenus boulangers</span>
@@ -84,6 +85,7 @@
             <%= link_to "Jours de cuisson", admin_bake_days_path, class: admin_mobile_nav_link_class("bake_days"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Mangeurs", admin_customers_path, class: admin_mobile_nav_link_class("customers"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Produits", admin_products_path, class: admin_mobile_nav_link_class("products"), data: { action: "click->mobile-menu#close" } %>
+            <%= link_to "Parties", admin_party_events_path, class: admin_mobile_nav_link_class("party_events"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Facturation", admin_billing_path, class: admin_mobile_nav_link_class("billing"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Revenus boulangers", baker_revenue_admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>
             <%= link_to "Reporting", admin_reports_path, class: admin_mobile_nav_link_class("reports"), data: { action: "click->mobile-menu#close" } %>

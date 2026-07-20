@@ -1,0 +1,58 @@
+- content_for :title, "Parties"
+- content_for :layout, "admin"
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1.text-2xl.font-bold.text-gray-900 Événements party
+  .flex.gap-2
+    = link_to "Créneaux privés (blocages)", admin_party_slot_blocks_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+    = link_to "Nouvel événement public", new_admin_party_event_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+
+section.mb-8
+  h2.text-lg.font-semibold.text-gray-900.mb-3 Événements publics à venir
+  - if @public_events.any?
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      table.min-w-full.divide-y.divide-gray-100.text-sm
+        thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+          tr
+            th.px-4.py-3.text-left Date
+            th.px-4.py-3.text-left Titre
+            th.px-4.py-3.text-left Créneau
+            th.px-4.py-3.text-right Capacité
+            th.px-4.py-3.text-left Statut
+            th.px-4.py-3.text-right Actions
+        tbody.divide-y.divide-gray-50.bg-white
+          - @public_events.each do |event|
+            tr.hover:bg-gray-50
+              td.px-4.py-3.text-gray-900 = l(event.held_on)
+              td.px-4.py-3.font-medium.text-gray-900 = event.title
+              td.px-4.py-3.text-gray-600 = event.slot ? event.slot_label : "—"
+              td.px-4.py-3.text-right.text-gray-600 = event.capacity || "∞"
+              td.px-4.py-3
+                - if event.active?
+                  span.text-green-700 Actif
+                - else
+                  span.text-gray-400 Inactif
+              td.px-4.py-3.text-right.space-x-3.whitespace-nowrap
+                = link_to "Modifier", edit_admin_party_event_path(event), class: "text-blue-600 hover:text-blue-800"
+                = link_to "Supprimer", admin_party_event_path(event), data: { turbo_method: :delete, turbo_confirm: "Supprimer cet événement ?" }, class: "text-red-600 hover:text-red-800"
+  - else
+    p.text-sm.text-gray-500 Aucun événement public à venir.
+
+section
+  h2.text-lg.font-semibold.text-gray-900.mb-3 Réservations privées à venir
+  - if @private_events.any?
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      table.min-w-full.divide-y.divide-gray-100.text-sm
+        thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+          tr
+            th.px-4.py-3.text-left Date
+            th.px-4.py-3.text-left Créneau
+            th.px-4.py-3.text-left Client
+        tbody.divide-y.divide-gray-50.bg-white
+          - @private_events.each do |event|
+            tr.hover:bg-gray-50
+              td.px-4.py-3.text-gray-900 = l(event.held_on)
+              td.px-4.py-3.text-gray-600 = event.slot_label
+              td.px-4.py-3.text-gray-900 = event.orders.first&.customer&.full_name || "—"
+  - else
+    p.text-sm.text-gray-500 Aucune réservation privée à venir.

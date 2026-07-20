@@ -1,0 +1,53 @@
+- content_for :title, "Créneaux parties privées"
+- content_for :layout, "admin"
+
+.mb-6.flex.items-center.gap-3
+  = link_to "Parties", admin_party_events_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+  h1.text-2xl.font-bold.text-gray-900 Créneaux parties privées
+
+p.text-sm.text-gray-600.mb-5
+  | Les parties privées sont ouvertes par défaut (midi &amp; soir), jusqu'à
+  strong.mx-1 = @capacity
+  | parties par créneau. Bloque ici les créneaux indisponibles.
+
+.grid.grid-cols-1.lg:grid-cols-3.gap-6
+  .lg:col-span-1
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-5
+      h2.text-sm.font-semibold.text-gray-900.mb-3 Bloquer un créneau
+      = form_with model: [ :admin, @block ], url: admin_party_slot_blocks_path, local: true, class: "space-y-4" do |f|
+        - if @block.errors.any?
+          .rounded-md.bg-red-50.p-3
+            ul.list-disc.list-inside.text-sm.text-red-700
+              - @block.errors.full_messages.each do |message|
+                li= message
+        .space-y-2
+          = f.label :blocked_on, "Date", class: "block text-sm font-medium text-gray-700"
+          = f.date_field :blocked_on, required: true, class: admin_input_class
+        .space-y-2
+          = f.label :slot, "Créneau", class: "block text-sm font-medium text-gray-700"
+          = f.select :slot, [ [ "Toute la journée", "" ], [ "Midi", "midi" ], [ "Soir", "soir" ] ], {}, class: admin_input_class
+        .space-y-2
+          = f.label :reason, "Motif (optionnel)", class: "block text-sm font-medium text-gray-700"
+          = f.text_field :reason, class: admin_input_class
+        = f.submit "Bloquer", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+
+  .lg:col-span-2
+    - if @blocks.any?
+      .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+        table.min-w-full.divide-y.divide-gray-100.text-sm
+          thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+            tr
+              th.px-4.py-3.text-left Date
+              th.px-4.py-3.text-left Créneau
+              th.px-4.py-3.text-left Motif
+              th.px-4.py-3.text-right Action
+          tbody.divide-y.divide-gray-50.bg-white
+            - @blocks.each do |block|
+              tr.hover:bg-gray-50
+                td.px-4.py-3.text-gray-900 = l(block.blocked_on)
+                td.px-4.py-3.text-gray-600 = block.slot ? (block.slot_midi? ? "Midi" : "Soir") : "Toute la journée"
+                td.px-4.py-3.text-gray-500 = block.reason
+                td.px-4.py-3.text-right
+                  = link_to "Débloquer", admin_party_slot_block_path(block), data: { turbo_method: :delete, turbo_confirm: "Retirer ce blocage ?" }, class: "text-red-600 hover:text-red-800"
+    - else
+      p.text-sm.text-gray-500 Aucun blocage. Tous les créneaux à venir sont ouverts.

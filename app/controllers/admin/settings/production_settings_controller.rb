@@ -20,7 +20,7 @@ module Admin
       private
 
       def production_setting_params
-        params.require(:production_setting).permit(:oven_capacity_grams, :market_day_oven_capacity_grams)
+        params.require(:production_setting).permit(:oven_capacity_grams, :market_day_oven_capacity_grams, :private_party_slot_capacity)
       end
     end
   end

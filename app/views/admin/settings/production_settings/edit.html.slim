@@ -24,6 +24,10 @@
       = f.label :market_day_oven_capacity_grams, "Jour de marché (grammes)", class: "block text-sm font-medium text-gray-700"
       = f.number_field :market_day_oven_capacity_grams, min: 1, class: admin_input_class
       p.text-xs.text-gray-500 = "#{(@production_setting.market_day_oven_capacity_grams / 1000.0).round(1)} kg"
+    .space-y-2
+      = f.label :private_party_slot_capacity, "Parties privées par créneau", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :private_party_slot_capacity, min: 1, class: admin_input_class
+      p.text-xs.text-gray-500 Nombre max de parties privées réservables sur un même créneau (midi/soir).
 
   .flex.justify-end.space-x-3
     = link_to "Annuler", admin_settings_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"

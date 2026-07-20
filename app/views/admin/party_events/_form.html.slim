@@ -32,6 +32,26 @@
     = f.check_box :active, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
     span.text-sm.font-medium.text-gray-700 Actif (visible et inscriptible)
 
+  details.rounded-lg.border.border-gray-200.bg-gray-50.p-4 open=(@event.historical?)
+    summary.cursor-pointer.text-sm.font-semibold.text-gray-700 Historique BilletWeb (import agrégé)
+    .mt-4.space-y-4
+      p.text-xs.text-gray-500
+        | Pour les parties passées vendues via BilletWeb (argent encaissé par la fondation 4S).
+        |  Renseigne les totaux ; le reporting applique le barème boulangers rétroactivement. Capacité et clôture ne sont alors pas requises.
+      .space-y-2
+        = f.label :historical_source, "Source", class: "block text-sm font-medium text-gray-700"
+        = f.select :historical_source, [ [ "— (aucun)", "" ], [ "BilletWeb", "billetweb" ] ], {}, class: admin_input_class
+      .grid.grid-cols-1.sm:grid-cols-3.gap-4
+        .space-y-2
+          = f.label :historical_adults, "Adultes", class: "block text-sm font-medium text-gray-700"
+          = f.number_field :historical_adults, min: 0, class: admin_input_class
+        .space-y-2
+          = f.label :historical_children, "Enfants", class: "block text-sm font-medium text-gray-700"
+          = f.number_field :historical_children, min: 0, class: admin_input_class
+        .space-y-2
+          = f.label :historical_fees_euros, "Frais BilletWeb (€)", class: "block text-sm font-medium text-gray-700"
+          = f.number_field :historical_fees_euros, step: "0.01", min: 0, class: admin_input_class
+
   .flex.gap-3
     = f.submit "Enregistrer", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
     = link_to "Annuler", admin_party_events_path, class: "inline-block text-gray-600 hover:underline py-2 px-4"

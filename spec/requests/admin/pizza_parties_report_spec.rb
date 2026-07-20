@@ -67,4 +67,21 @@ RSpec.describe "Admin::Reports pizza parties", type: :request do
     expect(response.body).to include("7,34 €")  # boulangers 472 + 262
     expect(response.body).to include("8,14 €")  # 4 Sources 502 + 312
   end
+
+  it "affiche la section historique BilletWeb avec le barème rétroactif" do
+    product = create(:product, :pizza_party_public, name: "Pizza party publique")
+    create(:product_variant, product: product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
+    create(:product_variant, product: product, name: "enfant", price_cents: 600, party_four_sources_base_cents: 200)
+    create(:party_event, :public_party,
+           title: "Pizza Party de juillet", held_on: Date.new(2026, 7, 18),
+           historical_source: "billetweb", historical_adults: 35, historical_children: 16, historical_fees_cents: 2_713)
+
+    get pizza_parties_admin_reports_path, params: { start_date: "2026-07-01", end_date: "2026-07-31" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Parties publiques historiques (BilletWeb)")
+    expect(response.body).to include("Pizza Party de juillet")
+    expect(response.body).to include("216,30 €")  # boulangers dus (barème rétro)
+    expect(response.body).to include("418,87 €")  # 4S net encaissé (446 − 27,13)
+  end
 end

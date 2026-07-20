@@ -57,6 +57,24 @@ class Admin::ReportsController < Admin::BaseController
     @public_orders = party_orders_with_role(:public_party)
     @public_summary = PublicPartyRevenueService.call(@public_orders)
     @public_rows = @public_orders.map { |order| [ order, PublicPartyRevenueService.call([ order ]) ] }
+
+    # Parties publiques HISTORIQUES (BilletWeb) : ventes agrégées sur l'événement,
+    # barème boulangers appliqué rétroactivement (part due par la fondation 4S).
+    @historical_events = PartyEvent.public_events.historical
+                                   .where(held_on: @start_date..@end_date)
+                                   .order(:held_on)
+    @historical_rows = @historical_events.map { |event| [ event, HistoricalPartyRevenueService.call(event) ] }
+    @historical_totals = @historical_rows.each_with_object(Hash.new(0)) do |(_event, r), acc|
+      acc[:persons] += r.persons
+      acc[:adults] += r.adults
+      acc[:children] += r.children
+      acc[:sale_cents] += r.sale_cents
+      acc[:bakers_cents] += r.bakers_cents
+      acc[:four_sources_cents] += r.four_sources_cents
+      acc[:fees_cents] += r.fees_cents
+      acc[:net_to_four_sources_cents] += r.net_to_four_sources_cents
+      acc[:four_sources_effective_cents] += r.four_sources_effective_cents
+    end
   end
 
   # Reporting des versements Stripe (#49). Appels Stripe live (mis en cache court

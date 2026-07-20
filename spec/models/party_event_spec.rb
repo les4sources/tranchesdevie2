@@ -79,6 +79,39 @@ RSpec.describe PartyEvent do
       event = build(:party_event, :private_party, capacity: nil, registration_closes_at: nil)
       expect(event).to be_valid
     end
+
+    it "n'exige PAS capacité/clôture pour un import historique BilletWeb" do
+      event = build(:party_event, :public_party, capacity: nil, registration_closes_at: nil,
+                    historical_source: "billetweb", historical_adults: 35, historical_children: 16, historical_fees_cents: 2_713)
+      expect(event).to be_valid
+    end
+
+    it "exige adultes/enfants/frais si un import historique est déclaré" do
+      event = build(:party_event, :public_party, capacity: nil, registration_closes_at: nil,
+                    historical_source: "billetweb", historical_adults: nil)
+      expect(event).not_to be_valid
+      expect(event.errors[:historical_adults]).to be_present
+    end
+  end
+
+  describe "historique BilletWeb" do
+    it "#historical? est vrai seulement si une source est présente" do
+      expect(build(:party_event, historical_source: "billetweb").historical?).to be true
+      expect(build(:party_event, historical_source: nil).historical?).to be false
+    end
+
+    it "normalise une source vide en nil" do
+      event = create(:party_event, :public_party, historical_source: "")
+      expect(event.historical_source).to be_nil
+      expect(event.historical?).to be false
+    end
+
+    it "convertit les frais euros ↔ cents" do
+      event = build(:party_event)
+      event.historical_fees_euros = "27,13".tr(",", ".")
+      expect(event.historical_fees_cents).to eq(2_713)
+      expect(event.historical_fees_euros).to eq(27.13)
+    end
   end
 
   describe "#registration_open?" do

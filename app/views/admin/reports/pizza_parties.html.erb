@@ -184,3 +184,61 @@
     </table>
   </div>
 </div>
+
+<% if @historical_events.any? %>
+  <h2 class="mt-10 mb-3 text-lg font-semibold text-gray-900">Parties publiques historiques (BilletWeb)</h2>
+
+  <div class="mb-4 rounded-md bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+    Ventes réalisées via BilletWeb avant le passage 100 % par le site : l'argent a été encaissé
+    <strong>intégralement par la fondation 4 Sources</strong>. Le barème boulangers est appliqué
+    <strong>rétroactivement</strong> ci-dessous → « Boulangers dus » = ce que la fondation 4S doit aux boulangers
+    pour ces parties. Les frais BilletWeb sont absorbés par 4S. (Garnitures gérées hors application.)
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left">Date</th>
+            <th class="px-4 py-3 text-left">Événement</th>
+            <th class="px-4 py-3 text-right">Adultes</th>
+            <th class="px-4 py-3 text-right">Enfants</th>
+            <th class="px-4 py-3 text-right">CA places</th>
+            <th class="px-4 py-3 text-right">Frais</th>
+            <th class="px-4 py-3 text-right">Boulangers dus</th>
+            <th class="px-4 py-3 text-right">4S net encaissé</th>
+            <th class="px-4 py-3 text-right">4S après boulangers</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 bg-white">
+          <% @historical_rows.each do |event, r| %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 text-gray-700"><%= l(event.held_on) %></td>
+              <td class="px-4 py-3 font-medium text-gray-900"><%= event.title %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= r.adults %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= r.children %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= euro.(r.sale_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-500"><%= euro.(r.fees_cents) %></td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.bakers_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= euro.(r.net_to_four_sources_cents) %></td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900"><%= euro.(r.four_sources_effective_cents) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-gray-50 font-semibold text-gray-900">
+          <tr>
+            <td class="px-4 py-3" colspan="2">Total</td>
+            <td class="px-4 py-3 text-right"><%= @historical_totals[:adults] %></td>
+            <td class="px-4 py-3 text-right"><%= @historical_totals[:children] %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:sale_cents]) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:fees_cents]) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:bakers_cents]) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:net_to_four_sources_cents]) %></td>
+            <td class="px-4 py-3 text-right"><%= euro.(@historical_totals[:four_sources_effective_cents]) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+<% end %>

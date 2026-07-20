@@ -38,6 +38,27 @@ class PublicPartyRevenueService
     new(orders).call
   end
 
+  # Taux 4 Sources (historisé) exprimé en fraction (0,30 par défaut).
+  def self.rate_on(date)
+    RevenueParameter.four_sources_basis_points_on(date) / 10_000.0
+  end
+
+  # Split du barème public pour UNE unité (1 pâton = 1 personne). Source unique du
+  # barème, réutilisée par le calcul sur commandes ET par l'import historique agrégé.
+  #   marge          = (prix − base 4S) − coûtant
+  #   part 4 Sources = base 4S + (taux 4S × marge)
+  #   part boulangers = marge − (taux 4S × marge)
+  def self.unit_split(price:, variant:, date:, rate:)
+    base_four_sources = variant.party_four_sources_base_cents || 0
+    unit_cost = variant.cost_price_cents(on: date) || 0
+    margin = (price - base_four_sources) - unit_cost
+    four_sources_share = (margin * rate).round
+
+    { cost: unit_cost,
+      four_sources: base_four_sources + four_sources_share,
+      bakers: margin - four_sources_share }
+  end
+
   def initialize(orders)
     @orders = orders.to_a
   end
@@ -60,19 +81,14 @@ class PublicPartyRevenueService
 
       items.each do |item|
         qty = item.qty
-        variant = item.product_variant
         price = item.unit_price_cents
-        base_four_sources = variant.party_four_sources_base_cents || 0
-        unit_cost = variant.cost_price_cents(on: date) || 0
-
-        margin = (price - base_four_sources) - unit_cost # base boulangers − coûtant
-        four_sources_share = (margin * rate).round
+        split = self.class.unit_split(price: price, variant: item.product_variant, date: date, rate: rate)
 
         persons += qty
         sale += price * qty
-        dough_cost += unit_cost * qty
-        four_sources += (base_four_sources + four_sources_share) * qty
-        bakers += (margin - four_sources_share) * qty
+        dough_cost += split[:cost] * qty
+        four_sources += split[:four_sources] * qty
+        bakers += split[:bakers] * qty
       end
     end
 
@@ -94,6 +110,6 @@ class PublicPartyRevenueService
 
   # Taux 4 Sources (historisé) exprimé en fraction (0,30 par défaut).
   def four_sources_rate(date)
-    RevenueParameter.four_sources_basis_points_on(date) / 10_000.0
+    self.class.rate_on(date)
   end
 end

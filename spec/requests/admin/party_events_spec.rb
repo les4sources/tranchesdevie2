@@ -49,6 +49,23 @@ RSpec.describe "Admin party events (#pizza-parties)", type: :request do
       expect(response.body).to include("Pizza Party de juin")
     end
 
+    it "enregistre un import historique BilletWeb (sans capacité ni clôture requises)" do
+      expect {
+        post admin_party_events_path, params: {
+          party_event: {
+            title: "Pizza Party de juillet", held_on: Date.new(2026, 7, 18),
+            historical_source: "billetweb", historical_adults: 35, historical_children: 16, historical_fees_euros: "27.13"
+          }
+        }
+      }.to change(PartyEvent, :count).by(1)
+
+      event = PartyEvent.last
+      expect(event.historical?).to be true
+      expect(event.historical_adults).to eq(35)
+      expect(event.historical_fees_cents).to eq(2_713)
+      expect(event.capacity).to be_nil
+    end
+
     it "supprime (soft) un événement" do
       event = create(:party_event, :public_party)
 

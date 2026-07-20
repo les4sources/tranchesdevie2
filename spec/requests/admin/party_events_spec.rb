@@ -10,7 +10,7 @@ RSpec.describe "Admin party events (#pizza-parties)", type: :request do
     it "crée un événement public" do
       expect {
         post admin_party_events_path, params: {
-          party_event: { title: "Pizza Party de juillet", held_on: Date.current + 10, capacity: 40 }
+          party_event: { title: "Pizza Party de juillet", held_on: Date.current + 10, capacity: 40, registration_closes_at: 8.days.from_now }
         }
       }.to change(PartyEvent.public_events, :count).by(1)
 
@@ -18,6 +18,16 @@ RSpec.describe "Admin party events (#pizza-parties)", type: :request do
       event = PartyEvent.last
       expect(event.kind_public_party?).to be true
       expect(event.title).to eq("Pizza Party de juillet")
+    end
+
+    it "rend le formulaire public : trix-editor, capacité/clôture requises, pas de créneau" do
+      get new_admin_party_event_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("trix-editor")
+      expect(response.body).to include("Capacité (personnes)")
+      expect(response.body).to include("Clôture des inscriptions")
+      expect(response.body).not_to include("Créneau")
     end
 
     it "liste les événements publics à venir" do

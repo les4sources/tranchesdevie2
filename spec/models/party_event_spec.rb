@@ -31,6 +31,18 @@ RSpec.describe PartyEvent do
       expect(described_class.private_slot_available?(Date.current - 1, "soir")).to be false
     end
 
+    it "est indisponible en soirée si une party publique est programmée ce jour" do
+      create(:party_event, :public_party, held_on: date)
+      expect(described_class.private_slot_available?(date, "soir")).to be false
+      expect(described_class.private_slot_available?(date, "midi")).to be true # midi reste libre
+    end
+
+    it "ignore une party publique supprimée pour le blocage du soir" do
+      event = create(:party_event, :public_party, held_on: date)
+      event.soft_delete!
+      expect(described_class.private_slot_available?(date, "soir")).to be true
+    end
+
     it "ignore les événements supprimés dans le décompte de capacité" do
       2.times { create(:party_event, :private_party, held_on: date, slot: :soir) }
       described_class.private_events.first.soft_delete!
@@ -49,6 +61,23 @@ RSpec.describe PartyEvent do
       event = build(:party_event, :public_party, title: nil)
       expect(event).not_to be_valid
       expect(event.errors[:title]).to be_present
+    end
+
+    it "exige une capacité pour une party publique" do
+      event = build(:party_event, :public_party, capacity: nil)
+      expect(event).not_to be_valid
+      expect(event.errors[:capacity]).to be_present
+    end
+
+    it "exige une clôture des inscriptions pour une party publique" do
+      event = build(:party_event, :public_party, registration_closes_at: nil)
+      expect(event).not_to be_valid
+      expect(event.errors[:registration_closes_at]).to be_present
+    end
+
+    it "n'exige ni capacité ni clôture pour une party privée" do
+      event = build(:party_event, :private_party, capacity: nil, registration_closes_at: nil)
+      expect(event).to be_valid
     end
   end
 

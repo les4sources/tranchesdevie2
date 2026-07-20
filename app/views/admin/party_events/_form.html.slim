@@ -11,23 +11,22 @@
 
   .grid.grid-cols-1.sm:grid-cols-2.gap-4
     .space-y-2
-      = f.label :held_on, "Date", class: "block text-sm font-medium text-gray-700"
+      = f.label :held_on, "Date (en soirée)", class: "block text-sm font-medium text-gray-700"
       = f.date_field :held_on, required: true, class: admin_input_class
+      p.text-xs.text-gray-500 Les parties publiques se déroulent toujours en soirée — ce soir-là devient indisponible aux réservations privées.
     .space-y-2
-      = f.label :slot, "Créneau (optionnel)", class: "block text-sm font-medium text-gray-700"
-      = f.select :slot, [ [ "—", "" ], [ "Midi", "midi" ], [ "Soir", "soir" ] ], {}, class: admin_input_class
-
-  .grid.grid-cols-1.sm:grid-cols-2.gap-4
-    .space-y-2
-      = f.label :capacity, "Capacité (personnes, optionnel)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :capacity, min: 1, class: admin_input_class
-    .space-y-2
-      = f.label :registration_closes_at, "Clôture des inscriptions (optionnel)", class: "block text-sm font-medium text-gray-700"
-      = f.datetime_local_field :registration_closes_at, class: admin_input_class
+      = f.label :capacity, "Capacité (personnes)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :capacity, min: 1, required: true, class: admin_input_class
 
   .space-y-2
+    = f.label :registration_closes_at, "Clôture des inscriptions", class: "block text-sm font-medium text-gray-700"
+    = f.datetime_local_field :registration_closes_at, required: true, class: admin_input_class
+
+  - desc_input_id = dom_id(@event, :description)
+  .space-y-2
     = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
-    = f.text_area :description, rows: 4, class: admin_input_class
+    = f.hidden_field :description, id: desc_input_id
+    trix-editor class="trix-content min-h-32 rounded-lg border border-gray-200 bg-white" input=desc_input_id
 
   label.flex.items-center.gap-2.cursor-pointer
     = f.check_box :active, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"

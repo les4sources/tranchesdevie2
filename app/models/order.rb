@@ -26,10 +26,14 @@ class Order < ApplicationRecord
     invoiced: 1
   }, prefix: :invoice_status
 
-  enum :source, { checkout: 0, calendar: 1, admin: 2 }
+  # `party` (#pizza-parties) : commande issue d'un événement party (privé/public),
+  # datée par son `party_event`, SANS fournée.
+  enum :source, { checkout: 0, calendar: 1, admin: 2, party: 3 }
 
   belongs_to :customer
-  belongs_to :bake_day
+  # Optionnel : une commande party n'a pas de fournée (elle porte un party_event).
+  belongs_to :bake_day, optional: true
+  belongs_to :party_event, optional: true
   belongs_to :pickup_location
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
@@ -43,6 +47,7 @@ class Order < ApplicationRecord
   validates :status, presence: true
   validates :requires_invoice, inclusion: { in: [ true, false ] }
   validate :pickup_location_open_on_bake_day
+  validate :bake_day_or_party_event
 
   COMPLETED_STATUSES = %w[paid ready picked_up].freeze
 
@@ -483,6 +488,16 @@ class Order < ApplicationRecord
     return if bake_day.pickup_location_ids.include?(pickup_location_id)
 
     errors.add(:pickup_location, "n'est pas disponible pour cette fournée")
+  end
+
+  # Une commande party est datée par son événement (sans fournée) ; toute autre
+  # commande reste rattachée à une fournée (#pizza-parties).
+  def bake_day_or_party_event
+    if party? || party_event_id.present?
+      errors.add(:party_event, "est requis pour une commande party") if party_event_id.nil?
+    elsif bake_day_id.nil?
+      errors.add(:bake_day, "est requis")
+    end
   end
 
   # Encaissement réel (par opposition au `status` logistique) : un paiement

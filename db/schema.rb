@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_100003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -274,7 +274,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_090000) do
 
   create_table "orders", force: :cascade do |t|
     t.bigint "customer_id", null: false
-    t.bigint "bake_day_id", null: false
+    t.bigint "bake_day_id"
     t.integer "status", default: 0, null: false
     t.integer "total_cents", null: false
     t.string "public_token", limit: 24, null: false
@@ -289,15 +289,43 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_090000) do
     t.integer "invoice_status", default: 0, null: false
     t.string "group_name"
     t.bigint "pickup_location_id", null: false
+    t.bigint "party_event_id"
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
+    t.index ["party_event_id"], name: "index_orders_on_party_event_id"
     t.index ["payment_intent_id"], name: "index_orders_on_payment_intent_id", unique: true, where: "(payment_intent_id IS NOT NULL)"
     t.index ["payment_status"], name: "index_orders_on_payment_status"
     t.index ["pickup_location_id"], name: "index_orders_on_pickup_location_id"
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
     t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
+  end
+
+  create_table "party_events", force: :cascade do |t|
+    t.integer "kind", null: false
+    t.date "held_on", null: false
+    t.integer "slot"
+    t.integer "capacity"
+    t.string "title"
+    t.text "description"
+    t.datetime "registration_closes_at"
+    t.boolean "active", default: true, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
+    t.index ["held_on"], name: "index_party_events_on_held_on"
+    t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
+  end
+
+  create_table "party_slot_blocks", force: :cascade do |t|
+    t.date "blocked_on", null: false
+    t.integer "slot"
+    t.string "reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["blocked_on", "slot"], name: "index_party_slot_blocks_on_blocked_on_and_slot", unique: true
   end
 
   create_table "payments", force: :cascade do |t|
@@ -401,6 +429,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_090000) do
     t.integer "market_day_oven_capacity_grams", default: 165000, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "private_party_slot_capacity", default: 2, null: false
   end
 
   create_table "products", force: :cascade do |t|
@@ -711,6 +740,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_090000) do
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"
   add_foreign_key "orders", "customers"
+  add_foreign_key "orders", "party_events"
   add_foreign_key "orders", "pickup_locations"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"

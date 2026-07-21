@@ -336,14 +336,18 @@ class Order < ApplicationRecord
     # Même répartition de la remise que `sales_by_product_between` (le net se
     # réconcilie avec `revenue_between`) mais ventilé par variante — chaque format
     # de pain est une ligne distincte, comme dans la feuille compta de Stéphanie.
-    # Retour : [ { variant:, total_quantity:, total_cents: }, ... ], trié par CA net.
+    # `total_gross_cents` = CA AVANT remise (Σ qty × prix unitaire de la ligne) ;
+    # la remise du format = brut − net.
+    # Retour : [ { variant:, total_quantity:, total_gross_cents:, total_cents: }, ... ],
+    # trié par CA net.
     def sales_by_variant_between(start_date, end_date)
-      acc = Hash.new { |hash, key| hash[key] = { variant: nil, total_quantity: 0, total_cents: 0 } }
+      acc = Hash.new { |hash, key| hash[key] = { variant: nil, total_quantity: 0, total_gross_cents: 0, total_cents: 0 } }
 
       each_net_order_line(start_date, end_date) do |_order, item, net_cents|
         bucket = acc[item.product_variant_id]
         bucket[:variant] = item.product_variant
         bucket[:total_quantity] += item.qty
+        bucket[:total_gross_cents] += item.qty * item.unit_price_cents
         bucket[:total_cents] += net_cents
       end
 

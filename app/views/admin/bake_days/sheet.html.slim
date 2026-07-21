@@ -24,6 +24,8 @@
               th.px-4.py-3.text-right Prix classique
               th.px-4.py-3.text-right Coûtant / u
               th.px-4.py-3.text-right Commandes
+              th.px-4.py-3.text-right CA brut
+              th.px-4.py-3.text-right Remise
               th.px-4.py-3.text-right CA net
           tbody.divide-y.divide-gray-50.bg-white
             - @sheet.rows.each do |row|
@@ -32,6 +34,13 @@
                 td.px-4.py-3.text-right.text-gray-600 = euro.(row.unit_price_cents)
                 td.px-4.py-3.text-right.text-gray-500 = euro.(row.unit_cost_cents)
                 td.px-4.py-3.text-right.text-gray-900 = row.qty
+                td.px-4.py-3.text-right.text-gray-600 = euro.(row.gross_cents)
+                td.px-4.py-3.text-right
+                  - if row.discount_cents.positive?
+                    span.text-rose-600 = "− #{euro.(row.discount_cents)}"
+                    span.block.text-xs.text-gray-400 = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
+                  - else
+                    span.text-gray-300 —
                 td.px-4.py-3.text-right.font-semibold.text-gray-900 = euro.(row.sale_cents)
           tfoot.bg-gray-50.font-semibold.text-gray-900
             tr
@@ -39,6 +48,8 @@
               td.px-4.py-3
               td.px-4.py-3
               td.px-4.py-3.text-right = @sheet.rows.sum(&:qty)
+              td.px-4.py-3.text-right = euro.(@sheet.total_gross_cents)
+              td.px-4.py-3.text-right.text-rose-600 = @sheet.total_discount_cents.positive? ? "− #{euro.(@sheet.total_discount_cents)}" : "—"
               td.px-4.py-3.text-right = euro.(@sheet.total_sale_cents)
 
   / --- Répartition boulangers / 4 Sources (authoritative) ---

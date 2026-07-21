@@ -21,11 +21,23 @@ class BakeDaySheetService
     :unit_price_cents,  # prix classique (variante)
     :unit_cost_cents,   # coûtant unitaire à la date
     :qty,               # « Commandes » (quantité vendue)
-    :sale_cents,        # CA net de la ligne
+    :gross_cents,       # CA AVANT remise (Σ qty × prix unitaire)
+    :sale_cents,        # CA net de la ligne (après remise)
     keyword_init: true
   ) do
     def cost_cents
       unit_cost_cents * qty
+    end
+
+    # Remise du format = CA brut − CA net (≥ 0).
+    def discount_cents
+      gross_cents - sale_cents
+    end
+
+    def discount_percent
+      return 0.0 if gross_cents.zero?
+
+      (discount_cents * 100.0 / gross_cents).round(1)
     end
   end
 
@@ -33,6 +45,14 @@ class BakeDaySheetService
     # Σ CA des lignes — se réconcilie avec le CA du jour (day.revenue_cents).
     def total_sale_cents
       rows.sum(&:sale_cents)
+    end
+
+    def total_gross_cents
+      rows.sum(&:gross_cents)
+    end
+
+    def total_discount_cents
+      rows.sum(&:discount_cents)
     end
 
     def total_cost_cents
@@ -70,6 +90,7 @@ class BakeDaySheetService
         unit_price_cents: variant.price_cents,
         unit_cost_cents: variant.cost_price_cents(on: @date) || 0,
         qty: entry[:total_quantity],
+        gross_cents: entry[:total_gross_cents],
         sale_cents: entry[:total_cents]
       )
     end

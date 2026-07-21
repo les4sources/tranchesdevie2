@@ -29,6 +29,27 @@ RSpec.describe BakeDaySheetService do
     expect(result.rows.map(&:label)).to include("Pain froment – 800 g")
   end
 
+  context "avec une commande remisée (CA net < CA brut)" do
+    before do
+      # Deuxième commande remisée : 2 × 550 brut = 1100 → total net 550 (50 %).
+      order = create(:order, :paid, customer: customer, bake_day: bake_day, total_cents: 550)
+      create(:order_item, order: order, product_variant: v1kg, qty: 2, unit_price_cents: 550)
+    end
+
+    it "affiche le CA brut, la remise € et le % par format" do
+      row = result.rows.find { |r| r.label == "Pain froment – 1 kg" }
+      # 4 unités au brut 550 = 2200 ; net = 1100 (plein) + 550 (remisé) = 1650.
+      expect(row.gross_cents).to eq(2_200)
+      expect(row.sale_cents).to eq(1_650)
+      expect(row.discount_cents).to eq(550)
+      expect(row.discount_percent).to eq(25.0)
+    end
+
+    it "totalise le CA brut et la remise" do
+      expect(result.total_gross_cents).to eq(result.total_sale_cents + result.total_discount_cents)
+    end
+  end
+
   it "réconcilie : Σ CA des lignes = CA du jour" do
     expect(result.total_sale_cents).to eq(1_550) # 550×2 + 450
     expect(result.total_sale_cents).to eq(result.day.revenue_cents)

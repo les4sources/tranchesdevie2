@@ -46,6 +46,32 @@ RSpec.describe 'Checkout — réservation au paiement', type: :request do
     end
   end
 
+  # Régression : une tentative de paiement abandonnée laissait une commande
+  # :pending qui comptait dans la capacité — le retry du même client se
+  # bloquait lui-même (« capacité dépassée » avec sa commande comptée double).
+  context 'when the same customer retries after an abandoned payment attempt' do
+    let(:mold_type) { MoldType.create!(name: 'Petit', limit: 1) }
+
+    before do
+      variant.update!(mold_type: mold_type)
+      create(:order, :pending, customer: customer, bake_day: bake_day, payment_intent_id: 'pi_abandoned')
+        .order_items.create!(product_variant: variant, qty: 1, unit_price_cents: 550)
+
+      stub_stripe_payment_intent_retrieve(id: 'pi_abandoned', status: 'requires_payment_method')
+      allow(Stripe::PaymentIntent).to receive(:cancel).with('pi_abandoned')
+      stub_stripe_payment_intent_create(amount: 550)
+    end
+
+    it 'releases the previous reservation and accepts the retry' do
+      create_payment_intent
+
+      expect(response).to have_http_status(:ok)
+      expect(Order.where(payment_intent_id: 'pi_abandoned')).to be_empty
+      expect(Stripe::PaymentIntent).to have_received(:cancel).with('pi_abandoned')
+      expect(Order.pending.count).to eq(1)
+    end
+  end
+
   context 'when the bake day is full' do
     before do
       allow_any_instance_of(BakeCapacityService)

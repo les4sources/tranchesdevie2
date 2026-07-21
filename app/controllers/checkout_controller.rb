@@ -197,6 +197,11 @@ class CheckoutController < ApplicationController
 
     customer = find_or_create_customer(json_params)
 
+    # Une tentative de paiement précédente du même client a pu laisser une
+    # commande :pending qui réserve encore la capacité — sans ça, son retry se
+    # bloque lui-même (« capacité dépassée » alors que c'est sa propre commande).
+    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
+
     # Réserver la capacité AVANT de prendre l'argent : on crée la commande
     # (statut pending) sous verrou consultatif + contrôle de capacité. Une commande
     # pending compte dans la capacité, donc deux clients ne peuvent pas réserver le
@@ -352,6 +357,10 @@ class CheckoutController < ApplicationController
 
     cart_items = session[:cart] || []
 
+    # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
+    # du même client ne doit pas bloquer sa commande cash.
+    PendingReservationReleaseService.call(customer: customer, bake_day: bake_day)
+
     # Use OrderCreationService to create order with cash payment method
     service = OrderCreationService.new(
       customer: customer,
@@ -439,6 +448,10 @@ class CheckoutController < ApplicationController
     # Résolu AVANT la transaction : une levée sous le verrou consultatif ne doit
     # pas remonter au travers du rollback.
     pickup_location = requested_pickup_location(json_params)
+
+    # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
+    # du même client ne doit pas bloquer son paiement portefeuille.
+    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
 
     paid_order = nil
     wallet_error = nil

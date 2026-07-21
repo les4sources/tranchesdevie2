@@ -1,0 +1,127 @@
+- content_for :title, "Feuille compta #{@sheet.date.strftime('%d/%m/%Y')}"
+- content_for :layout, "admin"
+- euro = ->(c) { number_to_currency((c || 0) / 100.0, unit: "€", format: "%n %u", separator: ",", delimiter: " ") }
+- day = @sheet.day
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  div
+    = link_to "← Jour de cuisson", admin_bake_day_path(@sheet.bake_day), class: "text-sm font-medium text-blue-600 hover:text-blue-800"
+    h1.text-2xl.font-bold.text-gray-900 Feuille compta — #{l(@sheet.date)}
+    p.text-sm.text-gray-600 Chiffres AUTHORITATIVE de l'app (mêmes calculs que « Revenus boulangers »). CA net par format + split boulangers / 4 Sources du jour.
+
+- unless day
+  .rounded-md.bg-gray-50.border.border-gray-200.p-6.text-gray-500 Aucune donnée pour ce jour.
+- else
+  / --- Tableau par format vendu ---
+  section.mb-8
+    h2.text-lg.font-semibold.text-gray-900.mb-3 Ventes par format
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      .overflow-x-auto
+        table.min-w-full.divide-y.divide-gray-100.text-sm
+          thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+            tr
+              th.px-4.py-3.text-left Format
+              th.px-4.py-3.text-right Prix classique
+              th.px-4.py-3.text-right Coûtant / u
+              th.px-4.py-3.text-right Commandes
+              th.px-4.py-3.text-right CA net
+          tbody.divide-y.divide-gray-50.bg-white
+            - @sheet.rows.each do |row|
+              tr.hover:bg-gray-50
+                td.px-4.py-3.font-medium.text-gray-900 = row.label
+                td.px-4.py-3.text-right.text-gray-600 = euro.(row.unit_price_cents)
+                td.px-4.py-3.text-right.text-gray-500 = euro.(row.unit_cost_cents)
+                td.px-4.py-3.text-right.text-gray-900 = row.qty
+                td.px-4.py-3.text-right.font-semibold.text-gray-900 = euro.(row.sale_cents)
+          tfoot.bg-gray-50.font-semibold.text-gray-900
+            tr
+              td.px-4.py-3 Total CA
+              td.px-4.py-3
+              td.px-4.py-3
+              td.px-4.py-3.text-right = @sheet.rows.sum(&:qty)
+              td.px-4.py-3.text-right = euro.(@sheet.total_sale_cents)
+
+  / --- Répartition boulangers / 4 Sources (authoritative) ---
+  - party_sale = day.party_revenue_cents + day.public_party_revenue_cents
+  - bread_ca = day.revenue_cents - party_sale
+  - bread_4s = day.four_sources_cents - day.party_four_sources_cents - day.public_party_four_sources_cents
+  - bread_bakers = day.baker_pool_cents - day.party_bakers_cents - day.public_party_bakers_cents
+  - bread_margin = bread_4s + bread_bakers
+
+  section.mb-8
+    h2.text-lg.font-semibold.text-gray-900.mb-3 Répartition boulangers / 4 Sources
+    .mb-3.rounded-md.bg-amber-50.border.border-amber-200.p-3.text-xs.text-amber-800
+      | Le split 70/30 s'applique à la marge du jour APRÈS déduction des coûts partagés (coûtant pain, sacs, transport, commissions Stripe, lieux de vente). Les pizza parties suivent leur barème spécial, hors 70/30.
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      table.min-w-full.divide-y.divide-gray-100.text-sm
+        tbody.divide-y.divide-gray-50.bg-white
+          tr
+            td.px-4.py-2.text-gray-700 CA pains (hors parties)
+            td.px-4.py-2.text-right.text-gray-900 = euro.(bread_ca)
+          tr
+            td.px-4.py-2.text-gray-500 − Coûtant pains
+            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.cost_price_cents)}"
+          tr
+            td.px-4.py-2.text-gray-500 − Sacs à pain
+            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.bread_bags_cents)}"
+          tr
+            td.px-4.py-2.text-gray-500 − Transport
+            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.transport_cents)}"
+          tr
+            td.px-4.py-2.text-gray-500 − Commissions Stripe
+            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.commission_cents)}"
+          tr
+            td.px-4.py-2.text-gray-500 − Lieux de vente
+            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.sales_locations_cents)}"
+          tr.bg-gray-50.font-semibold
+            td.px-4.py-2.text-gray-900 Marge pains
+            td.px-4.py-2.text-right.text-gray-900 = euro.(bread_margin)
+          tr
+            td.px-4.py-2.text-gray-700 → Boulangers (70 %)
+            td.px-4.py-2.text-right.font-semibold.text-gray-900 = euro.(bread_bakers)
+          tr
+            td.px-4.py-2.text-gray-700 → 4 Sources (30 %)
+            td.px-4.py-2.text-right.font-semibold.text-gray-900 = euro.(bread_4s)
+
+  / --- Pizza parties (barème spécial) ---
+  - if day.party_persons.positive? || day.public_party_persons.positive?
+    section.mb-8
+      h2.text-lg.font-semibold.text-gray-900.mb-3 Pizza parties (barème spécial)
+      .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+        .overflow-x-auto
+          table.min-w-full.divide-y.divide-gray-100.text-sm
+            thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+              tr
+                th.px-4.py-3.text-left Type
+                th.px-4.py-3.text-right Pers.
+                th.px-4.py-3.text-right CA
+                th.px-4.py-3.text-right Boulangers
+                th.px-4.py-3.text-right 4 Sources
+            tbody.divide-y.divide-gray-50.bg-white
+              - if day.party_persons.positive?
+                tr
+                  td.px-4.py-3.text-gray-900 Privée
+                  td.px-4.py-3.text-right = day.party_persons
+                  td.px-4.py-3.text-right = euro.(day.party_revenue_cents)
+                  td.px-4.py-3.text-right.font-semibold = euro.(day.party_bakers_cents)
+                  td.px-4.py-3.text-right.font-semibold = euro.(day.party_four_sources_cents)
+              - if day.public_party_persons.positive?
+                tr
+                  td.px-4.py-3.text-gray-900 Publique
+                  td.px-4.py-3.text-right = day.public_party_persons
+                  td.px-4.py-3.text-right = euro.(day.public_party_revenue_cents)
+                  td.px-4.py-3.text-right.font-semibold = euro.(day.public_party_bakers_cents)
+                  td.px-4.py-3.text-right.font-semibold = euro.(day.public_party_four_sources_cents)
+
+  / --- Totaux du jour ---
+  section
+    .grid.grid-cols-1.sm:grid-cols-3.gap-4
+      .bg-white.rounded-lg.shadow-sm.border.border-gray-200.p-4
+        p.text-xs.font-medium.text-gray-500.uppercase.tracking-wide CA total
+        p.mt-1.text-xl.font-bold.text-gray-900 = euro.(day.revenue_cents)
+      .bg-white.rounded-lg.shadow-sm.border.border-indigo-200.p-4
+        p.text-xs.font-medium.text-indigo-500.uppercase.tracking-wide Total boulangers
+        p.mt-1.text-xl.font-bold.text-indigo-900 = euro.(day.baker_pool_cents)
+      .bg-white.rounded-lg.shadow-sm.border.border-emerald-200.p-4
+        p.text-xs.font-medium.text-emerald-600.uppercase.tracking-wide Total 4 Sources
+        p.mt-1.text-xl.font-bold.text-emerald-900 = euro.(day.four_sources_cents)

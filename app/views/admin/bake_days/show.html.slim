@@ -25,6 +25,7 @@
           | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
       .flex.flex-wrap.gap-2.sm:gap-3.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
         = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white whitespace-nowrap"
+        = link_to "Feuille compta", sheet_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-indigo-300 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 whitespace-nowrap"
         button.inline-flex.items-center.justify-center.gap-2.rounded-full.border.border-slate-300.px-4.py-2.text-sm.font-semibold.text-slate-700.hover:bg-white.whitespace-nowrap type="button" data-action="dashboard-export#print"
           | Imprimer la feuille
         = link_to "Annuler la fournée", confirm_cancel_admin_bake_day_path(@bake_day), class: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 whitespace-nowrap"

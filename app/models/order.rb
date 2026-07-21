@@ -332,6 +332,24 @@ class Order < ApplicationRecord
          .sort_by { |entry| -entry[:total_cents] }
     end
 
+    # CA NET par VARIANTE (format) sur la période, avec quantités (#feuille-compta).
+    # Même répartition de la remise que `sales_by_product_between` (le net se
+    # réconcilie avec `revenue_between`) mais ventilé par variante — chaque format
+    # de pain est une ligne distincte, comme dans la feuille compta de Stéphanie.
+    # Retour : [ { variant:, total_quantity:, total_cents: }, ... ], trié par CA net.
+    def sales_by_variant_between(start_date, end_date)
+      acc = Hash.new { |hash, key| hash[key] = { variant: nil, total_quantity: 0, total_cents: 0 } }
+
+      each_net_order_line(start_date, end_date) do |_order, item, net_cents|
+        bucket = acc[item.product_variant_id]
+        bucket[:variant] = item.product_variant
+        bucket[:total_quantity] += item.qty
+        bucket[:total_cents] += net_cents
+      end
+
+      acc.values.sort_by { |entry| -entry[:total_cents] }
+    end
+
     # CA NET par catégorie interne (#153). Même répartition de la remise que
     # `sales_by_product_between` : la somme se réconcilie avec `revenue_between`.
     def sales_by_internal_category_between(start_date, end_date)

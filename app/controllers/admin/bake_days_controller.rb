@@ -1,5 +1,5 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel, :pickup_sheet ]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel, :pickup_sheet, :sheet ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
@@ -39,6 +39,13 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def show
     @dashboard = Admin::BakeDayDashboard.new(@bake_day)
+  end
+
+  # Feuille compta (#feuille-compta) : reporting tableur par jour de cuisson —
+  # une ligne par format vendu (Commandes + CA) et le split boulangers/4 Sources
+  # AUTHORITATIVE (déductions du jour + barème parties), pour valider les chiffres.
+  def sheet
+    @sheet = BakeDaySheetService.call(@bake_day)
   end
 
   def new

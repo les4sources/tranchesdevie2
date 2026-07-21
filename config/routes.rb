@@ -124,6 +124,10 @@ Rails.application.routes.draw do
     post "login", to: "sessions#create"
     delete "logout", to: "sessions#destroy"
 
+    # Centre d'aide des boulangers (doc intégrée, style GitBook).
+    get "aide", to: "help#index", as: :help
+    get "aide/:slug", to: "help#show", as: :help_article
+
     resources :reports, only: [ :index ] do
       collection do
         get :refunds

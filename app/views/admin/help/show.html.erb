@@ -1,0 +1,70 @@
+<% content_for :title, "Aide — #{@article.title}" %>
+
+<%= render "admin/help/styles" %>
+
+<div class="mb-6">
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <span aria-hidden="true">📖</span>
+    <span>Centre d'aide des boulangers</span>
+  </div>
+  <p class="mt-1 text-sm text-gray-500">Un guide pas à pas pour tout piloter depuis l'admin.</p>
+</div>
+
+<div class="lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
+  <%# ── Sommaire (sidebar GitBook) ─────────────────────────────────────── %>
+  <aside class="mb-6 lg:mb-0">
+    <%# Mobile : sommaire repliable %>
+    <details class="lg:hidden bg-white rounded-lg border border-gray-200 shadow-sm">
+      <summary class="cursor-pointer px-4 py-3 font-semibold text-gray-900 select-none">
+        Sommaire
+      </summary>
+      <nav class="border-t border-gray-100 p-2">
+        <%= render "admin/help/chapters", articles: @articles, current: @article %>
+      </nav>
+    </details>
+
+    <%# Desktop : sommaire collant %>
+    <nav class="hidden lg:block lg:sticky lg:top-6 bg-white rounded-lg border border-gray-200 shadow-sm p-2">
+      <p class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Sommaire</p>
+      <%= render "admin/help/chapters", articles: @articles, current: @article %>
+    </nav>
+  </aside>
+
+  <%# ── Contenu de l'article ───────────────────────────────────────────── %>
+  <article class="min-w-0">
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-8">
+      <% if @article.summary.present? %>
+        <p class="mb-6 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          <%= @article.summary %>
+        </p>
+      <% end %>
+
+      <div class="aide-prose">
+        <%= render_help_markdown(@article.body) %>
+      </div>
+    </div>
+
+    <%# Navigation précédent / suivant %>
+    <%
+      index = @articles.index(@article)
+      prev_article = index && index.positive? ? @articles[index - 1] : nil
+      next_article = index && index < @articles.length - 1 ? @articles[index + 1] : nil
+    %>
+    <nav class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-between">
+      <% if prev_article %>
+        <%= link_to admin_help_article_path(prev_article), class: "flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm hover:border-gray-300 hover:bg-gray-50" do %>
+          <span class="text-gray-400">← Précédent</span>
+          <span class="block font-medium text-gray-900"><%= prev_article.title %></span>
+        <% end %>
+      <% else %>
+        <span class="flex-1"></span>
+      <% end %>
+      <% if next_article %>
+        <%= link_to admin_help_article_path(next_article), class: "flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm hover:border-gray-300 hover:bg-gray-50 sm:text-right" do %>
+          <span class="text-gray-400">Suivant →</span>
+          <span class="block font-medium text-gray-900"><%= next_article.title %></span>
+        <% end %>
+      <% end %>
+    </nav>
+  </article>
+</div>

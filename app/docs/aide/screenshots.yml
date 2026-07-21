@@ -1,0 +1,57 @@
+# Manifeste des captures d'écran du centre d'aide.
+#
+# Source unique de vérité : les chapitres markdown y font référence via
+# `![légende](shot:SLUG)`, et la tâche `bin/rails aide:screenshots` régénère
+# chaque PNG (app/assets/images/aide/SLUG.png) en pilotant le vrai admin.
+#
+# Champs :
+#   slug     : nom du fichier PNG et référence markdown (obligatoire)
+#   path     : URL relative à visiter (ex. /admin/orders)
+#   record   : au lieu d'un path fixe, résout l'URL d'une fiche de démo
+#              (order | bake_day | customer | product) — pour les pages :id
+#   selector : capture seulement cet élément CSS (sinon page entière)
+#   auth     : false pour les pages hors authentification (ex. login)
+#
+# Après avoir ajouté une entrée ici + un `![..](shot:SLUG)` dans un chapitre,
+# lance : bin/rails aide:screenshots
+
+- slug: login
+  path: /admin/login
+  auth: false
+
+- slug: nav
+  path: /admin/orders
+  selector: "nav"
+
+- slug: orders-index
+  path: /admin/orders
+
+- slug: order-show
+  record: order
+
+- slug: bake-days-index
+  path: /admin/bake_days
+
+- slug: bake-day-show
+  record: bake_day
+
+- slug: customers-index
+  path: /admin/customers
+
+- slug: customer-show
+  record: customer
+
+- slug: products-index
+  path: /admin/products
+
+- slug: parties-index
+  path: /admin/parties
+
+- slug: settings-index
+  path: /admin/parametres
+
+- slug: reports-index
+  path: /admin/reports
+
+- slug: baker-revenue
+  path: /admin/reports/baker_revenue

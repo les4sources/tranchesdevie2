@@ -1,0 +1,52 @@
+<%# Styles de la prose du centre d'aide. Scopé à .aide-prose. CSP désactivée
+    dans ce projet (voir config/initializers/content_security_policy.rb), donc
+    un <style> inline est sûr et garde la feature auto-contenue. %>
+<style>
+  .aide-prose { color: #374151; line-height: 1.7; font-size: 0.95rem; }
+  /* Les titres de l'admin sont en Pacifico (global) — illisible pour de la doc :
+     on repasse la prose d'aide en sans-serif. */
+  .aide-prose h1, .aide-prose h2, .aide-prose h3,
+  .aide-prose h4, .aide-prose h5, .aide-prose h6 {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #111827; font-weight: 700; line-height: 1.25; scroll-margin-top: 5rem;
+  }
+  .aide-prose h1 { font-size: 1.75rem; margin: 0 0 1rem; }
+  .aide-prose h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid #f3f4f6; }
+  .aide-prose h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+  .aide-prose p { margin: 0 0 1rem; }
+  .aide-prose a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+  .aide-prose a:hover { color: #1d4ed8; }
+  .aide-prose ul, .aide-prose ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+  .aide-prose ul { list-style: disc; }
+  .aide-prose ol { list-style: decimal; }
+  .aide-prose li { margin: 0.35rem 0; }
+  .aide-prose li > ul, .aide-prose li > ol { margin: 0.35rem 0; }
+  .aide-prose strong { color: #111827; font-weight: 600; }
+  .aide-prose code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em;
+    background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; color: #b91c1c;
+  }
+  .aide-prose pre {
+    background: #1f2937; color: #f9fafb; padding: 1rem; border-radius: 0.5rem;
+    overflow-x: auto; margin: 0 0 1rem; font-size: 0.85rem;
+  }
+  .aide-prose pre code { background: transparent; color: inherit; padding: 0; }
+  .aide-prose blockquote {
+    border-left: 4px solid #93c5fd; background: #eff6ff; margin: 0 0 1rem;
+    padding: 0.75rem 1rem; color: #1e3a8a; border-radius: 0 0.375rem 0.375rem 0;
+  }
+  .aide-prose blockquote p:last-child { margin-bottom: 0; }
+  .aide-prose table {
+    width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.9rem;
+    display: block; overflow-x: auto;
+  }
+  .aide-prose th, .aide-prose td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+  .aide-prose th { background: #f9fafb; font-weight: 600; color: #374151; }
+  .aide-prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+  .aide-prose .aide-shot img { display: block; }
+  /* Cases à cocher GFM (tasklist) : pas de puce. */
+  .aide-prose ul.contains-task-list, .aide-prose .task-list-item { list-style: none; }
+  .aide-prose .task-list-item { padding-left: 0; }
+  /* Ancre auto des titres (commonmarker) discrète. */
+  .aide-prose .anchor { display: none; }
+</style>

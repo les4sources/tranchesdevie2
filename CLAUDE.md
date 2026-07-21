@@ -39,6 +39,9 @@ bin/rubocop                      # Style linting (Rails Omakase)
 bin/brakeman --no-pager          # Security scanning
 bin/importmap audit              # JS dependency audit
 
+# Centre d'aide boulangers (doc GitBook dans l'admin, /admin/aide)
+bin/rails aide:screenshots       # Régénère les captures (données démo anonymisées) après un changement d'admin
+
 # Deployment
 # Deploys happen automatically via Hatchbox when `main` is updated.
 # Server access (console, logs, SSH) is managed through the Hatchbox dashboard.
@@ -190,6 +193,13 @@ A versioned JSON API for AI agents lives under `/api/v1`, built on `ActionContro
 - **Mailers**: `AuthMailer#otp` (login code, always sent), `OrderMailer#confirmation` (order paid), `RawMailer#resend` (admin verbatim resend).
 - **Logging**: every outbound email is recorded as an `EmailMessage` via an `after_action` in `ApplicationMailer` → `EmailMessageLogger` (reads `X-Customer-Id`/`X-Email-Kind`/`X-Order-Id` headers set by mailers).
 - **Opt-out**: `Customer#email_enabled?` gates non-OTP emails (`email_opt_out` flag). Unsubscribe link uses a signed token (`signed_id(purpose: :email_unsubscribe)`) → public `EmailPreferencesController`. OTP emails ignore opt-out.
+
+## Help Center (baker docs, in-admin)
+
+GitBook-style help docs for the bakers, integrated into the admin ("Aide" nav link → `/admin/aide`, `Admin::HelpController`, admin auth/layout). Sidebar TOC + content + prev/next.
+
+- **Content**: markdown files in `app/docs/aide/*.md` (one per chapter), YAML front-matter (`title`/`order`/`icon`/`summary`), rendered with `commonmarker`. Loader: `Admin::HelpLibrary` (resilient to invalid YAML — falls back to a filename title instead of dropping the chapter). **Gotcha**: front-matter values containing `:` (e.g. a `summary`) must be **quoted**.
+- **Screenshots (real anonymized data)**: `![caption](shot:SLUG)` in markdown → PNG at `app/assets/images/aide/SLUG.png` (committed), or a placeholder if absent. Regenerate with `bin/rails aide:screenshots` — a Selenium system spec (`spec/screenshots/aide_screenshots_spec.rb`, tag `aide_screenshots`, excluded from the normal RSpec run) that seeds realistic anonymized demo data (factories + Faker FR), signs into the admin, and captures each page. Single source of truth for shots: `app/docs/aide/screenshots.yml`. **Rerun after any admin UI change** to keep the docs faithful.
 
 ## Conventions
 

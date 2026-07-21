@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [ :show, :edit, :update, :update_status, :refund ]
+  before_action :set_order, only: [ :show, :edit, :update, :update_status, :refund, :destroy ]
   before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
@@ -155,6 +155,19 @@ class Admin::OrdersController < Admin::BaseController
     else
       redirect_to admin_order_path(@order), alert: "Erreur: #{service.errors.join(', ')}"
     end
+  end
+
+  # Suppression réservée aux commandes sans encaissement (Order#deletable_by_admin?).
+  # Garde-fou serveur : le bouton n'apparaît que pour celles-ci, mais une requête
+  # forgée/page périmée sur une commande payée est rejetée proprement ici.
+  def destroy
+    unless @order.deletable_by_admin?
+      redirect_to admin_order_path(@order), alert: "Impossible de supprimer une commande payée"
+      return
+    end
+
+    @order.destroy
+    redirect_to admin_orders_path, notice: "Commande #{@order.order_number} supprimée"
   end
 
   private

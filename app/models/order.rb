@@ -119,6 +119,14 @@ class Order < ApplicationRecord
     payment_status_paid?
   end
 
+  # Suppression admin : uniquement une commande sans aucun encaissement
+  # (`payment_status` unpaid) ni facture émise. Une commande payée se
+  # rembourse/annule, elle ne se supprime pas ; une remboursée ou facturée
+  # garde son historique.
+  def deletable_by_admin?
+    payment_status_unpaid? && invoice_status_not_invoiced?
+  end
+
   def wallet_order_debit
     wallet_transactions.detect { |transaction| transaction.transaction_type == "order_debit" }
   end

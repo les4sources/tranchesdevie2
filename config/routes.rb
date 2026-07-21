@@ -142,7 +142,7 @@ Rails.application.routes.draw do
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
     get "factures/periode", to: "invoices#period", as: :period_invoice
 
-    resources :orders, only: [ :index, :show, :new, :create, :edit, :update ] do
+    resources :orders, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do
         patch :update_status
         post :refund

@@ -34,6 +34,43 @@ RSpec.describe "Admin::Orders", type: :request do
     end
   end
 
+  describe "DELETE /admin/orders/:id" do
+    it "deletes an unpaid order and redirects to the index" do
+      delete admin_order_path(order)
+
+      expect(Order.exists?(order.id)).to be(false)
+      expect(response).to redirect_to(admin_orders_path)
+    end
+
+    it "refuses to delete a paid order" do
+      paid_order = create(:order, :paid, :payment_paid, :with_items)
+
+      delete admin_order_path(paid_order)
+
+      expect(Order.exists?(paid_order.id)).to be(true)
+      expect(response).to redirect_to(admin_order_path(paid_order))
+      expect(flash[:alert]).to be_present
+    end
+
+    it "refuses to delete an invoiced order" do
+      order.update!(invoice_status: :invoiced)
+
+      delete admin_order_path(order)
+
+      expect(Order.exists?(order.id)).to be(true)
+      expect(flash[:alert]).to be_present
+    end
+
+    it "shows the delete button only for deletable orders" do
+      get admin_order_path(order)
+      expect(response.body).to include("Supprimer la commande")
+
+      paid_order = create(:order, :paid, :payment_paid, :with_items, bake_day: order.bake_day)
+      get admin_order_path(paid_order)
+      expect(response.body).not_to include("Supprimer la commande")
+    end
+  end
+
   describe "GET /admin/orders (index, #41)" do
     it "displays both a logistic status column and a payment status column" do
       create(:order, :paid, :payment_paid, :with_items)

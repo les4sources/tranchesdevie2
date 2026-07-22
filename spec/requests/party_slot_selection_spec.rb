@@ -90,6 +90,38 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     end
   end
 
+  describe 'POST /checkout/create_wallet_order (panier party)' do
+    let(:customer) { create(:customer, first_name: 'Léa') }
+
+    before do
+      allow(OtpService).to receive(:send_code).and_return({ success: true, channel: :sms })
+      allow(OtpService).to receive(:verify_code).and_return({ success: true })
+      post '/connexion', params: { identifier: customer.phone_e164 }
+      post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+    end
+
+    it 'refuse le paiement par portefeuille pour une party' do
+      post '/checkout/create_wallet_order',
+           params: { first_name: 'Léa' }.to_json,
+           headers: { 'CONTENT_TYPE' => 'application/json' }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to include('portefeuille')
+      expect(Order.count).to eq(0)
+    end
+
+    it 'ne propose pas l’option portefeuille au checkout party (même avec solde suffisant)' do
+      wallet = create(:wallet, customer: customer, balance_cents: 100_000)
+
+      get new_checkout_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('Payer avec mon portefeuille')
+      expect(wallet.balance_cents).to eq(100_000)
+    end
+  end
+
   describe 'GET /checkout (panier party)' do
     it 'passe sans jour de cuisson quand la date de party est valide' do
       post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }

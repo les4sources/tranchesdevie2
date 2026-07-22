@@ -62,7 +62,9 @@ class CheckoutController < ApplicationController
     # couvre le total. Le serveur revérifie sous verrou au moment du paiement.
     @wallet = @customer&.persisted? ? @customer.wallet : nil
     @wallet_available_cents = @wallet&.available_balance_cents || 0
-    @wallet_payment_available = @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
+    # Pas de paiement portefeuille pour une party : le portefeuille sert aux
+    # commandes pain récurrentes ; une party est un achat ponctuel (Bancontact/carte).
+    @wallet_payment_available = !@party_checkout && @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
 
     # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
     # est pré-sélectionné. Une commande party n'a pas de choix de lieu (le modèle
@@ -462,13 +464,18 @@ class CheckoutController < ApplicationController
     session[:last_name] = json_params["last_name"] if json_params["last_name"].present?
     session[:email] = json_params["email"] if json_params["email"].present?
 
-    unless party_cart?
-      @bake_day = BakeDay.find_by(id: session[:bake_day_id])
-      unless @bake_day
-        capture_checkout_issue("bake_day_missing", level: :warning)
-        render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
-        return
-      end
+    # Le portefeuille n'est pas proposé pour une party (achat ponctuel) ; on
+    # rejette aussi côté serveur (page périmée, requête forgée).
+    if party_cart?
+      render json: { success: false, error: "Le paiement par portefeuille n'est pas disponible pour une Pizza party" }, status: :unprocessable_entity
+      return
+    end
+
+    @bake_day = BakeDay.find_by(id: session[:bake_day_id])
+    unless @bake_day
+      capture_checkout_issue("bake_day_missing", level: :warning)
+      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+      return
     end
 
     customer = find_or_create_customer(json_params)
@@ -487,8 +494,7 @@ class CheckoutController < ApplicationController
 
     # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
     # du même client ne doit pas bloquer son paiement portefeuille.
-    # (Le cas party est libéré par PartyReservationService lui-même.)
-    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day) unless party_cart?
+    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
 
     paid_order = nil
     wallet_error = nil
@@ -506,33 +512,18 @@ class CheckoutController < ApplicationController
         "SELECT pg_advisory_xact_lock(#{WALLET_ORDER_LOCK_NAMESPACE}, #{customer.id})"
       )
 
-      existing = if party_cart?
-        recent_wallet_party_order_for(customer)
-      else
-        recent_wallet_order_for(customer, @bake_day)
-      end
+      existing = recent_wallet_order_for(customer, @bake_day)
       if existing
         paid_order = existing
       else
-        service = if party_cart?
-          PartyReservationService.new(
-            customer: customer,
-            date: session[:party_date],
-            slot: session[:party_slot],
-            cart_items: session[:cart] || [],
-            payment_method: "wallet",
-            group_name: json_params["group_name"]
-          )
-        else
-          OrderCreationService.new(
-            customer: customer,
-            bake_day: @bake_day,
-            cart_items: session[:cart] || [],
-            payment_method: "wallet",
-            group_name: json_params["group_name"],
-            pickup_location: pickup_location
-          )
-        end
+        service = OrderCreationService.new(
+          customer: customer,
+          bake_day: @bake_day,
+          cart_items: session[:cart] || [],
+          payment_method: "wallet",
+          group_name: json_params["group_name"],
+          pickup_location: pickup_location
+        )
         created = service.call
 
         unless created
@@ -714,25 +705,6 @@ class CheckoutController < ApplicationController
             .where(wallet_transactions: { transaction_type: WalletTransaction.transaction_types[:order_debit] })
             .order(created_at: :desc)
             .first
-  end
-
-  # Pendant party de recent_wallet_order_for : même client, même date + créneau
-  # d'événement privé, payée par portefeuille dans la dernière minute.
-  def recent_wallet_party_order_for(customer)
-    date = Date.iso8601(session[:party_date].to_s)
-    slot = PartyEvent.slots[session[:party_slot].to_s]
-
-    customer.orders
-            .where(source: :party, status: :paid)
-            .where(created_at: 1.minute.ago..)
-            .joins(:party_event)
-            .where(party_events: { held_on: date, slot: slot })
-            .joins(:wallet_transactions)
-            .where(wallet_transactions: { transaction_type: WalletTransaction.transaction_types[:order_debit] })
-            .order(created_at: :desc)
-            .first
-  rescue Date::Error
-    nil
   end
 
   def find_order_by_payment_intent(payment_intent_id)

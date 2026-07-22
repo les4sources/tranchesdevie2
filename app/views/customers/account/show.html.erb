@@ -164,7 +164,7 @@
                 <div class="flex min-w-0 items-center gap-3">
                   <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full <%= tone[0] %> <%= tone[1] %>"><%= lucide tone[2], size: 18, color: "currentColor" %></span>
                   <div class="min-w-0">
-                    <p class="truncate font-semibold text-ink-900">Fournée du <%= I18n.with_locale(:fr) { I18n.l(order.bake_day.baked_on, format: "%-d %B %Y") } %></p>
+                    <p class="truncate font-semibold text-ink-900"><%= order.party_event ? "Pizza party du" : "Fournée du" %> <%= I18n.with_locale(:fr) { I18n.l(order.event_date, format: "%-d %B %Y") } %></p>
                     <p class="text-[13px] text-ink-500">Retrait aux 4 Sources</p>
                   </div>
                 </div>

@@ -34,6 +34,10 @@ class Order < ApplicationRecord
   # Optionnel : une commande party n'a pas de fournée (elle porte un party_event).
   belongs_to :bake_day, optional: true
   belongs_to :party_event, optional: true
+  # Un événement party PRIVÉ naît de la réservation du client : si sa commande
+  # disparaît (échec Stripe, paiement abandonné expiré), l'événement orphelin ne
+  # doit pas continuer à consommer la capacité du créneau (#pizza-parties).
+  after_destroy :release_orphaned_private_party_event
   belongs_to :pickup_location
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
@@ -496,6 +500,12 @@ class Order < ApplicationRecord
     end
   end
 
+  # Date de l'événement pour le client : la party est datée par son événement,
+  # toute autre commande par sa fournée (#pizza-parties).
+  def event_date
+    party_event&.held_on || bake_day&.baked_on
+  end
+
   private
 
   # Toute commande a un point de retrait (#148). Les chemins qui n'en fournissent
@@ -518,6 +528,15 @@ class Order < ApplicationRecord
     return if bake_day.pickup_location_ids.include?(pickup_location_id)
 
     errors.add(:pickup_location, "n'est pas disponible pour cette fournée")
+  end
+
+  # Détruit l'événement privé si cette commande était la dernière à le porter
+  # (une réservation privée = un PartyEvent, cf. PartyReservationService).
+  def release_orphaned_private_party_event
+    return unless party_event&.kind_private_party?
+    return if party_event.orders.where.not(id: id).exists?
+
+    party_event.destroy
   end
 
   # Une commande party est datée par son événement (sans fournée) ; toute autre

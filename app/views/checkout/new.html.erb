@@ -126,8 +126,20 @@
       <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Paiement</h2>
       <div class="px-6 pb-6 pt-1">
 
+      <% if @party_checkout %>
+        <!-- Pizza party privée : datée par le créneau choisi, pas de choix de lieu. -->
+        <div class="mb-4 flex items-center gap-3 rounded-md border border-sage-300 bg-sage-100 p-4">
+          <%= lucide "party-popper", size: 20, color: "var(--sage-700)" %>
+          <p class="text-sm text-ink-900">
+            Ta Pizza party privée :
+            <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+            — <b class="font-semibold"><%= PartyEvent::SLOT_LABELS[@party_slot] %></b>
+          </p>
+        </div>
+      <% end %>
+
       <!-- Point de retrait (#148) : uniquement les lieux ouverts sur la fournée choisie. -->
-      <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
+      <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4 <%= "hidden" if @party_checkout %>">
         <p class="mb-2 text-sm font-medium text-ink-700">Où récupérez-vous votre commande&nbsp;?</p>
         <div class="space-y-2" id="pickup_location_choices">
           <% @pickup_locations.each do |location| %>

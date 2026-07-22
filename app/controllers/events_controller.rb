@@ -8,6 +8,14 @@ class EventsController < ApplicationController
     @variants = variants_for(@product)
     @selected_variant = @variants&.first
 
+    # Calendrier des disponibilités de la party privée : 8 semaines glissantes,
+    # créneaux midi/soir (blocages admin, parties publiques du soir et capacité
+    # déjà déduits). La sélection est revalidée à l'ajout panier et au checkout.
+    if @product && @selected_variant
+      @availability_start = Date.current + 1.day
+      @party_availability = PartyEvent.private_availability(@availability_start..(@availability_start + 8.weeks))
+    end
+
     @public_product = party_product(:public_party)
     @public_variants = variants_for(@public_product)
   end

@@ -45,6 +45,50 @@
           <%= f.hidden_field :qty, value: 1, data: { quantity_selector_target: "input" } %>
 
           <div>
+            <span class="text-sm font-medium text-ink-900">Choisis ta date et ton créneau</span>
+            <div class="mt-2 max-h-72 space-y-4 overflow-y-auto rounded-lg border border-flour-300 bg-flour-50 p-3">
+              <% months = (@party_availability || {}).group_by { |date, _slots| date.beginning_of_month } %>
+              <% any_open = false %>
+              <% months.each do |month, days| %>
+                <% open_days = days.select { |_date, slots| slots.values.any? } %>
+                <% next if open_days.empty? %>
+                <% any_open = true %>
+                <div>
+                  <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    <%= I18n.with_locale(:fr) { I18n.l(month, format: "%B %Y") }.capitalize %>
+                  </p>
+                  <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <% open_days.each do |date, slots| %>
+                      <div class="rounded-md border border-flour-300 bg-warm-white p-2">
+                        <p class="text-[13px] font-semibold text-ink-900">
+                          <%= I18n.with_locale(:fr) { I18n.l(date, format: "%a %-d") }.capitalize %>
+                        </p>
+                        <div class="mt-1.5 flex gap-1.5">
+                          <% PartyEvent::SLOT_LABELS.each do |slot, slot_label| %>
+                            <% if slots[slot] %>
+                              <label class="inline-flex cursor-pointer items-center rounded-full border border-flour-400 px-2.5 py-1 text-xs font-semibold text-ink-700 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-600 has-[:checked]:text-white">
+                                <input type="radio" name="party_slot_choice" value="<%= date.iso8601 %>|<%= slot %>" class="sr-only" required>
+                                <%= slot_label %>
+                              </label>
+                            <% else %>
+                              <span class="inline-flex items-center rounded-full border border-flour-300 bg-flour-200 px-2.5 py-1 text-xs font-semibold text-ink-400 line-through">
+                                <%= slot_label %>
+                              </span>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <% unless any_open %>
+                <p class="text-sm text-ink-600">Aucun créneau disponible pour le moment — recontacte-nous bientôt !</p>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
             <span class="text-sm font-medium text-ink-900">Nombre de personnes</span>
             <div class="mt-2 flex items-center gap-2">
               <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">

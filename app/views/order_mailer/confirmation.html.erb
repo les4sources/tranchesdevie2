@@ -19,7 +19,7 @@
         </tr>
         <tr>
           <td style="font-size:18px; font-weight:bold; color:#7c2d12; padding-top:2px;"><%= @order.order_number %></td>
-          <td align="right" style="font-size:16px; font-weight:bold; color:#2d2a26; padding-top:2px;"><%= I18n.l(@order.bake_day.baked_on, format: :long) %></td>
+          <td align="right" style="font-size:16px; font-weight:bold; color:#2d2a26; padding-top:2px;"><%= I18n.l(@order.event_date, format: :long) %></td>
         </tr>
       </table>
     </td>

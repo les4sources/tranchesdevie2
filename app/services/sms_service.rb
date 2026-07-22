@@ -11,7 +11,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :confirmation,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -27,7 +27,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :ready,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -40,7 +40,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :refund,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -61,7 +61,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :refund,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -89,7 +89,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :confirmation,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -104,7 +104,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :other,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end
@@ -139,7 +139,7 @@ class SmsService
       to: order.customer.phone_e164,
       body: message,
       kind: :other,
-      baked_on: order.bake_day.baked_on,
+      baked_on: order.event_date,
       customer_id: order.customer.id
     )
   end

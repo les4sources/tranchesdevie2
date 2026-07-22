@@ -27,7 +27,15 @@ class CheckoutController < ApplicationController
 
   def new
     @cart = session[:cart] || []
-    @bake_day = BakeDay.find(session[:bake_day_id])
+    # Panier Pizza party privée (#pizza-parties) : daté par la date/créneau
+    # choisis (pas de fournée, pas de choix de lieu — la party a lieu au fournil).
+    if party_cart?
+      @party_checkout = true
+      @party_date = Date.iso8601(session[:party_date])
+      @party_slot = session[:party_slot]
+    else
+      @bake_day = BakeDay.find(session[:bake_day_id])
+    end
     @subtotal_cents = calculate_subtotal
 
     # Utiliser le client connecté s'il existe, sinon créer un nouveau client
@@ -57,8 +65,9 @@ class CheckoutController < ApplicationController
     @wallet_payment_available = @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
 
     # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
-    # est pré-sélectionné.
-    @pickup_locations = @bake_day.open_pickup_locations
+    # est pré-sélectionné. Une commande party n'a pas de choix de lieu (le modèle
+    # retombe sur le lieu par défaut, cf. Order#assign_default_pickup_location).
+    @pickup_locations = @party_checkout ? [] : @bake_day.open_pickup_locations
     @selected_pickup_location = @pickup_locations.find(&:default?) || @pickup_locations.first
 
     # Exclusions produit ↔ lieu de retrait (#152) : pour chaque lieu, les noms
@@ -184,36 +193,47 @@ class CheckoutController < ApplicationController
       session[:email] = json_params["email"]
     end
 
-    @bake_day = BakeDay.find_by(id: session[:bake_day_id])
     @cart = session[:cart] || []
 
-    # Jusqu'ici `BakeDay.find` levait un 500 si la session avait perdu le jour ;
-    # on rend l'erreur explicite et tracée plutôt que muette.
-    unless @bake_day
-      capture_checkout_issue("bake_day_missing", level: :warning)
-      render json: { error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
-      return
+    unless party_cart?
+      @bake_day = BakeDay.find_by(id: session[:bake_day_id])
+
+      # Jusqu'ici `BakeDay.find` levait un 500 si la session avait perdu le jour ;
+      # on rend l'erreur explicite et tracée plutôt que muette.
+      unless @bake_day
+        capture_checkout_issue("bake_day_missing", level: :warning)
+        render json: { error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+        return
+      end
     end
 
     customer = find_or_create_customer(json_params)
 
-    # Une tentative de paiement précédente du même client a pu laisser une
-    # commande :pending qui réserve encore la capacité — sans ça, son retry se
-    # bloque lui-même (« capacité dépassée » alors que c'est sa propre commande).
-    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
+    # Réserver la capacité AVANT de prendre l'argent : commande :pending sous
+    # verrou consultatif + contrôle de capacité (fournée OU créneau party). Une
+    # tentative de paiement précédente du même client est libérée d'abord — sans
+    # ça, son retry se bloque lui-même (« capacité dépassée » à tort).
+    if party_cart?
+      service = PartyReservationService.new(
+        customer: customer,
+        date: session[:party_date],
+        slot: session[:party_slot],
+        cart_items: @cart,
+        payment_method: "online",
+        group_name: json_params["group_name"]
+      )
+    else
+      PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
 
-    # Réserver la capacité AVANT de prendre l'argent : on crée la commande
-    # (statut pending) sous verrou consultatif + contrôle de capacité. Une commande
-    # pending compte dans la capacité, donc deux clients ne peuvent pas réserver le
-    # même dernier créneau, et une page périmée est bloquée ici (pas de PaymentIntent).
-    service = OrderCreationService.new(
-      customer: customer,
-      bake_day: @bake_day,
-      cart_items: @cart,
-      payment_method: "online",
-      group_name: json_params["group_name"],
-      pickup_location: requested_pickup_location(json_params)
-    )
+      service = OrderCreationService.new(
+        customer: customer,
+        bake_day: @bake_day,
+        cart_items: @cart,
+        payment_method: "online",
+        group_name: json_params["group_name"],
+        pickup_location: requested_pickup_location(json_params)
+      )
+    end
     order = service.call
 
     unless order
@@ -235,9 +255,10 @@ class CheckoutController < ApplicationController
         },
         metadata: {
           order_id: order.id,
-          bake_day_id: @bake_day.id,
+          bake_day_id: @bake_day&.id,
+          party_event_id: order.party_event_id,
           phone_e164: phone_e164
-        }
+        }.compact
       })
     rescue Stripe::StripeError => e
       order.destroy # libère la capacité réservée si Stripe échoue
@@ -303,7 +324,8 @@ class CheckoutController < ApplicationController
                    session[:phone_e164]
     end
 
-    unless phone_e164 && session[:bake_day_id] && session[:cart]&.any?
+    day_reference_present = party_cart? ? session[:party_date].present? : session[:bake_day_id].present?
+    unless phone_e164 && day_reference_present && session[:cart]&.any?
       render json: { success: false, error: "Informations manquantes" }, status: :unprocessable_entity
       return
     end
@@ -349,27 +371,37 @@ class CheckoutController < ApplicationController
       return
     end
 
-    bake_day = BakeDay.find_by(id: session[:bake_day_id])
-    unless bake_day
-      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
-      return
-    end
-
     cart_items = session[:cart] || []
 
-    # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
-    # du même client ne doit pas bloquer sa commande cash.
-    PendingReservationReleaseService.call(customer: customer, bake_day: bake_day)
+    if party_cart?
+      service = PartyReservationService.new(
+        customer: customer,
+        date: session[:party_date],
+        slot: session[:party_slot],
+        cart_items: cart_items,
+        payment_method: "cash",
+        group_name: json_params["group_name"]
+      )
+    else
+      bake_day = BakeDay.find_by(id: session[:bake_day_id])
+      unless bake_day
+        render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+        return
+      end
 
-    # Use OrderCreationService to create order with cash payment method
-    service = OrderCreationService.new(
-      customer: customer,
-      bake_day: bake_day,
-      cart_items: cart_items,
-      payment_method: "cash",
-      group_name: json_params["group_name"],
-      pickup_location: requested_pickup_location(json_params)
-    )
+      # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
+      # du même client ne doit pas bloquer sa commande cash.
+      PendingReservationReleaseService.call(customer: customer, bake_day: bake_day)
+
+      service = OrderCreationService.new(
+        customer: customer,
+        bake_day: bake_day,
+        cart_items: cart_items,
+        payment_method: "cash",
+        group_name: json_params["group_name"],
+        pickup_location: requested_pickup_location(json_params)
+      )
+    end
 
     order = service.call
 
@@ -384,6 +416,8 @@ class CheckoutController < ApplicationController
     # Clear cart and session data
     session[:cart] = []
     session[:bake_day_id] = nil
+    session[:party_date] = nil
+    session[:party_slot] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -428,11 +462,13 @@ class CheckoutController < ApplicationController
     session[:last_name] = json_params["last_name"] if json_params["last_name"].present?
     session[:email] = json_params["email"] if json_params["email"].present?
 
-    @bake_day = BakeDay.find_by(id: session[:bake_day_id])
-    unless @bake_day
-      capture_checkout_issue("bake_day_missing", level: :warning)
-      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
-      return
+    unless party_cart?
+      @bake_day = BakeDay.find_by(id: session[:bake_day_id])
+      unless @bake_day
+        capture_checkout_issue("bake_day_missing", level: :warning)
+        render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+        return
+      end
     end
 
     customer = find_or_create_customer(json_params)
@@ -451,7 +487,8 @@ class CheckoutController < ApplicationController
 
     # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
     # du même client ne doit pas bloquer son paiement portefeuille.
-    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
+    # (Le cas party est libéré par PartyReservationService lui-même.)
+    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day) unless party_cart?
 
     paid_order = nil
     wallet_error = nil
@@ -469,18 +506,33 @@ class CheckoutController < ApplicationController
         "SELECT pg_advisory_xact_lock(#{WALLET_ORDER_LOCK_NAMESPACE}, #{customer.id})"
       )
 
-      existing = recent_wallet_order_for(customer, @bake_day)
+      existing = if party_cart?
+        recent_wallet_party_order_for(customer)
+      else
+        recent_wallet_order_for(customer, @bake_day)
+      end
       if existing
         paid_order = existing
       else
-        service = OrderCreationService.new(
-          customer: customer,
-          bake_day: @bake_day,
-          cart_items: session[:cart] || [],
-          payment_method: "wallet",
-          group_name: json_params["group_name"],
-          pickup_location: pickup_location
-        )
+        service = if party_cart?
+          PartyReservationService.new(
+            customer: customer,
+            date: session[:party_date],
+            slot: session[:party_slot],
+            cart_items: session[:cart] || [],
+            payment_method: "wallet",
+            group_name: json_params["group_name"]
+          )
+        else
+          OrderCreationService.new(
+            customer: customer,
+            bake_day: @bake_day,
+            cart_items: session[:cart] || [],
+            payment_method: "wallet",
+            group_name: json_params["group_name"],
+            pickup_location: pickup_location
+          )
+        end
         created = service.call
 
         unless created
@@ -517,6 +569,8 @@ class CheckoutController < ApplicationController
 
     session[:cart] = []
     session[:bake_day_id] = nil
+    session[:party_date] = nil
+    session[:party_slot] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -592,6 +646,8 @@ class CheckoutController < ApplicationController
     # Clear cart and session data only after successful order retrieval/creation
     session[:cart] = []
     session[:bake_day_id] = nil
+    session[:party_date] = nil
+    session[:party_slot] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -660,6 +716,25 @@ class CheckoutController < ApplicationController
             .first
   end
 
+  # Pendant party de recent_wallet_order_for : même client, même date + créneau
+  # d'événement privé, payée par portefeuille dans la dernière minute.
+  def recent_wallet_party_order_for(customer)
+    date = Date.iso8601(session[:party_date].to_s)
+    slot = PartyEvent.slots[session[:party_slot].to_s]
+
+    customer.orders
+            .where(source: :party, status: :paid)
+            .where(created_at: 1.minute.ago..)
+            .joins(:party_event)
+            .where(party_events: { held_on: date, slot: slot })
+            .joins(:wallet_transactions)
+            .where(wallet_transactions: { transaction_type: WalletTransaction.transaction_types[:order_debit] })
+            .order(created_at: :desc)
+            .first
+  rescue Date::Error
+    nil
+  end
+
   def find_order_by_payment_intent(payment_intent_id)
     return nil unless payment_intent_id.present?
 
@@ -699,13 +774,55 @@ class CheckoutController < ApplicationController
     redirect_to cart_path, alert: "Votre panier est vide" if (session[:cart] || []).empty?
   end
 
+  # Panier Pizza party privée : daté par un PartyEvent, pas par une fournée.
+  def party_cart?
+    return @party_cart_memo unless @party_cart_memo.nil?
+
+    @party_cart_memo = PizzaPartyForfaitService.party_cart?(session[:cart])
+  end
+
+  # Date + créneau de la party en session, encore valides et disponibles.
+  # (La capacité est revérifiée sous verrou par PartyReservationService.)
+  def party_selection_valid?
+    date = Date.iso8601(session[:party_date].to_s)
+    slot = session[:party_slot].to_s
+    return false unless PartyEvent.slots.key?(slot)
+
+    # Le créneau peut être « plein » à cause de la propre réservation :pending du
+    # client (tentative de paiement précédente) — PartyReservationService la
+    # libérera avant de re-réserver ; on ne le bloque pas ici à tort.
+    PartyEvent.private_slot_available?(date, slot) || own_pending_party_reservation?(date, slot)
+  rescue Date::Error
+    false
+  end
+
+  def own_pending_party_reservation?(date, slot)
+    customer = current_customer || Customer.find_by(phone_e164: session[:phone_e164])
+    return false unless customer
+
+    Order.pending
+         .where(customer: customer, source: :party)
+         .joins(:party_event)
+         .where(party_events: { held_on: date, slot: PartyEvent.slots[slot] })
+         .exists?
+  end
+
   def ensure_bake_day_set
+    if party_cart?
+      unless party_selection_valid?
+        redirect_to evenements_path, alert: "Choisis la date et le créneau de ta Pizza party pour continuer."
+      end
+      return
+    end
+
     unless session[:bake_day_id]
       redirect_to cart_path, alert: "Veuillez sélectionner un jour de cuisson"
     end
   end
 
   def ensure_cutoff_not_passed
+    return if party_cart? # pas de cutoff fournée : la dispo du créneau fait foi
+
     @bake_day = BakeDay.find_by(id: session[:bake_day_id])
     if @bake_day&.cut_off_passed?
       redirect_to cart_path, alert: "Le délai de commande pour ce jour est dépassé"

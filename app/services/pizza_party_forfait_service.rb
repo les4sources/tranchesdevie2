@@ -50,6 +50,28 @@ class PizzaPartyForfaitService
     base_cart + [ forfait_line(forfait_variant) ]
   end
 
+  # Le panier contient-il une Pizza party privée ? (Un tel panier se date par un
+  # PartyEvent, pas par une fournée — cf. PartyReservationService.)
+  def self.party_cart?(cart)
+    new(cart).send(:party_present?, Array(cart))
+  end
+
+  # Le panier contient-il des articles ordinaires (ni party privée, ni forfait) ?
+  # Sert au refus des paniers mixtes pain + party : une commande party n'a pas de
+  # fournée, du pain dedans n'apparaîtrait sur aucune feuille de production.
+  def self.regular_items?(cart)
+    variant_ids = Array(cart).map { |item| item["product_variant_id"].to_s }.reject(&:blank?).uniq
+    return false if variant_ids.empty?
+
+    ProductVariant
+      .joins(:product)
+      .where(id: variant_ids)
+      .where.not(products: { pizza_party_role: [
+        Product.pizza_party_roles[:party], Product.pizza_party_roles[:forfait]
+      ] })
+      .exists?
+  end
+
   # Variante « store » du produit forfait, ou nil si absent (base sans seeds).
   def self.forfait_variant
     product = Product.pizza_party_forfait.first

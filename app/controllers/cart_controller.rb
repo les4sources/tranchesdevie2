@@ -3,6 +3,11 @@ class CartController < ApplicationController
     remove_unavailable_cart_items!
     sync_pizza_party_forfait!
     @cart = session[:cart] || []
+    # Panier Pizza party privée : daté par la date/créneau choisis sur la page
+    # événements, pas par une fournée (#pizza-parties).
+    @party_cart = PizzaPartyForfaitService.party_cart?(@cart)
+    @party_date = Date.iso8601(session[:party_date]) if @party_cart && session[:party_date].present?
+    @party_slot = session[:party_slot] if @party_cart
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
     @customer = current_customer_for_cart
@@ -53,6 +58,34 @@ class CartController < ApplicationController
       end
     end
 
+    # Pizza party privée (#pizza-parties) : la réservation exige une date + un
+    # créneau (midi/soir) choisis dans le calendrier de disponibilités, et un
+    # panier party ne se mélange pas aux articles ordinaires (une commande party
+    # n'a pas de fournée : du pain dedans n'apparaîtrait sur aucune feuille de
+    # production). Le créneau est revalidé côté serveur (page périmée/forgée).
+    if variant.product.pizza_party_role_party?
+      party_date, party_slot = parse_party_slot_choice(params[:party_slot_choice])
+
+      unless party_date && PartyEvent.private_slot_available?(party_date, party_slot)
+        redirect_back_or_events(alert: "Ce créneau n'est plus disponible. Choisis une autre date pour ta Pizza party.")
+        return
+      end
+
+      if PizzaPartyForfaitService.regular_items?(session[:cart])
+        redirect_back_or_events(alert: "Termine d'abord ta commande en cours : la Pizza party se réserve dans une commande séparée.")
+        return
+      end
+
+      session[:party_date] = party_date.iso8601
+      session[:party_slot] = party_slot
+    elsif PizzaPartyForfaitService.party_cart?(session[:cart]) && !variant.product.pizza_party_role_forfait?
+      respond_to do |format|
+        format.html { redirect_to cart_path, alert: "Ton panier contient une Pizza party : termine cette réservation avant de commander autre chose." }
+        format.json { render json: { error: "Ton panier contient une Pizza party : termine cette réservation avant de commander autre chose." }, status: :unprocessable_entity }
+      end
+      return
+    end
+
     session[:bake_day_id] = bake_day_id if bake_day_id.present?
     session[:cart] ||= []
 
@@ -72,7 +105,9 @@ class CartController < ApplicationController
     sync_pizza_party_forfait!
 
     respond_to do |format|
-      format.html { redirect_to catalog_path, notice: "Produit ajouté au panier" }
+      # Une réservation party continue naturellement vers le panier (sa date et
+      # son créneau y sont récapitulés) ; le reste retourne au catalogue.
+      format.html { redirect_to variant.product.pizza_party_role_party? ? cart_path : catalog_path, notice: "Produit ajouté au panier" }
       format.json do
         render json: {
           cart_count: current_cart_count,
@@ -112,6 +147,7 @@ class CartController < ApplicationController
   def remove
     session[:cart] = (session[:cart] || []).reject { |item| item["product_variant_id"] == params[:id] }
     sync_pizza_party_forfait!
+    clear_party_selection_unless_party_cart!
     redirect_to cart_path, notice: "Produit retiré du panier"
   end
 
@@ -159,6 +195,31 @@ class CartController < ApplicationController
   # La logique de remise du panier passe désormais par les helpers de
   # ApplicationController (current_cart_subtotal_cents / _discount_cents / _total_cents),
   # eux-mêmes adossés à GroupDiscountService (remises ciblées #87).
+
+  # Plus de party dans le panier → la date/créneau choisis n'ont plus d'objet.
+  def clear_party_selection_unless_party_cart!
+    return if PizzaPartyForfaitService.party_cart?(session[:cart])
+
+    session[:party_date] = nil
+    session[:party_slot] = nil
+  end
+
+  # « YYYY-MM-DD|midi » → [Date, "midi"], ou [nil, nil] si invalide.
+  def parse_party_slot_choice(raw)
+    date_str, slot = raw.to_s.split("|", 2)
+    return [ nil, nil ] unless PartyEvent.slots.key?(slot.to_s)
+
+    [ Date.iso8601(date_str.to_s), slot ]
+  rescue Date::Error
+    [ nil, nil ]
+  end
+
+  def redirect_back_or_events(alert:)
+    respond_to do |format|
+      format.html { redirect_to evenements_path, alert: alert }
+      format.json { render json: { error: alert }, status: :unprocessable_entity }
+    end
+  end
 
   def requested_quantity
     qty = params[:qty].to_i

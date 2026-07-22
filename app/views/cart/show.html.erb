@@ -4,7 +4,24 @@
   <div class="tdv-eyebrow mb-1.5 text-sage-700">Tranches de Vie</div>
   <h1 class="font-script text-4xl font-bold text-ink-900 sm:text-5xl">Ton panier</h1>
 
-  <% if @available_bake_days.any? %>
+  <% if @party_cart %>
+    <% if @party_date && @party_slot %>
+      <div class="mt-5 flex items-center gap-3 rounded-md border border-sage-300 bg-sage-100 px-4 py-3.5">
+        <%= lucide "party-popper", size: 20, color: "var(--sage-700)" %>
+        <p class="text-[15px] text-ink-900">
+          Ta Pizza party privée :
+          <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+          — <b class="font-semibold"><%= PartyEvent::SLOT_LABELS[@party_slot] %></b>
+          <%= link_to "Changer de date", evenements_path, class: "ml-2 font-medium text-ember-600 underline-offset-2 hover:underline" %>
+        </p>
+      </div>
+    <% else %>
+      <div class="mt-5 rounded-md border border-warning-200 bg-warning-100 px-4 py-3.5 text-[15px] text-ink-900">
+        Choisis la date et le créneau de ta Pizza party —
+        <%= link_to "voir les disponibilités", evenements_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>.
+      </div>
+    <% end %>
+  <% elsif @available_bake_days.any? %>
     <div class="mt-5">
       <p class="mb-2 text-[15px] font-medium text-ink-700">Sélectionne ton jour de cuisson :</p>
       <div class="flex flex-col gap-2.5">

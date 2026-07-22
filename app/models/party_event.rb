@@ -59,6 +59,35 @@ class PartyEvent < ApplicationRecord
     private_events.not_deleted.where(held_on: date, slot: slot).count < private_slot_capacity
   end
 
+  # Disponibilité des créneaux privés sur une plage de dates, en requêtes
+  # groupées (le calendrier client interroge ~8 semaines : pas de
+  # private_slot_available? par jour, qui ferait 4 requêtes × 2 créneaux × 56
+  # jours). Renvoie { date => { "midi" => bool, "soir" => bool } }.
+  # Même logique que private_slot_available? — qui reste la vérification
+  # autoritaire à l'unité (ajout panier, checkout).
+  def self.private_availability(range)
+    capacity = private_slot_capacity
+    # slot nil = journée entière bloquée ; on normalise en noms de créneau
+    # (pluck caste l'enum en nom selon la version de Rails — on accepte les deux).
+    slot_names = PartySlotBlock.slots.invert
+    blocked = PartySlotBlock.where(blocked_on: range)
+                            .pluck(:blocked_on, :slot)
+                            .map { |date, slot| [ date, slot && (slot.is_a?(Integer) ? slot_names[slot] : slot.to_s) ] }
+                            .to_set
+    public_dates = public_events.not_deleted.where(held_on: range).distinct.pluck(:held_on).to_set
+    counts = private_events.not_deleted.where(held_on: range).group(:held_on, :slot).count
+
+    range.each_with_object({}) do |date, map|
+      map[date] = SLOT_LABELS.keys.index_with do |slot|
+        next false if date < Date.current
+        next false if blocked.include?([ date, slot ]) || blocked.include?([ date, nil ])
+        next false if slot == "soir" && public_dates.include?(date)
+
+        counts.fetch([ date, slot ], 0) < capacity
+      end
+    end
+  end
+
   # Une party publique est-elle programmée à cette date ? (Publiques = soirée.)
   def self.public_party_scheduled?(date)
     public_events.not_deleted.where(held_on: date).exists?

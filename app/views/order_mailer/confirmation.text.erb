@@ -4,7 +4,7 @@ Merci <%= @customer.first_name.presence || "" %> !
 Ta commande est confirmée.
 
 Commande : <%= @order.order_number %>
-À retirer le : <%= I18n.l(@order.bake_day.baked_on, format: :long) %>
+À retirer le : <%= I18n.l(@order.event_date, format: :long) %>
 
 Articles :
 <% @items.each do |item| -%>

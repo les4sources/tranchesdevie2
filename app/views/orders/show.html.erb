@@ -27,8 +27,10 @@
       </div>
 
       <div class="mb-6">
-        <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Jour de cuisson</h2>
-        <p class="text-ink-700"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></p>
+        <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500"><%= @order.party_event ? "Pizza party" : "Jour de cuisson" %></h2>
+        <p class="text-ink-700">
+          <%= @order.event_date.strftime("%d/%m/%Y") %><% if @order.party_event&.kind_private_party? %> — <%= @order.party_event.slot_label %><% end %>
+        </p>
       </div>
 
       <% if @order.pickup_location %>

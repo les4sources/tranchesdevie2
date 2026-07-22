@@ -20,21 +20,32 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
   let(:slot_choice) { "#{date.iso8601}|soir" }
 
   describe 'GET /evenements' do
-    it 'affiche le calendrier des créneaux disponibles' do
+    it 'affiche le calendrier avec les deux créneaux disponibles' do
       get evenements_path
 
-      expect(response.body).to include('Choisis ta date et ton créneau')
-      expect(response.body).to include("#{date.iso8601}|midi")
-      expect(response.body).to include("#{date.iso8601}|soir")
+      expect(response.body).to include('Choisis ta date')
+      expect(response.body).to include(%(data-date="#{date.iso8601}"))
+      day_button = response.body[/data-date="#{date.iso8601}".{0,200}/m]
+      expect(day_button).to include('data-midi="true"')
+      expect(day_button).to include('data-soir="true"')
     end
 
-    it 'désactive un créneau bloqué (pas de bouton radio pour lui)' do
+    it 'marque un créneau bloqué comme indisponible' do
       create(:party_slot_block, blocked_on: date, slot: :soir)
 
       get evenements_path
 
-      expect(response.body).to include("#{date.iso8601}|midi")
-      expect(response.body).not_to include("#{date.iso8601}|soir")
+      day_button = response.body[/data-date="#{date.iso8601}".{0,200}/m]
+      expect(day_button).to include('data-midi="true"')
+      expect(day_button).to include('data-soir="false"')
+    end
+
+    it 'ne rend pas de bouton pour un jour entièrement bloqué' do
+      create(:party_slot_block, blocked_on: date, slot: nil)
+
+      get evenements_path
+
+      expect(response.body).not_to include(%(data-date="#{date.iso8601}"))
     end
   end
 

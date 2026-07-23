@@ -9,13 +9,18 @@
         </div>
         <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Rejoins la prochaine Pizza Party</h1>
         <p class="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-700">
-          Une soirée ouverte à toutes et tous au four à bois des 4 Sources : chacun·e reçoit son
-          pâton au levain, le garnit à son goût et l'enfourne. Amène tes garnitures préférées,
-          on s'occupe de la pâte et du feu.
+          Viens déguster de délicieuses pizzas tout juste sorties du four, faire des rencontres et
+          profiter d'une ambiance décontractée ! Nos boulangères préparent des pâtons au levain le
+          jour même, tu amènes ta garniture selon tes envies, et on cuit le tout au feu de bois.
         </p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "flame", size: 14, color: "var(--ember-600)" %> Four de boulangerie chauffé au bois</span>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "wheat", size: 14, color: "var(--sage-700)" %> Pâtons bio et au levain</span>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "users", size: 14, color: "var(--sage-700)" %> Et les gens sont super cools !</span>
+        </div>
       </div>
       <div>
-        <%= image_tag "pizza_party/party-2.jpg", alt: "Le groupe garnit ses pizzas dans la cour des 4 Sources", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
+        <%= image_tag "pizza_party/party-5.jpg", alt: "Soirée Pizza Party sous les tonnelles des 4 Sources", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
       </div>
     </div>
   </div>
@@ -23,7 +28,62 @@
 
 <div class="mx-auto max-w-[1040px] px-6 py-10">
   <% if @product && @variants&.any? && @events.any? %>
-    <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Prochaines dates</h2>
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "wheat", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Des pâtons du jour</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Nos boulangères préparent de délicieux pâtons au levain le jour même — bio, pétris à la
+          main, prêts à garnir.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "flame", size: 22, color: "var(--ember-600)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Cuisson au feu de bois</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Tu amènes ta garniture, on enfourne tes pizzas entre 18h45 et 20h30, quand le four est
+          encore chaud de la journée.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "sun", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Terrasse plein sud</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Et vous les dégustez en terrasse plein sud, 360° nature ! En cas de pluie, on se réfugie
+          dans la grande salle des 4 Sources.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-[1fr_1fr_1.2fr]">
+      <%= image_tag "pizza_party/party-6.jpg", alt: "Pizza au levain tout juste sortie du four", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "pizza_party/party-7.jpg", alt: "Pizza dégustée en terrasse", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "pizza_party/party-8.jpg", alt: "Les 4 Sources vus du ciel — 360° nature", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+    </div>
+
+    <div class="mt-10 rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
+      <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Infos pratiques</h2>
+      <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "calendar-days", size: 18, color: "var(--sage-700)" %>
+          <span>Inscription <b class="font-semibold text-ink-900">indispensable jusqu'au jeudi midi</b> avant l'événement — c'est ce qui nous permet de préparer le bon nombre de pâtons.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
+          <span>Participation : <b class="font-semibold text-ink-900">10 € par adulte</b> · <b class="font-semibold text-ink-900">6 € par enfant</b>.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "party-popper", size: 18, color: "var(--ember-600)" %>
+          <span><b class="font-semibold text-ink-900">Bar sur place</b> avec boissons bios, locales et de saison 🍹 — consommations payables en cash ou par virement.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
+          <span>Les enfournements de tes pizzas ont lieu <b class="font-semibold text-ink-900">entre 18h45 et 20h30</b>, lorsque le four est encore chaud de la journée.</span>
+        </p>
+      </div>
+    </div>
+
+    <h2 class="mt-12 text-[32px] font-semibold leading-tight text-ink-900">Prochaines dates</h2>
     <div class="mt-6 space-y-6">
       <% @events.each do |event| %>
         <% remaining = event.seats_remaining %>

@@ -67,5 +67,33 @@ RSpec.describe GroupProductDiscount, type: :model do
       d.valid?
       expect(d.discount_value).to eq(30)
     end
+
+    # Régression : modifier UNIQUEMENT la valeur d'une remise existante via les
+    # nested attributes du groupe doit persister. Un simple attr_writer ne
+    # rendait aucune colonne dirty → autosave sautait l'enfant en silence.
+    it 'persists a value-only change through the group nested attributes' do
+      d = create(:group_product_discount, group: group, product: product,
+                                          discount_kind: "percent", discount_value: 10)
+
+      group.update!(group_product_discounts_attributes: [
+        { id: d.id.to_s, target: "product_#{product.id}", discount_kind: "percent",
+          discount_value_raw: "25", _destroy: "false" }
+      ])
+
+      expect(d.reload.discount_value).to eq(25)
+    end
+
+    it 'persists a kind switch with its converted value' do
+      d = create(:group_product_discount, group: group, product: product,
+                                          discount_kind: "percent", discount_value: 10)
+
+      group.update!(group_product_discounts_attributes: [
+        { id: d.id.to_s, target: "product_#{product.id}", discount_kind: "fixed",
+          discount_value_raw: "2,50", _destroy: "false" }
+      ])
+
+      expect(d.reload.discount_kind).to eq("fixed")
+      expect(d.reload.discount_value).to eq(250)
+    end
   end
 end

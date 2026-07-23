@@ -6,8 +6,15 @@ class GroupProductDiscount < ApplicationRecord
   belongs_to :product_variant, optional: true
 
   # Valeur saisie dans le formulaire admin (pourcentage pour "percent",
-  # euros pour "fixed"). Convertie en discount_value avant validation.
-  attr_writer :discount_value_raw
+  # euros pour "fixed"). Convertie en discount_value DÈS l'affectation : un
+  # simple attr_writer ne rendait aucune colonne « dirty », et l'autosave des
+  # nested attributes sautait alors l'enfant — modifier uniquement la valeur
+  # d'une remise existante n'enregistrait rien. La conversion est rejouée en
+  # before_validation pour couvrir un changement de type (%/€) postérieur.
+  def discount_value_raw=(value)
+    @discount_value_raw = value
+    apply_discount_value_raw
+  end
 
   before_validation :apply_discount_value_raw
 

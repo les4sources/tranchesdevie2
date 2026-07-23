@@ -31,7 +31,7 @@
     <div class="grid gap-4 sm:grid-cols-3">
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "wheat", size: 22, color: "var(--sage-700)" %></div>
-        <h2 class="mt-4 text-base font-semibold text-ink-900">On prépare les pâtons</h2>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">On prépare les pâtons</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
           Un pâton au levain par personne, pétri par les boulangères de Tranches de Vie, avec tout
           le matériel de cuisson mis à ta disposition.
@@ -39,7 +39,7 @@
       </div>
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "salad", size: 22, color: "var(--sage-700)" %></div>
-        <h2 class="mt-4 text-base font-semibold text-ink-900">Tu amènes tes garnitures</h2>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Tu amènes tes garnitures</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
           Passata, légumes, fromages… chacun·e garnit sa pizza et partage ses talents culinaires.
           Que la meilleure pizza soit dégustée comme il se doit !
@@ -47,7 +47,7 @@
       </div>
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "flame", size: 22, color: "var(--ember-600)" %></div>
-        <h2 class="mt-4 text-base font-semibold text-ink-900">Cuisson au feu de bois</h2>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Cuisson au feu de bois</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
           Ton groupe gère le feu et la cuisson dans le four professionnel — de quoi enfourner
           jusqu'à 30 pizzas à la fois.
@@ -62,7 +62,7 @@
     </div>
 
     <div class="mt-10 rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
-      <h2 class="text-lg font-semibold text-ink-900">Bon à savoir</h2>
+      <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Bon à savoir</h2>
       <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
@@ -70,7 +70,7 @@
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
-          <span>Les <b class="font-semibold text-ink-900">mardis et vendredis</b>, le four est déjà chaud (jours de boulangerie). Les autres jours, prévois environ <b class="font-semibold text-ink-900">3h30 de chauffe</b> avant d'enfourner.</span>
+          <span>Les <b class="font-semibold text-ink-900">mardis et vendredis</b>, le four est déjà chaud (jours de boulangerie). Les autres jours, prévois <b class="font-semibold text-ink-900">environ 3 heures de chauffe</b> (gérée par ton groupe) avant d'enfourner.</span>
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "shopping-basket", size: 18, color: "var(--sage-700)" %>
@@ -120,6 +120,7 @@
                               data-party-calendar-target="day"
                               data-action="click->party-calendar#selectDay"
                               data-date="<%= date.iso8601 %>"
+                              data-oven-hot="<%= BakeDay::COOKING_WDAYS.include?(date.wday) %>"
                               data-midi="<%= slots["midi"] %>"
                               data-soir="<%= slots["soir"] %>"
                               data-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") }.capitalize %>">
@@ -181,6 +182,17 @@
               </button>
             </div>
           </div>
+
+          <%# Info chauffe du four : dépend du jour choisi (mardi/vendredi = four
+              déjà chaud pour la boulangerie ; sinon le groupe gère ~3 h de chauffe). %>
+          <p class="mt-3 hidden items-start gap-2 rounded-md border border-sage-200 bg-sage-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenHotNotice">
+            <%= lucide "flame", size: 16, color: "var(--sage-700)" %>
+            <span>Bonne nouvelle : ce jour-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie) — vous enfournez directement.</span>
+          </p>
+          <p class="mt-3 hidden items-start gap-2 rounded-md border border-warning-200 bg-warning-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenColdNotice">
+            <%= lucide "flame", size: 16, color: "var(--warning-600)" %>
+            <span>Ce jour-là, ton groupe se charge de la chauffe du four : prévois <b class="font-semibold text-ink-900">environ 3 heures</b> avant de pouvoir enfourner.</span>
+          </p>
 
           <div class="mt-5">
             <span class="text-sm font-medium text-ink-900">Nombre de personnes</span>

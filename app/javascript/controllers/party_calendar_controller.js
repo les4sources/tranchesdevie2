@@ -5,7 +5,8 @@ import { Controller } from "@hotwired/stimulus"
 // (midi/soir) dans la carte de réservation. La valeur soumise reste le format
 // serveur "YYYY-MM-DD|slot" (revalidé côté serveur à l'ajout panier).
 export default class extends Controller {
-  static targets = ["day", "input", "slotPanel", "slotLabel", "slotButton", "warning", "placeholder"]
+  static targets = ["day", "input", "slotPanel", "slotLabel", "slotButton", "warning", "placeholder",
+    "ovenHotNotice", "ovenColdNotice"]
 
   selectDay(event) {
     const day = event.currentTarget
@@ -23,6 +24,16 @@ export default class extends Controller {
     this.placeholderTarget.classList.add("hidden")
     this.slotPanelTarget.classList.remove("hidden")
     this.warningTarget.classList.add("hidden")
+
+    // Info chauffe : four déjà chaud les jours de boulangerie, sinon ~3 h de
+    // chauffe gérées par le groupe.
+    this.toggleNotice(this.ovenHotNoticeTarget, day.dataset.ovenHot === "true")
+    this.toggleNotice(this.ovenColdNoticeTarget, day.dataset.ovenHot !== "true")
+  }
+
+  toggleNotice(el, show) {
+    el.classList.toggle("hidden", !show)
+    el.classList.toggle("flex", show)
   }
 
   selectSlot(event) {

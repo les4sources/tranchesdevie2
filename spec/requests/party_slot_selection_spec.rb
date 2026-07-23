@@ -40,6 +40,16 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
       expect(day_button).to include('data-soir="false"')
     end
 
+    it 'marque les jours de cuisson (four déjà chaud) via data-oven-hot' do
+      tuesday = (Date.current + 1..Date.current + 7).find(&:tuesday?)
+      wednesday = (Date.current + 1..Date.current + 7).find(&:wednesday?)
+
+      get pizza_party_privee_path
+
+      expect(response.body[/data-date="#{tuesday.iso8601}".{0,120}/m]).to include('data-oven-hot="true"')
+      expect(response.body[/data-date="#{wednesday.iso8601}".{0,120}/m]).to include('data-oven-hot="false"')
+    end
+
     it 'ne rend pas de bouton pour un jour entièrement bloqué' do
       create(:party_slot_block, blocked_on: date, slot: nil)
 

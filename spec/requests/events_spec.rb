@@ -11,10 +11,10 @@ RSpec.describe "Événements", type: :request do
     product
   end
 
-  describe "GET /evenements" do
+  describe "GET /pizza-party-privee" do
     it "affiche la réservation quand la party est disponible" do
       party_product
-      get evenements_path
+      get pizza_party_privee_path
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Pizza Party")
@@ -24,24 +24,27 @@ RSpec.describe "Événements", type: :request do
     end
 
     it "affiche un état « bientôt » quand aucune party n'est disponible" do
-      get evenements_path
+      get pizza_party_privee_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Nos événements arrivent bientôt.")
+      expect(response.body).to include("Les réservations de Pizza Party ouvrent bientôt.")
     end
 
-    it "affiche aussi la réservation publique (adulte / enfant)" do
+    it "n'affiche PAS la réservation publique (future page dédiée)" do
+      party_product
       public_product = create(:product, :pizza_party_public, name: "Pizza party publique", description: "Ouvert à tous.")
       create(:product_variant, product: public_product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
-      create(:product_variant, product: public_product, name: "enfant", price_cents: 600, party_four_sources_base_cents: 200)
 
-      get evenements_path
+      get pizza_party_privee_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Pizza party publique")
-      expect(response.body).to include("Adulte")
-      expect(response.body).to include("Enfant")
-      expect(response.body).to include(cart_add_path)
+      expect(response.body).not_to include("Pizza party publique")
+    end
+
+    it "redirige l'ancienne URL /evenements" do
+      get "/evenements"
+
+      expect(response).to redirect_to("/pizza-party-privee")
     end
   end
 
@@ -60,12 +63,12 @@ RSpec.describe "Événements", type: :request do
   end
 
   describe "GET /productions/:id pour la party" do
-    it "redirige la fiche produit vers /evenements" do
+    it "redirige la fiche produit vers /pizza-party-privee" do
       party = party_product
 
       get product_path(party)
 
-      expect(response).to redirect_to(evenements_path)
+      expect(response).to redirect_to(pizza_party_privee_path)
     end
   end
 end

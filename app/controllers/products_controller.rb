@@ -6,7 +6,7 @@ class ProductsController < ApplicationController
     # Événements, pas depuis le catalogue (#pizza-parties). On y redirige toute
     # arrivée directe.
     if @product.pizza_party_role_party? || @product.pizza_party_role_public_party?
-      redirect_to evenements_path and return
+      redirect_to pizza_party_privee_path and return
     end
 
     @variants = @product.product_variants.active.store_channel.visible_to_customer(current_customer).order(:name)

@@ -21,7 +21,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
 
   describe 'GET /evenements' do
     it 'affiche le calendrier avec les deux créneaux disponibles' do
-      get evenements_path
+      get pizza_party_privee_path
 
       expect(response.body).to include('Choisis ta date')
       expect(response.body).to include(%(data-date="#{date.iso8601}"))
@@ -33,7 +33,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     it 'marque un créneau bloqué comme indisponible' do
       create(:party_slot_block, blocked_on: date, slot: :soir)
 
-      get evenements_path
+      get pizza_party_privee_path
 
       day_button = response.body[/data-date="#{date.iso8601}".{0,200}/m]
       expect(day_button).to include('data-midi="true"')
@@ -43,7 +43,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     it 'ne rend pas de bouton pour un jour entièrement bloqué' do
       create(:party_slot_block, blocked_on: date, slot: nil)
 
-      get evenements_path
+      get pizza_party_privee_path
 
       expect(response.body).not_to include(%(data-date="#{date.iso8601}"))
     end
@@ -64,14 +64,14 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
       post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
 
       expect(session[:cart].to_a).to be_empty
-      expect(response).to redirect_to(evenements_path)
+      expect(response).to redirect_to(pizza_party_privee_path)
     end
 
     it 'rejette une party sans date/créneau' do
       post cart_add_path, params: { product_variant_id: party_variant.id, qty: 4 }
 
       expect(session[:cart].to_a).to be_empty
-      expect(response).to redirect_to(evenements_path)
+      expect(response).to redirect_to(pizza_party_privee_path)
     end
 
     it 'refuse de mélanger party et articles ordinaires (dans les deux sens)' do
@@ -149,7 +149,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
 
       get new_checkout_path
 
-      expect(response).to redirect_to(evenements_path)
+      expect(response).to redirect_to(pizza_party_privee_path)
     end
   end
 end

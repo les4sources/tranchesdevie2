@@ -216,7 +216,7 @@ class CartController < ApplicationController
 
   def redirect_back_or_events(alert:)
     respond_to do |format|
-      format.html { redirect_to evenements_path, alert: alert }
+      format.html { redirect_to pizza_party_privee_path, alert: alert }
       format.json { render json: { error: alert }, status: :unprocessable_entity }
     end
   end

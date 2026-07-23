@@ -782,7 +782,7 @@ class CheckoutController < ApplicationController
   def ensure_bake_day_set
     if party_cart?
       unless party_selection_valid?
-        redirect_to evenements_path, alert: "Choisis la date et le créneau de ta Pizza party pour continuer."
+        redirect_to pizza_party_privee_path, alert: "Choisis la date et le créneau de ta Pizza party pour continuer."
       end
       return
     end

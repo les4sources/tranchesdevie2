@@ -19,7 +19,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
   describe 'GET /pizza-party-publique' do
     it 'liste les événements avec places restantes et clôture' do
-      get pizza_party_publique_path
+      get pizza_parties_path
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('Pizza Party de septembre')
@@ -28,12 +28,21 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       expect(response.body).to include('Enfant')
     end
 
+    it 'masque les places restantes au-dessus de 50' do
+      event.update!(capacity: 120)
+
+      get pizza_parties_path
+
+      expect(response.body).not_to include('places restantes')
+      expect(response.body).to include('Adulte')
+    end
+
     it 'affiche « complet » quand la jauge est atteinte' do
       customer = create(:customer)
       order = create(:order, customer: customer, party_event: event, bake_day: nil, source: :party, status: :paid)
       create(:order_item, order: order, product_variant: adult_variant, qty: 40)
 
-      get pizza_party_publique_path
+      get pizza_parties_path
 
       expect(response.body).to include('Cet événement est complet.')
     end
@@ -41,7 +50,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
     it 'affiche « clôturées » après la date de clôture' do
       event.update!(registration_closes_at: 1.hour.ago)
 
-      get pizza_party_publique_path
+      get pizza_parties_path
 
       expect(response.body).to include('clôturées')
     end
@@ -54,7 +63,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
       expect(session[:public_party_event_id]).to eq(event.id)
       expect(session[:cart].sum { |i| i['qty'].to_i }).to eq(3)
-      expect(response).to redirect_to(pizza_party_publique_path)
+      expect(response).to redirect_to(pizza_parties_path)
     end
 
     it 'refuse une inscription clôturée ou sans événement' do
@@ -167,7 +176,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
       get new_checkout_path
 
-      expect(response).to redirect_to(pizza_party_publique_path)
+      expect(response).to redirect_to(pizza_parties_path)
     end
   end
 

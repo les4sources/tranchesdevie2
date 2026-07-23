@@ -150,7 +150,7 @@ class CartController < ApplicationController
         if variant.product.pizza_party_role_party?
           redirect_to cart_path, notice: "Produit ajouté au panier"
         elsif variant.product.pizza_party_role_public_party?
-          redirect_to pizza_party_publique_path, notice: "Ajouté au panier ! Ajoute d'autres personnes ou passe au panier pour finaliser."
+          redirect_to pizza_parties_path, notice: "Ajouté au panier ! Ajoute d'autres personnes ou passe au panier pour finaliser."
         else
           redirect_to catalog_path, notice: "Produit ajouté au panier"
         end
@@ -274,7 +274,7 @@ class CartController < ApplicationController
 
   def redirect_back_or_public_parties(alert:)
     respond_to do |format|
-      format.html { redirect_to pizza_party_publique_path, alert: alert }
+      format.html { redirect_to pizza_parties_path, alert: alert }
       format.json { render json: { error: alert }, status: :unprocessable_entity }
     end
   end

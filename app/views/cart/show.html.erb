@@ -28,13 +28,13 @@
         <p class="text-[15px] text-ink-900">
           Ton inscription : <b class="font-semibold"><%= @public_party_event.title %></b>
           — <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@public_party_event.held_on, format: "%A %-d %B %Y") } %></b>, en soirée
-          <%= link_to "Voir les dates", pizza_party_publique_path, class: "ml-2 font-medium text-ember-600 underline-offset-2 hover:underline" %>
+          <%= link_to "Voir les dates", pizza_parties_path, class: "ml-2 font-medium text-ember-600 underline-offset-2 hover:underline" %>
         </p>
       </div>
     <% else %>
       <div class="mt-5 rounded-md border border-warning-200 bg-warning-100 px-4 py-3.5 text-[15px] text-ink-900">
         Choisis la date de ta Pizza party publique —
-        <%= link_to "voir les dates", pizza_party_publique_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>.
+        <%= link_to "voir les dates", pizza_parties_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>.
       </div>
     <% end %>
   <% elsif @available_bake_days.any? %>

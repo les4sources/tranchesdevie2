@@ -833,7 +833,7 @@ class CheckoutController < ApplicationController
       # La jauge exacte est revérifiée sous verrou au paiement
       # (PublicPartyRegistrationService) ; ici on garde le tunnel cohérent.
       unless public_party_event&.registration_open?
-        redirect_to pizza_party_publique_path, alert: "Les inscriptions pour cet événement sont clôturées."
+        redirect_to pizza_parties_path, alert: "Les inscriptions pour cet événement sont clôturées."
       end
       return
     end

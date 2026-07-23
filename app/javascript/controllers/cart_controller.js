@@ -53,7 +53,10 @@ export default class extends Controller {
           this.refreshMiniCart(data.mini_cart_html)
         }
 
-        if (data?.variant_qty !== undefined) {
+        // data-cart-keep-label : boutons texte (« Ajouter ») qui gardent leur
+        // libellé — feedback ✔ temporaire au lieu d'afficher la quantité
+        // (comportement des pastilles rondes du catalogue).
+        if (data?.variant_qty !== undefined && submitButton.dataset.cartKeepLabel === undefined) {
           this.updateButtonQuantity(submitButton, data.variant_qty)
         } else {
           this.showTemporaryLabel(submitButton, "✔")
@@ -214,7 +217,9 @@ export default class extends Controller {
 
   showTemporaryLabel(button, label) {
     const currentQty = parseInt(button.dataset.cartCurrentQty || "0", 10)
-    const originalLabel = currentQty > 0 ? currentQty : "+"
+    const originalLabel = button.dataset.cartKeepLabel !== undefined
+      ? (button.dataset.cartOriginalLabel || button.innerHTML)
+      : (currentQty > 0 ? currentQty : "+")
 
     button.innerHTML = label
 

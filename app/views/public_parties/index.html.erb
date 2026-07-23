@@ -71,7 +71,8 @@
                       <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 hover:bg-flour-100"><%= lucide "minus", size: 16, color: "var(--ink-700)" %></button>
                       <span class="inline-flex h-10 min-w-12 items-center justify-center rounded-md bg-flour-100 text-sm font-semibold text-ink-900" data-quantity-selector-target="display">1</span>
                       <button type="button" data-action="click->quantity-selector#increment" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 hover:bg-flour-100"><%= lucide "plus", size: 16, color: "var(--ink-700)" %></button>
-                      <button type="submit" class="ml-auto inline-flex items-center gap-2 rounded-md bg-ember-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ember-500">Ajouter</button>
+                      <%# data-cart-target="button" → ajout en AJAX (toast + badge panier), sans rechargement. %>
+                      <button type="submit" data-cart-target="button" data-cart-keep-label class="ml-auto inline-flex items-center gap-2 rounded-md bg-ember-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ember-500">Ajouter</button>
                     <% end %>
                   </div>
                 <% end %>

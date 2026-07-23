@@ -46,9 +46,16 @@
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Jour de cuisson</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></dd>
-        <dd class="text-sm text-gray-600">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <%# Une commande party est datée par son événement (midi/soir), sans fournée ni cutoff. %>
+        <dt class="text-sm font-medium text-gray-500"><%= @order.party_event ? "Pizza party" : "Jour de cuisson" %></dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <%= @order.event_date.strftime("%d/%m/%Y") %><% if @order.party_event&.kind_private_party? %> — <%= @order.party_event.slot_label %><% end %>
+        </dd>
+        <% if @order.bake_day %>
+          <dd class="text-sm text-gray-600">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <% elsif @order.party_event&.title.present? %>
+          <dd class="text-sm text-gray-600"><%= @order.party_event.title %></dd>
+        <% end %>
 
         <% if @order.pickup_location %>
           <dt class="mt-4 text-sm font-medium text-gray-500">Point de retrait</dt>
@@ -145,7 +152,9 @@
         <% end %>
       <% end %>
 
-      <% if @order.paid? && !@order.bake_day.cut_off_passed? %>
+      <%# Party : pas de cutoff fournée — remboursable tant que l'événement n'est pas passé. %>
+      <% refundable_window = @order.bake_day ? !@order.bake_day.cut_off_passed? : @order.event_date >= Date.current %>
+      <% if @order.paid? && refundable_window %>
         <%= form_with url: refund_admin_order_path(@order), method: :post, local: true do |f| %>
           <%= f.submit "Rembourser", 
               class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700",

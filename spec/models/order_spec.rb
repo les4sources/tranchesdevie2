@@ -524,4 +524,20 @@ RSpec.describe Order, type: :model do
       expect(order.reload.bread_bags_cost_cents).to eq(0)
     end
   end
+
+  describe 'attribution du numéro de commande' do
+    # Régression TRANCHESDEVIE-Z : deux créations concurrentes calculaient le
+    # même « dernier + 1 ». Le before_create recalcule sous verrou si le numéro
+    # est déjà pris au moment de l'insertion.
+    it 'recalcule le numéro si une autre commande a pris le même entre-temps' do
+      first = create(:order)
+      clone = build(:order, customer: first.customer, bake_day: first.bake_day)
+      clone.order_number = first.order_number
+
+      clone.send(:ensure_unique_order_number)
+
+      expect(clone.order_number).not_to eq(first.order_number)
+      expect(clone.order_number).to match(/\ATV-\d{8}-\d{4}\z/)
+    end
+  end
 end

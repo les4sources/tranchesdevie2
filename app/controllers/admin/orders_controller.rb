@@ -3,7 +3,7 @@ class Admin::OrdersController < Admin::BaseController
   before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
-    @orders = Order.includes(:customer, :bake_day).recent
+    @orders = Order.includes(:customer, :bake_day, :party_event).recent
 
     @orders = @orders.by_bake_day(BakeDay.find(params[:bake_day_id])) if params[:bake_day_id].present?
     @orders = @orders.where(status: params[:status]) if params[:status].present?

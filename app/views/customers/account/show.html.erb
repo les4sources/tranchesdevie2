@@ -160,7 +160,7 @@
                    class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-3 transition hover:bg-flour-100"
                    data-action="click->order-modal#open"
                    data-order-modal-order-id-value="<%= order.id %>"
-                   data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [ :id, :baked_on, :cut_off_at ] }, pickup_location: { only: [ :id, :name, :description ] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [ :id, :name, :discount_percent ] } } } }) %>">
+                   data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [ :id, :baked_on, :cut_off_at ] }, party_event: { only: [ :id, :held_on, :slot, :title, :kind ] }, pickup_location: { only: [ :id, :name, :description ] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [ :id, :name, :discount_percent ] } } } }) %>">
                 <div class="flex min-w-0 items-center gap-3">
                   <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full <%= tone[0] %> <%= tone[1] %>"><%= lucide tone[2], size: 18, color: "currentColor" %></span>
                   <div class="min-w-0">

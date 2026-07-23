@@ -57,6 +57,7 @@ class Order < ApplicationRecord
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
+  before_create :ensure_unique_order_number
   before_validation :assign_default_pickup_location, on: :create
 
   scope :recent, -> { order(created_at: :desc) }
@@ -567,6 +568,24 @@ class Order < ApplicationRecord
       self.public_token = Base58.encode(integer)[0..23]
       break unless Order.exists?(public_token: public_token)
     end
+  end
+
+  # Espace du verrou consultatif d'attribution des numéros de commande —
+  # distinct des verrous bake_day, portefeuille (8100), party privée (8300)
+  # et party publique (8400).
+  ORDER_NUMBER_LOCK_KEY = 8_500
+
+  # Deux créations concurrentes calculaient le même « dernier + 1 » (TRANCHESDEVIE-Z :
+  # les deux passent la validation avant que l'autre ne commite, et l'update!
+  # suivant explose sur l'unicité). On sérialise l'attribution sous verrou
+  # consultatif transactionnel : le second attend le commit du premier, voit son
+  # numéro, et recalcule si le sien est pris.
+  def ensure_unique_order_number
+    self.class.connection.execute("SELECT pg_advisory_xact_lock(#{ORDER_NUMBER_LOCK_KEY})")
+    return unless self.class.exists?(order_number: order_number)
+
+    self.order_number = nil
+    generate_order_number
   end
 
   def generate_order_number

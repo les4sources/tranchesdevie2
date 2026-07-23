@@ -110,7 +110,10 @@ export default class extends Controller {
   }
 
   renderOrderDetails(order) {
-    const bakeDay = order.bake_day
+    // Une commande party n'a pas de fournée : elle est datée par son événement
+    // (party_event.held_on), sans cutoff → pas d'annulation client.
+    const bakeDay = order.bake_day || {}
+    const partyEvent = order.party_event
     const orderItems = order.order_items || []
     // Vérifier si le cut_off est passé en comparant avec l'heure actuelle
     const cutOffAt = bakeDay.cut_off_at ? new Date(bakeDay.cut_off_at) : null
@@ -164,8 +167,8 @@ export default class extends Controller {
         </div>
 
         <div>
-          <h4 class="text-sm font-medium text-gray-500 mb-1">Jour de cuisson</h4>
-          <p class="text-gray-900">${new Date(bakeDay.baked_on).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+          <h4 class="text-sm font-medium text-gray-500 mb-1">${partyEvent ? "Pizza party" : "Jour de cuisson"}</h4>
+          <p class="text-gray-900">${new Date(partyEvent ? partyEvent.held_on : bakeDay.baked_on).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
         </div>
 
         ${order.pickup_location ? `

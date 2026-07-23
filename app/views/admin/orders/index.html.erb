@@ -76,7 +76,11 @@
             <% end %>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-            <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %>
+            <%# Une commande party est datée par son événement, sans fournée. %>
+            <%= order.event_date.strftime("%d/%m/%Y") %>
+            <% if order.party_event %>
+              <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">Party</span>
+            <% end %>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>

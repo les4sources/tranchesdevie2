@@ -100,7 +100,7 @@
                 <div class="h-full w-full bg-cover bg-center transition-transform duration-500 group-hover/img:scale-105" style="background-image: url('<%= variant_images.first[:url] %>');"></div>
               <% end %>
               <div class="flex flex-1 flex-col p-5">
-                <h3 class="<%= product.pizza_party_role_party? ? "mb-1" : "mb-4" %> text-[22px] font-semibold leading-tight text-ink-900">
+                <h3 class="<%= product.pizza_party_role_party? ? "mb-1" : "mb-4" %> text-[32px] font-semibold leading-tight text-ink-900">
                   <%= link_to product.name, product_path(product), class: "transition-colors hover:text-ember-600" %>
                 </h3>
                 <% if product.pizza_party_role_party? %>

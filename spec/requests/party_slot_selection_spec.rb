@@ -41,8 +41,8 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     end
 
     it 'marque les jours de cuisson (four déjà chaud) via data-oven-hot' do
-      tuesday = (Date.current + 1..Date.current + 7).find(&:tuesday?)
-      wednesday = (Date.current + 1..Date.current + 7).find(&:wednesday?)
+      tuesday = (Date.current + 7..Date.current + 13).find(&:tuesday?)
+      wednesday = (Date.current + 7..Date.current + 13).find(&:wednesday?)
 
       get pizza_party_privee_path
 

@@ -41,6 +41,10 @@ class PartyEvent < ApplicationRecord
 
   SLOT_LABELS = { "midi" => "Midi", "soir" => "Soir" }.freeze
 
+  # Une party PRIVÉE se réserve au minimum une semaine à l'avance (préparation
+  # des pâtons, organisation des boulangères).
+  PRIVATE_MIN_LEAD_DAYS = 7
+
   # Capacité par créneau des parties PRIVÉES (réglage singleton).
   def self.private_slot_capacity
     ProductionSetting.current.private_party_slot_capacity
@@ -52,7 +56,7 @@ class PartyEvent < ApplicationRecord
   # privées déjà sur ce créneau) est atteinte.
   def self.private_slot_available?(date, slot)
     return false if date.blank? || slot.blank?
-    return false if date.to_date < Date.current
+    return false if date.to_date < Date.current + PRIVATE_MIN_LEAD_DAYS
     return false if PartySlotBlock.blocked?(date, slot)
     return false if slot.to_s == "soir" && public_party_scheduled?(date)
 
@@ -79,7 +83,7 @@ class PartyEvent < ApplicationRecord
 
     range.each_with_object({}) do |date, map|
       map[date] = SLOT_LABELS.keys.index_with do |slot|
-        next false if date < Date.current
+        next false if date < Date.current + PRIVATE_MIN_LEAD_DAYS
         next false if blocked.include?([ date, slot ]) || blocked.include?([ date, nil ])
         next false if slot == "soir" && public_dates.include?(date)
 

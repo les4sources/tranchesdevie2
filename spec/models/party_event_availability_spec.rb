@@ -6,10 +6,17 @@ RSpec.describe PartyEvent, '.private_availability' do
   let(:date) { Date.current + 7 }
   let(:range) { (Date.current + 1)..(Date.current + 14) }
 
-  it 'ouvre midi et soir par défaut' do
+  it 'ouvre midi et soir par défaut (dès le délai minimum d’une semaine)' do
     availability = described_class.private_availability(range)
 
     expect(availability[date]).to eq({ 'midi' => true, 'soir' => true })
+  end
+
+  it 'ferme les jours à moins d’une semaine (délai minimum de réservation)' do
+    availability = described_class.private_availability(range)
+
+    expect(availability[Date.current + 6]).to eq({ 'midi' => false, 'soir' => false })
+    expect(described_class.private_slot_available?(Date.current + 6, 'soir')).to be(false)
   end
 
   it 'ferme un créneau bloqué par l’admin, et toute la journée si blocage sans créneau' do

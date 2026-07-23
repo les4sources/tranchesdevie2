@@ -74,7 +74,7 @@
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "shopping-basket", size: 18, color: "var(--sage-700)" %>
-          <span>Tu amènes <b class="font-semibold text-ink-900">tous les ingrédients</b> pour garnir : passata, légumes, fromages…</span>
+          <span>Tu amènes <b class="font-semibold text-ink-900">tous les ingrédients</b> pour garnir : passata, légumes, fromages… Et tu réserves <b class="font-semibold text-ink-900">au moins une semaine à l'avance</b>.</span>
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "bed-double", size: 18, color: "var(--sage-700)" %>
@@ -96,7 +96,7 @@
 
       <div class="grid gap-8 lg:grid-cols-[1.55fr_1fr] lg:items-start">
         <div>
-          <h3 class="text-lg font-semibold text-ink-900">1. Choisis ta date</h3>
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">1. Choisis ta date</h3>
 
           <div class="mt-4 space-y-9">
             <% (@party_availability || {}).group_by { |date, _slots| date.beginning_of_month }.each do |month, days| %>
@@ -147,7 +147,7 @@
         </div>
 
         <aside class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs lg:sticky lg:top-6" data-controller="quantity-selector">
-          <h3 class="text-lg font-semibold text-ink-900">2. Réserve</h3>
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">2. Réserve</h3>
           <p class="mt-1 text-sm text-ink-500">
             <%= number_to_currency(@selected_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> / personne
             <span class="text-ink-400">·</span> forfait 40 €

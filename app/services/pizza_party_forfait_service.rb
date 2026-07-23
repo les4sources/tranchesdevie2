@@ -72,6 +72,27 @@ class PizzaPartyForfaitService
       .exists?
   end
 
+  # Le panier contient-il des inscriptions à une Pizza party PUBLIQUE ?
+  def self.public_party_cart?(cart)
+    roles_in(cart).include?("public_party")
+  end
+
+  # Le panier contient-il autre chose que des inscriptions publiques ?
+  # (Une inscription publique ne se mélange ni au pain ni à une party privée.)
+  def self.non_public_items?(cart)
+    (roles_in(cart) - [ "public_party" ]).any?
+  end
+
+  # Rôles pizza_party des produits présents dans un panier.
+  def self.roles_in(cart)
+    variant_ids = Array(cart).map { |item| item["product_variant_id"].to_s }.reject(&:blank?).uniq
+    return [] if variant_ids.empty?
+
+    ProductVariant.joins(:product).where(id: variant_ids)
+                  .distinct.pluck(Product.arel_table[:pizza_party_role])
+                  .map { |role| role.is_a?(Integer) ? Product.pizza_party_roles.key(role) : role.to_s }
+  end
+
   # Variante « store » du produit forfait, ou nil si absent (base sans seeds).
   def self.forfait_variant
     product = Product.pizza_party_forfait.first

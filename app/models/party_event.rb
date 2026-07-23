@@ -97,6 +97,21 @@ class PartyEvent < ApplicationRecord
     SLOT_LABELS[slot] || "—"
   end
 
+  # Places consommées d'un événement PUBLIC : somme des pâtons (adulte + enfant)
+  # des commandes non annulées. Les commandes :pending comptent — elles
+  # réservent la place le temps du paiement (même logique que la capacité des
+  # fournées), et sont libérées par ExpireStalePendingOrdersJob si abandonnées.
+  def seats_taken
+    orders.where.not(status: Order.statuses[:cancelled]).joins(:order_items).sum(:qty)
+  end
+
+  # Places restantes (nil si pas de jauge — privé ou historique).
+  def seats_remaining
+    return nil if capacity.nil?
+
+    [ capacity - seats_taken, 0 ].max
+  end
+
   # Ventes importées en agrégé (ex. BilletWeb) plutôt que par commandes du site.
   def historical?
     historical_source.present?

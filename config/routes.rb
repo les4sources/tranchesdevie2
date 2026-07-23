@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
   get "pizza-party-privee", to: "events#index", as: :pizza_party_privee
+  get "pizza-party-publique", to: "public_parties#index", as: :pizza_party_publique
   # Ancienne URL de la page party (liens partagés / historique).
   get "evenements", to: redirect("/pizza-party-privee")
   get "conditions-generales", to: "pages#cgv", as: :cgv

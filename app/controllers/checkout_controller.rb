@@ -33,6 +33,10 @@ class CheckoutController < ApplicationController
       @party_checkout = true
       @party_date = Date.iso8601(session[:party_date])
       @party_slot = session[:party_slot]
+    elsif public_party_cart?
+      @party_checkout = true
+      @public_party_checkout = true
+      @party_date = public_party_event.held_on
     else
       @bake_day = BakeDay.find(session[:bake_day_id])
     end
@@ -197,7 +201,7 @@ class CheckoutController < ApplicationController
 
     @cart = session[:cart] || []
 
-    unless party_cart?
+    unless party_cart? || public_party_cart?
       @bake_day = BakeDay.find_by(id: session[:bake_day_id])
 
       # Jusqu'ici `BakeDay.find` levait un 500 si la session avait perdu le jour ;
@@ -220,6 +224,14 @@ class CheckoutController < ApplicationController
         customer: customer,
         date: session[:party_date],
         slot: session[:party_slot],
+        cart_items: @cart,
+        payment_method: "online",
+        group_name: json_params["group_name"]
+      )
+    elsif public_party_cart?
+      service = PublicPartyRegistrationService.new(
+        customer: customer,
+        party_event: public_party_event,
         cart_items: @cart,
         payment_method: "online",
         group_name: json_params["group_name"]
@@ -326,7 +338,13 @@ class CheckoutController < ApplicationController
                    session[:phone_e164]
     end
 
-    day_reference_present = party_cart? ? session[:party_date].present? : session[:bake_day_id].present?
+    day_reference_present = if party_cart?
+      session[:party_date].present?
+    elsif public_party_cart?
+      session[:public_party_event_id].present?
+    else
+      session[:bake_day_id].present?
+    end
     unless phone_e164 && day_reference_present && session[:cart]&.any?
       render json: { success: false, error: "Informations manquantes" }, status: :unprocessable_entity
       return
@@ -384,6 +402,14 @@ class CheckoutController < ApplicationController
         payment_method: "cash",
         group_name: json_params["group_name"]
       )
+    elsif public_party_cart?
+      service = PublicPartyRegistrationService.new(
+        customer: customer,
+        party_event: public_party_event,
+        cart_items: cart_items,
+        payment_method: "cash",
+        group_name: json_params["group_name"]
+      )
     else
       bake_day = BakeDay.find_by(id: session[:bake_day_id])
       unless bake_day
@@ -420,6 +446,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -466,7 +493,7 @@ class CheckoutController < ApplicationController
 
     # Le portefeuille n'est pas proposé pour une party (achat ponctuel) ; on
     # rejette aussi côté serveur (page périmée, requête forgée).
-    if party_cart?
+    if party_cart? || public_party_cart?
       render json: { success: false, error: "Le paiement par portefeuille n'est pas disponible pour une Pizza party" }, status: :unprocessable_entity
       return
     end
@@ -562,6 +589,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -639,6 +667,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
     session[:otp_verified_at] = nil
@@ -684,6 +713,8 @@ class CheckoutController < ApplicationController
     phone = (session[:phone_e164] || current_customer&.phone_e164).to_s
     {
       bake_day_id: session[:bake_day_id],
+      party_date: session[:party_date],
+      public_party_event_id: session[:public_party_event_id],
       cart_variant_ids: cart.map { |item| item["product_variant_id"] },
       cart_size: cart.sum { |item| item["qty"].to_i },
       customer_id: session[:customer_id],
@@ -753,6 +784,17 @@ class CheckoutController < ApplicationController
     @party_cart_memo = PizzaPartyForfaitService.party_cart?(session[:cart])
   end
 
+  # Panier inscription Pizza party PUBLIQUE : daté par l'événement admin choisi.
+  def public_party_cart?
+    return @public_party_cart_memo unless @public_party_cart_memo.nil?
+
+    @public_party_cart_memo = PizzaPartyForfaitService.public_party_cart?(session[:cart])
+  end
+
+  def public_party_event
+    @public_party_event ||= PartyEvent.public_events.not_deleted.find_by(id: session[:public_party_event_id])
+  end
+
   # Date + créneau de la party en session, encore valides et disponibles.
   # (La capacité est revérifiée sous verrou par PartyReservationService.)
   def party_selection_valid?
@@ -787,13 +829,22 @@ class CheckoutController < ApplicationController
       return
     end
 
+    if public_party_cart?
+      # La jauge exacte est revérifiée sous verrou au paiement
+      # (PublicPartyRegistrationService) ; ici on garde le tunnel cohérent.
+      unless public_party_event&.registration_open?
+        redirect_to pizza_party_publique_path, alert: "Les inscriptions pour cet événement sont clôturées."
+      end
+      return
+    end
+
     unless session[:bake_day_id]
       redirect_to cart_path, alert: "Veuillez sélectionner un jour de cuisson"
     end
   end
 
   def ensure_cutoff_not_passed
-    return if party_cart? # pas de cutoff fournée : la dispo du créneau fait foi
+    return if party_cart? || public_party_cart? # pas de cutoff fournée : la dispo/clôture de l'événement fait foi
 
     @bake_day = BakeDay.find_by(id: session[:bake_day_id])
     if @bake_day&.cut_off_passed?

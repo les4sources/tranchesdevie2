@@ -8,6 +8,9 @@ class CartController < ApplicationController
     @party_cart = PizzaPartyForfaitService.party_cart?(@cart)
     @party_date = Date.iso8601(session[:party_date]) if @party_cart && session[:party_date].present?
     @party_slot = session[:party_slot] if @party_cart
+    # Inscription à une party PUBLIQUE : datée par son événement.
+    @public_party_cart = PizzaPartyForfaitService.public_party_cart?(@cart)
+    @public_party_event = PartyEvent.public_events.not_deleted.find_by(id: session[:public_party_event_id]) if @public_party_cart
     @bake_day_id = session[:bake_day_id]
     @bake_day = BakeDay.find_by(id: @bake_day_id) if @bake_day_id
     @customer = current_customer_for_cart
@@ -78,10 +81,45 @@ class CartController < ApplicationController
 
       session[:party_date] = party_date.iso8601
       session[:party_slot] = party_slot
+    elsif variant.product.pizza_party_role_public_party?
+      # Inscription à une party PUBLIQUE : rattachée à SON événement (jauge et
+      # clôture revérifiées ici, puis sous verrou au paiement), et jamais
+      # mélangée à d'autres articles ni à un autre événement.
+      event = PartyEvent.public_events.not_deleted.find_by(id: params[:public_party_event_id])
+
+      unless event&.registration_open?
+        redirect_back_or_public_parties(alert: "Les inscriptions pour cet événement ne sont pas ouvertes.")
+        return
+      end
+
+      remaining = event.seats_remaining
+      if remaining && requested_quantity > remaining
+        redirect_back_or_public_parties(alert: remaining.zero? ? "Cet événement est complet." : "Il ne reste que #{remaining} place#{"s" if remaining > 1} pour cet événement.")
+        return
+      end
+
+      if PizzaPartyForfaitService.non_public_items?(session[:cart])
+        redirect_back_or_public_parties(alert: "Termine d'abord ta commande en cours : l'inscription à la Pizza party se fait dans une commande séparée.")
+        return
+      end
+
+      if session[:public_party_event_id].present? && session[:public_party_event_id] != event.id &&
+         PizzaPartyForfaitService.public_party_cart?(session[:cart])
+        redirect_back_or_public_parties(alert: "Ton panier contient déjà une inscription pour une autre date : termine-la d'abord.")
+        return
+      end
+
+      session[:public_party_event_id] = event.id
     elsif PizzaPartyForfaitService.party_cart?(session[:cart]) && !variant.product.pizza_party_role_forfait?
       respond_to do |format|
         format.html { redirect_to cart_path, alert: "Ton panier contient une Pizza party : termine cette réservation avant de commander autre chose." }
         format.json { render json: { error: "Ton panier contient une Pizza party : termine cette réservation avant de commander autre chose." }, status: :unprocessable_entity }
+      end
+      return
+    elsif PizzaPartyForfaitService.public_party_cart?(session[:cart])
+      respond_to do |format|
+        format.html { redirect_to cart_path, alert: "Ton panier contient une inscription Pizza party : termine-la avant de commander autre chose." }
+        format.json { render json: { error: "Ton panier contient une inscription Pizza party : termine-la avant de commander autre chose." }, status: :unprocessable_entity }
       end
       return
     end
@@ -105,9 +143,18 @@ class CartController < ApplicationController
     sync_pizza_party_forfait!
 
     respond_to do |format|
-      # Une réservation party continue naturellement vers le panier (sa date et
-      # son créneau y sont récapitulés) ; le reste retourne au catalogue.
-      format.html { redirect_to variant.product.pizza_party_role_party? ? cart_path : catalog_path, notice: "Produit ajouté au panier" }
+      # Une réservation party privée continue vers le panier (date/créneau
+      # récapitulés) ; une inscription publique reste sur la page des parties
+      # (pour ajouter adultes ET enfants) ; le reste retourne au catalogue.
+      format.html do
+        if variant.product.pizza_party_role_party?
+          redirect_to cart_path, notice: "Produit ajouté au panier"
+        elsif variant.product.pizza_party_role_public_party?
+          redirect_to pizza_party_publique_path, notice: "Ajouté au panier ! Ajoute d'autres personnes ou passe au panier pour finaliser."
+        else
+          redirect_to catalog_path, notice: "Produit ajouté au panier"
+        end
+      end
       format.json do
         render json: {
           cart_count: current_cart_count,
@@ -196,12 +243,16 @@ class CartController < ApplicationController
   # ApplicationController (current_cart_subtotal_cents / _discount_cents / _total_cents),
   # eux-mêmes adossés à GroupDiscountService (remises ciblées #87).
 
-  # Plus de party dans le panier → la date/créneau choisis n'ont plus d'objet.
+  # Plus de party dans le panier → la sélection associée n'a plus d'objet.
   def clear_party_selection_unless_party_cart!
-    return if PizzaPartyForfaitService.party_cart?(session[:cart])
+    unless PizzaPartyForfaitService.party_cart?(session[:cart])
+      session[:party_date] = nil
+      session[:party_slot] = nil
+    end
 
-    session[:party_date] = nil
-    session[:party_slot] = nil
+    unless PizzaPartyForfaitService.public_party_cart?(session[:cart])
+      session[:public_party_event_id] = nil
+    end
   end
 
   # « YYYY-MM-DD|midi » → [Date, "midi"], ou [nil, nil] si invalide.
@@ -217,6 +268,13 @@ class CartController < ApplicationController
   def redirect_back_or_events(alert:)
     respond_to do |format|
       format.html { redirect_to pizza_party_privee_path, alert: alert }
+      format.json { render json: { error: alert }, status: :unprocessable_entity }
+    end
+  end
+
+  def redirect_back_or_public_parties(alert:)
+    respond_to do |format|
+      format.html { redirect_to pizza_party_publique_path, alert: alert }
       format.json { render json: { error: alert }, status: :unprocessable_entity }
     end
   end

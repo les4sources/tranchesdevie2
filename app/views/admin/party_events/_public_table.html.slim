@@ -4,6 +4,7 @@
       tr
         th.px-4.py-3.text-left Date
         th.px-4.py-3.text-left Titre
+        th.px-4.py-3.text-right Inscrits
         th.px-4.py-3.text-right Capacité
         th.px-4.py-3.text-left Statut
         th.px-4.py-3.text-right Actions
@@ -12,6 +13,9 @@
         tr.hover:bg-gray-50
           td.px-4.py-3.text-gray-900 = l(event.held_on)
           td.px-4.py-3.font-medium.text-gray-900 = event.title
+          - taken = event.seats_taken
+          td.px-4.py-3.text-right
+            span class=(event.capacity && taken >= event.capacity ? "font-semibold text-red-600" : "text-gray-900") = taken
           td.px-4.py-3.text-right.text-gray-600 = event.capacity || "∞"
           td.px-4.py-3
             - if event.active?

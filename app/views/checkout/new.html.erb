@@ -131,9 +131,15 @@
         <div class="mb-4 flex items-center gap-3 rounded-md border border-sage-300 bg-sage-100 p-4">
           <%= lucide "party-popper", size: 20, color: "var(--sage-700)" %>
           <p class="text-sm text-ink-900">
-            Ta Pizza party privée :
-            <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
-            — <b class="font-semibold"><%= PartyEvent::SLOT_LABELS[@party_slot] %></b>
+            <% if @public_party_checkout %>
+              Ton inscription Pizza party :
+              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+              — <b class="font-semibold">en soirée</b>
+            <% else %>
+              Ta Pizza party privée :
+              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+              — <b class="font-semibold"><%= PartyEvent::SLOT_LABELS[@party_slot] %></b>
+            <% end %>
           </p>
         </div>
       <% end %>

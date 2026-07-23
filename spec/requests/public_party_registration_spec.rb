@@ -47,6 +47,14 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       expect(response.body).to include('Cet événement est complet.')
     end
 
+    it 'affiche le lien de menu et la bannière party privée' do
+      get pizza_parties_path
+
+      expect(response.body).to include('Pizza Parties')
+      expect(response.body).to include('Rien que pour ton groupe')
+      expect(response.body).to include(pizza_party_privee_path)
+    end
+
     it 'affiche « clôturées » après la date de clôture' do
       event.update!(registration_closes_at: 1.hour.ago)
 

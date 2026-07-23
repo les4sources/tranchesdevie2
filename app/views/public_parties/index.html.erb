@@ -88,17 +88,13 @@
       <% end %>
     </div>
 
-    <p class="mt-8 text-sm text-ink-600">
-      Envie d'une soirée rien que pour ton groupe ?
-      <%= link_to "Organise ta Pizza Party privée", pizza_party_privee_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>.
-    </p>
+    <%= render "private_party_banner" %>
   <% else %>
     <div class="rounded-2xl border border-flour-300 bg-warm-white p-10 text-center">
       <p class="text-lg font-semibold text-ink-900">Aucune Pizza Party publique n'est programmée pour le moment.</p>
-      <p class="mt-2 text-sm text-ink-600">
-        Reviens bientôt — ou
-        <%= link_to "organise ta Pizza Party privée", pizza_party_privee_path, class: "font-medium text-ember-600 underline-offset-2 hover:underline" %>.
-      </p>
+      <p class="mt-2 text-sm text-ink-600">Reviens bientôt — ou organise la tienne, juste en dessous.</p>
     </div>
+
+    <%= render "private_party_banner" %>
   <% end %>
 </div>

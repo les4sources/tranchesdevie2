@@ -88,4 +88,38 @@ RSpec.describe Admin::BakeDayDashboard do
       expect(data[:levain_by_type]["seigle"]).to eq(0.2)
     end
   end
+
+  # Les commandes party (bake_day: nil, datées par leur party_event) doivent
+  # compter dans les quantités de production du jour de cuisson correspondant.
+  describe 'party orders held on the bake day' do
+    let(:patons) { create(:flour, name: "Froment (pâtons)", flour_ratio: 0.5, water_ratio: 0.6, salt_ratio: 0.02, levain_ratio: 0.10) }
+    let(:pizza_product) do
+      create(:product, category: :dough_balls).tap { |p| create(:product_flour, product: p, flour: patons, percentage: 100) }
+    end
+    let(:pizza_variant) { create(:product_variant, product: pizza_product, flour_quantity: 250) }
+    let(:party_event) { create(:party_event, kind: :private_party, slot: :soir, title: nil, capacity: nil, registration_closes_at: nil, held_on: bake_day.baked_on) }
+
+    let!(:party_order) do
+      create(:order, :paid, customer: customer, bake_day: nil, source: :party, party_event: party_event).tap do |o|
+        create(:order_item, order: o, product_variant: pizza_variant, qty: 14, unit_price_cents: 500)
+      end
+    end
+
+    it 'includes the party dough in the flour type stats' do
+      stat = dashboard.flour_type_stats.find { |s| s[:flour] == patons }
+
+      expect(stat).to be_present
+      expect(stat[:flour_quantity]).to eq(14 * 250)
+    end
+
+    it 'ignores party orders held on another date' do
+      party_event.update!(held_on: bake_day.baked_on + 7)
+
+      expect(dashboard.flour_type_stats.find { |s| s[:flour] == patons }).to be_nil
+    end
+
+    it 'keeps party revenue out of the bake day KPIs' do
+      expect(dashboard.kpis[:revenue_cents]).to eq(1100)
+    end
+  end
 end

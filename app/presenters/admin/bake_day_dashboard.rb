@@ -169,7 +169,7 @@ module Admin
           h[flour_id] = { flour: nil, total: 0.0, by_product: Hash.new { |h2, k| h2[k] = { total: 0.0, order_details: [] } } }
         end
 
-        orders_by_id = production_orders.index_by(&:id)
+        orders_by_id = (production_orders + party_orders).index_by(&:id)
 
         production_order_items.each do |item|
           order = orders_by_id[item.order_id]
@@ -297,8 +297,25 @@ module Admin
       @production_orders ||= orders.select { |order| PRODUCTION_STATUSES.include?(order.status.to_sym) }
     end
 
+    # Commandes party (privées/publiques) dont l'événement tombe le jour de la
+    # fournée. Elles n'ont pas de fournée (`bake_day: nil` par design) mais leur
+    # pâte est bien pétrie ce jour-là : elles comptent dans les quantités de
+    # production (farine, pâte, ingrédients), pas dans le CA ni les retraits.
+    def party_orders
+      @party_orders ||= Order.where(source: :party, status: PRODUCTION_STATUSES)
+                             .joins(:party_event)
+                             .where(party_events: { held_on: bake_day.baked_on })
+                             .includes(order_items: {
+                                         product_variant: [
+                                           :mold_type,
+                                           { product: { product_flours: :flour } }
+                                         ]
+                                       })
+                             .to_a
+    end
+
     def production_order_items
-      @production_order_items ||= production_orders.flat_map(&:order_items)
+      @production_order_items ||= (production_orders + party_orders).flat_map(&:order_items)
     end
   end
 end

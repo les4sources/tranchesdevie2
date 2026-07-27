@@ -23,6 +23,55 @@ RSpec.describe WalletService do
       WalletService.top_up(wallet: wallet, amount_cents: 2000, stripe_payment_intent_id: 'pi_123')
       expect(wallet.wallet_transactions.last.description).to include('20.0')
     end
+
+    it 'returns the created transaction' do
+      result = WalletService.top_up(wallet: wallet, amount_cents: 2000, stripe_payment_intent_id: 'pi_123')
+      expect(result).to eq(wallet.wallet_transactions.last)
+    end
+
+    # Le webhook Stripe et la page de retour Bancontact créditent tous deux la
+    # même recharge : le service doit rester idempotent (#159).
+    describe 'idempotence sur le stripe_payment_intent_id' do
+      def top_up!(pi_id = 'pi_dup')
+        WalletService.top_up(wallet: wallet, amount_cents: 2000, stripe_payment_intent_id: pi_id)
+      end
+
+      it 'ne crédite le portefeuille qu\'une seule fois' do
+        expect { 2.times { top_up! } }.to change { wallet.reload.balance_cents }.from(1000).to(3000)
+      end
+
+      it 'ne crée qu\'une seule transaction' do
+        expect { 2.times { top_up! } }.to change(WalletTransaction, :count).by(1)
+      end
+
+      it 'retourne la transaction déjà existante au second appel' do
+        expect(top_up!).to eq(top_up!)
+      end
+
+      # Course réelle : le check à l'intérieur du verrou ne voit pas encore la
+      # ligne concurrente, c'est l'index unique en base qui tranche.
+      it 'traite un ActiveRecord::RecordNotUnique comme « déjà traité »' do
+        existing = wallet.credit!(2000, type: :top_up, stripe_payment_intent_id: 'pi_race')
+        allow(WalletService).to receive(:existing_top_up).and_return(nil, existing)
+
+        expect { top_up!('pi_race') }.not_to change { wallet.reload.balance_cents }
+        expect(WalletTransaction.where(stripe_payment_intent_id: 'pi_race').count).to eq(1)
+      end
+
+      it 'retourne la transaction existante après un RecordNotUnique' do
+        existing = wallet.credit!(2000, type: :top_up, stripe_payment_intent_id: 'pi_race')
+        allow(WalletService).to receive(:existing_top_up).and_return(nil, existing)
+
+        expect(top_up!('pi_race')).to eq(existing)
+      end
+    end
+
+    context 'without a stripe_payment_intent_id' do
+      it 'credits the wallet without deduplicating' do
+        expect { 2.times { WalletService.top_up(wallet: wallet, amount_cents: 500, stripe_payment_intent_id: nil) } }
+          .to change { wallet.reload.balance_cents }.from(1000).to(2000)
+      end
+    end
   end
 
   describe '.debit_for_order' do

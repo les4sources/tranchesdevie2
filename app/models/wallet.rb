@@ -5,9 +5,10 @@ class Wallet < ApplicationRecord
   validates :balance_cents, numericality: { only_integer: true }
   validates :low_balance_threshold_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
+  # Retourne la WalletTransaction créée.
   def credit!(amount_cents, type:, order: nil, stripe_payment_intent_id: nil, description: nil)
     transaction do
-      wallet_transactions.create!(
+      wallet_transaction = wallet_transactions.create!(
         amount_cents: amount_cents,
         transaction_type: type,
         order: order,
@@ -15,6 +16,7 @@ class Wallet < ApplicationRecord
         description: description
       )
       increment!(:balance_cents, amount_cents)
+      wallet_transaction
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_24_064642) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -712,6 +712,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_24_064642) do
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_wallet_transactions_on_created_at"
     t.index ["order_id"], name: "index_wallet_transactions_on_order_id"
+    t.index ["stripe_payment_intent_id"], name: "index_wallet_transactions_on_stripe_payment_intent_id", unique: true, where: "(stripe_payment_intent_id IS NOT NULL)"
     t.index ["wallet_id"], name: "index_wallet_transactions_on_wallet_id"
   end
 

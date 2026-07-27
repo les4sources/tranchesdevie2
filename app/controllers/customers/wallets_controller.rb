@@ -78,12 +78,15 @@ module Customers
         redirect_to customers_wallet_reload_path, alert: message and return
       end
 
-      WalletService.top_up(
+      # `top_up` est idempotent : si le webhook Stripe a gagné la course entre le
+      # check ci-dessus et ici, il rend la transaction existante sans recréditer.
+      wallet_transaction = WalletService.top_up(
         wallet: @wallet,
         amount_cents: payment_intent.amount,
         stripe_payment_intent_id: @payment_intent_id
       )
-      @amount_cents = payment_intent.amount
+      @amount_cents = wallet_transaction&.amount_cents || payment_intent.amount
+      @wallet.reload
     rescue Stripe::StripeError => e
       Rails.logger.error("Stripe error on reload_success: #{e.message}")
       redirect_to customers_wallet_reload_path, alert: "Une erreur est survenue. Veuillez réessayer."

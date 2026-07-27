@@ -37,6 +37,28 @@ RSpec.describe WalletTransaction, type: :model do
     end
   end
 
+  # Index unique *partiel* : une recharge Stripe ne peut être encaissée qu'une
+  # fois (#159), mais les débits/remboursements de commande n'ont pas de
+  # PaymentIntent et restent donc nombreux à NULL.
+  describe 'unicité du stripe_payment_intent_id' do
+    let(:wallet) { create(:wallet) }
+
+    it 'refuse deux transactions pour le même PaymentIntent' do
+      create(:wallet_transaction, wallet: wallet, stripe_payment_intent_id: 'pi_unique')
+
+      expect { create(:wallet_transaction, wallet: wallet, stripe_payment_intent_id: 'pi_unique') }
+        .to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it 'accepte plusieurs transactions sans PaymentIntent' do
+      expect {
+        create(:wallet_transaction, :order_debit, wallet: wallet, stripe_payment_intent_id: nil)
+        create(:wallet_transaction, :order_debit, wallet: wallet, stripe_payment_intent_id: nil)
+        create(:wallet_transaction, :order_refund, wallet: wallet, stripe_payment_intent_id: nil)
+      }.to change(described_class, :count).by(3)
+    end
+  end
+
   describe '#amount_euros' do
     it 'returns positive amounts in euros' do
       transaction = build(:wallet_transaction, amount_cents: 1550)

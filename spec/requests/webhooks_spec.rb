@@ -78,6 +78,34 @@ RSpec.describe 'Stripe webhook', type: :request do
     end
   end
 
+  # Recharge de portefeuille : le webhook et la page de retour Bancontact
+  # créditent tous deux la même recharge (#159).
+  describe 'wallet reload (payment_intent.succeeded)' do
+    let(:reload_pi_id) { "pi_reload_#{SecureRandom.hex(6)}" }
+    let!(:wallet) { create(:wallet, customer: customer, balance_cents: 1000) }
+
+    def fabricate_reload_event(amount: 5000)
+      pi = double('Stripe::PaymentIntent', id: reload_pi_id, amount: amount,
+                                           metadata: { 'customer_id' => customer.id.to_s, 'type' => 'wallet_reload' })
+      double('Stripe::Event', id: "evt_#{SecureRandom.hex(6)}", type: 'payment_intent.succeeded',
+                              data: double('event_data', object: pi))
+    end
+
+    it 'credits the wallet' do
+      expect { deliver(fabricate_reload_event) }
+        .to change { wallet.reload.balance_cents }.from(1000).to(6000)
+    end
+
+    # Événements distincts (la dédup StripeEvent ne joue pas), même PaymentIntent.
+    it 'ne recrédite pas quand le même PaymentIntent revient dans un autre événement' do
+      deliver(fabricate_reload_event)
+
+      expect { deliver(fabricate_reload_event) }.not_to change { wallet.reload.balance_cents }
+      expect(WalletTransaction.where(stripe_payment_intent_id: reload_pi_id).count).to eq(1)
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe 'refund failure (charge.refund.updated)' do
     def fabricate_refund_event(status:, failure_reason: 'expired_or_canceled_card')
       refund = double('Stripe::Refund', status: status, payment_intent: pi_id, failure_reason: failure_reason)

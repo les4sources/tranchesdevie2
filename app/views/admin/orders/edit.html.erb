@@ -193,7 +193,9 @@
       </div>
     </div>
 
-    <div class="mt-8">
+    <div class="mt-8"
+         data-controller="payment-status-warning"
+         data-payment-status-warning-initial-value="<%= @order.payment_status %>">
       <%= f.label :payment_status, "Statut de paiement", class: "block text-sm font-medium text-gray-700" %>
       <%= f.select :payment_status,
                    options_for_select([
@@ -202,11 +204,29 @@
                      [payment_status_label("refunded"), "refunded"]
                    ], @order.payment_status),
                    {},
-                   class: "mt-1 #{admin_input_class}" %>
+                   class: "mt-1 #{admin_input_class}",
+                   data: {
+                     payment_status_warning_target: "select",
+                     action: "change->payment-status-warning#toggle"
+                   } %>
       <p class="mt-1 text-xs text-gray-500">
         Synchronisé automatiquement depuis les paiements réels (Stripe / portefeuille).
         Le marquage manuel sert aux paiements hors-ligne (cash, clients à facture).
       </p>
+      <div class="hidden mt-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+           data-payment-status-warning-target="warning">
+        <p class="font-semibold">⚠️ Ce statut ne rembourse pas le client — c'est une simple étiquette comptable.</p>
+        <p class="mt-2">
+          Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille,
+          utilisez le bouton <strong>« Rembourser »</strong> sur
+          <%= link_to "la page de la commande", admin_order_path(@order), class: "underline font-medium" %> :
+          lui seul renvoie l'argent et prévient le client par SMS.
+          S'il n'est plus affiché (commande déjà prête ou date limite passée), contactez Michael.
+        </p>
+        <p class="mt-2">
+          Seul un paiement en espèces rendu de la main à la main peut être marqué « Remboursé » ici.
+        </p>
+      </div>
     </div>
 
     <div class="mt-6">

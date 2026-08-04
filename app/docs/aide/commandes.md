@@ -73,3 +73,7 @@ fournée, et les produits.
 
 Depuis le détail d'une commande, l'action **Rembourser** annule la commande,
 rend l'argent (en ligne ou sur le portefeuille) et prévient le client par SMS.
+
+⚠️ **Attention au piège** : dans le formulaire **Modifier**, le menu « Statut de paiement » a une option « Remboursé ». Cette option **ne rembourse rien** — c'est une simple étiquette comptable, réservée aux paiements en espèces rendus de la main à la main. Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille, utilise toujours le bouton rouge **Rembourser** sur la page de la commande : lui seul renvoie vraiment l'argent au client.
+
+Le bouton **Rembourser** n'est visible que tant que la commande est « Payée » et que la date limite de commande n'est pas passée. S'il n'apparaît plus et qu'il faut quand même rembourser, contacte Michael.

@@ -125,6 +125,21 @@ RSpec.describe "Admin::Orders", type: :request do
     end
   end
 
+  # Garde-fou « Remboursé » : le select de statut de paiement du formulaire
+  # d'édition ne rembourse rien (simple étiquette). La page doit embarquer
+  # l'avertissement Stimulus qui pointe vers le vrai bouton « Rembourser ».
+  describe "GET /admin/orders/:id/edit (refund guardrail)" do
+    it "wires the payment status warning with the order's current status" do
+      get edit_admin_order_path(order)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-controller="payment-status-warning"')
+      expect(response.body).to include(%(data-payment-status-warning-initial-value="#{order.payment_status}"))
+      expect(response.body).to include("ne rembourse pas le client")
+      expect(response.body).to include("Rembourser »")
+    end
+  end
+
   describe "GET /admin/orders (index, group name #99)" do
     it "shows the group name as primary with the customer name below it" do
       customer = create(:customer, first_name: "Joséphine", last_name: "Martin")

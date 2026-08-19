@@ -24,6 +24,37 @@ class Customer < ApplicationRecord
   # Clients professionnels (épiceries, points de dépôt) facturés mensuellement.
   scope :billable, -> { where(billable: true) }
 
+  # Recherche « naturelle » d'un client : prénom, nom, prénom+nom, e-mail ou
+  # téléphone. Le téléphone est comparé chiffre à chiffre (les numéros sont
+  # stockés en E.164 : « 0472 12 34 56 » doit trouver « +32472123456 »), donc on
+  # dépouille la requête et la colonne de tout ce qui n'est pas un chiffre, et on
+  # laisse tomber le 0 initial de la forme nationale belge.
+  def self.search(query)
+    term = query.to_s.strip
+    return all if term.blank?
+
+    like = "%#{sanitize_sql_like(term)}%"
+    clauses = [
+      "customers.first_name ILIKE :like",
+      "customers.last_name ILIKE :like",
+      "(customers.first_name || ' ' || COALESCE(customers.last_name, '')) ILIKE :like",
+      "customers.email ILIKE :like",
+      "customers.phone_e164 ILIKE :like"
+    ]
+    binds = { like: like }
+
+    # Le seuil porte sur ce qui a été tapé (« 047 » = 3 chiffres), pas sur le
+    # reste après suppression du 0 national — sinon une saisie légitime passait
+    # sous le radar.
+    digits = term.gsub(/\D/, "")
+    if digits.length >= 3
+      clauses << "regexp_replace(COALESCE(customers.phone_e164, ''), '[^0-9]', '', 'g') LIKE :digits"
+      binds[:digits] = "%#{digits.sub(/\A0+/, '')}%"
+    end
+
+    where(clauses.join(" OR "), binds)
+  end
+
   def sms_enabled?
     phone_e164.present? && !sms_opt_out?
   end

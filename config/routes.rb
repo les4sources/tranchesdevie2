@@ -154,6 +154,10 @@ Rails.application.routes.draw do
     end
 
     resources :customers, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+      collection do
+        # Autocomplétion JSON du filtre client de la page Commandes.
+        get :search
+      end
       member do
         post :send_sms
       end

@@ -9,6 +9,8 @@ class Admin::OrdersController < Admin::BaseController
     @orders = @orders.where(status: params[:status]) if params[:status].present?
     @orders = @orders.where(payment_status: params[:payment_status]) if params[:payment_status].present?
 
+    apply_customer_filter!
+
     @bake_days = BakeDay.future.ordered
   end
 
@@ -171,6 +173,29 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   private
+
+  # Filtre client de la page Commandes (#retour Stéphanie) : soit un client
+  # précis choisi dans l'autocomplétion (`customer_id`), soit une recherche
+  # libre (`q`) qui accepte un nom, un e-mail, un téléphone — ou directement un
+  # numéro de commande, puisque c'est l'autre façon naturelle de retrouver une
+  # commande.
+  def apply_customer_filter!
+    if params[:customer_id].present?
+      @selected_customer = Customer.find_by(id: params[:customer_id])
+      @orders = @orders.where(customer_id: @selected_customer.id) if @selected_customer
+      return
+    end
+
+    @customer_query = params[:q].to_s.strip
+    return if @customer_query.blank?
+
+    matching_customer_ids = Customer.search(@customer_query).select(:id)
+    @orders = @orders.where(
+      "orders.customer_id IN (:ids) OR orders.order_number ILIKE :like",
+      ids: matching_customer_ids,
+      like: "%#{Order.sanitize_sql_like(@customer_query)}%"
+    )
+  end
 
   def set_order
     @order = Order.find(params[:id])

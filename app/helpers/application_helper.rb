@@ -1,4 +1,21 @@
 module ApplicationHelper
+  # Numéro belge en forme nationale lisible (« 0472 12 34 56 ») à partir du
+  # E.164 stocké en base. Tout autre format est rendu tel quel.
+  def national_phone(phone)
+    return nil if phone.blank?
+
+    match = phone.to_s.match(/\A\+32(\d{3})(\d{2})(\d{2})(\d{2})\z/)
+    return phone if match.nil?
+
+    "0#{match[1]} #{match[2]} #{match[3]} #{match[4]}"
+  end
+
+  # `pluralize` de Rails s'appuie sur l'inflecteur anglais et laisse le français
+  # au singulier. Ici on accorde à la main.
+  def compte_commandes(count)
+    "#{count} commande#{'s' if count > 1}"
+  end
+
   def order_status_label(status)
     labels = {
       "pending" => "En attente",

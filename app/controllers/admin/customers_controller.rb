@@ -4,13 +4,7 @@ class Admin::CustomersController < Admin::BaseController
   def index
     @customers = Customer.includes(:orders, :groups, :wallet)
 
-    if params[:search].present?
-      search_term = "%#{params[:search]}%"
-      @customers = @customers.where(
-        "first_name ILIKE ? OR last_name ILIKE ? OR phone_e164 ILIKE ? OR email ILIKE ?",
-        search_term, search_term, search_term, search_term
-      )
-    end
+    @customers = @customers.search(params[:search]) if params[:search].present?
 
     case params[:sort]
     when "orders"
@@ -24,6 +18,29 @@ class Admin::CustomersController < Admin::BaseController
     else
       @customers = @customers.order(:last_name, :first_name)
     end
+  end
+
+  # Autocomplétion JSON du filtre client (page Commandes). Renvoie une poignée
+  # de clients correspondant à la saisie, avec de quoi les distinguer d'un coup
+  # d'oeil : nom, e-mail, téléphone et nombre de commandes.
+  def search
+    term = params[:q].to_s.strip
+
+    customers = if term.blank?
+                  Customer.none
+    else
+                  Customer.search(term)
+                          .left_joins(:orders)
+                          .select("customers.*, COUNT(orders.id) AS orders_count")
+                          .group("customers.id")
+                          .order(Arel.sql("COUNT(orders.id) DESC, customers.last_name ASC, customers.first_name ASC"))
+                          .limit(8)
+    end
+
+    render json: {
+      query: term,
+      results: customers.map { |customer| customer_search_payload(customer) }
+    }
   end
 
   def show
@@ -104,6 +121,16 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   private
+
+  def customer_search_payload(customer)
+    {
+      id: customer.id,
+      name: customer.full_name,
+      email: customer.email,
+      phone: customer.phone_e164,
+      orders_count: customer.orders_count.to_i
+    }
+  end
 
   def set_customer
     @customer = Customer.find(params[:id])

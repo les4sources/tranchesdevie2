@@ -94,15 +94,18 @@ export default class extends Controller {
     const el = document.createElement("div")
     el.className = "px-4 py-6 text-center"
     el.innerHTML = `
-      <p class="text-sm font-medium text-stone-700">Aucun mangeur trouvé</p>
-      <p class="mt-1 text-xs text-stone-500">Essayez un prénom, un début d'e-mail ou les derniers chiffres du GSM.</p>
+      <p class="text-sm font-semibold" style="color: var(--text-strong);">Aucun mangeur trouvé</p>
+      <p class="mt-1 text-xs" style="color: var(--text-muted);">Essayez un prénom, un début d'e-mail ou les derniers chiffres du GSM.</p>
     `
     return el
   }
 
   hint() {
     const el = document.createElement("div")
-    el.className = "flex items-center justify-between border-t border-stone-100 bg-stone-50/70 px-4 py-2 text-[11px] text-stone-500"
+    el.className = "flex items-center justify-between border-t px-4 py-2 text-[11px]"
+    el.style.borderColor = "var(--border-subtle)"
+    el.style.background = "var(--surface-inset)"
+    el.style.color = "var(--text-muted)"
     el.innerHTML = `
       <span>↑ ↓ pour naviguer · ⏎ pour choisir</span>
       <span>Échap pour fermer</span>
@@ -118,23 +121,22 @@ export default class extends Controller {
     row.setAttribute("aria-selected", "false")
     row.dataset.index = index
     row.className =
-      "group flex w-full items-center gap-3 border-l-2 border-transparent px-4 py-2.5 text-left transition-colors hover:bg-amber-50/70"
+      "adm-option group flex w-full items-center gap-3 border-l-2 border-transparent px-4 py-2 text-left"
 
     const orders =
       customer.orders_count === 1 ? "1 commande" : `${customer.orders_count} commandes`
     const contact = [customer.email, this.formatPhone(customer.phone)].filter(Boolean).join(" · ")
 
     row.innerHTML = `
-      <span class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-amber-100 text-xs font-semibold uppercase tracking-wide text-amber-800">
+      <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[11px] font-semibold uppercase"
+            style="background: var(--sage-200); color: var(--sage-700);">
         ${this.escape(this.initials(customer.name))}
       </span>
       <span class="min-w-0 flex-1">
-        <span class="block truncate text-sm font-semibold text-stone-900">${this.highlight(customer.name)}</span>
-        <span class="block truncate text-xs text-stone-500">${contact ? this.highlight(contact) : "—"}</span>
+        <span class="block truncate text-sm font-semibold" style="color: var(--text-strong);">${this.highlight(customer.name)}</span>
+        <span class="block truncate text-xs" style="color: var(--text-muted);">${contact ? this.highlight(contact) : "—"}</span>
       </span>
-      <span class="flex-none rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600 group-hover:bg-white">
-        ${orders}
-      </span>
+      <span class="adm-chip adm-chip-neutral flex-none">${orders}</span>
     `
 
     row.addEventListener("click", () => this.select(index))
@@ -187,8 +189,7 @@ export default class extends Controller {
   paintHighlight() {
     Array.from(this.resultsTarget.querySelectorAll("button[data-index]")).forEach((row, index) => {
       const active = index === this.highlighted
-      row.classList.toggle("bg-amber-50", active)
-      row.classList.toggle("border-amber-500", active)
+      row.classList.toggle("adm-option-active", active)
       row.setAttribute("aria-selected", active ? "true" : "false")
       if (active) {
         this.inputTarget.setAttribute("aria-activedescendant", row.id)
@@ -260,7 +261,7 @@ export default class extends Controller {
     const needle = this.escape(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     return escaped.replace(
       new RegExp(needle, "ig"),
-      (match) => `<mark class="rounded bg-amber-200/70 px-0.5 text-inherit">${match}</mark>`
+      (match) => `<mark class="adm-mark">${match}</mark>`
     )
   }
 

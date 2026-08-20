@@ -83,11 +83,23 @@
   color: #1e40af;
 }
 
-/* Admin garde Pacifico ; le storefront (.tdv-storefront) passe à Caveat (police
-   du Design System). :where() = spécificité nulle, donc les utilitaires Tailwind
-   font-script / font-sans gagnent toujours sur les titres explicitement classés. */
+/* Caveat partout — c'est la police manuscrite du Design System. L'admin gardait
+   Pacifico le temps que la refonte de la boutique se stabilise ; la refonte de
+   l'admin aligne les deux, une seule voix manuscrite dans l'application.
+   :where() = spécificité nulle, donc les utilitaires Tailwind font-script /
+   font-sans gagnent toujours sur les titres explicitement classés. */
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Pacifico", cursive;
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+}
+
+/* Un titre de carte ou de section n'est pas une signature de marque : dans les
+   composants admin, les titres reprennent la police de texte. Le manuscrit est
+   réservé au titre de page (.tdv-script). */
+.adm-card h1, .adm-card h2, .adm-card h3, .adm-card h4, .adm-card h5, .adm-card h6,
+.adm-cardhd h1, .adm-cardhd h2, .adm-cardhd h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
 }
 
 :where(.tdv-storefront) h1,

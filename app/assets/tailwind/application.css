@@ -191,3 +191,106 @@
 
 /* Warm text selection + focus ring, matching the design system */
 ::selection { background: var(--sage-200); color: var(--ink-900); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Admin — primitives « grille de données »
+   La structure vient d'Airtable (densité, bordures fines, pastilles, retenue),
+   les couleurs viennent intégralement des tokens ci-dessus. Aucun hex ici.
+
+   Ces classes existent parce qu'elles portent des choses qu'un utilitaire
+   Tailwind exprime mal : en-tête collant, densité de ligne uniforme, filets
+   internes. Tout le reste des vues admin reste en utilitaires.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── Coque ────────────────────────────────────────────────────────────── */
+  .adm-shell        { background: var(--bg-app); }
+  .adm-sidebar      { background: var(--surface-card); border-right: 1px solid var(--border-subtle); }
+  .adm-navlink      { display: flex; align-items: center; gap: .625rem;
+                      padding: .4375rem .625rem; border-radius: var(--radius-sm);
+                      font-size: .8125rem; font-weight: 500; color: var(--text-body);
+                      transition: background-color .12s var(--ease-soft), color .12s var(--ease-soft); }
+  .adm-navlink:hover      { background: var(--surface-sunk); color: var(--text-strong); }
+  .adm-navlink-active     { background: var(--brand-tint); color: var(--brand-press); font-weight: 600; }
+  .adm-navlink-active:hover { background: var(--brand-tint); color: var(--brand-press); }
+
+  /* ── Carte / panneau ──────────────────────────────────────────────────── */
+  .adm-card   { background: var(--surface-card); border: 1px solid var(--border-subtle);
+                border-radius: var(--radius-md); box-shadow: var(--shadow-xs); }
+  .adm-cardhd { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+                padding: .625rem .875rem; border-bottom: 1px solid var(--border-subtle);
+                background: var(--surface-inset);
+                border-radius: var(--radius-md) var(--radius-md) 0 0; }
+
+  /* ── Grille de données — le coeur du parti pris ───────────────────────── */
+  .adm-grid              { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .8125rem; }
+  .adm-grid thead th     { position: sticky; top: 0; z-index: 10;
+                           background: var(--surface-inset);
+                           border-bottom: 1px solid var(--border-strong);
+                           padding: .5rem .75rem; text-align: left;
+                           font-size: .6875rem; font-weight: 600; letter-spacing: .04em;
+                           text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  .adm-grid tbody td     { padding: .4375rem .75rem; border-bottom: 1px solid var(--border-subtle);
+                           color: var(--text-body); vertical-align: middle; }
+  .adm-grid tbody tr:hover td       { background: var(--surface-inset); }
+  .adm-grid tbody tr:last-child td  { border-bottom: 0; }
+  /* Filets verticaux : c'est ce qui fait « tableur » plutôt que « liste ». */
+  .adm-grid td + td, .adm-grid th + th { border-left: 1px solid var(--border-subtle); }
+  .adm-grid-num          { font-variant-numeric: tabular-nums; }
+
+  /* ── Pastilles d'état ─────────────────────────────────────────────────── */
+  .adm-chip { display: inline-flex; align-items: center; gap: .25rem;
+              padding: .0625rem .4375rem; border-radius: var(--radius-xs);
+              font-size: .6875rem; font-weight: 600; white-space: nowrap; }
+  .adm-chip-neutral { background: var(--surface-sunk);      color: var(--text-muted); }
+  .adm-chip-brand   { background: var(--sage-100);          color: var(--sage-700); }
+  .adm-chip-accent  { background: var(--ember-100);         color: var(--ember-700); }
+  .adm-chip-success { background: var(--success-100);       color: var(--success-700); }
+  .adm-chip-warning { background: var(--warning-100);       color: var(--warning-700); }
+  .adm-chip-danger  { background: var(--danger-100);        color: var(--danger-700); }
+  .adm-chip-water   { background: var(--water-100);         color: var(--water-700); }
+
+  /* ── Boutons ──────────────────────────────────────────────────────────── */
+  .adm-btn { display: inline-flex; align-items: center; justify-content: center; gap: .375rem;
+             padding: .375rem .6875rem; border-radius: var(--radius-sm);
+             font-size: .8125rem; font-weight: 500; cursor: pointer;
+             border: 1px solid transparent; white-space: nowrap;
+             transition: background-color .12s var(--ease-soft), border-color .12s var(--ease-soft); }
+  .adm-btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+  .adm-btn-primary  { background: var(--brand); color: var(--text-on-brand); }
+  .adm-btn-primary:hover  { background: var(--brand-press); }
+  .adm-btn-default  { background: var(--surface-card); color: var(--text-body); border-color: var(--border-strong); }
+  .adm-btn-default:hover  { background: var(--surface-inset); }
+  .adm-btn-ghost    { background: transparent; color: var(--text-muted); }
+  .adm-btn-ghost:hover    { background: var(--surface-sunk); color: var(--text-strong); }
+  .adm-btn-danger   { background: var(--danger-600); color: #fff; }
+  .adm-btn-danger:hover   { background: var(--danger-700); }
+
+  /* ── Champs ───────────────────────────────────────────────────────────── */
+  .adm-field { display: block; width: 100%; padding: .375rem .625rem;
+               border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+               background: var(--surface-card); color: var(--text-strong); font-size: .8125rem;
+               transition: border-color .12s var(--ease-soft), box-shadow .12s var(--ease-soft); }
+  .adm-field:focus { outline: none; border-color: var(--border-focus);
+                     box-shadow: 0 0 0 3px var(--focus-ring); }
+  .adm-field::placeholder { color: var(--text-faint); }
+
+  /* ── Options d'autocomplétion (contrôleur customer-filter) ────────────── */
+  .adm-option        { transition: background-color .1s var(--ease-soft); }
+  .adm-option:hover  { background: var(--surface-inset); }
+  .adm-option-active { background: var(--brand-tint); border-left-color: var(--brand); }
+  .adm-mark          { background: var(--sage-200); color: inherit; border-radius: var(--radius-xs); padding: 0 .125rem; }
+
+  /* ── Divers ───────────────────────────────────────────────────────────── */
+  .adm-eyebrow { font-size: .6875rem; font-weight: 600; letter-spacing: .06em;
+                 text-transform: uppercase; color: var(--text-muted); }
+  .adm-link    { color: var(--link); font-weight: 500; }
+  .adm-link:hover { text-decoration: underline; }
+
+  /* Actions de ligne : discrètes au repos, elles ne se colorent qu'au survol
+     de la ligne. Répétées sur 30 lignes, des liens colorés font du bruit et
+     tirent l'oeil loin de la donnée. */
+  .adm-rowaction        { color: var(--text-faint); font-weight: 500; }
+  tr:hover .adm-rowaction { color: var(--link); }
+  .adm-rowaction:hover  { color: var(--link); text-decoration: underline; }
+}

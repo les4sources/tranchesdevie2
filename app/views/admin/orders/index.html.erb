@@ -8,29 +8,23 @@
   filters_active = [ params[:q], params[:customer_id], params[:status], params[:payment_status], params[:bake_day_id] ].any?(&:present?)
 %>
 
-<div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-  <h1 class="text-2xl font-bold text-gray-900">Commandes</h1>
-  <div class="flex flex-row flex-wrap gap-2 items-center">
-    <%= link_to "Nouveau mangeur",
-                new_admin_customer_path,
-                class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400" %>
-    <%= link_to "Nouvelle commande",
-                new_admin_order_path,
-                class: "inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
-  </div>
-</div>
+<%= adm_page_header "Commandes" do %>
+  <%= link_to "Nouveau mangeur", new_admin_customer_path, class: adm_btn_class(:default) %>
+  <%= link_to new_admin_order_path, class: adm_btn_class(:primary) do %>
+    <%= lucide "plus", size: 15 %> Nouvelle commande
+  <% end %>
+<% end %>
 
 <%# ------------------------------------------------------------------ %>
 <%# Console de recherche : trouver un mangeur d'abord, affiner ensuite. %>
 <%# ------------------------------------------------------------------ %>
-<%= form_with url: admin_orders_path, method: :get, local: true,
-              class: "mb-6 overflow-visible rounded-xl border border-stone-200 bg-white shadow-sm" do |f| %>
-  <div class="p-4 sm:p-5">
+<%= form_with url: admin_orders_path, method: :get, local: true, class: "adm-card mb-4" do |f| %>
+  <div class="p-3 sm:p-4">
     <div data-controller="customer-filter"
          data-customer-filter-url-value="<%= search_admin_customers_path %>"
          class="relative">
-      <label for="orders-customer-search" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-        <%= lucide "user-round", size: 13 %>
+      <label for="orders-customer-search" class="adm-eyebrow mb-1.5 flex items-center gap-1.5">
+        <%= lucide "user-round", size: 12 %>
         Trouver un mangeur
       </label>
 
@@ -38,17 +32,15 @@
                            data: { customer_filter_target: "customerId" } %>
 
       <div class="relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">
-          <%= lucide "search", size: 18 %>
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: var(--text-faint);">
+          <%= lucide "search", size: 16 %>
         </span>
 
         <%= text_field_tag :q, customer_field_value,
               id: "orders-customer-search",
               autocomplete: "off",
               placeholder: "Nom, e-mail, GSM ou n° de commande…",
-              class: "block w-full rounded-lg border border-stone-300 bg-stone-50/60 py-2.5 pl-11 pr-24 text-sm text-stone-900 " \
-                     "placeholder:text-stone-400 shadow-sm transition " \
-                     "focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-200",
+              class: adm_field_class("!py-2 !pl-10 !pr-20"),
               role: "combobox",
               "aria-autocomplete": "list",
               "aria-expanded": "false",
@@ -58,38 +50,34 @@
                 action: "input->customer-filter#search focus->customer-filter#focus keydown->customer-filter#keydown"
               } %>
 
-        <div class="absolute inset-y-0 right-0 flex items-center gap-1 pr-2.5">
+        <div class="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
           <button type="button"
                   title="Effacer la recherche"
-                  class="<%= "hidden " if customer_field_value.blank? %>rounded-full p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
+                  class="<%= "hidden " if customer_field_value.blank? %>adm-btn adm-btn-ghost !p-1"
                   data-customer-filter-target="clear"
                   data-action="customer-filter#clear">
-            <%= lucide "x", size: 15 %>
+            <%= lucide "x", size: 14 %>
           </button>
-          <kbd class="hidden select-none rounded border border-stone-200 bg-white px-1.5 py-0.5 font-sans text-[11px] text-stone-400 sm:block">/</kbd>
+          <kbd class="hidden select-none rounded border px-1.5 py-0.5 font-sans text-[11px] sm:block"
+               style="border-color: var(--border-subtle); color: var(--text-faint);">/</kbd>
         </div>
 
         <%# Propositions vivantes (remplies par le contrôleur Stimulus). %>
         <div id="orders-customer-results"
              role="listbox"
              aria-label="Mangeurs correspondants"
-             class="absolute left-0 right-0 top-full z-40 mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl ring-1 ring-black/5"
+             class="adm-card absolute left-0 right-0 top-full z-40 mt-1.5 hidden max-h-80 overflow-y-auto py-1"
+             style="box-shadow: var(--shadow-lg);"
              data-customer-filter-target="results"></div>
       </div>
-
-      <p class="mt-1.5 text-xs text-stone-500">
-        Tapez les premières lettres du nom, un morceau d'e-mail ou les derniers chiffres du GSM — la liste se réduit toute seule.
-      </p>
     </div>
 
     <%# Filtres secondaires : ils affinent ce que la recherche a déjà cadré. %>
-    <div class="mt-4 flex flex-wrap items-end gap-3 border-t border-stone-100 pt-4">
-      <span class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">
-        <%= lucide "sliders-horizontal", size: 13 %>
+    <div class="mt-3 flex flex-wrap items-center gap-2 border-t pt-3" style="border-color: var(--border-subtle);">
+      <span class="adm-eyebrow flex items-center gap-1.5">
+        <%= lucide "sliders-horizontal", size: 12 %>
         Affiner
       </span>
-
-      <% select_class = "rounded-lg border border-stone-300 bg-white py-2 pl-3 pr-8 text-sm text-stone-700 shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200" %>
 
       <%= f.select :status, options_for_select([
             [ "Tous les statuts", "" ],
@@ -99,7 +87,7 @@
             [ "Récupérées", "picked_up" ],
             [ "Non récupérées", "no_show" ],
             [ "Annulées", "cancelled" ]
-          ], params[:status]), {}, { class: select_class } %>
+          ], params[:status]), {}, { class: adm_field_class("!w-auto") } %>
 
       <%= f.select :payment_status, options_for_select([
             [ "Tous les paiements", "" ],
@@ -107,149 +95,118 @@
             [ "Payées", "paid" ],
             [ "Partiellement payées", "partially_paid" ],
             [ "Remboursées", "refunded" ]
-          ], params[:payment_status]), {}, { class: select_class } %>
+          ], params[:payment_status]), {}, { class: adm_field_class("!w-auto") } %>
 
       <%= f.select :bake_day_id,
             options_for_select(@bake_days.map { |bake_day| [ l(bake_day.baked_on, format: :long_with_day).capitalize, bake_day.id ] }, params[:bake_day_id]),
             { include_blank: "Tous les jours" },
-            { class: select_class } %>
+            { class: adm_field_class("!w-auto") } %>
 
       <div class="ml-auto flex items-center gap-2">
         <% if filters_active %>
-          <%= link_to "Tout effacer", admin_orders_path,
-                      class: "rounded-lg px-3 py-2 text-sm font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-700" %>
+          <%= link_to "Tout effacer", admin_orders_path, class: adm_btn_class(:ghost) %>
         <% end %>
-        <%= f.submit "Filtrer",
-              class: "cursor-pointer rounded-lg bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2" %>
+        <%= f.submit "Filtrer", class: adm_btn_class(:primary) %>
       </div>
     </div>
   </div>
 
   <%# Bandeau de contexte : ce qui est filtré, et de quoi le retirer d'un clic. %>
   <% if @selected_customer %>
-    <div class="flex flex-wrap items-center gap-3 rounded-b-xl border-t border-amber-100 bg-amber-50/70 px-4 py-3 sm:px-5">
-      <span class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-amber-200 text-xs font-semibold uppercase text-amber-900">
+    <div class="flex flex-wrap items-center gap-3 border-t px-3 py-2.5 sm:px-4"
+         style="border-color: var(--border-subtle); background: var(--brand-tint); border-radius: 0 0 var(--radius-md) var(--radius-md);">
+      <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[11px] font-semibold uppercase"
+            style="background: var(--sage-200); color: var(--sage-700);">
         <%= @selected_customer.full_name.split.first(2).map { |part| part[0] }.join %>
       </span>
       <div class="min-w-0">
         <%= link_to @selected_customer.full_name, admin_customer_path(@selected_customer),
-                    class: "block truncate text-sm font-semibold text-amber-900 hover:underline" %>
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-amber-800/80">
+                    class: "block truncate text-sm font-semibold hover:underline", style: "color: var(--sage-700);" %>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs" style="color: var(--text-muted);">
           <% if @selected_customer.email.present? %>
-            <span class="inline-flex items-center gap-1"><%= lucide "mail", size: 12 %><%= @selected_customer.email %></span>
+            <span class="inline-flex items-center gap-1"><%= lucide "mail", size: 11 %><%= @selected_customer.email %></span>
           <% end %>
           <% if @selected_customer.phone_e164.present? %>
-            <span class="inline-flex items-center gap-1"><%= lucide "phone", size: 12 %><%= national_phone(@selected_customer.phone_e164) %></span>
+            <span class="inline-flex items-center gap-1"><%= lucide "phone", size: 11 %><%= national_phone(@selected_customer.phone_e164) %></span>
           <% end %>
         </div>
       </div>
-      <span class="ml-auto text-sm font-medium text-amber-900">
+      <span class="ml-auto text-sm font-semibold" style="color: var(--sage-700);">
         <%= compte_commandes(@orders.size) %>
       </span>
     </div>
   <% elsif params[:q].present? %>
-    <div class="rounded-b-xl border-t border-stone-100 bg-stone-50 px-4 py-3 text-sm text-stone-600 sm:px-5">
-      <%= compte_commandes(@orders.size) %> pour « <span class="font-medium text-stone-900"><%= params[:q] %></span> »
+    <div class="border-t px-3 py-2.5 text-sm sm:px-4"
+         style="border-color: var(--border-subtle); background: var(--surface-inset); color: var(--text-muted); border-radius: 0 0 var(--radius-md) var(--radius-md);">
+      <%= compte_commandes(@orders.size) %> pour « <span class="font-semibold" style="color: var(--text-strong);"><%= params[:q] %></span> »
     </div>
   <% end %>
 <% end %>
 
-<div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-  <div class="px-6 py-4 border-b border-gray-200">
-    <h2 class="text-lg font-medium text-gray-900">
+<div class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">
       <%= filters_active ? "Commandes filtrées" : "Toutes les commandes" %>
     </h2>
+    <span class="adm-eyebrow"><%= compte_commandes(@orders.size) %></span>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jour de cuisson</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paiement</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      <% if @orders.empty? %>
+  <div class="max-h-[calc(100vh-19rem)] overflow-auto">
+    <table class="adm-grid">
+      <thead>
         <tr>
-          <td colspan="7" class="px-6 py-14 text-center">
-            <div class="mx-auto flex max-w-sm flex-col items-center">
-              <span class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-400">
-                <%= lucide "search", size: 22 %>
-              </span>
-              <p class="text-sm font-medium text-gray-900">Aucune commande ne correspond</p>
-              <p class="mt-1 text-sm text-gray-500">
-                Vérifiez l'orthographe du nom, ou élargissez les filtres de statut et de jour de cuisson.
-              </p>
-              <% if filters_active %>
-                <%= link_to "Effacer les filtres", admin_orders_path,
-                            class: "mt-4 inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" %>
-              <% end %>
-            </div>
-          </td>
+          <th>Commande</th>
+          <th>Client</th>
+          <th>Jour de cuisson</th>
+          <th class="text-right">Total</th>
+          <th>Statut</th>
+          <th>Paiement</th>
+          <th></th>
         </tr>
-      <% end %>
+      </thead>
+      <tbody>
+        <% if @orders.empty? %>
+          <%= adm_empty_row(colspan: 7,
+                            title: "Aucune commande ne correspond",
+                            hint: "Vérifiez l'orthographe du nom, ou élargissez les filtres de statut et de jour de cuisson.") do %>
+            <% if filters_active %>
+              <%= link_to "Effacer les filtres", admin_orders_path, class: adm_btn_class(:default) %>
+            <% end %>
+          <% end %>
+        <% end %>
 
-      <% @orders.each do |order| %>
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-            <%= order.order_number %>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-            <% if order.group_name.present? %>
-              <div class="font-medium text-gray-900"><%= order.group_name %></div>
-              <div class="text-xs text-gray-500"><%= order.customer.full_name %></div>
-            <% else %>
-              <%= order.customer.full_name %>
-            <% end %>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-            <%# Une commande party est datée par son événement, sans fournée. %>
-            <%= order.event_date.strftime("%d/%m/%Y") %>
-            <% if order.party_event %>
-              <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">Party</span>
-            <% end %>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-              <%= case order.status
-                  when 'pending' then 'bg-yellow-100 text-yellow-800'
-                  when 'paid' then 'bg-blue-100 text-blue-800'
-                  when 'ready' then 'bg-green-100 text-green-800'
-                  when 'picked_up' then 'bg-gray-100 text-gray-800'
-                  when 'no_show' then 'bg-red-100 text-red-800'
-                  when 'cancelled' then 'bg-red-100 text-red-800'
-                  else 'bg-gray-100 text-gray-800'
-                  end %>">
-              <%= order_status_label(order.status) %>
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-              <%= case order.payment_status
-                  when 'paid' then 'bg-green-100 text-green-800'
-                  when 'partially_paid' then 'bg-yellow-100 text-yellow-800'
-                  when 'refunded' then 'bg-purple-100 text-purple-800'
-                  else 'bg-gray-100 text-gray-800'
-                  end %>">
-              <%= payment_status_label(order.payment_status) %>
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm">
-            <%= link_to "Voir", admin_order_path(order), class: "text-blue-600 hover:text-blue-800" %>
-            <%= link_to "Modifier", edit_admin_order_path(order), class: "ml-4 text-indigo-600 hover:text-indigo-800" %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+        <% @orders.each do |order| %>
+          <tr>
+            <td class="adm-grid-num font-semibold whitespace-nowrap" style="color: var(--text-strong);">
+              <%= link_to order.order_number, admin_order_path(order), class: "hover:underline" %>
+            </td>
+            <td class="max-w-56">
+              <% if order.group_name.present? %>
+                <div class="truncate font-medium" style="color: var(--text-strong);"><%= order.group_name %></div>
+                <div class="truncate text-xs" style="color: var(--text-muted);"><%= order.customer.full_name %></div>
+              <% else %>
+                <span class="truncate"><%= order.customer.full_name %></span>
+              <% end %>
+            </td>
+            <td class="whitespace-nowrap">
+              <%# Une commande party est datée par son événement, sans fournée. %>
+              <span class="adm-grid-num"><%= order.event_date.strftime("%d/%m/%Y") %></span>
+              <% if order.party_event %>
+                <%= adm_chip "Party", tone: :accent %>
+              <% end %>
+            </td>
+            <td class="adm-grid-num whitespace-nowrap text-right font-medium" style="color: var(--text-strong);">
+              <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+            </td>
+            <td><%= adm_order_status_chip(order.status) %></td>
+            <td><%= adm_payment_status_chip(order.payment_status) %></td>
+            <td class="whitespace-nowrap text-right">
+              <%= link_to "Voir", admin_order_path(order), class: "adm-rowaction" %>
+              <%= link_to "Modifier", edit_admin_order_path(order), class: "adm-rowaction ml-3" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 </div>

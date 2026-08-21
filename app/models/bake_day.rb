@@ -65,6 +65,18 @@ class BakeDay < ApplicationRecord
     Time.current < cut_off_at
   end
 
+  # Une fournée n'est proposée au client que si elle tombe un jour de cuisson
+  # ordinaire (cf. COOKING_WDAYS). Une fournée posée un autre jour — un marché,
+  # une commande spéciale — reste donc invisible côté boutique : c'est ainsi que
+  # les boulangers planifient une production réservée, sans drapeau dédié.
+  #
+  # Attention : cette confidentialité découle du jour de la semaine. Ajouter un
+  # wday à COOKING_DAYS rendrait rétroactivement commandables toutes les
+  # fournées déjà posées ce jour-là.
+  def open_to_customers?
+    can_order? && COOKING_WDAYS.include?(baked_on.wday)
+  end
+
   def cut_off_passed?
     !can_order?
   end
@@ -90,6 +102,13 @@ class BakeDay < ApplicationRecord
   class << self
     def next_available
       future.ordered.first
+    end
+
+    # Point d'entrée UNIQUE de la boutique. Le catalogue et le panier s'en
+    # servent tous les deux : c'est leur divergence qui avait laissé le bandeau
+    # « Prochaine fournée » annoncer une fournée réservée aux boulangers.
+    def open_to_customers
+      future.ordered.select(&:open_to_customers?)
     end
 
     def calculate_cut_off_for(date)

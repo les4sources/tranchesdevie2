@@ -2,7 +2,10 @@ class CatalogController < ApplicationController
   def index
     @products = load_all_active_products
     @seasonal_promotion = seasonal_promotion_content
-    @next_bake_day = BakeDay.future.ordered.limit(10).detect(&:can_order?)
+    # `open_to_customers` et pas `can_order?` : une fournée réservée aux
+    # boulangers (marché, production spéciale) ne doit pas être annoncée à des
+    # clients qui ne pourront pas commander dessus.
+    @next_bake_day = BakeDay.open_to_customers.first
   end
 
   private

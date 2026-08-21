@@ -298,11 +298,10 @@ class CartController < ApplicationController
   end
 
   def load_next_available_bake_days
-    # Récupérer tous les jours de cuisson futurs disponibles (cf. BakeDay::COOKING_WDAYS)
-    available_bake_days = BakeDay.future
-                                  .where("cut_off_at > ?", Time.current)
-                                  .ordered
-                                  .select { |bd| bd.can_order? && BakeDay::COOKING_WDAYS.include?(bd.baked_on.wday) }
+    # Même source que le bandeau du catalogue (cf. BakeDay.open_to_customers) :
+    # les deux avaient divergé, et le catalogue annonçait des fournées que le
+    # panier refusait.
+    available_bake_days = BakeDay.open_to_customers
 
     # Grouper par jour de la semaine et prendre le premier de chaque groupe
     available_bake_days

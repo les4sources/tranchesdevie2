@@ -4,17 +4,24 @@
 # `![légende](shot:SLUG)`, et la tâche `bin/rails aide:screenshots` régénère
 # chaque PNG (app/assets/images/aide/SLUG.png) en pilotant le vrai admin.
 #
+# Le manifeste sert aussi de preuve visuelle des refontes de l'admin : chaque
+# section a au moins une capture, si bien qu'une PR de restyle montre son
+# avant/après dans le diff des PNG. Les données de démo étant déterministes
+# (graine fixe côté spec), un PNG qui bouge signale un vrai changement d'écran.
+#
 # Champs :
 #   slug     : nom du fichier PNG et référence markdown (obligatoire)
 #   path     : URL relative à visiter (ex. /admin/orders)
-#   record   : au lieu d'un path fixe, résout l'URL d'une fiche de démo
-#              (order | bake_day | customer | product) — pour les pages :id
+#   record   : résout un enregistrement de démo (order | bake_day | customer |
+#              product | group | pickup_location). Seul, il vise la fiche ;
+#              combiné à `path`, il y remplace `:id` (ex. /admin/orders/:id/edit)
 #   selector : capture seulement cet élément CSS (sinon page entière)
 #   auth     : false pour les pages hors authentification (ex. login)
 #
 # Après avoir ajouté une entrée ici + un `![..](shot:SLUG)` dans un chapitre,
 # lance : bin/rails aide:screenshots
 
+# --- Coque & connexion -------------------------------------------------------
 - slug: login
   path: /admin/login
   auth: false
@@ -23,35 +30,155 @@
   path: /admin/orders
   selector: "nav"
 
+# --- Commandes ---------------------------------------------------------------
 - slug: orders-index
   path: /admin/orders
 
 - slug: order-show
   record: order
 
+- slug: order-new
+  path: /admin/orders/new
+
+- slug: order-edit
+  record: order
+  path: /admin/orders/:id/edit
+
+# --- Jours de cuisson --------------------------------------------------------
 - slug: bake-days-index
   path: /admin/bake_days
 
 - slug: bake-day-show
   record: bake_day
 
+- slug: bake-day-new
+  path: /admin/bake_days/new
+
+- slug: bake-day-edit
+  record: bake_day
+  path: /admin/bake_days/:id/edit
+
+- slug: bake-day-sheet
+  record: bake_day
+  path: /admin/bake_days/:id/sheet
+
+- slug: bake-day-pickup-sheet
+  record: bake_day
+  path: /admin/bake_days/:id/pickup_sheet
+
+# --- Mangeurs ----------------------------------------------------------------
 - slug: customers-index
   path: /admin/customers
 
 - slug: customer-show
   record: customer
 
+- slug: customer-new
+  path: /admin/customers/new
+
+- slug: customer-edit
+  record: customer
+  path: /admin/customers/:id/edit
+
+# --- Produits ----------------------------------------------------------------
 - slug: products-index
   path: /admin/products
 
+- slug: product-show
+  record: product
+
+- slug: product-new
+  path: /admin/products/new
+
+- slug: product-edit
+  record: product
+  path: /admin/products/:id/edit
+
+- slug: product-variant-new
+  record: product
+  path: /admin/products/:id/variants/new
+
+# --- Parties -----------------------------------------------------------------
 - slug: parties-index
   path: /admin/parties
 
-- slug: settings-index
-  path: /admin/parametres
+- slug: party-new
+  path: /admin/parties/new
+
+- slug: party-slot-blocks
+  path: /admin/parties/blocages
+
+# --- Facturation & reporting -------------------------------------------------
+- slug: billing-index
+  path: /admin/billing
 
 - slug: reports-index
   path: /admin/reports
 
 - slug: baker-revenue
   path: /admin/reports/baker_revenue
+
+- slug: reports-refunds
+  path: /admin/reports/refunds
+
+- slug: reports-payouts
+  path: /admin/reports/payouts
+
+- slug: reports-pizza-parties
+  path: /admin/reports/pizza_parties
+
+# --- Groupes & lieux de retrait ----------------------------------------------
+- slug: groups-index
+  path: /admin/groups
+
+- slug: group-new
+  path: /admin/groups/new
+
+- slug: group-edit
+  record: group
+  path: /admin/groups/:id/edit
+
+- slug: pickup-locations-index
+  path: /admin/points-de-retrait
+
+- slug: pickup-location-new
+  path: /admin/points-de-retrait/new
+
+- slug: pickup-location-edit
+  record: pickup_location
+  path: /admin/points-de-retrait/:id/edit
+
+# --- Aide --------------------------------------------------------------------
+- slug: help-index
+  path: /admin/aide
+
+# --- Paramètres --------------------------------------------------------------
+- slug: settings-index
+  path: /admin/parametres
+
+- slug: settings-flours
+  path: /admin/parametres/farines
+
+- slug: settings-artisans
+  path: /admin/parametres/artisans
+
+- slug: settings-mold-types
+  path: /admin/parametres/types-de-moules
+
+- slug: settings-ingredients
+  path: /admin/parametres/ingredients
+
+- slug: settings-sales-locations
+  path: /admin/parametres/lieux-de-vente
+
+- slug: settings-production-capacity
+  path: /admin/parametres/capacites-de-production/edit
+
+- slug: settings-notifications
+  path: /admin/parametres/notifications/edit
+
+- slug: settings-revenue-parameters
+  path: /admin/parametres/revenus-boulangers
+
+- slug: settings-partnerships
+  path: /admin/parametres/partenariats

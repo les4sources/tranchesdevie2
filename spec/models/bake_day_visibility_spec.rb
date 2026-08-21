@@ -34,6 +34,33 @@ RSpec.describe BakeDay, "visibilité côté boutique" do
     end
   end
 
+  describe "#visible_to_customers?" do
+    it "accepte une fournée ordinaire dont la date limite est passée" do
+      passee = create(:bake_day, :friday, cut_off_at: 1.hour.ago)
+
+      # Le calendrier montre ces fournées grisées : visible sans être commandable.
+      expect(passee.visible_to_customers?).to be true
+      expect(passee.open_to_customers?).to be false
+    end
+
+    it "refuse une fournée posée un jour hors cuisson" do
+      expect(marche.visible_to_customers?).to be false
+    end
+  end
+
+  describe ".visible_to_customers" do
+    it "exclut la fournée marché, quel que soit son cut-off" do
+      marche
+      mardi
+      passee = create(:bake_day, :friday, cut_off_at: 1.hour.ago)
+
+      visibles = BakeDay.visible_to_customers
+
+      expect(visibles).to include(mardi, passee)
+      expect(visibles).not_to include(marche)
+    end
+  end
+
   describe ".open_to_customers" do
     it "exclut la fournée marché et garde la fournée ordinaire" do
       marche

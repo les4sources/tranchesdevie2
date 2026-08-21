@@ -27,8 +27,9 @@ dépannage. On veut la fournée dans l'outil — pour la panification, les
 capacités, la compta — mais **sans** que les clients puissent commander dessus.
 
 C'est automatique : **une fournée posée un autre jour que le mardi ou le
-vendredi n'apparaît jamais dans la boutique.** Le client ne la voit pas dans le
-sélecteur de date et ne peut rien commander pour cette date.
+vendredi n'apparaît jamais côté client.** Elle est absente du sélecteur de date
+du panier, du bandeau « Prochaine fournée » du catalogue et de la liste des
+prochaines dates du calendrier client — et rien ne peut être commandé dessus.
 
 Concrètement, pour la fournée d'un marché le samedi :
 

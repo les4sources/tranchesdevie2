@@ -3,9 +3,10 @@ module Customers
     before_action :authenticate_customer!
 
     def show
-      # Only show future bake days (today and later)
-      @bake_days = BakeDay.where("baked_on >= ?", Date.current)
-                          .order(baked_on: :asc)
+      # Fournées à venir, hors production réservée aux boulangers : une fournée
+      # posée un jour non ordinaire (marché, commande spéciale) ne doit pas plus
+      # apparaître ici que dans la boutique.
+      @bake_days = BakeDay.future.visible_to_customers.ordered
       @planned_orders = current_customer.orders
                                         .where(source: :calendar)
                                         .where.not(status: :cancelled)
@@ -35,7 +36,15 @@ module Customers
     end
 
     def update_day
-      bake_day = BakeDay.find(params[:bake_day_id])
+      # Même filtre qu'à l'affichage : un bake_day_id posté à la main ne doit pas
+      # ouvrir une fournée réservée aux boulangers.
+      bake_day = BakeDay.future.visible_to_customers.find_by(id: params[:bake_day_id])
+
+      unless bake_day
+        render json: { error: "Ce jour de cuisson n'est pas disponible." }, status: :unprocessable_entity
+        return
+      end
+
       items = params[:items] || []
 
       if items.empty?

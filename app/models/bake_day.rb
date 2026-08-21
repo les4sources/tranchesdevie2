@@ -35,6 +35,9 @@ class BakeDay < ApplicationRecord
   scope :future, -> { where("baked_on >= ?", Date.current) }
   scope :past, -> { where("baked_on < ?", Date.current) }
   scope :ordered, -> { order(:baked_on) }
+  # Pendant SQL de `visible_to_customers?` : EXTRACT(DOW) suit la même convention
+  # que `Date#wday` (0=dimanche … 6=samedi), les deux se comparent directement.
+  scope :visible_to_customers, -> { where("EXTRACT(DOW FROM baked_on) IN (?)", COOKING_WDAYS) }
 
   # Lieux de retrait proposables au client sur cette fournée : les lieux ouverts,
   # non supprimés, dans l'ordre d'affichage.
@@ -65,16 +68,23 @@ class BakeDay < ApplicationRecord
     Time.current < cut_off_at
   end
 
-  # Une fournée n'est proposée au client que si elle tombe un jour de cuisson
+  # Une fournée n'est montrée au client que si elle tombe un jour de cuisson
   # ordinaire (cf. COOKING_WDAYS). Une fournée posée un autre jour — un marché,
-  # une commande spéciale — reste donc invisible côté boutique : c'est ainsi que
+  # une commande spéciale — reste donc invisible côté client : c'est ainsi que
   # les boulangers planifient une production réservée, sans drapeau dédié.
   #
   # Attention : cette confidentialité découle du jour de la semaine. Ajouter un
-  # wday à COOKING_DAYS rendrait rétroactivement commandables toutes les
-  # fournées déjà posées ce jour-là.
+  # wday à COOKING_DAYS rendrait rétroactivement visibles toutes les fournées
+  # déjà posées ce jour-là.
+  def visible_to_customers?
+    COOKING_WDAYS.include?(baked_on.wday)
+  end
+
+  # Commandable par le client : visible ET avant le cut-off. Le calendrier, lui,
+  # montre aussi les fournées visibles dont le cut-off est passé (grisées) —
+  # d'où la séparation entre les deux notions.
   def open_to_customers?
-    can_order? && COOKING_WDAYS.include?(baked_on.wday)
+    can_order? && visible_to_customers?
   end
 
   def cut_off_passed?
@@ -108,7 +118,7 @@ class BakeDay < ApplicationRecord
     # servent tous les deux : c'est leur divergence qui avait laissé le bandeau
     # « Prochaine fournée » annoncer une fournée réservée aux boulangers.
     def open_to_customers
-      future.ordered.select(&:open_to_customers?)
+      future.visible_to_customers.ordered.select(&:can_order?)
     end
 
     def calculate_cut_off_for(date)

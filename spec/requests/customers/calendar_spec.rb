@@ -19,6 +19,33 @@ RSpec.describe "Customers::Calendar", type: :request do
     post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
   end
 
+  # Fournée réservée aux boulangers (#164) : posée hors mardi/vendredi, elle est
+  # invisible dans la boutique — le calendrier doit la masquer de la même façon.
+  describe "fournée réservée aux boulangers" do
+    let!(:marche) do
+      create(:bake_day,
+             baked_on: Date.current.next_occurring(:saturday),
+             cut_off_at: 6.hours.from_now)
+    end
+
+    it "ne l'affiche pas dans le calendrier" do
+      get '/calendrier'
+
+      expect(response.body).to include("data-bake-day-id=\"#{future_bake_day.id}\"")
+      expect(response.body).not_to include("data-bake-day-id=\"#{marche.id}\"")
+    end
+
+    it "refuse d'y planifier une commande, même avec l'id posté à la main" do
+      patch '/calendrier/update_day', params: {
+        bake_day_id: marche.id,
+        items: [ { product_variant_id: product_variant.id, qty: 1 } ]
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(customer.orders.where(bake_day: marche)).to be_empty
+    end
+  end
+
   describe "GET /calendrier" do
     it "returns success for authenticated customer" do
       get '/calendrier'

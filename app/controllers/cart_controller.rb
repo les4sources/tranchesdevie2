@@ -201,7 +201,10 @@ class CartController < ApplicationController
   def update_bake_day
     bake_day = BakeDay.find_by(id: params[:bake_day_id])
 
-    if bake_day && bake_day.can_order? && !BakeCapacityService.new(bake_day).fully_booked?
+    # `open_to_customers?` plutôt que `can_order?` : le sélecteur ne propose que
+    # des fournées ouvertes, mais un bake_day_id posté à la main ne doit pas
+    # ouvrir une fournée réservée aux boulangers.
+    if bake_day && bake_day.open_to_customers? && !BakeCapacityService.new(bake_day).fully_booked?
       session[:bake_day_id] = bake_day.id
       removed_count = remove_items_unavailable_for_bake_day!(bake_day)
       respond_to do |format|

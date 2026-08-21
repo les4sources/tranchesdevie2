@@ -20,6 +20,33 @@ Bouton **Nouveau jour de cuisson**. Tu choisis la date ; la date limite se
 calcule toute seule. Le lieu de retrait « Les 4 Sources » est coché
 automatiquement.
 
+## Une fournée réservée aux boulangers (marché, production spéciale)
+
+Il arrive qu'on cuise **pour nous** : un marché, une commande spéciale, un
+dépannage. On veut la fournée dans l'outil — pour la panification, les
+capacités, la compta — mais **sans** que les clients puissent commander dessus.
+
+C'est automatique : **une fournée posée un autre jour que le mardi ou le
+vendredi n'apparaît jamais dans la boutique.** Le client ne la voit pas dans le
+sélecteur de date et ne peut rien commander pour cette date.
+
+Concrètement, pour la fournée d'un marché le samedi :
+
+1. **Nouveau jour de cuisson**, tu choisis la date du samedi.
+2. Coche **Jour de marché (capacité four étendue)** si c'en est un : la jauge du
+   four passe de 110 kg à 165 kg de farine, sinon tu serais bloquée trop tôt.
+3. Encode les commandes toi-même depuis **Commandes → Nouvelle commande**, en
+   choisissant cette fournée. C'est le seul chemin, puisque la boutique l'ignore.
+
+Tu retrouves ensuite tout le reste comme d'habitude : les jauges de capacité, la
+feuille d'émargement, la feuille compta.
+
+> ⚠️ Cette confidentialité tient au **jour de la semaine**, pas à un réglage.
+> Si un jour on ouvrait un troisième jour de cuisson hebdomadaire (le jeudi, par
+> exemple), toutes les fournées déjà posées un jeudi deviendraient d'un coup
+> commandables par les clients. À garder en tête avant de changer les jours de
+> cuisson.
+
 ## Le détail d'une fournée : les capacités
 
 Clique sur une fournée pour l'ouvrir. C'est ici que tu vérifies que la

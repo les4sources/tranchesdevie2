@@ -1,0 +1,66 @@
+<%# Grille de saisie des quantités : une colonne par variante, deux lignes par
+    produit (en-tête des variantes, puis les champs). Partagée par la création
+    et l'édition d'une commande — les deux écrans saisissent la même chose. %>
+<div class="adm-card mt-4 overflow-x-auto">
+  <% variant_columns = max_variant_count || 0 %>
+  <table class="adm-grid">
+    <thead>
+      <tr>
+        <th>Produit</th>
+        <% if variant_columns.positive? %>
+          <th class="text-center" colspan="<%= variant_columns %>">Variantes</th>
+        <% end %>
+        <th class="text-right">Sous-total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% products.each do |product| %>
+        <% active_variants = product.product_variants.active %>
+        <% next if active_variants.empty? %>
+        <% blank_cells = variant_columns - active_variants.size %>
+        <% row_total_cents = active_variants.sum { |variant| (selected_quantities[variant.id] || 0) * variant.price_cents } %>
+        <tr>
+          <td class="whitespace-nowrap font-semibold" rowspan="2" style="color: var(--text-strong);"><%= product.name %></td>
+          <% active_variants.each do |variant| %>
+            <td class="text-center">
+              <div class="text-xs font-semibold" style="color: var(--text-strong);"><%= variant.name %></div>
+              <div class="adm-grid-num text-[11px]" style="color: var(--text-faint);"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %></div>
+            </td>
+          <% end %>
+          <% blank_cells.times do %>
+            <td></td>
+          <% end %>
+          <td class="adm-grid-num whitespace-nowrap text-right font-semibold"
+              rowspan="2"
+              data-order-calculator-target="rowSubtotal"
+              data-product-id="<%= product.id %>"
+              style="color: var(--text-strong);">
+            <%= number_to_currency(row_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+          </td>
+        </tr>
+        <tr>
+          <% active_variants.each do |variant| %>
+            <% input_value = selected_quantities[variant.id] || 0 %>
+            <td class="text-center">
+              <%= number_field_tag "order[variant_quantities][#{variant.id}]",
+                                   input_value,
+                                   min: 0,
+                                   step: 1,
+                                   class: adm_field_class("!w-24 text-center"),
+                                   data: {
+                                     order_calculator_target: "quantity",
+                                     price_cents: variant.price_cents,
+                                     product_id: product.id,
+                                     variant_id: variant.id,
+                                     action: "input->order-calculator#recalculate change->order-calculator#recalculate"
+                                   } %>
+            </td>
+          <% end %>
+          <% blank_cells.times do %>
+            <td></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

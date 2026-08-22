@@ -1,13 +1,30 @@
 h1.text-2xl.font-bold.mb-6 Nouveau jour de cuisson
 
-= form_with model: @bake_day, url: admin_bake_days_path, local: true, class: "space-y-6" do |f|
+= form_with model: @bake_day, url: admin_bake_days_path, local: true, class: "space-y-6", data: { controller: "bake-day-cutoff" } do |f|
   .mb-4
     = f.label :baked_on, "Date de cuisson", class: "block text-gray-700 font-medium mb-2"
-    = f.date_field :baked_on, class: "border rounded px-3 py-2 w-full", required: true
+    = f.date_field :baked_on, class: admin_input_class, required: true, data: { bake_day_cutoff_target: "bakedOn", action: "change->bake-day-cutoff#fill input->bake-day-cutoff#fill" }
 
   .mb-4
     = f.label :cut_off_at, "Date limite de commande", class: "block text-gray-700 font-medium mb-2"
-    = f.datetime_local_field :cut_off_at, class: "border rounded px-3 py-2 w-full", required: true
+    = f.datetime_local_field :cut_off_at, class: admin_input_class, required: true, data: { bake_day_cutoff_target: "cutOff" }
+    p.mt-1.text-xs.text-gray-500 Pré-rempli à la veille de la cuisson, 16h00 — modifiable.
+
+  - note_input_id = dom_id(@bake_day, :internal_note)
+  .mb-4
+    = f.label :internal_note, "Note interne du jour", class: "block text-gray-700 font-medium mb-2"
+    = f.hidden_field :internal_note, id: note_input_id
+    trix-editor class="trix-content rounded-lg border border-gray-200 bg-white" input=note_input_id
+    p.mt-2.text-xs.text-gray-500 Ajoutez des consignes pour l’équipe (pâte en retard, allergies, etc.).
+
+  .mb-4
+    label.flex.items-center.gap-2.cursor-pointer
+      = f.check_box :market_day, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      span.text-gray-700.font-medium Jour de marché (capacité four étendue)
+
+  = render "pickup_locations", f: f, bake_day: @bake_day
+
+  = render "sales_locations", f: f, bake_day: @bake_day
 
   .flex.gap-3
     = f.submit "Créer le jour de cuisson", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

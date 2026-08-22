@@ -1,0 +1,22 @@
+= form_with model: cost, url: (cost.persisted? ? admin_settings_sales_location_sales_location_cost_path(@sales_location, cost) : admin_settings_sales_location_sales_location_costs_path(@sales_location)), method: (cost.persisted? ? :patch : :post), local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if cost.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - cost.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-3.gap-6
+    .space-y-2
+      = f.label :amount_euros, "Coût (€)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :amount_euros, value: cost.amount_euros, step: "0.01", min: 0, required: true, class: admin_input_class
+    .space-y-2
+      = f.label :valid_from, "À partir du", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :valid_from, required: true, class: admin_input_class
+    .space-y-2
+      = f.label :valid_until, "Jusqu'au (optionnel)", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :valid_until, class: admin_input_class
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_sales_location_sales_location_costs_path(@sales_location), class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit cost.persisted? ? "Mettre à jour" : "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

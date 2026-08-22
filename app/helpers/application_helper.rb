@@ -1,14 +1,113 @@
 module ApplicationHelper
+  # Numéro belge en forme nationale lisible (« 0472 12 34 56 ») à partir du
+  # E.164 stocké en base. Tout autre format est rendu tel quel.
+  def national_phone(phone)
+    return nil if phone.blank?
+
+    match = phone.to_s.match(/\A\+32(\d{3})(\d{2})(\d{2})(\d{2})\z/)
+    return phone if match.nil?
+
+    "0#{match[1]} #{match[2]} #{match[3]} #{match[4]}"
+  end
+
+  # `pluralize` de Rails s'appuie sur l'inflecteur anglais et laisse le français
+  # au singulier. Ici on accorde à la main.
+  def compte_commandes(count)
+    "#{count} commande#{'s' if count > 1}"
+  end
+
   def order_status_label(status)
     labels = {
       "pending" => "En attente",
-      "paid" => "Payee",
-      "ready" => "Prete",
-      "picked_up" => "Recuperee",
-      "no_show" => "Non recue",
-      "cancelled" => "Annulee"
+      "planned" => "Planifiée",
+      "unpaid" => "Non payée",
+      "paid" => "Payée",
+      "ready" => "Prête",
+      "picked_up" => "Récupérée",
+      "no_show" => "Non reçue",
+      "cancelled" => "Annulée"
     }
 
     labels[status.to_s] || status.to_s.tr("_", " ").capitalize
+  end
+
+  def payment_status_label(payment_status)
+    labels = {
+      "unpaid" => "Non payée",
+      "paid" => "Payée",
+      "partially_paid" => "Partiellement payée",
+      "refunded" => "Remboursée"
+    }
+
+    labels[payment_status.to_s] || payment_status.to_s.tr("_", " ").capitalize
+  end
+
+  def invoice_status_label(invoice_status)
+    labels = {
+      "not_invoiced" => "Non facturée",
+      "invoiced" => "Facturée"
+    }
+
+    labels[invoice_status.to_s] || invoice_status.to_s.tr("_", " ").capitalize
+  end
+
+  def order_source_label(source)
+    labels = {
+      "checkout" => "Client (en ligne)",
+      "calendar" => "Client (calendrier)",
+      "admin" => "Admin"
+    }
+
+    labels[source.to_s] || source.to_s.capitalize
+  end
+
+  def order_payment_method_label(method)
+    labels = {
+      stripe: "Carte / Bancontact",
+      wallet: "Portefeuille"
+    }
+
+    labels[method&.to_sym]
+  end
+
+  # Petite icône SVG (style heroicons) indiquant le mode d'encaissement réel.
+  CARD_ICON_PATH = "M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 " \
+                   "2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 " \
+                   "2.25 0 0 0 4.5 19.5Z".freeze
+  WALLET_ICON_PATH = "M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 " \
+                     "2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 " \
+                     "0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3".freeze
+
+  def order_payment_method_icon(order)
+    label, path = case order.payment_method
+    when :stripe then [ "Payé par carte", CARD_ICON_PATH ]
+    when :wallet then [ "Payé via le portefeuille", WALLET_ICON_PATH ]
+    end
+    return unless path
+
+    tag.svg(
+      tag.title(label) + tag.path(nil, "stroke-linecap": "round", "stroke-linejoin": "round", d: path),
+      xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
+      "stroke-width": "1.5", stroke: "currentColor",
+      class: "w-5 h-5 text-gray-500 shrink-0", role: "img", "aria-label": label
+    )
+  end
+
+  # Icône d'état booléen pour les tableaux admin : pastille « check » verte si
+  # l'option est active, grisée sinon. `label` sert d'info-bulle et de libellé
+  # accessible (ex. « Paiement cash autorisé »).
+  CHECK_CIRCLE_ICON_PATH = "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z".freeze
+
+  def boolean_status_icon(active, label:)
+    state = active ? "actif" : "inactif"
+    color = active ? "text-green-600" : "text-gray-300"
+
+    tag.svg(
+      tag.title("#{label} : #{state}") +
+        tag.path(nil, "stroke-linecap": "round", "stroke-linejoin": "round", d: CHECK_CIRCLE_ICON_PATH),
+      xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
+      "stroke-width": "1.5", stroke: "currentColor",
+      class: "w-5 h-5 #{color} shrink-0 inline-block", role: "img", "aria-label": "#{label} : #{state}"
+    )
   end
 end

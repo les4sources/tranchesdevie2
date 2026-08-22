@@ -2,49 +2,85 @@
 
 <%# Stripe is loaded globally in the layout %>
 
-<div class="w-full mx-auto">
-  <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser votre commande</h1>
+<div class="mx-auto max-w-[760px]">
+  <h1 class="mb-6 font-script text-4xl font-bold text-ink-900 sm:text-5xl">Finaliser ta commande</h1>
 
-  <div class="grid grid-cols-1 gap-8">
+  <div class="grid grid-cols-1 gap-5">
     <!-- Formulaire informations client -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
+    <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+      <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Informations</h2>
+      <div class="px-6 pb-6 pt-1">
 
       <%= form_with model: @customer, url: "#", local: false, id: "customer-form", data: { controller: "checkout" } do |f| %>
         <% unless @otp_verified %>
           <!-- Etape de verification du numero -->
           <div id="phone-verification-step">
-            <div class="mb-4">
-              <%= f.label :phone_e164, "Numéro de téléphone", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.text_field :phone_e164, 
-                  placeholder: "+32XXXXXXXXX", 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
-                  required: true,
-                  pattern: "\\+[1-9]\\d{1,14}" %>
-              <p class="mt-1 text-sm text-gray-500">Format: +32XXXXXXXXX</p>
+            <div class="mb-4" data-controller="phone-input" data-phone-input-default-country-value="BE">
+              <%= f.label :phone_e164, "Ton numéro de GSM", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+              <div class="relative">
+                <%= f.text_field :phone_e164,
+                    data: {
+                      phone_input_target: "input"
+                    },
+                    class: "h-11 w-full rounded-md border border-flour-400 bg-white pl-3 pr-24 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
+                    required: true,
+                    pattern: "\\+[1-9]\\d{1,14}",
+                    autocomplete: "tel" %>
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span
+                    data-phone-input-target="flag"
+                    class="text-xl">
+                    🇧🇪
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <button type="button" 
-                    id="send-otp-btn" 
-                    data-action="click->checkout#sendOTP"
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Me connecter
-            </button>
+            <p class="mb-4 mt-2 text-sm text-ink-500">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 underline-offset-2 hover:underline">Contacte-nous pour commander</a></p>
+
+            <%# Les deux canaux sont au même niveau : le client choisit de recevoir son code par SMS ou par e-mail. %>
+            <div id="channel-buttons">
+              <p class="mb-2 block text-[13px] font-medium text-ink-700">Reçois ton code de vérification par&nbsp;:</p>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button"
+                        id="send-otp-btn"
+                        data-action="click->checkout#sendOTP"
+                        class="flex h-11 items-center justify-center gap-2 rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+                  📱 Par SMS
+                </button>
+                <button type="button"
+                        id="send-otp-email-btn"
+                        data-action="click->checkout#sendOTPByEmail"
+                        class="flex h-11 items-center justify-center gap-2 rounded-md border border-flour-400 bg-warm-white px-4 text-sm font-semibold text-ink-700 shadow-xs transition hover:bg-warm-white-2 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+                  ✉️ Par e-mail
+                </button>
+              </div>
+
+              <div id="email-otp-fields" class="hidden mt-3">
+                <%= email_field_tag :otp_email, nil,
+                    id: "otp_email",
+                    placeholder: "ton@email.com",
+                    class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
+                <p class="mt-1 text-xs text-ink-500">On t'envoie le code à cette adresse, puis on l'enregistre pour tes prochaines commandes.</p>
+              </div>
+            </div>
 
             <div id="otp-input-section" class="hidden mt-4">
               <div class="mb-4">
-                <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-                <%= text_field_tag :otp_code, nil, 
+                <%= label_tag :otp_code, "Code de vérification (6 chiffres)", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+                <%= text_field_tag :otp_code, nil,
                     maxlength: 6,
+                    inputmode: "numeric",
                     pattern: "\\d{6}",
-                    class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+                    autocomplete: "one-time-code",
+                    class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-center text-lg tracking-[0.3em] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
                     placeholder: "123456" %>
               </div>
 
-              <button type="button" 
-                      id="verify-otp-btn" 
+              <button type="button"
+                      id="verify-otp-btn"
                       data-action="click->checkout#verifyOTP"
-                      class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                      class="flex h-11 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500">
                 Vérifier le code
               </button>
             </div>
@@ -53,67 +89,271 @@
           </div>
         <% else %>
           <!-- Details du client -->
-          <div id="customer-details">
-            <div class="mb-4">
-              <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.text_field :first_name, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500",
+          <div id="customer-details" class="flex flex-col gap-4">
+            <div>
+              <%= f.label :first_name, "Ton prénom *", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+              <%= f.text_field :first_name,
+                  value: @customer.first_name,
+                  class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]",
                   required: true %>
+              <p id="first-name-error" class="mt-1 hidden text-sm text-danger-700">Remplis ton prénom afin que les pains soient attribués à la bonne personne.</p>
             </div>
 
-            <div class="mb-4">
-              <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.text_field :last_name, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+            <div>
+              <%= f.label :last_name, "Ton nom *", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+              <%= f.text_field :last_name,
+                  value: @customer.last_name,
+                  required: true,
+                  class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
+              <p id="last-name-error" class="mt-1 hidden text-sm text-danger-700">Remplis ton nom afin que les pains soient attribués à la bonne personne.</p>
             </div>
 
-            <div class="mb-4">
-              <%= f.label :email, "Email (optionnel)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-              <%= f.email_field :email, 
-                  class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+            <div>
+              <%= f.label :email, "Ton adresse e-mail (optionnel)", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+              <%= f.email_field :email,
+                  value: @customer.email.presence || session[:email],
+                  class: "h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
             </div>
           </div>
         <% end %>
       <% end %>
+      </div>
     </div>
 
     <!-- Section paiement -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Paiement</h2>
+    <% if @otp_verified %>
+    <div id="payment-section" class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
+      <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Paiement</h2>
+      <div class="px-6 pb-6 pt-1">
+
+      <% if @party_checkout %>
+        <!-- Pizza party privée : datée par le créneau choisi, pas de choix de lieu. -->
+        <div class="mb-4 flex items-center gap-3 rounded-md border border-sage-300 bg-sage-100 p-4">
+          <%= lucide "party-popper", size: 20, color: "var(--sage-700)" %>
+          <p class="text-sm text-ink-900">
+            <% if @public_party_checkout %>
+              Ton inscription Pizza party :
+              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+              — <b class="font-semibold">en soirée</b>
+            <% else %>
+              Ta Pizza party privée :
+              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(@party_date, format: "%A %-d %B %Y") } %></b>
+              — <b class="font-semibold"><%= PartyEvent::SLOT_LABELS[@party_slot] %></b>
+            <% end %>
+          </p>
+        </div>
+      <% end %>
+
+      <!-- Point de retrait (#148) : uniquement les lieux ouverts sur la fournée choisie. -->
+      <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4 <%= "hidden" if @party_checkout %>">
+        <p class="mb-2 text-sm font-medium text-ink-700">Où récupérez-vous votre commande&nbsp;?</p>
+        <div class="space-y-2" id="pickup_location_choices">
+          <% @pickup_locations.each do |location| %>
+            <label class="flex cursor-pointer items-start gap-2 rounded-md border border-flour-400 bg-white p-3 transition hover:border-sage-600">
+              <input type="radio"
+                     name="pickup_location_id"
+                     value="<%= location.id %>"
+                     class="mt-0.5 h-[18px] w-[18px] accent-sage-600"
+                     <%= "checked" if location == @selected_pickup_location %>>
+              <span>
+                <span class="block text-sm font-semibold text-ink-900"><%= location.name %></span>
+                <% if location.description.present? %>
+                  <span class="block text-[13px] text-ink-500"><%= location.description %></span>
+                <% end %>
+              </span>
+            </label>
+          <% end %>
+        </div>
+
+        <%# Avertissement d'exclusion produit ↔ lieu de retrait (#152), affiché sans soumettre. %>
+        <div id="pickup_exclusion_warning" class="mt-3 hidden rounded-md border border-danger-300 bg-danger-50 p-3 text-sm text-danger-700">
+          <p class="font-semibold">Ce point de retrait n'est pas disponible pour certains produits de votre panier&nbsp;:</p>
+          <ul id="pickup_exclusion_products" class="mt-1 list-disc list-inside"></ul>
+          <p class="mt-2">Pour continuer, retirez ce(s) produit(s) du panier <span class="whitespace-nowrap">ou choisissez un autre point de retrait.</span></p>
+        </div>
+        <script type="application/json" id="pickup_exclusions_data"><%= raw @pickup_location_exclusions.to_json %></script>
+      </div>
+
+      <script>
+        // Feedback immédiat (#152) : quand le lieu de retrait choisi exclut un
+        // produit du panier, on affiche un avertissement et on bloque le paiement,
+        // sans soumettre le formulaire. Le serveur revérifie de toute façon.
+        (function () {
+          function initPickupExclusions() {
+            var dataEl = document.getElementById('pickup_exclusions_data');
+            if (!dataEl) return;
+            var exclusions = {};
+            try { exclusions = JSON.parse(dataEl.textContent || '{}'); } catch (e) { exclusions = {}; }
+
+            var warning = document.getElementById('pickup_exclusion_warning');
+            var list = document.getElementById('pickup_exclusion_products');
+            var radios = document.querySelectorAll('input[name="pickup_location_id"]');
+            var payButtonIds = ['submit-payment', 'submit-cash-order', 'submit-wallet-order'];
+
+            function update() {
+              var selected = Array.prototype.find.call(radios, function (r) { return r.checked; });
+              var names = selected ? (exclusions[selected.value] || []) : [];
+              var blocked = names.length > 0;
+
+              if (warning) warning.classList.toggle('hidden', !blocked);
+              if (list) {
+                list.innerHTML = '';
+                names.forEach(function (name) {
+                  var li = document.createElement('li');
+                  li.textContent = name;
+                  list.appendChild(li);
+                });
+              }
+
+              payButtonIds.forEach(function (id) {
+                var btn = document.getElementById(id);
+                if (!btn) return;
+                btn.disabled = blocked;
+                btn.classList.toggle('opacity-50', blocked);
+                btn.classList.toggle('cursor-not-allowed', blocked);
+              });
+            }
+
+            radios.forEach(function (r) { r.addEventListener('change', update); });
+            update();
+          }
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPickupExclusions);
+          } else {
+            initPickupExclusions();
+          }
+        })();
+      </script>
+
+      <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
+        <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
+          <input type="checkbox" id="group_purchase_checkbox" class="h-[18px] w-[18px] rounded accent-sage-600">
+          <span>Vous achetez pour un groupe qui vient aux 4 Sources&nbsp;?</span>
+        </label>
+        <div id="group_name_field" class="mt-3 hidden">
+          <label for="order_group_name" class="mb-1 block text-[13px] font-medium text-ink-700">Nom du groupe *</label>
+          <input type="text" id="order_group_name"
+                 class="h-11 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]"
+                 placeholder="Ex. Groupe de Joséphine — Entreprise X">
+        </div>
+      </div>
 
       <div class="mb-4">
-        <p class="text-sm text-gray-600 mb-2">Résumé de la commande:</p>
+        <p class="mb-2 text-sm text-ink-500">Résumé de la commande :</p>
         <div class="space-y-2">
           <% @cart.each do |item| %>
             <% variant = ProductVariant.find(item['product_variant_id']) %>
-            <div class="flex justify-between text-sm">
-              <span><%= "#{variant.product.name} - #{variant.name}" %> x <%= item['qty'] %></span>
+            <div class="flex justify-between text-sm text-ink-700">
+              <span><%= "#{variant.product&.name || 'Produit supprimé'} - #{variant.name}" %> × <%= item['qty'] %></span>
               <span><%= number_to_currency((item['qty'].to_i * variant.price_cents) / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
             </div>
           <% end %>
         </div>
-        <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between">
-          <span class="font-medium">Total</span>
-          <span class="font-bold"><%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+        <div class="mt-4 space-y-2 border-t border-flour-300 pt-4">
+          <div class="flex justify-between text-sm text-ink-700">
+            <span>Sous-total</span>
+            <span><%= number_to_currency(@subtotal_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+          </div>
+          <% if @discount_cents > 0 %>
+            <div class="flex justify-between text-sm text-success-700">
+              <span>Remise<% if @customer&.effective_discount_percent.to_i.positive? %> (<%= @customer.effective_discount_percent %>%)<% end %></span>
+              <span>-<%= number_to_currency(@discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+            </div>
+          <% end %>
+          <div class="flex justify-between border-t border-flour-300 pt-2 text-ink-900">
+            <span class="font-semibold">Total</span>
+            <span class="font-bold"><%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+          </div>
         </div>
       </div>
 
-      <div id="payment-element" class="mb-4">
-        <!-- L'element de paiement Stripe sera insere ici -->
+      <!-- Sélecteur de méthode de paiement -->
+      <%# Par défaut, paiement en ligne uniquement. L'option « cash » n'apparaît
+          que pour les clients autorisés par l'admin (#36) ; l'option
+          « portefeuille » qu'aux clients dont le solde disponible couvre le total. %>
+      <% if @cash_payment_allowed || @wallet_payment_available %>
+        <div class="mb-6">
+          <label class="mb-3 block text-[13px] font-medium text-ink-700">Méthode de paiement</label>
+          <div class="space-y-2.5">
+            <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="online">
+              <input type="radio" name="payment_method" value="online" class="h-[18px] w-[18px] accent-sage-600" checked>
+              <span class="font-medium text-ink-900">Payer en ligne avec Bancontact ou autre</span>
+            </label>
+            <% if @wallet_payment_available %>
+              <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="wallet">
+                <input type="radio" name="payment_method" value="wallet" class="h-[18px] w-[18px] accent-sage-600">
+                <span class="font-medium text-ink-900">Payer avec mon portefeuille<span class="font-normal text-ink-500"> (solde : <%= number_to_currency(@wallet_available_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>)</span></span>
+              </label>
+            <% end %>
+            <% if @cash_payment_allowed %>
+              <label class="payment-method-option flex cursor-pointer items-center gap-3 rounded-md border border-flour-300 bg-warm-white p-4 transition hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100" data-payment-method="cash">
+                <input type="radio" name="payment_method" value="cash" class="h-[18px] w-[18px] accent-sage-600">
+                <span class="font-medium text-ink-900">Payer ma commande en liquide au retrait</span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <%# Cas général : paiement en ligne forcé. Radio caché « online » pour que
+            le JavaScript de paiement (lecture de payment_method) reste inchangé. %>
+        <input type="radio" name="payment_method" value="online" class="hidden" checked>
+      <% end %>
+
+      <!-- Section paiement Stripe (masquée par défaut) -->
+      <div id="stripe-payment-section" class="hidden">
+        <div id="payment-element" class="mb-4">
+          <!-- L'element de paiement Stripe sera insere ici -->
+        </div>
+
+        <button id="submit-payment"
+                class="flex h-12 w-full items-center justify-center rounded-md bg-ember-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled>
+          Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+        </button>
+
+        <div id="payment-message" class="mt-4 hidden text-sm text-danger-700"></div>
       </div>
 
-      <button id="submit-payment" 
-              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled>
-        Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
-      </button>
+      <!-- Bouton pour commande cash (clients autorisés au cash uniquement, #36) -->
+      <% if @cash_payment_allowed %>
+        <div id="cash-order-section">
+          <button id="submit-cash-order"
+                  class="flex h-12 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+            Confirmer la commande
+          </button>
+          <p class="mt-2 text-center text-sm text-ink-500">Vous paierez en liquide lors du retrait de votre commande</p>
+        </div>
+      <% end %>
 
-      <div id="payment-message" class="mt-4 hidden"></div>
+      <!-- Bouton pour paiement portefeuille (solde disponible suffisant) -->
+      <% if @wallet_payment_available %>
+        <div id="wallet-order-section" class="hidden">
+          <button id="submit-wallet-order"
+                  class="flex h-12 w-full items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]">
+            Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> avec mon portefeuille
+          </button>
+          <p class="mt-2 text-center text-sm text-ink-500">Le montant sera débité de votre portefeuille (solde : <%= number_to_currency(@wallet_available_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>)</p>
+        </div>
+      <% end %>
+      </div>
     </div>
+    <% end %>
+  </div>
+
+  <div class="mt-5 text-center">
+    <%= link_to cart_path, class: "inline-flex items-center gap-1.5 text-sm font-semibold text-ember-600 hover:text-ember-500" do %>
+      <%= lucide "arrow-left", size: 16, color: "var(--ember-600)" %> Retour au panier
+    <% end %>
   </div>
 </div>
 
 <%= javascript_tag do %>
+  // IIFE : garde les déclarations hors du global lexical environment.
+  // Turbo Drive fait document.body.replaceWith() sans recharger le document ;
+  // un `let stripe` top-level survivrait entre visites et lèverait
+  // "Can't create duplicate variable" à la 2e arrivée (WebKit / Chrome iOS).
+  (function() {
   // Attendre que Stripe soit charge avant l'initialisation
   function waitForStripe(callback) {
     if (typeof Stripe !== 'undefined') {
@@ -127,6 +367,58 @@
   let paymentElement;
   let elements;
   let stripeInitialized = false;
+  let currentPaymentMethod = 'online'; // Par défaut, paiement en ligne (Bancontact)
+
+  // Affiche la bonne section (stripe / cash / wallet) selon la méthode et
+  // masque les autres. 'online' = Stripe/Bancontact ; toute autre valeur affiche
+  // le bouton de confirmation dédié (cash ou wallet).
+  function showSectionForMethod(method) {
+    const stripeSection = document.getElementById('stripe-payment-section');
+    const cashSection = document.getElementById('cash-order-section');
+    const walletSection = document.getElementById('wallet-order-section');
+
+    if (stripeSection) stripeSection.classList.toggle('hidden', method !== 'online');
+    if (cashSection) cashSection.classList.toggle('hidden', method !== 'cash');
+    if (walletSection) walletSection.classList.toggle('hidden', method !== 'wallet');
+  }
+
+  // Initialiser l'état de la méthode de paiement
+  function initializePaymentMethodState() {
+    const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
+
+    // Trouver le radio button sélectionné
+    const selectedRadio = Array.from(paymentMethodRadios).find(radio => radio.checked);
+    if (selectedRadio) {
+      currentPaymentMethod = selectedRadio.value;
+    }
+
+    showSectionForMethod(currentPaymentMethod);
+  }
+
+  // Gérer le changement de méthode de paiement
+  function handlePaymentMethodChange() {
+    const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
+
+    paymentMethodRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        currentPaymentMethod = this.value;
+        showSectionForMethod(this.value);
+
+        if (this.value === 'online') {
+          // Initialiser Stripe si pas déjà fait, sinon réinitialiser le paiement
+          if (!stripeInitialized) {
+            initStripe();
+          } else {
+            initializePayment();
+          }
+        } else if (paymentElement) {
+          // Démonter l'élément Stripe si on quitte le paiement en ligne
+          paymentElement.unmount();
+          paymentElement = null;
+        }
+      });
+    });
+  }
 
   // Initialiser Stripe lorsqu'il est charge
   function initStripe() {
@@ -141,36 +433,167 @@
         stripeInitialized = true;
       }
       
-      // Initialiser l'element de paiement lorsque l'OTP est verifie
-      // Les informations client peuvent etre vides : le client sera cree lors de la commande
+      // Initialiser l'element de paiement lorsque l'OTP est verifie et que le paiement en ligne est choisi
       <% if @otp_verified %>
         // Attendre un court instant pour que le DOM soit pret
-        setTimeout(initializePayment, 100);
+        setTimeout(() => {
+          if (currentPaymentMethod === 'online') {
+            initializePayment();
+          }
+        }, 100);
       <% end %>
     });
   }
 
+  // Point de retrait choisi (#148) : envoyé sur les 3 chemins de paiement.
+  function pickupLocationValue() {
+    const checked = document.querySelector('input[name="pickup_location_id"]:checked');
+    return checked ? checked.value : '';
+  }
+
+  // Achat pour un groupe « 4 Sources » (#99) : valeur envoyée à la commande.
+  function groupNameValue() {
+    const cb = document.getElementById('group_purchase_checkbox');
+    if (!cb || !cb.checked) return '';
+    return (document.getElementById('order_group_name')?.value || '').trim();
+  }
+
+  // Affiche/masque le champ « nom du groupe » selon la case, et le rend requis.
+  function setupGroupPurchaseToggle() {
+    const cb = document.getElementById('group_purchase_checkbox');
+    const field = document.getElementById('group_name_field');
+    const input = document.getElementById('order_group_name');
+    if (!cb || !field) return;
+    const sync = () => {
+      field.classList.toggle('hidden', !cb.checked);
+      if (input) {
+        input.required = cb.checked;
+        if (!cb.checked) input.value = '';
+      }
+    };
+    cb.addEventListener('change', sync);
+    sync();
+  }
+
   // Initialiser au chargement de la page
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initStripe);
+    document.addEventListener('DOMContentLoaded', function() {
+      initializePaymentMethodState();
+      handlePaymentMethodChange();
+      setupGroupPurchaseToggle();
+      setupNameGuard();
+      initStripe();
+    });
   } else {
+    initializePaymentMethodState();
+    handlePaymentMethodChange();
+    setupGroupPurchaseToggle();
+    setupNameGuard();
     initStripe();
   }
 
-  // Reinitialiser lors de la navigation Turbo (Turbo Drive)
-  document.addEventListener('turbo:load', function() {
-    // Ne reinitialiser que si l'utilisateur est sur la page de paiement
-    if (window.location.pathname.includes('/checkout')) {
-      stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
-      initStripe();
-    }
-  });
+  // Reinitialiser lors de la navigation Turbo (Turbo Drive).
+  // Verrouillé sur window : le script est ré-exécuté à chaque remplacement de body,
+  // sans ce garde on empilerait un listener turbo:load à chaque navigation.
+  if (!window.__checkoutTurboLoadBound) {
+    window.__checkoutTurboLoadBound = true;
+    document.addEventListener('turbo:load', function() {
+      // Ne reinitialiser que si l'utilisateur est sur la page de paiement
+      if (window.location.pathname.includes('/checkout')) {
+        stripeInitialized = false; // Reinitialiser le drapeau pour autoriser une nouvelle initialisation
+        initializePaymentMethodState();
+        handlePaymentMethodChange();
+        setupNameGuard();
+        initStripe();
+      }
+    });
+  }
+
+  // Prénom + nom obligatoires (#135, #143) : helpers de validation côté client,
+  // alignés sur le chemin cash (handleCashOrderSubmission). Un champ composé
+  // uniquement d'espaces est considéré comme vide (comme le serveur, qui strip),
+  // et la valeur factice 'Client' pour le prénom est rejetée.
+  function nameFieldValue(id) {
+    return ((document.getElementById(id)?.value) || '').trim();
+  }
+
+  function isFirstNameInvalid() {
+    const value = nameFieldValue('customer_first_name');
+    return value === '' || value === 'Client';
+  }
+
+  function isLastNameBlank() {
+    return nameFieldValue('customer_last_name') === '';
+  }
+
+  function isNameInvalid() {
+    return isFirstNameInvalid() || isLastNameBlank();
+  }
+
+  function toggleNameError(id, show) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !show);
+  }
+
+  // Affiche les messages inline sur les champs invalides et place le focus sur
+  // le premier champ à corriger.
+  function showNameErrors() {
+    const firstBad = isFirstNameInvalid();
+    const lastBad = isLastNameBlank();
+    toggleNameError('first-name-error', firstBad);
+    toggleNameError('last-name-error', lastBad);
+    const focusId = firstBad ? 'customer_first_name' : (lastBad ? 'customer_last_name' : null);
+    if (focusId) document.getElementById(focusId)?.focus();
+  }
+
+  function clearNameErrors() {
+    toggleNameError('first-name-error', false);
+    toggleNameError('last-name-error', false);
+  }
+
+  // Quand le prénom ET le nom deviennent valides, on (re)crée le PaymentIntent et
+  // on monte le Payment Element — car il n'a pas pu l'être au chargement si un
+  // champ était vide. Idempotent tant que l'élément n'est pas déjà monté.
+  function setupNameGuard() {
+    ['customer_first_name', 'customer_last_name'].forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input || input.dataset.guardBound === 'true') return;
+      input.dataset.guardBound = 'true';
+
+      input.addEventListener('input', () => {
+        if (!isNameInvalid()) clearNameErrors();
+      });
+
+      input.addEventListener('blur', () => {
+        if (currentPaymentMethod === 'online' && !isNameInvalid() && !paymentElement) {
+          initializePayment();
+        }
+      });
+    });
+  }
 
   function initializePayment() {
     if (!stripe) {
       console.error('Stripe non initialise');
       return;
     }
+    
+    // Ne pas initialiser si le paiement cash est sélectionné
+    if (currentPaymentMethod !== 'online') {
+      return;
+    }
+
+    // Bloquer la création du PaymentIntent tant que le prénom ou le nom est vide
+    // (ou seulement des espaces), ou que le prénom vaut la valeur factice
+    // 'Client' : sinon le serveur tente de créer un client incomplet et lève un
+    // RecordInvalid (#135, #143). On affiche un message inline et on réessaiera
+    // quand les champs seront remplis (cf. setupNameGuard).
+    if (isNameInvalid()) {
+      showNameErrors();
+      return;
+    }
+    clearNameErrors();
+
     fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',
       headers: {
@@ -180,7 +603,9 @@
       body: JSON.stringify({
         first_name: document.getElementById('customer_first_name')?.value || '',
         last_name: document.getElementById('customer_last_name')?.value || '',
-        email: document.getElementById('customer_email')?.value || ''
+        email: document.getElementById('customer_email')?.value || '',
+        group_name: groupNameValue(),
+        pickup_location_id: pickupLocationValue()
       })
     })
     .then(response => {
@@ -195,6 +620,12 @@
     .then(data => {
       if (data.error) {
         console.error("Erreur d'intention de paiement :", data.error);
+        if (window.Sentry) {
+          window.Sentry.captureMessage('[checkout] create_payment_intent_error', {
+            level: 'error',
+            extra: { step: 'create_payment_intent', error: data.error }
+          });
+        }
         alert('Erreur: ' + data.error);
         return;
       }
@@ -209,41 +640,232 @@
       
       // Monter l'element de paiement (operation synchrone)
       paymentElement.mount('#payment-element');
-      
-      // Activer le bouton lorsque l'element de paiement est monte
+
       const submitButton = document.getElementById('submit-payment');
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+
+      // Retirer les anciens gestionnaires d'événements pour éviter les doublons
+      const newSubmitButton = submitButton.cloneNode(true);
+      submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
+
+      const paymentIntentId = data.payment_intent_id;
+      const successUrl = '<%= success_checkout_index_url %>';
+      const payLabel = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
+      const paymentMessage = document.getElementById('payment-message');
+
+      // #136 : le bouton reste désactivé tant que le Payment Element n'est pas
+      // complet (moyen de paiement sélectionné/renseigné). Sans ce garde, un clic
+      // « payer » prématuré renvoyait une validation_error Stripe remontée en error.
+      let paymentComplete = false;
+      newSubmitButton.disabled = true;
+
+      paymentElement.on('change', (event) => {
+        paymentComplete = event.complete === true;
+        newSubmitButton.disabled = !paymentComplete;
+        // L'utilisateur corrige : on masque un éventuel message d'erreur précédent.
+        if (paymentMessage && paymentComplete) {
+          paymentMessage.classList.add('hidden');
+        }
+      });
 
       // Ajouter un gestionnaire de clic pour la soumission du paiement
-      submitButton.addEventListener('click', async (e) => {
+      newSubmitButton.addEventListener('click', async (e) => {
         e.preventDefault();
-        
-        submitButton.disabled = true;
-        submitButton.textContent = 'Traitement...';
+
+        // Garde-fou : si l'élément n'est pas complet (bouton réactivé autrement),
+        // on court-circuite avec un message inline plutôt que d'appeler Stripe.
+        if (!paymentComplete) {
+          if (paymentMessage) {
+            paymentMessage.textContent = 'Veuillez sélectionner et compléter votre moyen de paiement.';
+            paymentMessage.classList.remove('hidden');
+          }
+          return;
+        }
+
+        newSubmitButton.disabled = true;
+        newSubmitButton.textContent = 'Traitement...';
+
+        const returnUrl = paymentIntentId
+          ? `${successUrl}?payment_intent=${encodeURIComponent(paymentIntentId)}`
+          : successUrl;
 
         const { error } = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: '<%= success_checkout_index_url %>?payment_intent={PAYMENT_INTENT_ID}'
+            return_url: returnUrl
           }
         });
 
         if (error) {
-          document.getElementById('payment-message').textContent = error.message;
-          document.getElementById('payment-message').classList.remove('hidden');
-          submitButton.disabled = false;
-          submitButton.textContent = 'Payer <%= number_to_currency(@total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>';
+          // LE "moment du paiement" : échec de confirmPayment (carte/Bancontact/
+          // 3DS/réseau). Purement client-side → invisible jusqu'ici. On le remonte.
+          // Une validation_error (élément incomplet) est une erreur utilisateur
+          // attendue → level warning, pas error, pour ne pas polluer le signal.
+          const isValidationError = error.type === 'validation_error';
+          if (window.Sentry) {
+            window.Sentry.captureMessage('[checkout] confirm_payment_failed', {
+              level: isValidationError ? 'warning' : 'error',
+              extra: {
+                step: 'confirmPayment',
+                message: error.message,
+                code: error.code,
+                decline_code: error.decline_code,
+                type: error.type,
+                payment_intent_id: paymentIntentId
+              }
+            });
+          }
+          if (paymentMessage) {
+            paymentMessage.textContent = error.message;
+            paymentMessage.classList.remove('hidden');
+          }
+          newSubmitButton.disabled = false;
+          newSubmitButton.textContent = payLabel;
         }
       });
     })
     .catch(error => {
       console.error("Erreur lors de l'initialisation du paiement :", error);
-      document.getElementById('payment-message').textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
-      document.getElementById('payment-message').classList.remove('hidden');
+      if (window.Sentry) {
+        window.Sentry.captureException(error, { tags: { step: 'init_payment' } });
+      }
+      const paymentMessage = document.getElementById('payment-message');
+      if (paymentMessage) {
+        paymentMessage.textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
+        paymentMessage.classList.remove('hidden');
+      }
     });
   }
+
+  // Gérer la soumission de commande cash
+  function handleCashOrderSubmission() {
+    const submitCashButton = document.getElementById('submit-cash-order');
+    if (!submitCashButton) return;
+
+    submitCashButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      
+      // Vérifier que les informations client sont remplies
+      const firstName = document.getElementById('customer_first_name')?.value;
+      if (!firstName || firstName.trim() === '' || firstName.trim() === 'Client') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      const lastName = document.getElementById('customer_last_name')?.value;
+      if (!lastName || lastName.trim() === '') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      submitCashButton.disabled = true;
+      submitCashButton.textContent = 'Traitement...';
+
+      try {
+        const response = await fetch('<%= create_cash_order_checkout_index_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<%= form_authenticity_token %>'
+          },
+          body: JSON.stringify({
+            first_name: document.getElementById('customer_first_name')?.value || '',
+            last_name: document.getElementById('customer_last_name')?.value || '',
+            email: document.getElementById('customer_email')?.value || '',
+            group_name: groupNameValue(),
+            pickup_location_id: pickupLocationValue()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Rediriger vers la page de succès
+          window.location.href = '<%= success_checkout_index_url %>?order_token=' + data.order_token;
+        } else {
+          alert(data.error || 'Erreur lors de la création de la commande');
+          submitCashButton.disabled = false;
+          submitCashButton.textContent = 'Confirmer la commande';
+        }
+      } catch (error) {
+        console.error("Erreur lors de la création de la commande cash :", error);
+        alert('Erreur de connexion. Veuillez réessayer.');
+        submitCashButton.disabled = false;
+        submitCashButton.textContent = 'Confirmer la commande';
+      }
+    });
+  }
+
+  // Gérer la soumission de commande payée par portefeuille
+  function handleWalletOrderSubmission() {
+    const submitWalletButton = document.getElementById('submit-wallet-order');
+    if (!submitWalletButton) return;
+
+    const defaultLabel = submitWalletButton.textContent;
+
+    submitWalletButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      // Vérifier que les informations client sont remplies
+      const firstName = document.getElementById('customer_first_name')?.value;
+      if (!firstName || firstName.trim() === '' || firstName.trim() === 'Client') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      const lastName = document.getElementById('customer_last_name')?.value;
+      if (!lastName || lastName.trim() === '') {
+        alert('Veuillez remplir votre nom et prénom afin que les pains soient attribués à la bonne personne');
+        return;
+      }
+
+      submitWalletButton.disabled = true;
+      submitWalletButton.textContent = 'Traitement...';
+
+      try {
+        const response = await fetch('<%= create_wallet_order_checkout_index_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<%= form_authenticity_token %>'
+          },
+          body: JSON.stringify({
+            first_name: document.getElementById('customer_first_name')?.value || '',
+            last_name: document.getElementById('customer_last_name')?.value || '',
+            email: document.getElementById('customer_email')?.value || '',
+            group_name: groupNameValue(),
+            pickup_location_id: pickupLocationValue()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.location.href = '<%= success_checkout_index_url %>?order_token=' + data.order_token;
+        } else {
+          alert(data.error || 'Erreur lors du paiement par portefeuille');
+          submitWalletButton.disabled = false;
+          submitWalletButton.textContent = defaultLabel;
+        }
+      } catch (error) {
+        console.error("Erreur lors du paiement par portefeuille :", error);
+        alert('Erreur de connexion. Veuillez réessayer.');
+        submitWalletButton.disabled = false;
+        submitWalletButton.textContent = defaultLabel;
+      }
+    });
+  }
+
+  // Initialiser la gestion des commandes cash + portefeuille
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      handleCashOrderSubmission();
+      handleWalletOrderSubmission();
+    });
+  } else {
+    handleCashOrderSubmission();
+    handleWalletOrderSubmission();
+  }
+  })(); // fin IIFE
 <% end %>
 
 

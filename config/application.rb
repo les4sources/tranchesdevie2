@@ -37,9 +37,9 @@ module Tranchesdevie2
     config.active_record.default_timezone = :local
 
     # i18n configuration
-    config.i18n.available_locales = [:fr, :nl, :en]
+    config.i18n.available_locales = [ :fr, :nl, :en ]
     config.i18n.default_locale = :fr
-    config.i18n.fallbacks = [:fr]
+    config.i18n.fallbacks = [ :fr ]
 
     # ActiveJob configuration
     config.active_job.queue_adapter = :solid_queue
@@ -47,7 +47,10 @@ module Tranchesdevie2
     # Rack::Attack middleware for rate limiting
     config.middleware.use Rack::Attack
 
-    # config.eager_load_paths << Rails.root.join("extras")
+    config.autoload_paths << Rails.root.join("app/presenters")
+    config.eager_load_paths << Rails.root.join("app/presenters")
+    config.autoload_paths << Rails.root.join("app/decorators")
+    config.eager_load_paths << Rails.root.join("app/decorators")
 
     # Don't generate system test files.
     config.generators.system_tests = nil

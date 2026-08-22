@@ -3,18 +3,18 @@ class WebhooksController < ApplicationController
 
   def stripe
     payload = request.body.read
-    sig_header = request.env['HTTP_STRIPE_SIGNATURE']
-    endpoint_secret = ENV['STRIPE_WEBHOOK_SECRET']
+    sig_header = request.env["HTTP_STRIPE_SIGNATURE"]
+    endpoint_secret = ENV["STRIPE_WEBHOOK_SECRET"]
 
     begin
       event = Stripe::Webhook.construct_event(
         payload, sig_header, endpoint_secret
       )
     rescue JSON::ParserError => e
-      render json: { error: 'Invalid JSON' }, status: :bad_request
+      render json: { error: "Invalid JSON" }, status: :bad_request
       return
     rescue Stripe::SignatureVerificationError => e
-      render json: { error: 'Invalid signature' }, status: :bad_request
+      render json: { error: "Invalid signature" }, status: :bad_request
       return
     end
 
@@ -33,12 +33,17 @@ class WebhooksController < ApplicationController
 
     # Process event
     case event.type
-    when 'payment_intent.succeeded'
-      handle_payment_intent_succeeded(event)
-    when 'payment_intent.payment_failed'
+    when "payment_intent.succeeded"
+      result = handle_payment_intent_succeeded(event)
+      unless result
+        Rails.logger.error("handle_payment_intent_succeeded returned false/nil for event #{event.id}")
+      end
+    when "payment_intent.payment_failed"
       handle_payment_intent_failed(event)
-    when 'charge.refunded'
+    when "charge.refunded"
       handle_charge_refunded(event)
+    when "charge.refund.updated", "refund.updated", "refund.failed"
+      handle_refund_failed(event)
     end
 
     stripe_event.mark_processed!
@@ -50,94 +55,39 @@ class WebhooksController < ApplicationController
     render json: { error: e.message }, status: :internal_server_error
   end
 
-  def telerivet
-    body_text = params[:content] || params[:body] || request.body.read
-
-    # Parse for STOP keyword
-    if body_text.to_s.upcase.strip == 'STOP'
-      phone_e164 = params[:from_number] || params[:from]
-      
-      if phone_e164.present?
-        customer = Customer.find_by(phone_e164: phone_e164)
-        if customer
-          customer.opt_out_sms!
-        end
-      end
-    end
-
-    # Store inbound message
-    SmsMessage.create_inbound(
-      params[:from_number] || params[:from] || 'unknown',
-      params[:to_number] || params[:to] || ENV['TELERIVET_PHONE_NUMBER'] || 'unknown',
-      body_text
-    )
-
-    render json: { received: true }
-  rescue StandardError => e
-    Rails.logger.error("Telerivet webhook error: #{e.message}")
-    Sentry.capture_exception(e) if defined?(Sentry)
-    render json: { error: e.message }, status: :internal_server_error
-  end
-
   private
 
   def handle_payment_intent_succeeded(event)
     payment_intent = event.data.object
     payment_intent_id = payment_intent.id
+    metadata = payment_intent.metadata || {}
 
-    # Find or create order (idempotency check)
-    order = Order.find_by(payment_intent_id: payment_intent_id)
+    Rails.logger.info("Processing payment_intent.succeeded webhook for: #{payment_intent_id}")
+
+    # Check if this is a wallet reload
+    if metadata["type"] == "wallet_reload"
+      return handle_wallet_reload(payment_intent)
+    end
+
+    # La commande est créée (réservée) au moment du paiement (create_payment_intent),
+    # donc elle existe déjà ici. Le webhook ne fait que l'encaisser — il ne crée
+    # jamais de commande (sinon on contournerait le contrôle de capacité).
+    order = Order.uncached { Order.find_by(payment_intent_id: payment_intent_id) }
 
     unless order
-      # Find customer from metadata (phone_e164 or customer_id)
-      phone_e164 = payment_intent.metadata&.phone_e164
-      customer_id = payment_intent.metadata&.customer_id
-      bake_day_id = payment_intent.metadata&.bake_day_id
-
-      return unless bake_day_id
-
-      # Find or create customer
-      if customer_id.present?
-        customer = Customer.find_by(id: customer_id)
-      elsif phone_e164.present?
-        customer = Customer.find_or_create_by(phone_e164: phone_e164)
-      else
-        Rails.logger.error("No customer_id or phone_e164 in payment intent metadata")
-        return
-      end
-
-      return unless customer
-
-      bake_day = BakeDay.find_by(id: bake_day_id)
-      return unless bake_day
-
-      # Reconstruct cart from session or metadata
-      # For now, we'll need to store cart in order creation or retrieve from session
-      # This is a simplified version - in production, store cart items in metadata or session
-      cart_items = JSON.parse(payment_intent.metadata[:cart_items] || '[]') rescue []
-
-      service = OrderCreationService.new(
-        customer: customer,
-        bake_day: bake_day,
-        cart_items: cart_items,
-        payment_intent_id: payment_intent_id
-      )
-
-      order = service.call
+      Rails.logger.error("Webhook: aucune commande pour le PaymentIntent #{payment_intent_id} (réservation manquante)")
+      Sentry.capture_message("Stripe webhook: commande introuvable pour #{payment_intent_id}") if defined?(Sentry)
+      return false
     end
 
-    if order
-      order.transition_to!(:paid)
-      
-      # Create payment record
-      Payment.find_or_create_by!(order: order) do |payment|
-        payment.stripe_payment_intent_id = payment_intent_id
-        payment.status = :succeeded
-      end
-
-      # Send confirmation SMS
-      SmsService.send_confirmation(order)
-    end
+    OrderPaymentFinalizer.call(order: order, payment_intent_id: payment_intent_id)
+    Rails.logger.info("Order #{order.id} encaissée via webhook (PI #{payment_intent_id})")
+    true
+  rescue StandardError => e
+    Rails.logger.error("Exception in handle_payment_intent_succeeded for payment_intent #{payment_intent_id}: #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
   end
 
   def handle_payment_intent_failed(event)
@@ -166,5 +116,69 @@ class WebhooksController < ApplicationController
     order.payment&.update!(status: :refunded)
     order.transition_to!(:cancelled) unless order.cancelled?
   end
-end
 
+  # Un remboursement asynchrone (Bancontact, SEPA…) peut échouer APRÈS avoir été
+  # marqué « remboursé » par charge.refunded : l'argent revient alors sur le
+  # solde Stripe sans atteindre le client. On réinscrit le paiement comme
+  # encaissé et on alerte pour un remboursement manuel. La commande reste
+  # annulée (la fournée l'est).
+  def handle_refund_failed(event)
+    refund = event.data.object
+    return unless refund.status == "failed"
+
+    payment_intent_id = refund.payment_intent
+    order = payment_intent_id && Order.find_by(payment_intent_id: payment_intent_id)
+    return unless order
+
+    order.payment&.update!(status: :succeeded)
+
+    reason = refund.try(:failure_reason).presence || "inconnue"
+    message = "⚠️ Remboursement Stripe ÉCHOUÉ — commande #{order.order_number} " \
+              "(#{order.customer.full_name}, #{order.total_euros} €). Raison : #{reason}. " \
+              "La commande reste annulée mais le client n'a PAS été remboursé : remboursement manuel requis."
+    Rails.logger.error(message)
+    Sentry.capture_message(message) if defined?(Sentry)
+    notify_admin(message)
+  end
+
+  def notify_admin(message)
+    SlackService.send_message(message)
+  rescue StandardError => e
+    Rails.logger.error("Alerte admin non envoyée: #{e.message}")
+  end
+
+  def handle_wallet_reload(payment_intent)
+    payment_intent_id = payment_intent.id
+    metadata = payment_intent.metadata || {}
+    customer_id = metadata["customer_id"]
+
+    Rails.logger.info("Processing wallet reload for customer #{customer_id}, amount: #{payment_intent.amount}")
+
+    customer = Customer.find_by(id: customer_id)
+    unless customer
+      Rails.logger.error("Customer not found for wallet reload: #{customer_id}")
+      return false
+    end
+
+    wallet = customer.wallet || customer.create_wallet!
+
+    # Idempotency check
+    if wallet.wallet_transactions.exists?(stripe_payment_intent_id: payment_intent_id)
+      Rails.logger.info("Wallet reload already processed: #{payment_intent_id}")
+      return true
+    end
+
+    WalletService.top_up(
+      wallet: wallet,
+      amount_cents: payment_intent.amount,
+      stripe_payment_intent_id: payment_intent_id
+    )
+
+    Rails.logger.info("Wallet reload successful: #{payment_intent.amount} cents for customer #{customer_id}")
+    true
+  rescue StandardError => e
+    Rails.logger.error("Error processing wallet reload: #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
+  end
+end

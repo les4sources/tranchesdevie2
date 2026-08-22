@@ -1,0 +1,19 @@
+= form_with model: revenue_share, url: (revenue_share.persisted? ? admin_settings_artisan_revenue_share_path(@artisan, revenue_share) : admin_settings_artisan_revenue_shares_path(@artisan)), method: (revenue_share.persisted? ? :patch : :post), local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if revenue_share.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - revenue_share.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :percent, "Part (%)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :percent, step: "0.001", min: 0, required: true, class: admin_input_class
+    .space-y-2
+      = f.label :active_from, "À partir du", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :active_from, class: admin_input_class
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_artisan_revenue_shares_path(@artisan), class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit revenue_share.persisted? ? "Mettre à jour" : "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

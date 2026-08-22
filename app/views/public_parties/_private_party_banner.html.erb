@@ -1,0 +1,24 @@
+<%# Mise en avant de la Pizza Party PRIVÉE sur la page des parties publiques :
+    bannière pleine largeur, photo des pâtons, CTA vers /pizza-party-privee. %>
+<div class="mt-12 overflow-hidden rounded-2xl border border-sage-200 bg-gradient-to-br from-sage-100 to-flour-50">
+  <div class="grid md:grid-cols-[1.15fr_0.85fr] md:items-stretch">
+    <div class="p-8 sm:p-10">
+      <div class="inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
+        <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Rien que pour ton groupe
+      </div>
+      <h2 class="mt-4 font-script text-[34px] font-bold leading-tight text-ink-900">Envie d'une soirée privée&nbsp;?</h2>
+      <p class="mt-3 max-w-lg text-[15px] leading-relaxed text-ink-700">
+        Anniversaire, équipe, famille, bande d'ami·es : réserve le four à bois pour vous seuls,
+        à la date et au créneau (midi ou soir) de ton choix. On prépare les pâtons au levain,
+        vous garnissez et enfournez — jusqu'à 30 pizzas à la fois.
+      </p>
+      <%= link_to pizza_party_privee_path, class: "mt-6 inline-flex items-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500" do %>
+        <%= lucide "calendar-days", size: 18, color: "#fff" %> Organise ta Pizza Party privée
+      <% end %>
+      <p class="mt-3 text-xs text-ink-500">5 € par personne · forfait 40 € (préparation, bois, matériel)</p>
+    </div>
+    <div class="relative hidden min-h-full md:block">
+      <%= image_tag "pizza_party/party-4.jpg", alt: "Les pâtons au levain s'étalent au rouleau", class: "absolute inset-0 h-full w-full object-cover" %>
+    </div>
+  </div>
+</div>

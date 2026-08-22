@@ -53,9 +53,24 @@ export default class extends Controller {
           this.refreshMiniCart(data.mini_cart_html)
         }
 
-        this.showTemporaryLabel(submitButton, "✔")
+        // data-cart-keep-label : boutons texte (« Ajouter ») qui gardent leur
+        // libellé — feedback ✔ temporaire au lieu d'afficher la quantité
+        // (comportement des pastilles rondes du catalogue).
+        if (data?.variant_qty !== undefined && submitButton.dataset.cartKeepLabel === undefined) {
+          this.updateButtonQuantity(submitButton, data.variant_qty)
+        } else {
+          this.showTemporaryLabel(submitButton, "✔")
+        }
         this.notifySuccess(data?.message)
-        this.openMiniCartTemporarily()
+        
+        // Redirect to catalog if on product page
+        const isProductPage = window.location.pathname.includes('/productions/')
+        if (isProductPage) {
+          setTimeout(() => {
+            window.location.href = '/catalogue'
+          }, 500)
+        }
+        // Don't open mini-cart when adding from catalog page
       })
       .catch((error) => {
         console.error("Impossible d'ajouter le produit au panier :", error)
@@ -187,8 +202,24 @@ export default class extends Controller {
     this.closeMiniCart()
   }
 
+  updateButtonQuantity(button, qty) {
+    button.innerHTML = qty > 0 ? qty : "+"
+    button.dataset.cartCurrentQty = qty
+    button.disabled = false
+    button.dataset.cartBusy = "false"
+    
+    // Clear any pending timer
+    if (this.buttonTimers.has(button)) {
+      clearTimeout(this.buttonTimers.get(button))
+      this.buttonTimers.delete(button)
+    }
+  }
+
   showTemporaryLabel(button, label) {
-    const originalLabel = button.dataset.cartOriginalLabel || "+"
+    const currentQty = parseInt(button.dataset.cartCurrentQty || "0", 10)
+    const originalLabel = button.dataset.cartKeepLabel !== undefined
+      ? (button.dataset.cartOriginalLabel || button.innerHTML)
+      : (currentQty > 0 ? currentQty : "+")
 
     button.innerHTML = label
 

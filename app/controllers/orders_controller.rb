@@ -3,4 +3,3 @@ class OrdersController < ApplicationController
     @order = Order.find_by!(public_token: params[:token])
   end
 end
-

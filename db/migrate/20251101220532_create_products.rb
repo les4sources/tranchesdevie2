@@ -11,6 +11,6 @@ class CreateProducts < ActiveRecord::Migration[8.0]
     end
 
     add_index :products, :category
-    add_index :products, [:category, :position, :name]
+    add_index :products, [ :category, :position, :name ]
   end
 end

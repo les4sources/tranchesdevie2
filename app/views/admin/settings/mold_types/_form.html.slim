@@ -1,0 +1,22 @@
+= form_with model: [:admin, :settings, mold_type], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if mold_type.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - mold_type.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-3.gap-6
+    .space-y-2
+      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :name, class: admin_input_class
+    .space-y-2
+      = f.label :limit, "Limite (par jour de cuisson)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :limit, min: 1, class: admin_input_class
+    .space-y-2
+      = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :position, class: admin_input_class
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_mold_types_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

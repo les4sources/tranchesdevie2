@@ -1,0 +1,262 @@
+<% content_for :title, "Reporting" %>
+<% content_for :layout, "admin" %>
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Reporting</h1>
+    <p class="text-sm text-gray-600">
+      Période du <%= l(@start_date) %> au <%= l(@end_date) %>
+    </p>
+    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+      <%= link_to "Revenus des boulangers →",
+                  baker_revenue_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                  class: "inline-block text-sm font-medium text-blue-600 hover:text-blue-800" %>
+      <%= link_to "Versements Stripe →",
+                  payouts_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                  class: "inline-block text-sm font-medium text-blue-600 hover:text-blue-800" %>
+      <%= link_to "Pizza parties privées →",
+                  pizza_parties_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                  class: "inline-block text-sm font-medium text-blue-600 hover:text-blue-800" %>
+    </div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <%= render "date_range_filter", start_date: @start_date, end_date: @end_date %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Chiffre d'affaires</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></p>
+    <p class="mt-1 text-sm text-gray-500">Commandes prises en compte : <%= @orders_count %></p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Panier moyen</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900">
+      <%= reports_currency(@average_order_value_cents) %>
+    </p>
+    <p class="mt-1 text-sm text-gray-500">Calculé sur les commandes payées, prêtes ou récupérées</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Produits suivis</h2>
+    <p class="mt-2 text-3xl font-bold text-gray-900"><%= @sales_by_product.size %></p>
+    <p class="mt-1 text-sm text-gray-500">Nombre de produits vendus sur la période</p>
+  </div>
+</div>
+
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-1">Commissions Stripe &amp; CA net</h2>
+  <p class="text-sm text-gray-500 mb-4">
+    Commissions prélevées par Stripe sur les commandes payées en ligne. Les paiements par portefeuille ou hors ligne n'engendrent pas de commission.
+  </p>
+  <dl class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">CA brut</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@revenue_cents) %></dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Commissions Stripe</dt>
+      <dd class="mt-2 text-2xl font-bold text-red-600">- <%= reports_currency(@total_stripe_fees_cents) %></dd>
+      <dd class="mt-1 text-sm text-gray-500"><%= revenue_share(@total_stripe_fees_cents, @revenue_cents) %> % du CA brut</dd>
+      <% if @refund_stripe_fees_cents.positive? %>
+        <dd class="mt-1 text-sm text-gray-500">
+          dont <%= reports_currency(@refund_stripe_fees_cents) %> non remboursés sur remboursements
+        </dd>
+      <% end %>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">CA net</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@net_revenue_cents) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Après commissions Stripe (ventes et remboursements)</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <div class="flex items-center justify-between mb-1">
+    <h2 class="text-lg font-medium text-gray-900">Remboursements</h2>
+    <%= link_to "Voir le détail →",
+                refunds_admin_reports_path(start_date: @start_date, end_date: @end_date),
+                class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
+  </div>
+  <p class="text-sm text-gray-500 mb-4">
+    Remboursements Stripe (commandes annulées remboursées) et remboursements vers le portefeuille
+    sur la période, ventilés par jour de cuisson de la commande. Les commandes remboursées sont
+    exclues du chiffre d'affaires.
+  </p>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursements</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900">
+        <%= link_to @refunds[:count], refunds_admin_reports_path(start_date: @start_date, end_date: @end_date), class: "text-gray-900 hover:text-blue-700 underline decoration-dotted" %>
+      </dd>
+      <dd class="mt-1 text-sm text-gray-500">
+        <%= @refunds[:stripe][:count] %> Stripe · <%= @refunds[:wallet][:count] %> portefeuille
+      </dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Montant total remboursé</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Stripe + portefeuille</dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursé via Stripe</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:stripe][:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-red-600">
+        commission non récupérée : <%= reports_currency(@refunds[:stripe][:stripe_fee_cents]) %>
+      </dd>
+    </div>
+    <div>
+      <dt class="text-sm font-medium text-gray-500 tracking-wide">Remboursé sur portefeuille</dt>
+      <dd class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@refunds[:wallet][:amount_cents]) %></dd>
+      <dd class="mt-1 text-sm text-gray-500">Crédité au portefeuille client</dd>
+    </div>
+  </dl>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par produit</h2>
+    <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites — réconcilié avec le CA de la période.</p>
+    <% if @sales_by_product.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50 text-left">
+            <tr>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Produit</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Quantité</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">CA</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Part</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @sales_by_product.each do |entry| %>
+              <tr>
+                <td class="px-4 py-2 text-gray-900"><%= entry[:product_name] %></td>
+                <td class="px-4 py-2 text-right text-gray-600"><%= entry[:total_quantity] %></td>
+                <td class="px-4 py-2 text-right text-gray-900"><%= reports_currency(entry[:total_cents]) %></td>
+                <td class="px-4 py-2 text-right text-gray-600">
+                  <%= revenue_share(entry[:total_cents], @revenue_cents) %> %
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucune vente enregistrée sur cette période.</p>
+    <% end %>
+  </section>
+
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Top 10 des clients</h2>
+    <% if @top_customers.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50 text-left">
+            <tr>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Client</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Commandes</th>
+              <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">CA</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @top_customers.each do |entry| %>
+              <tr>
+                <td class="px-4 py-2 text-gray-900"><%= entry[:customer_name].presence || "Client anonyme" %></td>
+                <td class="px-4 py-2 text-right text-gray-600"><%= entry[:orders_count] %></td>
+                <td class="px-4 py-2 text-right text-gray-900"><%= reports_currency(entry[:total_cents]) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucun client éligible pour cette période.</p>
+    <% end %>
+  </section>
+</div>
+
+<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par catégorie interne</h2>
+  <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites. Distingue la production maison des reventes (épicerie, traiteur…).</p>
+  <% if @sales_by_internal_category.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50 text-left">
+          <tr>
+            <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide">Catégorie</th>
+            <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Commandes</th>
+            <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Quantité</th>
+            <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">CA</th>
+            <th class="px-4 py-2 font-medium text-gray-500 uppercase tracking-wide text-right">Part</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% @sales_by_internal_category.each do |entry| %>
+            <tr>
+              <td class="px-4 py-2 text-gray-900"><%= product_internal_category_heading(entry[:internal_category]) %></td>
+              <td class="px-4 py-2 text-right text-gray-600"><%= entry[:orders_count] %></td>
+              <td class="px-4 py-2 text-right text-gray-600"><%= entry[:total_quantity] %></td>
+              <td class="px-4 py-2 text-right text-gray-900"><%= reports_currency(entry[:total_cents]) %></td>
+              <td class="px-4 py-2 text-right text-gray-600">
+                <%= revenue_share(entry[:total_cents], @revenue_cents) %> %
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-sm text-gray-500">Aucune vente enregistrée sur cette période.</p>
+  <% end %>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Comparaison mardi vs vendredi</h2>
+    <% if @weekday_comparison.any? %>
+      <div class="mb-4 text-sm text-gray-600">
+        <% @weekday_comparison.each do |entry| %>
+          <p>
+            <span class="font-medium"><%= weekday_label(entry[:weekday]) %></span> :
+            <%= entry[:orders_count] %> commandes — <%= reports_currency(entry[:total_cents]) %>
+          </p>
+        <% end %>
+      </div>
+      <% weekday_config = weekday_sales_chart_config(@weekday_comparison) %>
+      <canvas
+        data-controller="reports"
+        data-reports-config-value="<%= chart_config_json(weekday_config) %>"
+        class="w-full h-64">
+      </canvas>
+    <% else %>
+      <p class="text-sm text-gray-500">Pas encore de ventes pour comparer ces deux jours.</p>
+    <% end %>
+  </section>
+
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par mois</h2>
+    <% if @monthly_sales.any? %>
+      <div class="mb-4 text-sm text-gray-600">
+        <ul class="space-y-1">
+          <% @monthly_sales.each do |entry| %>
+            <li>
+              <span class="font-medium"><%= month_label(entry[:month]) %></span> :
+              <%= entry[:orders_count] %> commandes — <%= reports_currency(entry[:total_cents]) %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+      <% monthly_config = monthly_sales_chart_config(@monthly_sales) %>
+      <canvas
+        data-controller="reports"
+        data-reports-config-value="<%= chart_config_json(monthly_config) %>"
+        class="w-full h-64">
+      </canvas>
+    <% else %>
+      <p class="text-sm text-gray-500">Pas encore de ventes pour cette période.</p>
+    <% end %>
+  </section>
+</div>
+

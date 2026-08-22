@@ -13,3 +13,43 @@ production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+  mark_orders_ready:
+    class: MarkOrdersReadyJob
+    schedule: at 6:15 pm every day
+    description: "Mark orders as ready and send SMS notifications at 6:15pm"
+
+  # Libère la capacité réservée par les paiements en ligne abandonnés (>30 min)
+  expire_stale_pending_orders:
+    class: ExpireStalePendingOrdersJob
+    schedule: "*/10 * * * *"
+    description: "Cancel abandoned online checkouts (pending > 30 min) to free bake capacity"
+
+  # Process planned orders after cut-offs (Sunday 18:05 for Tuesday, Wednesday 18:05 for Friday)
+  process_planned_orders_sunday:
+    class: ProcessPlannedOrdersJob
+    schedule: every sunday at 6:05 pm Europe/Brussels
+    description: "Process planned orders and debit wallets after Sunday cut-off"
+  process_planned_orders_wednesday:
+    class: ProcessPlannedOrdersJob
+    schedule: every wednesday at 6:05 pm Europe/Brussels
+    description: "Process planned orders and debit wallets after Wednesday cut-off"
+
+  # Rattrape les commissions Stripe manquantes (stripe_fee_cents NULL).
+  # La BalanceTransaction Stripe n'est pas toujours disponible au moment du
+  # finalize (notamment pour Bancontact, asynchrone) : ce passage récurrent
+  # comble les trous. Borné et idempotent (ne traite que Payment.succeeded avec
+  # stripe_fee_cents NULL), toutes les 3 heures.
+  backfill_stripe_fees:
+    class: BackfillStripeFeesJob
+    schedule: "0 */3 * * *"
+    description: "Backfill missing Stripe fees (stripe_fee_cents NULL) every 3 hours"
+
+  # Check insufficient balance warnings (6 hours before cut-off)
+  check_balance_sunday:
+    class: CheckInsufficientBalanceJob
+    schedule: every sunday at 12:00 pm Europe/Brussels
+    description: "Warn customers with insufficient balance before Sunday cut-off"
+  check_balance_wednesday:
+    class: CheckInsufficientBalanceJob
+    schedule: every wednesday at 12:00 pm Europe/Brussels
+    description: "Warn customers with insufficient balance before Wednesday cut-off"

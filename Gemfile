@@ -22,6 +22,9 @@ gem "jbuilder"
 # Slim template engine
 gem "slim"
 
+# Markdown rendering for the in-admin baker help centre (GFM, safe)
+gem "commonmarker"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 
@@ -63,18 +66,51 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
 
+# Decorator pattern for Rails models
+gem "draper"
+
+# Soft deletion for models
+gem "soft_deletion"
+
+# Génération de PDF en Ruby pur (relevé de commandes) — aucun binaire système requis (#38)
+gem "prawn"
+gem "prawn-table"
+# QR code (Ruby pur) intégré au relevé de commandes, pointant vers l'espace client (#38)
+gem "rqrcode"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-    gem "debug", platforms: %i[ mri mingw mswin x64_mingw ], require: "debug/prelude"
+  gem "debug", platforms: %i[ mri mingw mswin x64_mingw ], require: "debug/prelude"
+
+  gem "dotenv"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # Testing framework
+  gem "rspec-rails"
+  gem "factory_bot_rails"
+  gem "faker"
+end
+
+group :test do
+  gem "shoulda-matchers"
+  gem "webmock"
+  gem "vcr"
+  gem "capybara"
+  gem "selenium-webdriver"
+
+  # Lecture du texte des PDF générés pour vérifier leur contenu (#38)
+  gem "pdf-reader"
 end
 
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+
+  # Preview outgoing emails in the browser instead of sending them
+  gem "letter_opener"
 end

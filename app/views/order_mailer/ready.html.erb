@@ -1,0 +1,35 @@
+<p style="margin:0 0 16px 0; font-size:17px; color:#2d2a26;">
+  🍞
+</p>
+
+<!-- Corps du message, éditable depuis l'admin (Paramètres → Notifications).
+     Les retours à la ligne saisis sont préservés. -->
+<div style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:#2d2a26;">
+  <%= simple_format(@body) %>
+</div>
+
+<!-- Pickup info -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px; background-color:#fdf6ef; border-radius:12px;">
+  <tr>
+    <td style="padding:18px 20px; font-size:14px; line-height:1.6; color:#5c544b;">
+      <strong style="color:#2d2a26;">📍 Retrait</strong><br>
+      Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir.
+    </td>
+  </tr>
+</table>
+
+<!-- CTA -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
+  <tr>
+    <td align="center">
+      <a href="<%= @order_url %>" style="display:inline-block; background-color:#7c2d12; color:#ffffff; text-decoration:none; font-size:15px; font-weight:bold; padding:13px 28px; border-radius:10px;">
+        Voir ma commande
+      </a>
+    </td>
+  </tr>
+</table>
+
+<% content_for :unsubscribe do %>
+  Tu reçois cet e-mail car tu as commandé chez Tranches de Vie.
+  <a href="<%= @unsubscribe_url %>" style="color:#a89f94; text-decoration:underline;">Gérer mes préférences e-mail</a>.
+<% end %>

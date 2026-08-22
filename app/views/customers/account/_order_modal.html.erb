@@ -1,0 +1,27 @@
+<!-- Modale de détails de commande -->
+<div id="order-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" data-order-modal-target="modal" data-action="click->order-modal#closeBackground keydown@window->order-modal#closeWithEscape">
+  <!-- Overlay -->
+  <div class="fixed inset-0 bg-ink-900/50 transition-opacity" data-order-modal-target="overlay"></div>
+
+  <!-- Conteneur pour centrer la modale -->
+  <div class="flex min-h-full items-center justify-center p-4">
+    <!-- Modale -->
+    <div class="relative z-10 w-full max-w-lg transform overflow-hidden rounded-lg border border-flour-300 bg-warm-white text-left shadow-lg transition-all">
+      <div class="px-5 pb-5 pt-5 sm:p-6" data-order-modal-target="content">
+        <div class="mb-4 flex items-start justify-between">
+          <h3 class="font-script text-2xl font-bold text-ink-900" data-order-modal-target="title">Détails de la commande</h3>
+          <button type="button"
+                  class="text-ink-400 transition hover:text-ink-700"
+                  data-action="click->order-modal#close">
+            <%= lucide "x", size: 22, color: "currentColor" %>
+          </button>
+        </div>
+
+        <div data-order-modal-target="body">
+          <!-- Le contenu sera rempli dynamiquement par JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

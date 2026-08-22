@@ -1,0 +1,229 @@
+<% content_for :title, "Pizza Party privée — au four à bois des 4 Sources" %>
+
+<section class="border-b border-flour-300 bg-gradient-to-b from-sage-100 to-flour-50">
+  <div class="mx-auto max-w-[1040px] px-6 py-12 md:py-16">
+    <div class="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
+      <div>
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
+          <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Pizza Party privée
+        </div>
+        <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Organise ta Pizza Party privée</h1>
+        <p class="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-700">
+          Rien de tel qu'une Pizza Party pour rassembler ton groupe autour d'un délicieux repas.
+          Un moment convivial où chacun·e met la main à la pâte : les boulangères te préparent des
+          pâtons au levain, tu amènes tes garnitures, et tout le monde enfourne sa pizza dans le
+          four à bois professionnel des 4 Sources.
+        </p>
+        <a href="#reserver" class="mt-6 inline-flex items-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500">
+          <%= lucide "calendar-days", size: 18, color: "#fff" %> Choisir ma date
+        </a>
+      </div>
+      <div class="relative">
+        <%= image_tag "pizza_party/party-1.jpg", alt: "Pizza au levain sortie du four à bois", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
+        <%= image_tag "pizza_party/party-4.jpg", alt: "Chacun étale son pâton au levain", class: "absolute -bottom-6 -left-6 hidden w-44 rotate-[-3deg] rounded-xl border-4 border-warm-white object-cover shadow-md sm:block" %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="mx-auto max-w-[1040px] px-6 py-10">
+  <% if @product && @selected_variant %>
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "wheat", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">On prépare les pâtons</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Un pâton au levain par personne, pétri par les boulangères de Tranches de Vie, avec tout
+          le matériel de cuisson mis à ta disposition.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "salad", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Tu amènes tes garnitures</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Passata, légumes, fromages… chacun·e garnit sa pizza et partage ses talents culinaires.
+          Que la meilleure pizza soit dégustée comme il se doit !
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "flame", size: 22, color: "var(--ember-600)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Cuisson au feu de bois</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Ton groupe gère le feu et la cuisson dans le four professionnel — de quoi enfourner
+          jusqu'à 30 pizzas à la fois.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-3">
+      <%= image_tag "pizza_party/party-2.jpg", alt: "Le groupe garnit ses pizzas dans la cour", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "pizza_party/party-3.jpg", alt: "Pizzas prêtes à enfourner", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "pizza_party/party-1.jpg", alt: "Pizza cuite au feu de bois", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+    </div>
+
+    <div class="mt-10 rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
+      <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Bon à savoir</h2>
+      <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
+          <span><b class="font-semibold text-ink-900"><%= number_to_currency(@selected_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> par pâton</b> + un forfait unique de 40 € qui couvre la préparation, le bois, le matériel et la mise en place.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
+          <span>Les <b class="font-semibold text-ink-900">mardis et vendredis</b>, le four est déjà chaud (jours de boulangerie). Les autres jours, prévois <b class="font-semibold text-ink-900">environ 3 heures de chauffe</b> (gérée par ton groupe) avant d'enfourner.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "shopping-basket", size: 18, color: "var(--sage-700)" %>
+          <span>Tu amènes <b class="font-semibold text-ink-900">tous les ingrédients</b> pour garnir : passata, légumes, fromages… Et tu réserves <b class="font-semibold text-ink-900">au moins une semaine à l'avance</b>.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "bed-double", size: 18, color: "var(--sage-700)" %>
+          <span>Envie de loger sur place avant ou après ? <a href="https://www.les4sources.be/sejours" target="_blank" rel="noopener" class="font-medium text-ember-600 underline-offset-2 hover:underline">Découvre les hébergements des 4 Sources</a>.</span>
+        </p>
+      </div>
+    </div>
+
+    <div id="reserver" class="mt-12 scroll-mt-6">
+    <%# Réservation en deux temps : 1. un JOUR dans la grande grille mensuelle,
+        2. le CRÉNEAU (midi/soir) + le nombre de personnes dans la carte sticky.
+        La valeur soumise reste "YYYY-MM-DD|slot" (party_calendar_controller),
+        revalidée côté serveur à l'ajout panier. %>
+    <%= form_with url: cart_add_path, method: :post, local: true,
+          data: { controller: "party-calendar", action: "submit->party-calendar#guard submit->cart#add" },
+          class: "mt-10" do |f| %>
+      <%= f.hidden_field :product_variant_id, value: @selected_variant.id %>
+      <input type="hidden" name="party_slot_choice" data-party-calendar-target="input">
+
+      <div class="grid gap-8 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+        <div>
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">1. Choisis ta date</h3>
+
+          <div class="mt-4 space-y-9">
+            <% (@party_availability || {}).group_by { |date, _slots| date.beginning_of_month }.each do |month, days| %>
+              <div>
+                <p class="font-script text-[26px] font-bold text-ink-900">
+                  <%= I18n.with_locale(:fr) { I18n.l(month, format: "%B %Y") }.capitalize %>
+                </p>
+                <div class="mt-3 grid grid-cols-7 gap-1.5 sm:gap-2">
+                  <% %w[Lun Mar Mer Jeu Ven Sam Dim].each do |weekday| %>
+                    <span class="pb-1 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-400"><%= weekday %></span>
+                  <% end %>
+                  <% (days.first.first.cwday - 1).times do %>
+                    <span></span>
+                  <% end %>
+                  <% days.each do |date, slots| %>
+                    <% if slots.values.any? %>
+                      <button type="button"
+                              class="group flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-flour-300 bg-warm-white text-ink-900 transition hover:-translate-y-0.5 hover:border-sage-400 hover:shadow-xs aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white"
+                              aria-pressed="false"
+                              aria-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") } %>"
+                              data-party-calendar-target="day"
+                              data-action="click->party-calendar#selectDay"
+                              data-date="<%= date.iso8601 %>"
+                              data-oven-hot="<%= BakeDay::COOKING_WDAYS.include?(date.wday) %>"
+                              data-midi="<%= slots["midi"] %>"
+                              data-soir="<%= slots["soir"] %>"
+                              data-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") }.capitalize %>">
+                        <span class="text-base font-semibold sm:text-lg"><%= date.day %></span>
+                        <span class="flex gap-1">
+                          <span class="h-1.5 w-1.5 rounded-full <%= slots["midi"] ? "bg-sage-500 group-aria-pressed:bg-white" : "bg-flour-300" %>"></span>
+                          <span class="h-1.5 w-1.5 rounded-full <%= slots["soir"] ? "bg-ember-500 group-aria-pressed:bg-white" : "bg-flour-300" %>"></span>
+                        </span>
+                      </button>
+                    <% else %>
+                      <span class="flex aspect-square items-center justify-center rounded-lg border border-flour-200 bg-flour-100 text-base text-ink-300 line-through sm:text-lg"><%= date.day %></span>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <p class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-500">
+            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-sage-500"></span> Midi disponible</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ember-500"></span> Soir disponible</span>
+            <span class="inline-flex items-center gap-1.5 text-ink-400"><span class="h-1.5 w-1.5 rounded-full bg-flour-300"></span> Complet ou indisponible</span>
+          </p>
+        </div>
+
+        <aside class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs lg:sticky lg:top-6" data-controller="quantity-selector">
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">2. Réserve</h3>
+          <p class="mt-1 text-sm text-ink-500">
+            <%= number_to_currency(@selected_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> / personne
+            <span class="text-ink-400">·</span> forfait 40 €
+          </p>
+
+          <%= f.hidden_field :qty, value: 1, data: { quantity_selector_target: "input" } %>
+
+          <div class="mt-5" data-party-calendar-target="placeholder">
+            <p class="flex items-center gap-2 rounded-md border border-dashed border-flour-400 bg-flour-50 px-4 py-3 text-sm text-ink-500">
+              <%= lucide "calendar-days", size: 16, color: "var(--ink-500)" %> Choisis d'abord une date dans le calendrier.
+            </p>
+          </div>
+
+          <div class="mt-5 hidden" data-party-calendar-target="slotPanel">
+            <p class="text-sm font-semibold text-ink-900" data-party-calendar-target="slotLabel"></p>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <button type="button"
+                      class="inline-flex items-center justify-center gap-2 rounded-md border border-flour-400 px-3 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-sage-400 aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white disabled:cursor-not-allowed disabled:border-flour-200 disabled:bg-flour-100 disabled:text-ink-300 disabled:line-through"
+                      aria-pressed="false"
+                      data-slot="midi"
+                      data-party-calendar-target="slotButton"
+                      data-action="click->party-calendar#selectSlot">
+                <%= lucide "sun", size: 16 %> Midi
+              </button>
+              <button type="button"
+                      class="inline-flex items-center justify-center gap-2 rounded-md border border-flour-400 px-3 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-sage-400 aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white disabled:cursor-not-allowed disabled:border-flour-200 disabled:bg-flour-100 disabled:text-ink-300 disabled:line-through"
+                      aria-pressed="false"
+                      data-slot="soir"
+                      data-party-calendar-target="slotButton"
+                      data-action="click->party-calendar#selectSlot">
+                <%= lucide "moon-star", size: 16 %> Soir
+              </button>
+            </div>
+          </div>
+
+          <%# Info chauffe du four : dépend du jour choisi (mardi/vendredi = four
+              déjà chaud pour la boulangerie ; sinon le groupe gère ~3 h de chauffe). %>
+          <p class="mt-3 hidden items-start gap-2 rounded-md border border-sage-200 bg-sage-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenHotNotice">
+            <%= lucide "flame", size: 16, color: "var(--sage-700)" %>
+            <span>Bonne nouvelle : ce jour-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie) — vous enfournez directement.</span>
+          </p>
+          <p class="mt-3 hidden items-start gap-2 rounded-md border border-warning-200 bg-warning-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenColdNotice">
+            <%= lucide "flame", size: 16, color: "var(--warning-600)" %>
+            <span>Ce jour-là, ton groupe se charge de la chauffe du four : prévois <b class="font-semibold text-ink-900">environ 3 heures</b> avant de pouvoir enfourner.</span>
+          </p>
+
+          <div class="mt-5">
+            <span class="text-sm font-medium text-ink-900">Nombre de personnes</span>
+            <div class="mt-2 flex items-center gap-2">
+              <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
+                <%= lucide "minus", size: 16, color: "var(--ink-700)" %>
+              </button>
+              <span class="inline-flex h-10 min-w-12 items-center justify-center rounded-md bg-flour-100 text-sm font-semibold text-ink-900" data-quantity-selector-target="display">1</span>
+              <button type="button" data-action="click->quantity-selector#increment" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
+                <%= lucide "plus", size: 16, color: "var(--ink-700)" %>
+              </button>
+            </div>
+          </div>
+
+          <p class="mt-4 hidden rounded-md border border-danger-200 bg-danger-100 px-3 py-2 text-sm text-danger-700" data-party-calendar-target="warning">
+            Choisis une date et un créneau dans le calendrier pour réserver.
+          </p>
+
+          <button type="submit" class="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500">
+            <%= lucide "shopping-basket", size: 18, color: "#fff" %> Réserver ma Pizza Party
+          </button>
+          <p class="mt-3 text-center text-xs text-ink-500">Le forfait de 40 € est ajouté automatiquement au panier.</p>
+        </aside>
+      </div>
+    <% end %>
+    </div>
+  <% else %>
+    <div class="rounded-2xl border border-flour-300 bg-warm-white p-10 text-center">
+      <p class="text-lg font-semibold text-ink-900">Les réservations de Pizza Party ouvrent bientôt.</p>
+      <p class="mt-2 text-sm text-ink-600">Reviens vite, ou découvre nos pains en attendant.</p>
+      <%= link_to "Voir la boutique", catalog_path, class: "mt-6 inline-flex items-center gap-2 rounded-md bg-ember-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-500" %>
+    </div>
+  <% end %>
+</div>

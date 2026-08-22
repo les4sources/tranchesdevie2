@@ -1,112 +1,204 @@
 <% content_for :title, "Commande #{@order.order_number}" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-900">Commande <%= @order.order_number %></h1>
-</div>
+<%= adm_page_header "Commande #{@order.order_number}" do %>
+  <%= link_to "Modifier", edit_admin_order_path(@order), class: adm_btn_class(:primary) %>
+<% end %>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
-    
-    <dl class="space-y-3">
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="adm-card">
+    <div class="adm-cardhd">
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Informations</h2>
+    </div>
+
+    <dl class="space-y-3 p-4">
       <div>
-        <dt class="text-sm font-medium text-gray-500">Statut</dt>
-        <dd class="mt-1">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-            <%= case @order.status
-                when 'pending' then 'bg-yellow-100 text-yellow-800'
-                when 'paid' then 'bg-blue-100 text-blue-800'
-                when 'ready' then 'bg-green-100 text-green-800'
-                when 'picked_up' then 'bg-gray-100 text-gray-800'
-                when 'no_show' then 'bg-red-100 text-red-800'
-                when 'cancelled' then 'bg-red-100 text-red-800'
-                else 'bg-gray-100 text-gray-800'
-                end %>">
-            <%= order_status_label(@order.status) %>
-          </span>
-        </dd>
+        <dt class="adm-eyebrow">Statut</dt>
+        <dd class="mt-1"><%= adm_order_status_chip(@order.status) %></dd>
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Client</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @order.customer.full_name %></dd>
-        <dd class="text-sm text-gray-600"><%= @order.customer.phone_e164 %></dd>
+        <dt class="adm-eyebrow">Origine</dt>
+        <dd class="mt-1 text-sm" style="color: var(--text-strong);"><%= order_source_label(@order.source) %></dd>
+      </div>
+
+      <div>
+        <dt class="adm-eyebrow">Client</dt>
+        <dd class="mt-1 text-sm">
+          <%= link_to @order.customer.full_name, admin_customer_path(@order.customer), class: "adm-link" %>
+        </dd>
+        <% if @order.customer.phone_e164.present? %>
+          <dd class="text-sm" style="color: var(--text-muted);"><%= @order.customer.phone_e164 %></dd>
+        <% end %>
         <% if @order.customer.email.present? %>
-          <dd class="text-sm text-gray-600"><%= @order.customer.email %></dd>
+          <dd class="text-sm" style="color: var(--text-muted);"><%= @order.customer.email %></dd>
         <% end %>
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Jour de cuisson</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @order.bake_day.baked_on.strftime("%d/%m/%Y") %></dd>
-        <dd class="text-sm text-gray-600">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <%# Une commande party est datée par son événement (midi/soir), sans fournée ni cutoff. %>
+        <dt class="adm-eyebrow"><%= @order.party_event ? "Pizza party" : "Jour de cuisson" %></dt>
+        <dd class="adm-grid-num mt-1 text-sm" style="color: var(--text-strong);">
+          <%= @order.event_date.strftime("%d/%m/%Y") %><% if @order.party_event&.kind_private_party? %> — <%= @order.party_event.slot_label %><% end %>
+        </dd>
+        <% if @order.bake_day %>
+          <dd class="text-sm" style="color: var(--text-muted);">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <% elsif @order.party_event&.title.present? %>
+          <dd class="text-sm" style="color: var(--text-muted);"><%= @order.party_event.title %></dd>
+        <% end %>
+
+        <% if @order.pickup_location %>
+          <dt class="adm-eyebrow mt-4">Point de retrait</dt>
+          <dd class="mt-1 flex flex-wrap items-center gap-2 text-sm" style="color: var(--text-strong);">
+            <%= @order.pickup_location.name %>
+            <% if @order.pickup_location.deleted_at.present? %>
+              <%= adm_chip "supprimé", tone: :warning %>
+            <% end %>
+          </dd>
+          <% if @order.pickup_location.description.present? %>
+            <dd class="text-sm" style="color: var(--text-muted);"><%= @order.pickup_location.description %></dd>
+          <% end %>
+        <% end %>
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Total</dt>
-        <dd class="mt-1 text-lg font-medium text-gray-900">
+        <dt class="adm-eyebrow">Total</dt>
+        <dd class="adm-grid-num mt-1 text-lg font-semibold" style="color: var(--text-strong);">
           <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
         </dd>
+      </div>
+
+      <div>
+        <dt class="adm-eyebrow">Paiement</dt>
+        <dd class="mt-1">
+          <%# L'état réel du paiement se lit sur les transactions, pas sur le statut logistique. %>
+          <% if @order.payment_refunded? %>
+            <%= adm_chip "Remboursé", tone: :accent %>
+          <% elsif @order.payment_received? %>
+            <%= adm_chip "Payé", tone: :success %>
+          <% else %>
+            <%= adm_chip "Non payé", tone: :danger %>
+          <% end %>
+        </dd>
+        <% if @order.payment_method %>
+          <dd class="mt-1 text-sm" style="color: var(--text-muted);">
+            <%= order_payment_method_label(@order.payment_method) %><% if @order.paid_at %> · le <%= @order.paid_at.strftime("%d/%m/%Y") %><% end %>
+          </dd>
+        <% elsif @order.paid_at %>
+          <dd class="mt-1 text-sm" style="color: var(--text-muted);">Payé le <%= @order.paid_at.strftime("%d/%m/%Y") %></dd>
+        <% end %>
+        <% if @order.payment.present? %>
+          <dd class="mt-1 text-sm" style="color: var(--text-muted);">
+            Commission Stripe :
+            <% if @order.payment.stripe_fee_recorded? %>
+              <span class="adm-grid-num font-semibold" style="color: var(--text-strong);"><%= number_to_currency(@order.payment.stripe_fee_euros, unit: "€", separator: ",", delimiter: "") %></span>
+            <% else %>
+              <span class="italic" style="color: var(--text-faint);">en attente</span>
+            <% end %>
+          </dd>
+        <% end %>
       </div>
     </dl>
   </div>
 
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Actions</h2>
+  <div class="adm-card">
+    <div class="adm-cardhd">
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Actions</h2>
+    </div>
 
-    <div class="space-y-3">
+    <div class="space-y-3 p-4">
+      <% if @order.unpaid? && @order.can_transition_to?(:paid) %>
+        <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true, class: "space-y-2" do |f| %>
+          <%= f.hidden_field :status, value: :paid %>
+          <div>
+            <label for="paid_at" class="adm-eyebrow mb-1 block">Date de paiement</label>
+            <input type="date" name="paid_at" id="paid_at" value="<%= Date.current.iso8601 %>" class="<%= adm_field_class %>" />
+          </div>
+          <%= f.submit "Marquer comme payée",
+              class: adm_btn_class(:primary, "w-full"),
+              data: { turbo_confirm: "Marquer cette commande comme payée ?" } %>
+        <% end %>
+      <% end %>
+
       <% if @order.can_transition_to?(:ready) %>
         <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
           <%= f.hidden_field :status, value: :ready %>
-          <%= f.submit "Marquer comme prête", 
-              class: "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700",
-              data: { confirm: "Envoyer le SMS 'prête' au client ?" } %>
+          <%= f.submit "Marquer comme prête",
+              class: adm_btn_class(:primary, "w-full"),
+              data: { turbo_confirm: "Envoyer le SMS 'prête' au client ?" } %>
         <% end %>
       <% end %>
 
       <% if @order.ready? %>
         <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true, class: "space-y-2" do |f| %>
           <%= f.hidden_field :status, value: :picked_up %>
-          <%= f.submit "Marquer comme récupérée", 
-              class: "w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
+          <%= f.submit "Marquer comme récupérée", class: adm_btn_class(:default, "w-full") %>
         <% end %>
 
         <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true do |f| %>
           <%= f.hidden_field :status, value: :no_show %>
-          <%= f.submit "Marquer comme non récupérée", 
-              class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700",
-              data: { confirm: "Marquer comme non récupérée ?" } %>
+          <%= f.submit "Marquer comme non récupérée",
+              class: adm_btn_class(:danger, "w-full"),
+              data: { turbo_confirm: "Marquer comme non récupérée ?" } %>
         <% end %>
       <% end %>
 
-      <% if @order.paid? && !@order.bake_day.cut_off_passed? %>
+      <%# Party : pas de cutoff fournée — remboursable tant que l'événement n'est pas passé. %>
+      <% refundable_window = @order.bake_day ? !@order.bake_day.cut_off_passed? : @order.event_date >= Date.current %>
+      <% if @order.paid? && refundable_window %>
         <%= form_with url: refund_admin_order_path(@order), method: :post, local: true do |f| %>
-          <%= f.submit "Rembourser", 
-              class: "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700",
-              data: { confirm: "Rembourser intégralement cette commande ?" } %>
+          <%= f.submit "Rembourser",
+              class: adm_btn_class(:danger, "w-full"),
+              data: { turbo_confirm: "Rembourser intégralement cette commande ? Le remboursement est irréversible." } %>
         <% end %>
+      <% end %>
+
+      <% if @order.deletable_by_admin? %>
+        <%= button_to "Supprimer la commande", admin_order_path(@order), method: :delete,
+            class: adm_btn_class(:default, "w-full"),
+            data: { turbo_confirm: "Supprimer définitivement la commande #{@order.order_number} ? Cette action est irréversible." } %>
       <% end %>
     </div>
   </div>
 </div>
 
-<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-4">Articles</h2>
-  
-  <div class="space-y-3">
-    <% @order.order_items.each do |item| %>
-      <div class="flex justify-between items-center py-2 border-b border-gray-200">
-        <div>
-          <p class="font-medium text-gray-900"><%= item.product_variant.name %></p>
-          <p class="text-sm text-gray-600"><%= item.product_variant.product.name %></p>
-        </div>
-        <div class="text-right">
-          <p class="text-sm text-gray-600"><%= item.qty %> x <%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %></p>
-          <p class="font-medium text-gray-900"><%= number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "") %></p>
-        </div>
-      </div>
-    <% end %>
+<div class="adm-card mt-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Articles</h2>
+    <span class="adm-eyebrow"><%= pluralize(@order.order_items.size, "article") %></span>
   </div>
-</div>
 
+  <table class="adm-grid">
+    <thead>
+      <tr>
+        <th>Article</th>
+        <th class="text-right">Quantité</th>
+        <th class="text-right">Prix unitaire</th>
+        <th class="text-right">Sous-total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @order.order_items.empty? %>
+        <%= adm_empty_row(colspan: 4, title: "Aucun article", hint: "Cette commande ne contient aucune ligne.") %>
+      <% end %>
+
+      <% @order.order_items.each do |item| %>
+        <tr>
+          <td>
+            <div class="font-semibold" style="color: var(--text-strong);"><%= item.product_variant.name %></div>
+            <% if item.product_variant.product %>
+              <div class="text-xs" style="color: var(--text-muted);"><%= item.product_variant.product.name %></div>
+            <% else %>
+              <div class="text-xs italic" style="color: var(--text-faint);">Produit supprimé</div>
+            <% end %>
+          </td>
+          <td class="adm-grid-num text-right"><%= item.qty %></td>
+          <td class="adm-grid-num text-right"><%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %></td>
+          <td class="adm-grid-num text-right font-semibold" style="color: var(--text-strong);">
+            <%= number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "") %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

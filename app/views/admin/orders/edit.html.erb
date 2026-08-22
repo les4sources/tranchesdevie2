@@ -1,15 +1,13 @@
 <% content_for :title, "Modifier la commande #{@order.order_number}" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-900">Modifier la commande <%= @order.order_number %></h1>
-  <p class="mt-1 text-sm text-gray-600">Modifiez une commande existante en changeant le client, le jour de cuisson, les quantités ou le statut.</p>
-</div>
+<%= adm_page_header "Modifier la commande #{@order.order_number}" %>
+<p class="mb-4 text-sm" style="color: var(--text-muted);">Modifiez une commande existante en changeant le client, le jour de cuisson, les quantités ou le statut.</p>
 
 <% if @order.errors.any? %>
-  <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-    <h2 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h2>
-    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
+  <div class="adm-card mb-4 p-4" style="border-color: var(--danger-200); background: var(--danger-100);">
+    <h2 class="text-sm font-semibold" style="color: var(--danger-700);">Veuillez corriger les erreurs suivantes :</h2>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm" style="color: var(--danger-700);">
       <% @order.errors.full_messages.each do |message| %>
         <li><%= message %></li>
       <% end %>
@@ -17,11 +15,11 @@
   </div>
 <% end %>
 
-<div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+<div class="adm-card p-4 sm:p-6">
   <%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { controller: "order-calculator", order_calculator_customers_value: @customer_discount_data.to_json } do |f| %>
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div data-controller="searchable-select" data-searchable-select-placeholder-value="Choisir un client...">
-        <%= f.label :customer_id, "Client", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.label :customer_id, "Client", class: "adm-eyebrow mb-1 block" %>
         <% customer_options = @customers.sort_by { |c| [c.last_name.to_s.downcase, c.first_name.to_s.downcase] }.map do |customer|
              label = [customer.last_name&.upcase, customer.first_name].compact.join(' ').squish
              [label, customer.id]
@@ -29,12 +27,12 @@
         <%= f.select :customer_id,
                      options_for_select(customer_options, @order.customer_id),
                      { include_blank: "Sélectionner un client" },
-                     class: "mt-1 #{admin_input_class}",
+                     class: adm_field_class,
                      data: { searchable_select_target: "select", order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
       </div>
 
       <div>
-        <%= f.label :bake_day_id, "Jour de cuisson", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.label :bake_day_id, "Jour de cuisson", class: "adm-eyebrow mb-1 block" %>
         <% bake_day_options = @bake_days.map do |bake_day|
              label = bake_day.baked_on.strftime("%A %d/%m/%Y")
              [label, bake_day.id]
@@ -42,7 +40,7 @@
         <%= f.select :bake_day_id,
                      options_for_select(bake_day_options, @order.bake_day_id),
                      { include_blank: "Sélectionner un jour" },
-                     class: "mt-1 #{admin_input_class}" %>
+                     class: adm_field_class %>
       </div>
 
       <%# Point de retrait (#148) : restreint aux lieux ouverts sur la fournée de
@@ -50,129 +48,67 @@
           pas à jour dynamiquement — la validation du modèle refuse alors un lieu
           incohérent à l'enregistrement. %>
       <div>
-        <%= f.label :pickup_location_id, "Point de retrait", class: "block text-sm font-medium text-gray-700" %>
+        <%= f.label :pickup_location_id, "Point de retrait", class: "adm-eyebrow mb-1 block" %>
         <% pickup_options = @order.bake_day.open_pickup_locations.map { |location| [location.name, location.id] } %>
         <%= f.select :pickup_location_id,
                      options_for_select(pickup_options, @order.pickup_location_id),
                      { include_blank: "Sélectionner un point de retrait" },
-                     class: "mt-1 #{admin_input_class}" %>
+                     class: adm_field_class %>
       </div>
     </div>
 
-    <div class="mt-8">
+    <div class="mt-6">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-gray-900">Produits et variantes</h2>
-        <button type="button"
-                class="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                data-action="order-calculator#resetQuantities">
+        <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Produits et variantes</h2>
+        <button type="button" class="<%= adm_btn_class(:ghost) %>" data-action="order-calculator#resetQuantities">
           Réinitialiser les quantités
         </button>
       </div>
 
-      <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200">
-        <% max_variant_count = @max_variant_count || 0 %>
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Produit</th>
-              <% if max_variant_count.positive? %>
-                <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500" colspan="<%= max_variant_count %>">Variantes</th>
-              <% end %>
-              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Sous-total</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 bg-white">
-            <% @products.each do |product| %>
-              <% active_variants = product.product_variants.active %>
-              <% next if active_variants.empty? %>
-              <% blank_cells = max_variant_count - active_variants.size %>
-              <% row_total_cents = active_variants.sum { |variant| (@selected_quantities[variant.id] || 0) * variant.price_cents } %>
-              <tr class="bg-gray-50">
-                <th class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900" rowspan="2"><%= product.name %></th>
-                <% active_variants.each do |variant| %>
-                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    <div><%= variant.name %></div>
-                    <div class="text-[11px] text-gray-400"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: "") %></div>
-                  </th>
-                <% end %>
-                <% blank_cells.times do %>
-                  <th class="px-4 py-3"></th>
-                <% end %>
-                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500" rowspan="2">Sous-total</th>
-              </tr>
-              <tr>
-                <% active_variants.each do |variant| %>
-                  <% input_value = @selected_quantities[variant.id] || 0 %>
-                  <td class="px-4 py-4 text-center">
-                    <%= number_field_tag "order[variant_quantities][#{variant.id}]",
-                                         input_value,
-                                         min: 0,
-                                         step: 1,
-                                         class: admin_input_class("w-24 text-center"),
-                                         data: {
-                                           order_calculator_target: "quantity",
-                                           price_cents: variant.price_cents,
-                                           product_id: product.id,
-                                           variant_id: variant.id,
-                                           action: "input->order-calculator#recalculate change->order-calculator#recalculate"
-                                         } %>
-                  </td>
-                <% end %>
-                <% blank_cells.times do %>
-                  <td class="px-4 py-4 bg-gray-50"></td>
-                <% end %>
-                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-medium text-gray-900"
-                    data-order-calculator-target="rowSubtotal"
-                    data-product-id="<%= product.id %>">
-                  <%= number_to_currency(row_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
+      <%= render "admin/orders/variant_quantities_grid",
+                 products: @products,
+                 selected_quantities: @selected_quantities,
+                 max_variant_count: @max_variant_count %>
 
-      <div class="mt-4 rounded-md bg-gray-50 p-4">
+      <div class="mt-4 rounded-md p-4" style="background: var(--surface-inset); border: 1px solid var(--border-subtle);">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-900">Montant indicatif (calcul automatique)</p>
-            <p class="text-xs text-gray-600" data-order-calculator-target="discountInfo">
+            <p class="text-sm font-semibold" style="color: var(--text-strong);">Montant indicatif (calcul automatique)</p>
+            <p class="text-xs" style="color: var(--text-muted);" data-order-calculator-target="discountInfo">
               Ce montant est calculé à partir des quantités saisies.
             </p>
           </div>
-          <p class="text-lg font-semibold text-indigo-600" data-order-calculator-target="totalAmount">
+          <p class="adm-grid-num text-lg font-semibold" style="color: var(--brand);" data-order-calculator-target="totalAmount">
             <%= number_to_currency(@calculated_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
           </p>
         </div>
         <div class="mt-2 hidden" data-order-calculator-target="discountMessage">
-          <p class="text-xs text-green-600 font-medium">
+          <p class="text-xs font-semibold" style="color: var(--success-700);">
             <span data-order-calculator-target="discountText"></span>
           </p>
         </div>
       </div>
     </div>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
-        <label for="order_final_total_euros" class="block text-sm font-medium text-gray-700">Montant final de la commande *</label>
+        <label for="order_final_total_euros" class="adm-eyebrow mb-1 block">Montant final de la commande *</label>
         <% final_total_value = params.dig(:order, :final_total_euros) || (@order.total_cents.present? ? (@order.total_cents / 100.0) : nil) %>
-        <div class="mt-1">
-          <%= number_field_tag "order[final_total_euros]",
-                               final_total_value,
-                               min: 0,
-                               step: 0.01,
-                               required: true,
-                               class: admin_input_class %>
-        </div>
+        <%= number_field_tag "order[final_total_euros]",
+                             final_total_value,
+                             min: 0,
+                             step: 0.01,
+                             required: true,
+                             class: adm_field_class %>
         <% if @order.errors[:total_cents].present? %>
-          <p class="mt-1 text-sm text-red-600"><%= @order.errors[:total_cents].first %></p>
+          <p class="mt-1 text-sm" style="color: var(--danger-700);"><%= @order.errors[:total_cents].first %></p>
         <% end %>
       </div>
 
       <div>
         <fieldset>
-          <legend class="block text-sm font-medium text-gray-700">Statut de la commande</legend>
-          <div class="mt-2 grid grid-cols-2 gap-3">
+          <legend class="adm-eyebrow mb-1 block">Statut de la commande</legend>
+          <div class="mt-2 grid grid-cols-2 gap-2">
             <% status_options = {
               pending: "En attente",
               unpaid: "Non payée",
@@ -183,8 +119,9 @@
               cancelled: "Annulée"
             } %>
             <% status_options.each do |value, label| %>
-              <label class="flex items-center space-x-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm">
-                <%= f.radio_button :status, value, class: "text-indigo-600 focus:ring-indigo-500" %>
+              <label class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                     style="border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-body);">
+                <%= f.radio_button :status, value, style: "accent-color: var(--brand);" %>
                 <span><%= label %></span>
               </label>
             <% end %>
@@ -193,10 +130,10 @@
       </div>
     </div>
 
-    <div class="mt-8"
+    <div class="mt-6"
          data-controller="payment-status-warning"
          data-payment-status-warning-initial-value="<%= @order.payment_status %>">
-      <%= f.label :payment_status, "Statut de paiement", class: "block text-sm font-medium text-gray-700" %>
+      <%= f.label :payment_status, "Statut de paiement", class: "adm-eyebrow mb-1 block" %>
       <%= f.select :payment_status,
                    options_for_select([
                      [payment_status_label("unpaid"), "unpaid"],
@@ -204,22 +141,23 @@
                      [payment_status_label("refunded"), "refunded"]
                    ], @order.payment_status),
                    {},
-                   class: "mt-1 #{admin_input_class}",
+                   class: adm_field_class,
                    data: {
                      payment_status_warning_target: "select",
                      action: "change->payment-status-warning#toggle"
                    } %>
-      <p class="mt-1 text-xs text-gray-500">
+      <p class="mt-1 text-xs" style="color: var(--text-muted);">
         Synchronisé automatiquement depuis les paiements réels (Stripe / portefeuille).
         Le marquage manuel sert aux paiements hors-ligne (cash, clients à facture).
       </p>
-      <div class="hidden mt-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+      <div class="mt-3 hidden rounded-md p-4 text-sm"
+           style="border: 1px solid var(--warning-200); background: var(--warning-100); color: var(--warning-700);"
            data-payment-status-warning-target="warning">
         <p class="font-semibold">⚠️ Ce statut ne rembourse pas le client — c'est une simple étiquette comptable.</p>
         <p class="mt-2">
           Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille,
           utilisez le bouton <strong>« Rembourser »</strong> sur
-          <%= link_to "la page de la commande", admin_order_path(@order), class: "underline font-medium" %> :
+          <%= link_to "la page de la commande", admin_order_path(@order), class: "font-medium underline" %> :
           lui seul renvoie l'argent et prévient le client par SMS.
           S'il n'est plus affiché (commande déjà prête ou date limite passée), contactez Michael.
         </p>
@@ -229,17 +167,16 @@
       </div>
     </div>
 
-    <div class="mt-6">
-      <label class="inline-flex items-center space-x-2 text-sm text-gray-700">
-        <%= f.check_box :requires_invoice, class: "rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+    <div class="mt-4">
+      <label class="inline-flex items-center gap-2 text-sm" style="color: var(--text-body);">
+        <%= f.check_box :requires_invoice, style: "accent-color: var(--brand);" %>
         <span>Il faut une facture pour cette commande</span>
       </label>
     </div>
 
-    <div class="mt-8 flex justify-end space-x-3">
-      <%= link_to "Annuler", admin_order_path(@order), class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
-      <%= f.submit "Modifier la commande", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    <div class="mt-6 flex justify-end gap-2">
+      <%= link_to "Annuler", admin_order_path(@order), class: adm_btn_class(:default) %>
+      <%= f.submit "Modifier la commande", class: adm_btn_class(:primary) %>
     </div>
   <% end %>
 </div>
-

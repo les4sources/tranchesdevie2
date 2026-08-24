@@ -117,4 +117,35 @@ RSpec.describe "Admin::BakeDays", type: :request do
       end
     end
   end
+
+  # `new` et `edit` partagent le partial `_form_fields` : ce smoke test garantit
+  # que les deux écrans rendent bien tous leurs champs, y compris les cases des
+  # lieux de retrait et de vente qui vivent dans des partials séparés.
+  describe "formulaires de fournée" do
+    let!(:pickup_location) { create(:pickup_location, name: "Ferme du Ry") }
+
+    it "rend le formulaire de création avec tous ses champs" do
+      get new_admin_bake_day_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Date de cuisson")
+      expect(response.body).to include("Date limite de commande")
+      expect(response.body).to include("Note interne du jour")
+      expect(response.body).to include("Jour de marché")
+      expect(response.body).to include("Points de retrait ouverts sur cette fournée")
+      expect(response.body).to include("Ferme du Ry")
+      expect(response.body).to include("Créer le jour de cuisson")
+    end
+
+    it "rend le formulaire d'édition pré-rempli" do
+      bake_day = create(:bake_day)
+
+      get edit_admin_bake_day_path(bake_day)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Date de cuisson")
+      expect(response.body).to include("Points de retrait ouverts sur cette fournée")
+      expect(response.body).to include("Mettre à jour le jour de cuisson")
+    end
+  end
 end

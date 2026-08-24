@@ -3,54 +3,55 @@
 - euro = ->(c) { number_to_currency((c || 0) / 100.0, unit: "€", format: "%n %u", separator: ",", delimiter: " ") }
 - day = @sheet.day
 
-.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
-  div
-    = link_to "← Jour de cuisson", admin_bake_day_path(@sheet.bake_day), class: "text-sm font-medium text-blue-600 hover:text-blue-800"
-    h1.text-2xl.font-bold.text-gray-900 Feuille compta — #{l(@sheet.date)}
-    p.text-sm.text-gray-600 Chiffres AUTHORITATIVE de l'app (mêmes calculs que « Revenus boulangers »). CA net par format + split boulangers / 4 Sources du jour.
+.mb-4
+  = link_to "← Jour de cuisson", admin_bake_day_path(@sheet.bake_day), class: "adm-link text-sm font-semibold"
+
+= adm_page_header "Feuille compta — #{l(@sheet.date)}"
+p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app (mêmes calculs que « Revenus boulangers »). CA net par format + split boulangers / 4 Sources du jour.
 
 - unless day
-  .rounded-md.bg-gray-50.border.border-gray-200.p-6.text-gray-500 Aucune donnée pour ce jour.
+  .adm-card.p-6.text-sm style="color: var(--text-muted);" Aucune donnée pour ce jour.
 - else
   / --- Tableau par format vendu ---
   section.mb-8
-    h2.text-lg.font-semibold.text-gray-900.mb-3 Ventes par format
-    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        h2.text-sm.font-semibold style="color: var(--text-strong);" Ventes par format
       .overflow-x-auto
-        table.min-w-full.divide-y.divide-gray-100.text-sm
-          thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+        table.adm-grid
+          thead
             tr
-              th.px-4.py-3.text-left Format
-              th.px-4.py-3.text-right Prix classique
-              th.px-4.py-3.text-right Coûtant / u
-              th.px-4.py-3.text-right Commandes
-              th.px-4.py-3.text-right CA brut
-              th.px-4.py-3.text-right Remise
-              th.px-4.py-3.text-right CA net
-          tbody.divide-y.divide-gray-50.bg-white
+              th Format
+              th.text-right Prix classique
+              th.text-right Coûtant / u
+              th.text-right Commandes
+              th.text-right CA brut
+              th.text-right Remise
+              th.text-right CA net
+          tbody
             - @sheet.rows.each do |row|
-              tr.hover:bg-gray-50
-                td.px-4.py-3.font-medium.text-gray-900 = row.label
-                td.px-4.py-3.text-right.text-gray-600 = euro.(row.unit_price_cents)
-                td.px-4.py-3.text-right.text-gray-500 = euro.(row.unit_cost_cents)
-                td.px-4.py-3.text-right.text-gray-900 = row.qty
-                td.px-4.py-3.text-right.text-gray-600 = euro.(row.gross_cents)
-                td.px-4.py-3.text-right
+              tr
+                td.font-medium style="color: var(--text-strong);" = row.label
+                td.adm-grid-num.text-right = euro.(row.unit_price_cents)
+                td.adm-grid-num.text-right style="color: var(--text-muted);" = euro.(row.unit_cost_cents)
+                td.adm-grid-num.text-right style="color: var(--text-strong);" = row.qty
+                td.adm-grid-num.text-right = euro.(row.gross_cents)
+                td.adm-grid-num.text-right
                   - if row.discount_cents.positive?
-                    span.text-rose-600 = "− #{euro.(row.discount_cents)}"
-                    span.block.text-xs.text-gray-400 = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
+                    span style="color: var(--danger-700);" = "− #{euro.(row.discount_cents)}"
+                    span.block.text-xs style="color: var(--text-faint);" = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
                   - else
-                    span.text-gray-300 —
-                td.px-4.py-3.text-right.font-semibold.text-gray-900 = euro.(row.sale_cents)
-          tfoot.bg-gray-50.font-semibold.text-gray-900
-            tr
-              td.px-4.py-3 Total CA
-              td.px-4.py-3
-              td.px-4.py-3
-              td.px-4.py-3.text-right = @sheet.rows.sum(&:qty)
-              td.px-4.py-3.text-right = euro.(@sheet.total_gross_cents)
-              td.px-4.py-3.text-right.text-rose-600 = @sheet.total_discount_cents.positive? ? "− #{euro.(@sheet.total_discount_cents)}" : "—"
-              td.px-4.py-3.text-right = euro.(@sheet.total_sale_cents)
+                    span style="color: var(--text-faint);" —
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(row.sale_cents)
+          tfoot
+            tr.adm-grid-total
+              td Total CA
+              td
+              td
+              td.adm-grid-num.text-right = @sheet.rows.sum(&:qty)
+              td.adm-grid-num.text-right = euro.(@sheet.total_gross_cents)
+              td.adm-grid-num.text-right style="color: var(--danger-700);" = @sheet.total_discount_cents.positive? ? "− #{euro.(@sheet.total_discount_cents)}" : "—"
+              td.adm-grid-num.text-right = euro.(@sheet.total_sale_cents)
 
   / --- Répartition boulangers / 4 Sources (authoritative) ---
   - party_sale = day.party_revenue_cents + day.public_party_revenue_cents
@@ -60,79 +61,81 @@
   - bread_margin = bread_4s + bread_bakers
 
   section.mb-8
-    h2.text-lg.font-semibold.text-gray-900.mb-3 Répartition boulangers / 4 Sources
-    .mb-3.rounded-md.bg-amber-50.border.border-amber-200.p-3.text-xs.text-amber-800
+    .adm-card.mb-3.p-3.text-xs style="border-color: var(--warning-200); background: var(--warning-100); color: var(--warning-700);"
       | Le split 70/30 s'applique à la marge du jour APRÈS déduction des coûts partagés (coûtant pain, sacs, transport, commissions Stripe, lieux de vente). Les pizza parties suivent leur barème spécial, hors 70/30.
-    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-      table.min-w-full.divide-y.divide-gray-100.text-sm
-        tbody.divide-y.divide-gray-50.bg-white
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        h2.text-sm.font-semibold style="color: var(--text-strong);" Répartition boulangers / 4 Sources
+      table.adm-grid
+        tbody
           tr
-            td.px-4.py-2.text-gray-700 CA pains (hors parties)
-            td.px-4.py-2.text-right.text-gray-900 = euro.(bread_ca)
+            td style="color: var(--text-body);" CA pains (hors parties)
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(bread_ca)
           tr
-            td.px-4.py-2.text-gray-500 − Coûtant pains
-            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.cost_price_cents)}"
+            td style="color: var(--text-muted);" − Coûtant pains
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.cost_price_cents)}"
           tr
-            td.px-4.py-2.text-gray-500 − Sacs à pain
-            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.bread_bags_cents)}"
+            td style="color: var(--text-muted);" − Sacs à pain
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.bread_bags_cents)}"
           tr
-            td.px-4.py-2.text-gray-500 − Transport
-            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.transport_cents)}"
+            td style="color: var(--text-muted);" − Transport
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.transport_cents)}"
           tr
-            td.px-4.py-2.text-gray-500 − Commissions Stripe
-            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.commission_cents)}"
+            td style="color: var(--text-muted);" − Commissions Stripe
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.commission_cents)}"
           tr
-            td.px-4.py-2.text-gray-500 − Lieux de vente
-            td.px-4.py-2.text-right.text-gray-500 = "− #{euro.(day.sales_locations_cents)}"
-          tr.bg-gray-50.font-semibold
-            td.px-4.py-2.text-gray-900 Marge pains
-            td.px-4.py-2.text-right.text-gray-900 = euro.(bread_margin)
+            td style="color: var(--text-muted);" − Lieux de vente
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.sales_locations_cents)}"
+          tr.adm-grid-total
+            td Marge pains
+            td.adm-grid-num.text-right = euro.(bread_margin)
           tr
-            td.px-4.py-2.text-gray-700 → Boulangers (70 %)
-            td.px-4.py-2.text-right.font-semibold.text-gray-900 = euro.(bread_bakers)
+            td style="color: var(--text-body);" → Boulangers (70 %)
+            td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(bread_bakers)
           tr
-            td.px-4.py-2.text-gray-700 → 4 Sources (30 %)
-            td.px-4.py-2.text-right.font-semibold.text-gray-900 = euro.(bread_4s)
+            td style="color: var(--text-body);" → 4 Sources (30 %)
+            td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(bread_4s)
 
   / --- Pizza parties (barème spécial) ---
   - if day.party_persons.positive? || day.public_party_persons.positive?
     section.mb-8
-      h2.text-lg.font-semibold.text-gray-900.mb-3 Pizza parties (barème spécial)
-      .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      .adm-card.overflow-hidden
+        .adm-cardhd
+          h2.text-sm.font-semibold style="color: var(--text-strong);" Pizza parties (barème spécial)
         .overflow-x-auto
-          table.min-w-full.divide-y.divide-gray-100.text-sm
-            thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+          table.adm-grid
+            thead
               tr
-                th.px-4.py-3.text-left Type
-                th.px-4.py-3.text-right Pers.
-                th.px-4.py-3.text-right CA
-                th.px-4.py-3.text-right Boulangers
-                th.px-4.py-3.text-right 4 Sources
-            tbody.divide-y.divide-gray-50.bg-white
+                th Type
+                th.text-right Pers.
+                th.text-right CA
+                th.text-right Boulangers
+                th.text-right 4 Sources
+            tbody
               - if day.party_persons.positive?
                 tr
-                  td.px-4.py-3.text-gray-900 Privée
-                  td.px-4.py-3.text-right = day.party_persons
-                  td.px-4.py-3.text-right = euro.(day.party_revenue_cents)
-                  td.px-4.py-3.text-right.font-semibold = euro.(day.party_bakers_cents)
-                  td.px-4.py-3.text-right.font-semibold = euro.(day.party_four_sources_cents)
+                  td style="color: var(--text-strong);" Privée
+                  td.adm-grid-num.text-right = day.party_persons
+                  td.adm-grid-num.text-right = euro.(day.party_revenue_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.party_bakers_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.party_four_sources_cents)
               - if day.public_party_persons.positive?
                 tr
-                  td.px-4.py-3.text-gray-900 Publique
-                  td.px-4.py-3.text-right = day.public_party_persons
-                  td.px-4.py-3.text-right = euro.(day.public_party_revenue_cents)
-                  td.px-4.py-3.text-right.font-semibold = euro.(day.public_party_bakers_cents)
-                  td.px-4.py-3.text-right.font-semibold = euro.(day.public_party_four_sources_cents)
+                  td style="color: var(--text-strong);" Publique
+                  td.adm-grid-num.text-right = day.public_party_persons
+                  td.adm-grid-num.text-right = euro.(day.public_party_revenue_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_bakers_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_four_sources_cents)
 
   / --- Totaux du jour ---
   section
     .grid.grid-cols-1.sm:grid-cols-3.gap-4
-      .bg-white.rounded-lg.shadow-sm.border.border-gray-200.p-4
-        p.text-xs.font-medium.text-gray-500.uppercase.tracking-wide CA total
-        p.mt-1.text-xl.font-bold.text-gray-900 = euro.(day.revenue_cents)
-      .bg-white.rounded-lg.shadow-sm.border.border-indigo-200.p-4
-        p.text-xs.font-medium.text-indigo-500.uppercase.tracking-wide Total boulangers
-        p.mt-1.text-xl.font-bold.text-indigo-900 = euro.(day.baker_pool_cents)
-      .bg-white.rounded-lg.shadow-sm.border.border-emerald-200.p-4
-        p.text-xs.font-medium.text-emerald-600.uppercase.tracking-wide Total 4 Sources
-        p.mt-1.text-xl.font-bold.text-emerald-900 = euro.(day.four_sources_cents)
+      .adm-card.p-4
+        p.adm-eyebrow CA total
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--text-strong);" = euro.(day.revenue_cents)
+      .adm-card.p-4 style="border-color: var(--water-200);"
+        p.adm-eyebrow style="color: var(--water-700);" Total boulangers
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--water-700);" = euro.(day.baker_pool_cents)
+      .adm-card.p-4 style="border-color: var(--success-200);"
+        p.adm-eyebrow style="color: var(--success-700);" Total 4 Sources
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--success-700);" = euro.(day.four_sources_cents)

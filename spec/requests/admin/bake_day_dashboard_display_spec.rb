@@ -46,9 +46,9 @@ RSpec.describe "Admin::BakeDays dashboard — affichage", type: :request do
     doc = Nokogiri::HTML(body)
     thead = doc.at_css('div[data-panel="clients"] table thead')
     expect(thead).to be_present
-    # La ligne total porte la classe bg-slate-200 : sa présence dans le thead
+    # La ligne total porte la classe `adm-grid-total` : sa présence dans le thead
     # prouve qu'elle est figée avec l'en-tête (et non dans le tbody scrollable).
-    expect(thead.to_html).to include("bg-slate-200")
+    expect(thead.to_html).to include("adm-grid-total")
     expect(thead.text).to include("Total")
   end
 

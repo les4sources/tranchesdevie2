@@ -28,13 +28,9 @@ export default class extends Controller {
       ?.querySelectorAll("button")
 
     buttons?.forEach((button) => {
-      const isActive = button === activeButton
-      button.classList.toggle("bg-indigo-600", isActive)
-      button.classList.toggle("text-white", isActive)
-      button.classList.toggle("border-indigo-600", isActive)
-      if (!isActive) {
-        button.classList.remove("bg-indigo-600", "text-white", "border-indigo-600")
-      }
+      // Même principe que les onglets : `.adm-filter-active` porte l'apparence,
+      // le contrôleur ne connaît qu'un état actif / inactif.
+      button.classList.toggle("adm-filter-active", button === activeButton)
     })
   }
 }

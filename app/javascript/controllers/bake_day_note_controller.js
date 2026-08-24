@@ -14,7 +14,7 @@ export default class extends Controller {
   }
 
   queueSave() {
-    this.setStatus("Modifications en attente", "text-amber-600")
+    this.setStatus("Modifications en attente", "adm-tone-warning")
     clearTimeout(this.timeout)
     this.timeout = setTimeout(() => this.save(), SAVE_DELAY)
   }
@@ -24,7 +24,7 @@ export default class extends Controller {
     if (this.isSaving) return
 
     this.isSaving = true
-    this.setStatus("Enregistrement…", "text-blue-600")
+    this.setStatus("Enregistrement…", "adm-tone-water")
 
     const formData = new FormData(this.formTarget)
 
@@ -38,21 +38,23 @@ export default class extends Controller {
         return response.json()
       })
       .then(() => {
-        this.setStatus("Note enregistrée", "text-emerald-600")
+        this.setStatus("Note enregistrée", "adm-tone-success")
       })
       .catch(() => {
-        this.setStatus("Erreur lors de l’enregistrement", "text-red-600")
+        this.setStatus("Erreur lors de l’enregistrement", "adm-tone-danger")
       })
       .finally(() => {
         this.isSaving = false
       })
   }
 
-  setStatus(text, statusClass) {
+  // `toneClass` est une tonalité de l'admin (`adm-tone-*`), pas une couleur :
+  // c'est `.adm-tonetext` qui va y chercher son `color`.
+  setStatus(text, toneClass) {
     if (!this.hasStatusTarget) return
     this.statusTarget.textContent = text
     this.statusTarget.className =
-      "text-xs font-medium transition-colors duration-200 " + statusClass
+      "adm-tonetext text-xs font-medium transition-colors duration-200 " + toneClass
   }
 }
 

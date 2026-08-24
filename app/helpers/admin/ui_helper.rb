@@ -64,6 +64,43 @@ module Admin::UiHelper
     end
   end
 
+  # Nombre de teintes de drapeau définies dans la couche `.adm-flag-*`.
+  FLAG_TONE_COUNT = 8
+
+  # Une occupation → une tonalité. Les seuils (80 %, 100 %) vivent ici et non
+  # dans chaque vue, pour qu'une fournée « presque pleine » ait la même couleur
+  # sur la liste des jours et sur le tableau de bord.
+  def adm_usage_tone(percentage)
+    if percentage >= 100 then :danger
+    elsif percentage >= 80 then :warning
+    else :success
+    end
+  end
+
+  # Jauge d'occupation. `percentage` peut dépasser 100 : la barre est bornée à
+  # 100 % de largeur, mais la tonalité, elle, signale bien le dépassement.
+  def adm_meter(percentage, tone: nil)
+    tone ||= adm_usage_tone(percentage)
+
+    tag.span(class: "adm-meter") do
+      tag.span(class: "adm-meter-bar adm-tone-#{tone}", style: "width: #{[ percentage, 100 ].min}%")
+    end
+  end
+
+  # Pastille ronde — le statut réduit à un point, là où le texte ne rentre pas.
+  def adm_dot(tone: :neutral)
+    tone = :neutral unless TONES.include?(tone.to_sym)
+
+    tag.span(class: "adm-dot adm-tone-#{tone}")
+  end
+
+  # Teinte d'une carte « drapeau ». Purement distinctive : elle ne dit rien de
+  # l'état du client, elle évite seulement que deux cartes voisines se
+  # confondent. Au-delà de huit clients, les teintes se répètent.
+  def adm_flag_class(index)
+    "adm-flag adm-flag-#{index % FLAG_TONE_COUNT + 1}"
+  end
+
   # État vide d'une grille. `colspan` doit couvrir toute la largeur du tableau.
   def adm_empty_row(colspan:, title:, hint: nil, &action)
     tag.tr do

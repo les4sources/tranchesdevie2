@@ -293,4 +293,101 @@
   .adm-rowaction        { color: var(--text-faint); font-weight: 500; }
   tr:hover .adm-rowaction { color: var(--link); }
   .adm-rowaction:hover  { color: var(--link); text-decoration: underline; }
+
+  /* ── Tonalités ────────────────────────────────────────────────────────────
+     Une seule table ton → couleurs, posée en variables sur l'élément. La jauge,
+     la pastille ronde et le texte de pourcentage y puisent au lieu de choisir
+     chacun sa couleur : un « plein » et un « proche de la limite » se
+     ressemblent partout dans l'admin. */
+  .adm-tone-neutral { --tone-fill: var(--text-faint);  --tone-ink: var(--text-muted); }
+  .adm-tone-brand   { --tone-fill: var(--sage-500);    --tone-ink: var(--sage-700); }
+  .adm-tone-accent  { --tone-fill: var(--ember-500);   --tone-ink: var(--ember-700); }
+  .adm-tone-success { --tone-fill: var(--success-600); --tone-ink: var(--success-700); }
+  .adm-tone-warning { --tone-fill: var(--warning-600); --tone-ink: var(--warning-700); }
+  .adm-tone-danger  { --tone-fill: var(--danger-600);  --tone-ink: var(--danger-700); }
+  .adm-tone-water   { --tone-fill: var(--water-600);   --tone-ink: var(--water-700); }
+  .adm-tonetext     { color: var(--tone-ink, currentColor); }
+
+  /* ── Jauge d'occupation ───────────────────────────────────────────────────
+     Moules, pétrin, four, remplissage d'une fournée : toujours « x sur une
+     limite ». La tonalité vient de `adm_usage_tone`, jamais de la vue. */
+  .adm-meter     { display: block; height: .5rem; width: 100%; overflow: hidden;
+                   border-radius: var(--radius-pill); background: var(--surface-sunk); }
+  .adm-meter-bar { display: block; height: 100%; border-radius: var(--radius-pill);
+                   background: var(--tone-fill, var(--text-faint));
+                   transition: width .2s var(--ease-soft); }
+
+  /* Pastille ronde : le statut en 6px, là où une pastille texte ne rentre pas. */
+  .adm-dot { display: inline-block; height: .375rem; width: .375rem; flex: none;
+             border-radius: var(--radius-pill); background: var(--tone-fill, var(--text-faint)); }
+
+  /* ── Onglets & filtres ────────────────────────────────────────────────────
+     L'état actif est porté par une classe sémantique (`-active`) et non par une
+     couleur, parce que ce sont les contrôleurs Stimulus qui la basculent. */
+  .adm-tab { display: inline-flex; align-items: center; gap: .375rem; white-space: nowrap;
+             border: 1px solid transparent; border-radius: var(--radius-pill);
+             padding: .375rem .875rem; font-size: .8125rem; font-weight: 600;
+             background: var(--surface-sunk); color: var(--text-muted);
+             transition: background-color .1s var(--ease-soft), color .1s var(--ease-soft); }
+  .adm-tab:hover        { color: var(--text-strong); }
+  .adm-tab-active       { background: var(--surface-card); color: var(--text-strong);
+                          border-color: var(--border-subtle); box-shadow: var(--shadow-xs); }
+  .adm-tab-active:hover { color: var(--text-strong); }
+
+  .adm-filter { display: inline-flex; align-items: center; white-space: nowrap;
+                border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+                padding: .25rem .75rem; font-size: .75rem; font-weight: 600;
+                background: var(--surface-card); color: var(--text-muted);
+                transition: background-color .1s var(--ease-soft), color .1s var(--ease-soft); }
+  .adm-filter:hover     { border-color: var(--brand); color: var(--brand-press); }
+  .adm-filter-active    { background: var(--brand); border-color: var(--brand); color: var(--text-on-brand); }
+  .adm-filter-active:hover { background: var(--brand-press); border-color: var(--brand-press); color: var(--text-on-brand); }
+
+  /* ── Ligne de total d'une grille ──────────────────────────────────────────
+     Assez contrastée pour se lire comme un pied de tableau même figée dans un
+     `thead` collant. */
+  .adm-grid tfoot td { padding: .4375rem .75rem; color: var(--text-body); }
+  .adm-grid-total > td, .adm-grid-total > th {
+    background: var(--surface-sunk); color: var(--text-strong); font-weight: 700;
+    padding: .4375rem .75rem; border-top: 1px solid var(--border-strong);
+  }
+  /* Matrice client × variante : l'en-tête entier (produits, variantes, puis la
+     ligne de total) est figé d'un seul bloc — `position: sticky` sur `thead`,
+     supporté depuis Chrome 91. Les `th` repassent en statique pour ne pas se
+     chevaucher entre eux ; les colonnes figées gardent leur `sticky` en ligne. */
+  .adm-grid-matrix thead    { position: sticky; top: 0; z-index: 20; }
+  .adm-grid-matrix thead th { position: static; }
+  .adm-grid-matrix thead .adm-grid-total > td { background: var(--surface-sunk); }
+
+  /* ── Bulle d'explication (survol d'une quantité de pâte) ──────────────── */
+  .adm-popover { background: var(--surface-card); border: 1px solid var(--border-subtle);
+                 border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); text-align: left; }
+  .adm-popover-trigger { cursor: help; border-bottom: 1px dashed var(--border-strong); }
+  .adm-popover-trigger:hover { border-bottom-color: var(--brand); }
+
+  /* Éditeur de note : le chrome de Trix aligné sur les champs de l'admin. */
+  .adm-trix { border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+              background: var(--surface-card); box-shadow: none; }
+
+  /* ── Drapeaux ─────────────────────────────────────────────────────────────
+     Une carte par client à préparer. La couleur n'a ici aucun sens sémantique :
+     elle sert seulement à ce que deux cartes voisines ne se confondent pas d'un
+     coup d'oeil. Huit teintes prises dans les familles existantes, parcourues en
+     boucle par `adm_flag_class`. */
+  .adm-flag   { --flag-bg: var(--surface-inset); --flag-border: var(--border-subtle);
+                --flag-ink: var(--text-strong);  --flag-dot: var(--text-faint);
+                background: var(--flag-bg); border: 2px solid var(--flag-border); }
+  .adm-flag-1 { --flag-bg: var(--sage-100);    --flag-border: var(--sage-300);   --flag-ink: var(--sage-700);    --flag-dot: var(--sage-500); }
+  .adm-flag-2 { --flag-bg: var(--ember-100);   --flag-border: var(--ember-200);  --flag-ink: var(--ember-700);   --flag-dot: var(--ember-500); }
+  .adm-flag-3 { --flag-bg: var(--water-100);   --flag-border: var(--water-200);  --flag-ink: var(--water-700);   --flag-dot: var(--water-600); }
+  .adm-flag-4 { --flag-bg: var(--warning-100); --flag-border: var(--warning-200);--flag-ink: var(--warning-700); --flag-dot: var(--warning-600); }
+  .adm-flag-5 { --flag-bg: var(--success-100); --flag-border: var(--success-200);--flag-ink: var(--success-700); --flag-dot: var(--success-600); }
+  .adm-flag-6 { --flag-bg: var(--danger-100);  --flag-border: var(--danger-200); --flag-ink: var(--danger-700);  --flag-dot: var(--danger-600); }
+  .adm-flag-7 { --flag-bg: var(--flour-100);   --flag-border: var(--crust-200);  --flag-ink: var(--crust-600);   --flag-dot: var(--crust-600); }
+  .adm-flag-8 { --flag-bg: var(--flour-200);   --flag-border: var(--flour-400);  --flag-ink: var(--ink-700);     --flag-dot: var(--ink-500); }
+  .adm-flag-ink { color: var(--flag-ink, var(--text-strong)); }
+  .adm-flag-dot { background: var(--flag-dot, var(--text-faint)); }
+  /* Les pastilles internes d'une carte drapeau restent neutres pour que la
+     teinte de la carte reste le seul signal de regroupement. */
+  .adm-flag-inner { background: var(--surface-card); }
 }

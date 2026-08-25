@@ -13,7 +13,7 @@ p.text-sm.text-gray-600.mb-5
 .grid.grid-cols-1.lg:grid-cols-3.gap-6
   .lg:col-span-1
     .bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-5
-      h2.text-sm.font-semibold.text-gray-900.mb-3 Bloquer un créneau
+      h2.text-xl.font-semibold.text-gray-900.mb-3 Bloquer un créneau
       = form_with model: [ :admin, @block ], url: admin_party_slot_blocks_path, local: true, class: "space-y-4" do |f|
         - if @block.errors.any?
           .rounded-md.bg-red-50.p-3

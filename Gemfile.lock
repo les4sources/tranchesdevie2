@@ -120,7 +120,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.7)
-    csv (3.3.5)
+    csv (3.3.6)
     date (3.5.1)
     debug (1.11.1)
       irb (~> 1.10)
@@ -162,7 +162,7 @@ GEM
       activesupport (>= 6.1)
     hashdiff (1.2.1)
     hashery (2.1.2)
-    httparty (0.23.2)
+    httparty (0.24.2)
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
@@ -233,8 +233,8 @@ GEM
       stimulus-rails
       turbo-rails
     msgpack (1.8.0)
-    multi_xml (0.7.2)
-      bigdecimal (~> 3.1)
+    multi_xml (0.9.1)
+      bigdecimal (>= 3.1, < 5)
     net-imap (0.5.12)
       date
       net-protocol

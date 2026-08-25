@@ -66,6 +66,28 @@ production **tient dans la journée**. Trois jauges sont suivies :
 > commandes sur cette fournée, ou ouvrir une capacité supplémentaire dans les
 > **Paramètres**.
 
+## Les Pizza parties à préparer
+
+Une Pizza party privée consomme des **pâtons** qu'il faut pétrir à l'avance,
+mais elle n'a pas de fournée à elle. Quand une party se prépare sur la fournée
+que tu regardes, un bloc **Pizza parties à préparer** apparaît en haut du détail,
+avec la date de la party, son créneau, le nombre de personnes et le nom du
+client.
+
+La fournée qui prépare une party n'est pas toujours celle du jour même :
+
+- party le **soir** d'un jour de fournée → cette fournée-là ;
+- party à **midi**, ou un jour **sans fournée** (samedi, dimanche…) → la
+  **fournée d'avant**, puisque la pâte ne peut pas être prête le matin même.
+
+C'est pour ça que le bloc précise « à préparer pour le samedi 5 septembre »
+quand la party n'a pas lieu le jour même : ne cherche pas un groupe qui
+n'arrivera que plus tard.
+
+> Les pâtons de party comptent dans le **pétrin** et dans les quantités de
+> **farine**, mais **pas dans le four** ni dans les **moules** : les pizzas
+> cuisent au four à bois, pas dans le four à pain de la fournée.
+
 ## Les feuilles à imprimer
 
 Depuis une fournée, tu peux sortir :

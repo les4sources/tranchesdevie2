@@ -60,6 +60,43 @@
                 span = adm_order_status_chip(status)
                 span.adm-grid-num.font-semibold style="color: var(--text-strong);" = count
 
+  / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170). Ce
+  / n'est pas toujours le jour même : une party de midi, ou un jour sans
+  / fournée, se prépare la fournée d'avant.
+  - parties = @dashboard.parties_to_prepare
+  - if parties.any?
+    .adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
+      .flex.flex-wrap.items-center.gap-3
+        h2.text-sm.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
+        = adm_chip(pluralize(parties.size, "party", "parties"), tone: :accent)
+      p.mt-1.text-sm style="color: var(--text-muted);"
+        | Ces pâtons se pétrissent aujourd'hui. Ils comptent dans le pétrin et la farine, pas dans le four.
+
+      .mt-4.overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Quand
+              th Créneau
+              th.text-right Personnes
+              th Client
+              th
+          tbody
+            - parties.each do |party|
+              tr
+                td.whitespace-nowrap
+                  - if party[:same_day]
+                    = adm_chip "Aujourd'hui", tone: :success
+                  - else
+                    span style="color: var(--text-strong);"
+                      | à préparer pour le #{l(party[:held_on], format: :long_with_day)}
+                td.whitespace-nowrap = party[:slot_label]
+                td.adm-grid-num.whitespace-nowrap.text-right.font-semibold style="color: var(--text-strong);"
+                  = party[:paton_count]
+                td = party[:customer_name] || "—"
+                td.whitespace-nowrap.text-right
+                  = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
+
   .adm-card.p-4.sm:p-6
     h2.text-sm.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
     = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, local: true, class: "mt-4 space-y-3" do |form|

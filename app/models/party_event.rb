@@ -97,6 +97,57 @@ class PartyEvent < ApplicationRecord
     public_events.not_deleted.where(held_on: date).exists?
   end
 
+  # Fournée qui PRÉPARE les pâtons d'une party privée (#170).
+  #
+  # Les pâtons se pétrissent à l'avance : une party du soir peut être servie par
+  # la fournée du jour même, mais une party de midi, non — le matin même, la pâte
+  # n'est pas prête. Et le calendrier de réservation accepte n'importe quel jour
+  # de la semaine, y compris ceux sans fournée.
+  #
+  #   soir + une fournée existe ce jour-là → cette fournée
+  #   sinon (midi, ou jour sans fournée)   → la dernière fournée qui précède
+  #
+  # Renvoie nil si aucune fournée ne précède la party : l'admin le signale
+  # plutôt que de faire disparaître la party des écrans de production.
+  def preparation_bake_day
+    return nil unless kind_private_party? && held_on.present?
+
+    if slot_soir?
+      same_day = BakeDay.find_by(baked_on: held_on)
+      return same_day if same_day
+    end
+
+    BakeDay.where(baked_on: ...held_on).order(baked_on: :desc).first
+  end
+
+  # Réciproque de `preparation_bake_day`, en une requête : les parties privées
+  # que CETTE fournée doit préparer.
+  #
+  # Soit N la fournée suivante. `bake_day` prépare :
+  #   - les parties du SOIR tenues le jour même ;
+  #   - toutes les parties tenues strictement entre les deux fournées ;
+  #   - les parties de MIDI tenues le jour de N (N ne prend que ses soirs).
+  # Sans fournée suivante, tout ce qui vient après lui revient.
+  scope :prepared_by, lambda { |bake_day|
+    next none if bake_day&.baked_on.blank?
+
+    date = bake_day.baked_on
+    next_date = BakeDay.where("baked_on > ?", date).order(:baked_on).limit(1).pick(:baked_on)
+
+    scope = private_events.not_deleted
+    evening = scope.where(held_on: date, slot: slots[:soir])
+
+    between =
+      if next_date
+        scope.where("held_on > ? AND held_on < ?", date, next_date)
+             .or(scope.where(held_on: next_date, slot: slots[:midi]))
+      else
+        scope.where("held_on > ?", date)
+      end
+
+    evening.or(between).order(:held_on, :slot)
+  }
+
   def slot_label
     SLOT_LABELS[slot] || "—"
   end

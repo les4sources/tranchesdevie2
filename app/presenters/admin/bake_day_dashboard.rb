@@ -273,6 +273,25 @@ module Admin
       end
     end
 
+    # Parties PRIVÉES que cette fournée doit préparer, avec de quoi les annoncer
+    # aux boulangers : date, créneau, nombre de pâtons, client.
+    def parties_to_prepare
+      @parties_to_prepare ||= party_orders
+        .select { |order| order.party_event&.kind_private_party? }
+        .sort_by { |order| [ order.party_event.held_on, order.party_event.slot.to_s ] }
+        .map do |order|
+          {
+            order: order,
+            party_event: order.party_event,
+            held_on: order.party_event.held_on,
+            slot_label: order.party_event.slot_label,
+            same_day: order.party_event.held_on == bake_day.baked_on,
+            paton_count: paton_count_for(order),
+            customer_name: order.customer&.full_name
+          }
+        end
+    end
+
     private
 
     # Récapitulatif agrégé des articles par variante, sur un sous-ensemble de
@@ -297,21 +316,44 @@ module Admin
       @production_orders ||= orders.select { |order| PRODUCTION_STATUSES.include?(order.status.to_sym) }
     end
 
-    # Commandes party (privées/publiques) dont l'événement tombe le jour de la
-    # fournée. Elles n'ont pas de fournée (`bake_day: nil` par design) mais leur
-    # pâte est bien pétrie ce jour-là : elles comptent dans les quantités de
+    # Commandes party dont la pâte est pétrie sur CETTE fournée. Elles n'ont pas
+    # de fournée (`bake_day: nil` par design) mais comptent dans les quantités de
     # production (farine, pâte, ingrédients), pas dans le CA ni les retraits.
+    #
+    # Deux règles distinctes, à dessein (#170) :
+    #   - PRIVÉE : la fournée de préparation, qui n'est pas toujours celle du
+    #     jour même (cf. PartyEvent#preparation_bake_day) — une party de midi se
+    #     prépare la fournée d'avant, et un samedi n'a pas de fournée du tout ;
+    #   - PUBLIQUE : le jour même, comme avant. Hors périmètre de #170, elles ont
+    #     leur propre organisation.
     def party_orders
-      @party_orders ||= Order.where(source: :party, status: PRODUCTION_STATUSES)
-                             .joins(:party_event)
-                             .where(party_events: { held_on: bake_day.baked_on })
-                             .includes(order_items: {
-                                         product_variant: [
-                                           :mold_type,
-                                           { product: { product_flours: :flour } }
-                                         ]
-                                       })
-                             .to_a
+      @party_orders ||= begin
+        private_event_ids = PartyEvent.prepared_by(bake_day).pluck(:id)
+
+        Order.where(source: :party, status: PRODUCTION_STATUSES)
+             .joins(:party_event)
+             .where(
+               "party_events.id IN (:private_ids) OR (party_events.kind = :public_kind AND party_events.held_on = :date)",
+               private_ids: private_event_ids.presence || [ -1 ],
+               public_kind: PartyEvent.kinds[:public_party],
+               date: bake_day.baked_on
+             )
+             .includes(order_items: {
+                         product_variant: [
+                           :mold_type,
+                           { product: { product_flours: :flour } }
+                         ]
+                       })
+             .to_a
+      end
+    end
+
+    # Une boule par personne. La ligne « forfait » — unique par commande, quel
+    # que soit le nombre de convives — n'est pas un pâton.
+    def paton_count_for(order)
+      order.order_items.sum do |item|
+        item.product_variant.product.pizza_party_role_party? ? item.qty : 0
+      end
     end
 
     def production_order_items

@@ -112,8 +112,21 @@ RSpec.describe Admin::BakeDayDashboard do
       expect(stat[:flour_quantity]).to eq(14 * 250)
     end
 
-    it 'ignores party orders held on another date' do
-      party_event.update!(held_on: bake_day.baked_on + 7)
+    # Depuis #170, une party n'est plus rattachée à la fournée du même jour mais
+    # à celle qui PRÉPARE ses pâtons. Une party qui tombe après une fournée
+    # ultérieure appartient donc à celle-là, plus à celle-ci.
+    it 'ignores a party prepared by a later bake day' do
+      later_bake_day = create(:bake_day, baked_on: bake_day.baked_on + 7,
+                                         cut_off_at: bake_day.baked_on + 5)
+      party_event.update!(held_on: later_bake_day.baked_on)
+
+      expect(dashboard.flour_type_stats.find { |s| s[:flour] == patons }).to be_nil
+      expect(described_class.new(later_bake_day).flour_type_stats
+                            .find { |s| s[:flour] == patons }).to be_present
+    end
+
+    it 'ignores a party held before this bake day' do
+      party_event.update!(held_on: bake_day.baked_on - 7)
 
       expect(dashboard.flour_type_stats.find { |s| s[:flour] == patons }).to be_nil
     end

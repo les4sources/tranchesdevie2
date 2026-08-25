@@ -54,7 +54,7 @@ RSpec.describe 'Notification équipe — Pizza party privée', type: :request do
 
     before do
       sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'Anniversaire de Léa, 4 adultes.', qty: 4 }
       stub_stripe_payment_intent_create(amount: (500 * 4) + 4000)
       post '/checkout/create_payment_intent',
            params: { first_name: 'Léa' }.to_json,
@@ -100,7 +100,7 @@ RSpec.describe 'Notification équipe — Pizza party privée', type: :request do
 
     it "journalise un EmailMessage de notification d'équipe" do
       sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 7 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'Soirée d\'équipe, 7 personnes.', qty: 7 }
 
       deliver_pending_emails do
         post '/checkout/create_cash_order',

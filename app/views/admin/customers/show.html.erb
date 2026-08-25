@@ -2,110 +2,98 @@
 <% content_for :layout, "admin" %>
 
 <div data-controller="sms-modal email-modal">
-<div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-  <h1 class="text-2xl font-bold text-gray-900">Mangeur : <%= @customer.full_name %></h1>
-  <div class="flex space-x-3">
-    <%= link_to "Modifier", edit_admin_customer_path(@customer), class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50" %>
-    <% if @customer.orders.empty? %>
-      <%= button_to "Supprimer", admin_customer_path(@customer), method: :delete, form: { data: { turbo_confirm: "Supprimer ce mangeur ? Cette action est définitive." } }, class: "inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white shadow-sm hover:bg-red-50 cursor-pointer" %>
-    <% end %>
-    <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: "inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700" %>
-    <% if @customer.sms_enabled? %>
-      <button
-        type="button"
-        data-action="click->sms-modal#open"
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700">
-        Envoyer un SMS
-      </button>
-    <% end %>
-  </div>
-</div>
+<%= adm_page_header "Mangeur : #{@customer.full_name}" do %>
+  <%= link_to "Modifier", edit_admin_customer_path(@customer), class: adm_btn_class(:default) %>
+  <% if @customer.orders.empty? %>
+    <%= button_to "Supprimer", admin_customer_path(@customer), method: :delete, form: { data: { turbo_confirm: "Supprimer ce mangeur ? Cette action est définitive." } }, class: adm_btn_class(:danger) %>
+  <% end %>
+  <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: adm_btn_class(:primary) %>
+  <% if @customer.sms_enabled? %>
+    <button type="button" data-action="click->sms-modal#open" class="<%= adm_btn_class(:default) %>">
+      Envoyer un SMS
+    </button>
+  <% end %>
+<% end %>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Informations</h2>
-    
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="adm-card p-4 sm:p-6">
+    <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Informations</h2>
+
     <dl class="space-y-3">
       <div>
-        <dt class="text-sm font-medium text-gray-500">Prénom</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @customer.first_name %></dd>
+        <dt class="adm-eyebrow">Prénom</dt>
+        <dd class="mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.first_name %></dd>
       </div>
 
       <% if @customer.last_name.present? %>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Nom</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= @customer.last_name %></dd>
+          <dt class="adm-eyebrow">Nom</dt>
+          <dd class="mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.last_name %></dd>
         </div>
       <% end %>
 
       <% if @customer.phone_e164.present? %>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Téléphone</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= @customer.phone_e164 %></dd>
+          <dt class="adm-eyebrow">Téléphone</dt>
+          <dd class="adm-grid-num mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.phone_e164 %></dd>
         </div>
       <% end %>
 
       <% if @customer.email.present? %>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Email</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= @customer.email %></dd>
+          <dt class="adm-eyebrow">Email</dt>
+          <dd class="mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.email %></dd>
         </div>
       <% end %>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">SMS activé</dt>
+        <dt class="adm-eyebrow">SMS activé</dt>
         <dd class="mt-1">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @customer.sms_enabled? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-            <%= @customer.sms_enabled? ? 'Oui' : 'Non' %>
-          </span>
+          <%= adm_chip(@customer.sms_enabled? ? "Oui" : "Non", tone: @customer.sms_enabled? ? :success : :danger) %>
         </dd>
       </div>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Date d'inscription</dt>
-        <dd class="mt-1 text-sm text-gray-900"><%= @customer.created_at.strftime("%d/%m/%Y à %H:%M") %></dd>
+        <dt class="adm-eyebrow">Date d'inscription</dt>
+        <dd class="adm-grid-num mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.created_at.strftime("%d/%m/%Y à %H:%M") %></dd>
       </div>
 
       <% if @customer.billable? %>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Facturation</dt>
-          <dd class="mt-1">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-              Facturable
-            </span>
-          </dd>
+          <dt class="adm-eyebrow">Facturation</dt>
+          <dd class="mt-1"><%= adm_chip "Facturable", tone: :brand %></dd>
         </div>
       <% end %>
 
       <div>
-        <dt class="text-sm font-medium text-gray-500">Groupes</dt>
-        <dd class="mt-1 text-sm text-gray-900">
+        <dt class="adm-eyebrow">Groupes</dt>
+        <dd class="mt-1 text-sm" style="color: var(--text-strong);">
           <% if @customer.groups.any? %>
             <%= @customer.groups.map { |g| "#{g.name} (#{g.discount_percent}%)" }.join(", ") %>
             <% if @customer.effective_discount_percent > 0 %>
-              <span class="text-gray-500 text-xs block mt-1">Remise appliquée : <%= @customer.effective_discount_percent %>%</span>
+              <span class="mt-1 block text-xs" style="color: var(--text-muted);">Remise appliquée : <%= @customer.effective_discount_percent %>%</span>
             <% end %>
           <% else %>
-            <span class="text-gray-400">Aucun groupe</span>
+            <span style="color: var(--text-faint);">Aucun groupe</span>
           <% end %>
         </dd>
       </div>
     </dl>
   </div>
 
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Statistiques</h2>
-    
+  <div class="adm-card p-4 sm:p-6">
+    <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Statistiques</h2>
+
     <dl class="space-y-3">
       <div>
-        <dt class="text-sm font-medium text-gray-500">Nombre de commandes</dt>
-        <dd class="mt-1 text-lg font-medium text-gray-900"><%= @customer.orders.count %></dd>
+        <dt class="adm-eyebrow">Nombre de commandes</dt>
+        <dd class="adm-grid-num mt-1 text-lg font-semibold" style="color: var(--text-strong);"><%= @customer.orders.count %></dd>
       </div>
 
       <% total_revenue = @customer.orders.where(status: Order::COMPLETED_STATUSES).sum(:total_cents) %>
       <div>
-        <dt class="text-sm font-medium text-gray-500">Chiffre d'affaires total</dt>
-        <dd class="mt-1 text-lg font-medium text-gray-900">
+        <dt class="adm-eyebrow">Chiffre d'affaires total</dt>
+        <dd class="adm-grid-num mt-1 text-lg font-semibold" style="color: var(--text-strong);">
           <%= number_to_currency(total_revenue / 100.0, unit: "€", separator: ",", delimiter: "") %>
         </dd>
       </div>
@@ -114,25 +102,23 @@
 
   <% if @wallet %>
     <%# Portefeuille (#138) — lecture seule : solde, solde disponible, alerte solde bas. %>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Portefeuille</h2>
+    <div class="adm-card p-4 sm:p-6">
+      <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Portefeuille</h2>
 
       <dl class="space-y-3">
         <div>
-          <dt class="text-sm font-medium text-gray-500">Solde</dt>
-          <dd class="mt-1 text-lg font-medium <%= @wallet.low_balance? ? 'text-red-700' : 'text-gray-900' %>">
+          <dt class="adm-eyebrow">Solde</dt>
+          <dd class="adm-grid-num mt-1 text-lg font-semibold" style="color: <%= @wallet.low_balance? ? "var(--danger-700)" : "var(--text-strong)" %>;">
             <%= number_to_currency(@wallet.balance_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
             <% if @wallet.low_balance? %>
-              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                Solde bas
-              </span>
+              <span class="ml-2"><%= adm_chip "Solde bas", tone: :danger %></span>
             <% end %>
           </dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500">Solde disponible</dt>
-          <dd class="mt-1 text-sm text-gray-900">
+          <dt class="adm-eyebrow">Solde disponible</dt>
+          <dd class="adm-grid-num mt-1 text-sm" style="color: var(--text-strong);">
             <%= number_to_currency(@wallet.available_balance_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
           </dd>
         </div>
@@ -140,7 +126,7 @@
         <% committed_cents = @wallet.balance_cents - @wallet.available_balance_cents %>
         <% if committed_cents.positive? %>
           <div>
-            <dd class="text-xs text-gray-500">
+            <dd class="text-xs" style="color: var(--text-muted);">
               <%= number_to_currency(committed_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> engagés dans des commandes planifiées
             </dd>
           </div>
@@ -150,390 +136,313 @@
   <% end %>
 </div>
 
-<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-4">Commandes</h2>
-  
-  <% if @orders.any? %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jour de cuisson</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <% @orders.each do |order| %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <span class="inline-flex items-center gap-2">
-                  <%= order_payment_method_icon(order) %>
-                  <%= order.order_number %>
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  <%= case order.status
-                      when 'pending' then 'bg-yellow-100 text-yellow-800'
-                      when 'paid' then 'bg-blue-100 text-blue-800'
-                      when 'ready' then 'bg-green-100 text-green-800'
-                      when 'picked_up' then 'bg-gray-100 text-gray-800'
-                      when 'no_show' then 'bg-red-100 text-red-800'
-                      when 'cancelled' then 'bg-red-100 text-red-800'
-                      when 'unpaid' then 'bg-orange-100 text-orange-800'
-                      else 'bg-gray-100 text-gray-800'
-                      end %>">
-                  <%= order_status_label(order.status) %>
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                <%= order.created_at.strftime("%d/%m/%Y") %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <%= link_to "Voir", admin_order_path(order), class: "text-blue-600 hover:text-blue-800" %>
-              </td>
-            </tr>
+<div class="adm-card mt-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Commandes</h2>
+    <span class="adm-eyebrow"><%= compte_commandes(@orders.size) %></span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Commande</th>
+          <th>Jour de cuisson</th>
+          <th class="text-right">Total</th>
+          <th>Statut</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @orders.empty? %>
+          <%= adm_empty_row(colspan: 6, title: "Aucune commande pour ce mangeur.") do %>
+            <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: adm_btn_class(:primary) %>
           <% end %>
-        </tbody>
-      </table>
-    </div>
+        <% end %>
+
+        <% @orders.each do |order| %>
+          <tr>
+            <td class="adm-grid-num whitespace-nowrap font-semibold" style="color: var(--text-strong);">
+              <span class="inline-flex items-center gap-2">
+                <%= order_payment_method_icon(order) %>
+                <%= order.order_number %>
+              </span>
+            </td>
+            <td class="adm-grid-num whitespace-nowrap">
+              <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %>
+            </td>
+            <td class="adm-grid-num whitespace-nowrap text-right font-medium" style="color: var(--text-strong);">
+              <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+            </td>
+            <td><%= adm_order_status_chip(order.status) %></td>
+            <td class="adm-grid-num whitespace-nowrap"><%= order.created_at.strftime("%d/%m/%Y") %></td>
+            <td class="whitespace-nowrap text-right">
+              <%= link_to "Voir", admin_order_path(order), class: "adm-rowaction" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="adm-card mt-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">SMS envoyés</h2>
+    <span class="adm-eyebrow"><%= @sms_messages.size %> message<%= "s" if @sms_messages.size > 1 %></span>
+  </div>
+
+  <% if @sms_messages.empty? %>
+    <p class="p-4 text-sm sm:p-6" style="color: var(--text-muted);">Aucun message SMS pour ce mangeur.</p>
   <% else %>
-    <p class="text-sm text-gray-500">Aucune commande pour ce mangeur.</p>
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Date d'envoi</th>
+          <th>Type</th>
+          <th>Contenu</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @sms_messages.each do |sms| %>
+          <tr>
+            <td class="adm-grid-num whitespace-nowrap">
+              <%= (sms.sent_at || sms.created_at).strftime("%d/%m/%Y à %H:%M") %>
+            </td>
+            <td><%= adm_message_kind_chip(sms.kind) %></td>
+            <td><%= truncate(sms.body, length: 60) %></td>
+            <td class="whitespace-nowrap text-right">
+              <%= link_to "Détails", admin_customer_sms_message_path(@customer, sms), class: "adm-rowaction" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
   <% end %>
 </div>
 
-<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-4">SMS envoyés</h2>
-  
-  <% if @sms_messages.any? %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'envoi</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenu</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <% @sms_messages.each do |sms| %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                <%= (sms.sent_at || sms.created_at).strftime("%d/%m/%Y à %H:%M") %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  <%= case sms.kind
-                      when 'confirmation' then 'bg-blue-100 text-blue-800'
-                      when 'ready' then 'bg-green-100 text-green-800'
-                      when 'refund' then 'bg-red-100 text-red-800'
-                      when 'otp' then 'bg-purple-100 text-purple-800'
-                      else 'bg-gray-100 text-gray-800'
-                      end %>">
-                  <%= case sms.kind
-                      when 'confirmation' then 'Confirmation'
-                      when 'ready' then 'Prêt'
-                      when 'refund' then 'Remboursement'
-                      when 'otp' then 'OTP'
-                      else 'Autre'
-                      end %>
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
-                <%= truncate(sms.body, length: 60) %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <%= link_to "Détails", admin_customer_sms_message_path(@customer, sms), class: "text-blue-600 hover:text-blue-800" %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  <% else %>
-    <p class="text-sm text-gray-500">Aucun message SMS pour ce mangeur.</p>
-  <% end %>
-</div>
+<div class="adm-card mt-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">E-mails envoyés</h2>
+    <span class="adm-eyebrow"><%= @email_messages.size %> e-mail<%= "s" if @email_messages.size > 1 %></span>
+  </div>
 
-<div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-4">E-mails envoyés</h2>
-
-  <% if @email_messages.any? %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'envoi</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sujet</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <% @email_messages.each do |email| %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                <%= (email.sent_at || email.created_at).strftime("%d/%m/%Y à %H:%M") %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  <%= case email.kind
-                      when 'confirmation' then 'bg-blue-100 text-blue-800'
-                      when 'otp' then 'bg-purple-100 text-purple-800'
-                      else 'bg-gray-100 text-gray-800'
-                      end %>">
-                  <%= case email.kind
-                      when 'confirmation' then 'Confirmation'
-                      when 'otp' then 'OTP'
-                      else 'Autre'
-                      end %>
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
-                <%= truncate(email.subject, length: 60) %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button
-                  type="button"
-                  data-action="click->email-modal#open"
-                  data-show-url="<%= admin_customer_email_message_path(@customer, email, format: :json) %>"
-                  data-resend-url="<%= resend_admin_customer_email_message_path(@customer, email) %>"
-                  class="text-blue-600 hover:text-blue-800">
-                  Détails
-                </button>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
+  <% if @email_messages.empty? %>
+    <p class="p-4 text-sm sm:p-6" style="color: var(--text-muted);">Aucun e-mail pour ce mangeur.</p>
   <% else %>
-    <p class="text-sm text-gray-500">Aucun e-mail pour ce mangeur.</p>
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Date d'envoi</th>
+          <th>Type</th>
+          <th>Sujet</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @email_messages.each do |email| %>
+          <tr>
+            <td class="adm-grid-num whitespace-nowrap">
+              <%= (email.sent_at || email.created_at).strftime("%d/%m/%Y à %H:%M") %>
+            </td>
+            <td><%= adm_message_kind_chip(email.kind) %></td>
+            <td><%= truncate(email.subject, length: 60) %></td>
+            <td class="whitespace-nowrap text-right">
+              <button type="button"
+                      data-action="click->email-modal#open"
+                      data-show-url="<%= admin_customer_email_message_path(@customer, email, format: :json) %>"
+                      data-resend-url="<%= resend_admin_customer_email_message_path(@customer, email) %>"
+                      class="adm-rowaction">
+                Détails
+              </button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
   <% end %>
 </div>
 
 <% if @wallet %>
   <%# Mouvements du portefeuille (#138) — lecture seule, du plus récent au plus ancien. %>
-  <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Mouvements du portefeuille</h2>
+  <div class="adm-card mt-4 overflow-hidden">
+    <div class="adm-cardhd">
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Mouvements du portefeuille</h2>
+      <span class="adm-eyebrow"><%= @wallet_transactions.size %> mouvement<%= "s" if @wallet_transactions.size > 1 %></span>
+    </div>
 
-    <% if @wallet_transactions.any? %>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commande</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <% @wallet_transactions.each do |txn| %>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  <%= txn.created_at.strftime("%d/%m/%Y à %H:%M") %>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    <%= case txn.transaction_type
-                        when 'top_up' then 'bg-green-100 text-green-800'
-                        when 'order_debit' then 'bg-orange-100 text-orange-800'
-                        when 'order_refund' then 'bg-blue-100 text-blue-800'
-                        else 'bg-gray-100 text-gray-800'
-                        end %>">
-                    <%= case txn.transaction_type
-                        when 'top_up' then 'Recharge'
-                        when 'order_debit' then 'Débit commande'
-                        when 'order_refund' then 'Remboursement'
-                        else txn.transaction_type
-                        end %>
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium <%= txn.amount_cents.negative? ? 'text-red-700' : 'text-green-700' %>">
-                  <%= "+" if txn.amount_cents.positive? %><%= number_to_currency(txn.amount_euros, unit: "€", separator: ",", delimiter: "") %>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <% if txn.order %>
-                    <%= link_to txn.order.order_number, admin_order_path(txn.order), class: "text-blue-600 hover:text-blue-800" %>
-                  <% else %>
-                    <span class="text-gray-400">—</span>
-                  <% end %>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                  <%= txn.description.presence || content_tag(:span, "—", class: "text-gray-400") %>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
+    <% if @wallet_transactions.empty? %>
+      <p class="p-4 text-sm sm:p-6" style="color: var(--text-muted);">Aucun mouvement pour ce portefeuille.</p>
     <% else %>
-      <p class="text-sm text-gray-500">Aucun mouvement pour ce portefeuille.</p>
+    <div class="overflow-x-auto">
+      <table class="adm-grid">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th class="text-right">Montant</th>
+            <th>Commande</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @wallet_transactions.each do |txn| %>
+            <tr>
+              <td class="adm-grid-num whitespace-nowrap">
+                <%= txn.created_at.strftime("%d/%m/%Y à %H:%M") %>
+              </td>
+              <td><%= adm_wallet_transaction_chip(txn.transaction_type) %></td>
+              <td class="adm-grid-num whitespace-nowrap text-right font-medium"
+                  style="color: <%= txn.amount_cents.negative? ? "var(--danger-700)" : "var(--success-700)" %>;">
+                <%= "+" if txn.amount_cents.positive? %><%= number_to_currency(txn.amount_euros, unit: "€", separator: ",", delimiter: "") %>
+              </td>
+              <td class="adm-grid-num whitespace-nowrap">
+                <% if txn.order %>
+                  <%= link_to txn.order.order_number, admin_order_path(txn.order), class: "adm-link" %>
+                <% else %>
+                  <span style="color: var(--text-faint);">—</span>
+                <% end %>
+              </td>
+              <td>
+                <%= txn.description.presence || content_tag(:span, "—", style: "color: var(--text-faint);") %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
     <% end %>
   </div>
 <% end %>
 
-<div class="mt-6">
-  <%= link_to "← Retour à la liste des mangeurs", admin_customers_path, class: "text-blue-600 hover:text-blue-800" %>
+<div class="mt-4">
+  <%= link_to "← Retour à la liste des mangeurs", admin_customers_path, class: "adm-link" %>
 </div>
 
-<!-- Modal pour visualiser / renvoyer un e-mail -->
-<div
-  id="email-modal"
-  class="hidden fixed inset-0 z-50 overflow-y-auto"
-  data-email-modal-target="modal"
-  data-action="keydown@window->email-modal#closeWithEscape">
-  <div
-    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-    data-email-modal-target="overlay"
-    data-action="click->email-modal#closeBackground">
+<%# Modal pour visualiser / renvoyer un e-mail %>
+<div id="email-modal"
+     class="hidden fixed inset-0 z-50 overflow-y-auto"
+     data-email-modal-target="modal"
+     data-action="keydown@window->email-modal#closeWithEscape">
+  <div class="fixed inset-0 transition-opacity"
+       style="background: color-mix(in srgb, var(--ink-900) 55%, transparent);"
+       data-email-modal-target="overlay"
+       data-action="click->email-modal#closeBackground">
   </div>
 
   <div class="flex min-h-full items-center justify-center p-4">
-    <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+    <div class="adm-card relative transform overflow-hidden px-4 pb-4 pt-5 text-left transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6"
+         style="box-shadow: var(--shadow-lg);">
       <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-        <button
-          type="button"
-          data-action="click->email-modal#close"
-          class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <button type="button" data-action="click->email-modal#close" class="<%= adm_btn_class(:ghost, "!p-1") %>">
           <span class="sr-only">Fermer</span>
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <%= lucide "x", size: 18 %>
         </button>
       </div>
 
-      <h3 class="text-base font-semibold leading-6 text-gray-900 mb-4">Détails de l'e-mail</h3>
+      <h3 class="mb-4 text-base font-semibold" style="color: var(--text-strong);">Détails de l'e-mail</h3>
 
-      <dl class="space-y-2 text-sm mb-4">
+      <dl class="mb-4 space-y-2 text-sm">
         <div class="flex gap-2">
-          <dt class="font-medium text-gray-500 w-24 flex-shrink-0">Destinataire</dt>
-          <dd class="text-gray-900" data-email-modal-target="recipient"></dd>
+          <dt class="w-24 flex-shrink-0 font-medium" style="color: var(--text-muted);">Destinataire</dt>
+          <dd style="color: var(--text-strong);" data-email-modal-target="recipient"></dd>
         </div>
         <div class="flex gap-2">
-          <dt class="font-medium text-gray-500 w-24 flex-shrink-0">Date</dt>
-          <dd class="text-gray-900" data-email-modal-target="date"></dd>
+          <dt class="w-24 flex-shrink-0 font-medium" style="color: var(--text-muted);">Date</dt>
+          <dd style="color: var(--text-strong);" data-email-modal-target="date"></dd>
         </div>
         <div class="flex gap-2">
-          <dt class="font-medium text-gray-500 w-24 flex-shrink-0">Sujet</dt>
-          <dd class="text-gray-900 font-medium" data-email-modal-target="subject"></dd>
+          <dt class="w-24 flex-shrink-0 font-medium" style="color: var(--text-muted);">Sujet</dt>
+          <dd class="font-medium" style="color: var(--text-strong);" data-email-modal-target="subject"></dd>
         </div>
       </dl>
 
-      <div id="email-modal-error" class="hidden mb-4 rounded-md bg-red-50 p-4" data-email-modal-target="error">
-        <p class="text-sm font-medium text-red-800"></p>
+      <div id="email-modal-error" class="mb-4 hidden rounded-md p-4"
+           style="background: var(--danger-100);" data-email-modal-target="error">
+        <p class="text-sm font-medium" style="color: var(--danger-700);"></p>
       </div>
 
-      <div class="border border-gray-200 rounded-md overflow-hidden mb-4" style="height:420px;">
+      <div class="mb-4 overflow-hidden rounded-md border" style="height:420px; border-color: var(--border-subtle);">
         <iframe data-email-modal-target="body" class="w-full h-full" sandbox=""></iframe>
       </div>
 
-      <div class="mt-2 sm:flex sm:flex-row-reverse">
-        <button
-          type="button"
-          data-action="click->email-modal#resend"
-          data-email-modal-target="resendButton"
-          class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
-          Renvoyer cet e-mail
-        </button>
-        <button
-          type="button"
-          data-action="click->email-modal#close"
-          class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+      <div class="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" data-action="click->email-modal#close" class="<%= adm_btn_class(:default) %>">
           Fermer
+        </button>
+        <button type="button"
+                data-action="click->email-modal#resend"
+                data-email-modal-target="resendButton"
+                class="<%= adm_btn_class(:primary) %>">
+          Renvoyer cet e-mail
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal pour envoyer un SMS -->
-<div
-  id="sms-modal"
-  class="hidden fixed inset-0 z-50 overflow-y-auto"
-  data-sms-modal-target="modal"
-  data-action="keydown@window->sms-modal#closeWithEscape"
-  data-turbo-permanent>
-  <div
-    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-    data-sms-modal-target="overlay"
-    data-action="click->sms-modal#closeBackground">
+<%# Modal pour envoyer un SMS %>
+<div id="sms-modal"
+     class="hidden fixed inset-0 z-50 overflow-y-auto"
+     data-sms-modal-target="modal"
+     data-action="keydown@window->sms-modal#closeWithEscape"
+     data-turbo-permanent>
+  <div class="fixed inset-0 transition-opacity"
+       style="background: color-mix(in srgb, var(--ink-900) 55%, transparent);"
+       data-sms-modal-target="overlay"
+       data-action="click->sms-modal#closeBackground">
   </div>
 
   <div class="flex min-h-full items-center justify-center p-4">
-    <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+    <div class="adm-card relative transform overflow-hidden px-4 pb-4 pt-5 text-left transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
+         style="box-shadow: var(--shadow-lg);">
       <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-        <button
-          type="button"
-          data-action="click->sms-modal#close"
-          class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <button type="button" data-action="click->sms-modal#close" class="<%= adm_btn_class(:ghost, "!p-1") %>">
           <span class="sr-only">Fermer</span>
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <%= lucide "x", size: 18 %>
         </button>
       </div>
 
-      <div class="sm:flex sm:items-start">
-        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-          <h3 class="text-base font-semibold leading-6 text-gray-900 mb-4">
-            Envoyer un SMS à <%= @customer.full_name %>
-          </h3>
-          
-          <div class="mt-2">
-            <p class="text-sm text-gray-500 mb-4">
-              Destinataire : <%= @customer.phone_e164.presence || 'Non renseigné' %>
-            </p>
+      <div class="w-full">
+        <h3 class="mb-4 text-base font-semibold" style="color: var(--text-strong);">
+          Envoyer un SMS à <%= @customer.full_name %>
+        </h3>
 
-            <div id="sms-error" class="hidden mb-4 rounded-md bg-red-50 p-4" data-sms-modal-target="error">
-              <div class="flex">
-                <div class="ml-3">
-                  <p class="text-sm font-medium text-red-800"></p>
-                </div>
-              </div>
-            </div>
+        <p class="mb-4 text-sm" style="color: var(--text-muted);">
+          Destinataire : <%= @customer.phone_e164.presence || 'Non renseigné' %>
+        </p>
 
-            <%= form_with url: send_sms_admin_customer_path(@customer), method: :post, local: false, class: "space-y-4", data: { controller: "sms-modal", sms_modal_target: "form", action: "submit->sms-modal#submit", turbo: "false" } do |f| %>
-              <div>
-                <%= f.label :body, "Message", class: "block text-sm font-medium text-gray-700 mb-2" %>
-                <%= f.text_area :body, rows: 5, required: true, class: admin_input_class("sm:text-sm"), placeholder: "Entrez votre message..." %>
-                <p class="mt-2 text-sm text-gray-500">
-                  Le message sera envoyé via Smstools.
-                </p>
-              </div>
-
-              <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                <button
-                  type="submit"
-                  class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
-                  Envoyer
-                </button>
-                <button
-                  type="button"
-                  data-action="click->sms-modal#close"
-                  class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
-                  Annuler
-                </button>
-              </div>
-            <% end %>
-          </div>
+        <div id="sms-error" class="mb-4 hidden rounded-md p-4"
+             style="background: var(--danger-100);" data-sms-modal-target="error">
+          <p class="text-sm font-medium" style="color: var(--danger-700);"></p>
         </div>
+
+        <%= form_with url: send_sms_admin_customer_path(@customer), method: :post, local: false, class: "space-y-4", data: { controller: "sms-modal", sms_modal_target: "form", action: "submit->sms-modal#submit", turbo: "false" } do |f| %>
+          <div>
+            <%= f.label :body, "Message", class: "adm-eyebrow mb-1 block" %>
+            <%= f.text_area :body, rows: 5, required: true, class: adm_field_class, placeholder: "Entrez votre message..." %>
+            <p class="mt-2 text-sm" style="color: var(--text-muted);">
+              Le message sera envoyé via Smstools.
+            </p>
+          </div>
+
+          <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" data-action="click->sms-modal#close" class="<%= adm_btn_class(:default) %>">
+              Annuler
+            </button>
+            <button type="submit" class="<%= adm_btn_class(:primary) %>">
+              Envoyer
+            </button>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>
 </div>
 </div>
-

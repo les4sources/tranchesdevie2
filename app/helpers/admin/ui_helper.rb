@@ -28,6 +28,37 @@ module Admin::UiHelper
 
   TONES = %i[neutral brand accent success warning danger water].freeze
 
+  # Nature d'un message (SMS ou e-mail). Les deux modèles partagent le même
+  # vocabulaire de `kind` : une seule table, pour qu'une confirmation ait la
+  # même couleur qu'elle soit partie par SMS ou par e-mail.
+  MESSAGE_KIND_TONES = {
+    "confirmation" => :water,
+    "ready" => :success,
+    "refund" => :danger,
+    "otp" => :accent,
+    "other" => :neutral
+  }.freeze
+
+  MESSAGE_KIND_LABELS = {
+    "confirmation" => "Confirmation",
+    "ready" => "Prêt",
+    "refund" => "Remboursement",
+    "otp" => "OTP",
+    "other" => "Autre"
+  }.freeze
+
+  WALLET_TRANSACTION_TONES = {
+    "top_up" => :success,
+    "order_debit" => :warning,
+    "order_refund" => :water
+  }.freeze
+
+  WALLET_TRANSACTION_LABELS = {
+    "top_up" => "Recharge",
+    "order_debit" => "Débit commande",
+    "order_refund" => "Remboursement"
+  }.freeze
+
   # Pastille d'état. `tone` est une tonalité sémantique, jamais une couleur.
   def adm_chip(label, tone: :neutral, icon: nil)
     tone = :neutral unless TONES.include?(tone.to_sym)
@@ -42,6 +73,22 @@ module Admin::UiHelper
 
   def adm_payment_status_chip(payment_status)
     adm_chip(payment_status_label(payment_status), tone: PAYMENT_STATUS_TONES.fetch(payment_status.to_s, :neutral))
+  end
+
+  # Pastille de nature d'un message, commune aux SMS et aux e-mails.
+  def adm_message_kind_chip(kind)
+    key = kind.to_s
+    adm_chip(MESSAGE_KIND_LABELS.fetch(key, "Autre"), tone: MESSAGE_KIND_TONES.fetch(key, :neutral))
+  end
+
+  # Pastille de sens d'un message : sortant (parti de la boulangerie) ou entrant.
+  def adm_message_direction_chip(outbound)
+    adm_chip(outbound ? "Sortant" : "Entrant", tone: outbound ? :water : :success)
+  end
+
+  def adm_wallet_transaction_chip(transaction_type)
+    key = transaction_type.to_s
+    adm_chip(WALLET_TRANSACTION_LABELS.fetch(key, key), tone: WALLET_TRANSACTION_TONES.fetch(key, :neutral))
   end
 
   # Classes de bouton. `variant` ∈ primary | default | ghost | danger.

@@ -6,6 +6,11 @@ Ta commande est confirmée.
 Commande : <%= @order.order_number %>
 À retirer le : <%= I18n.l(@order.event_date, format: :long) %>
 
+<% if @order.customer_note.present? -%>
+Ce que tu nous as dit :
+<%= @order.customer_note %>
+
+<% end -%>
 Articles :
 <% @items.each do |item| -%>
 - <%= item.product_variant.product.name %> — <%= item.product_variant.name %> x<%= item.qty %> : <%= format_eur.call(item.subtotal_euros) %>

@@ -33,6 +33,14 @@
         </p>
       </div>
 
+      <% if @order.customer_note.present? %>
+        <%# Ce que le client nous a dit de son groupe à la réservation (#169). %>
+        <div class="mb-6">
+          <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Ce que tu nous as dit</h2>
+          <p class="whitespace-pre-wrap rounded-md bg-flour-100 p-3 text-ink-700"><%= @order.customer_note %></p>
+        </div>
+      <% end %>
+
       <% if @order.pickup_location %>
         <div class="mb-6">
           <h2 class="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Point de retrait</h2>

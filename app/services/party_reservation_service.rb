@@ -18,7 +18,8 @@ class PartyReservationService
   attr_reader :order, :party_event, :errors
 
   def initialize(customer:, date:, slot:, cart_items:,
-                 payment_method: "online", payment_intent_id: nil, group_name: nil)
+                 payment_method: "online", payment_intent_id: nil, group_name: nil,
+                 customer_note: nil)
     @customer = customer
     @date = date.is_a?(Date) ? date : Date.iso8601(date.to_s)
     @slot = slot.to_s
@@ -26,6 +27,7 @@ class PartyReservationService
     @payment_method = payment_method
     @payment_intent_id = payment_intent_id
     @group_name = group_name
+    @customer_note = customer_note.to_s.strip
     @errors = []
   rescue Date::Error, ArgumentError, TypeError
     @date = nil
@@ -37,6 +39,19 @@ class PartyReservationService
 
     unless @date && PartyEvent.slots.key?(@slot)
       @errors << "Date ou créneau de la Pizza party invalide"
+      return false
+    end
+
+    # Le commentaire est obligatoire (#169) : sans lui, l'équipe ne sait rien du
+    # groupe. Vérifié ici et pas seulement au panier, pour que les deux chemins
+    # de paiement — et une requête forgée — tombent sur la même règle.
+    if @customer_note.blank?
+      @errors << "Merci de nous parler de ton groupe avant de réserver."
+      return false
+    end
+
+    if @customer_note.length > Order::CUSTOMER_NOTE_MAX_LENGTH
+      @errors << "Ton commentaire dépasse #{Order::CUSTOMER_NOTE_MAX_LENGTH} caractères."
       return false
     end
 
@@ -58,7 +73,8 @@ class PartyReservationService
         cart_items: @cart_items,
         payment_intent_id: @payment_intent_id,
         payment_method: @payment_method,
-        group_name: @group_name
+        group_name: @group_name,
+        customer_note: @customer_note
       )
       @order = service.call
 

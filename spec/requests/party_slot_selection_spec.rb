@@ -61,7 +61,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
 
   describe 'POST /cart/add (party privée)' do
     it 'stocke la date et le créneau choisis en session' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
 
       expect(session[:party_date]).to eq(date.iso8601)
       expect(session[:party_slot]).to eq('soir')
@@ -71,7 +71,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     it 'rejette un créneau indisponible (page périmée ou requête forgée)' do
       create(:party_slot_block, blocked_on: date, slot: :soir)
 
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
 
       expect(session[:cart].to_a).to be_empty
       expect(response).to redirect_to(pizza_party_privee_path)
@@ -90,20 +90,20 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
 
       # Pain déjà au panier → party refusée.
       post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 1 }
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
       expect(session[:cart].map { |i| i['product_variant_id'] }).to eq([ bread_variant.id.to_s ])
 
       # Party au panier → pain refusé.
       session_reset = -> { delete cart_remove_path(bread_variant.id.to_s) }
       session_reset.call
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
       post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 1 }
       ids = session[:cart].map { |i| i['product_variant_id'] }
       expect(ids).to contain_exactly(party_variant.id.to_s, forfait_variant.id.to_s)
     end
 
     it 'oublie la date choisie quand la party est retirée du panier' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
       delete cart_remove_path(party_variant.id.to_s)
 
       expect(session[:party_date]).to be_nil
@@ -119,7 +119,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
       allow(OtpService).to receive(:verify_code).and_return({ success: true })
       post '/connexion', params: { identifier: customer.phone_e164 }
       post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
     end
 
     it 'refuse le paiement par portefeuille pour une party' do
@@ -145,7 +145,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
 
   describe 'GET /checkout (panier party)' do
     it 'passe sans jour de cuisson quand la date de party est valide' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
 
       get new_checkout_path
 
@@ -154,7 +154,7 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     end
 
     it 'renvoie vers les événements si le créneau n’est plus disponible' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
       create(:party_slot_block, blocked_on: date, slot: :soir)
 
       get new_checkout_path

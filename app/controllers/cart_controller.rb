@@ -8,6 +8,7 @@ class CartController < ApplicationController
     @party_cart = PizzaPartyForfaitService.party_cart?(@cart)
     @party_date = Date.iso8601(session[:party_date]) if @party_cart && session[:party_date].present?
     @party_slot = session[:party_slot] if @party_cart
+    @party_note = session[:party_note] if @party_cart
     # Inscription à une party PUBLIQUE : datée par son événement.
     @public_party_cart = PizzaPartyForfaitService.public_party_cart?(@cart)
     @public_party_event = PartyEvent.public_events.not_deleted.find_by(id: session[:public_party_event_id]) if @public_party_cart
@@ -79,8 +80,24 @@ class CartController < ApplicationController
         return
       end
 
+      # Commentaire libre obligatoire (#169) : sans lui, l'équipe ne sait rien du
+      # groupe. Revalidé au checkout par PartyReservationService — ici, on refuse
+      # au plus tôt pour que le client corrige tout de suite.
+      party_note = params[:party_note].to_s.strip
+
+      if party_note.blank?
+        redirect_back_or_events(alert: "Merci de nous parler de ton groupe avant de réserver.")
+        return
+      end
+
+      if party_note.length > Order::CUSTOMER_NOTE_MAX_LENGTH
+        redirect_back_or_events(alert: "Ton commentaire dépasse #{Order::CUSTOMER_NOTE_MAX_LENGTH} caractères.")
+        return
+      end
+
       session[:party_date] = party_date.iso8601
       session[:party_slot] = party_slot
+      session[:party_note] = party_note
     elsif variant.product.pizza_party_role_public_party?
       # Inscription à une party PUBLIQUE : rattachée à SON événement (jauge et
       # clôture revérifiées ici, puis sous verrou au paiement), et jamais
@@ -251,6 +268,7 @@ class CartController < ApplicationController
     unless PizzaPartyForfaitService.party_cart?(session[:cart])
       session[:party_date] = nil
       session[:party_slot] = nil
+      session[:party_note] = nil
     end
 
     unless PizzaPartyForfaitService.public_party_cart?(session[:cart])

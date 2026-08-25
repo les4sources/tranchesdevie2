@@ -47,6 +47,14 @@
           <dd class="text-sm" style="color: var(--text-muted);"><%= @order.party_event.title %></dd>
         <% end %>
 
+        <% if @order.customer_note.present? %>
+          <%# Le mot laissé par le client à la réservation (#169) — heure d'arrivée,
+              occasion, allergies : ce que les boulangers doivent savoir. %>
+          <dt class="adm-eyebrow mt-4">Mot du client</dt>
+          <dd class="mt-1 whitespace-pre-wrap rounded-md p-3 text-sm"
+              style="background: var(--surface-inset); color: var(--text-strong);"><%= @order.customer_note %></dd>
+        <% end %>
+
         <% if @order.pickup_location %>
           <dt class="adm-eyebrow mt-4">Point de retrait</dt>
           <dd class="mt-1 flex flex-wrap items-center gap-2 text-sm" style="color: var(--text-strong);">

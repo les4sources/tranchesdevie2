@@ -14,7 +14,7 @@
         - @production_setting.errors.full_messages.each do |message|
           li= message
 
-  h2.text-lg.font-semibold.text-gray-800 Capacité du four
+  h2.text-xl.font-semibold.text-gray-800 Capacité du four
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :oven_capacity_grams, "Jour normal (grammes)", class: "block text-sm font-medium text-gray-700"

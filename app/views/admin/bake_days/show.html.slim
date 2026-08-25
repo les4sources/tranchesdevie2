@@ -31,7 +31,7 @@
   .grid.gap-4.lg:grid-cols-3
     .lg:col-span-2.adm-card.p-4.sm:p-6
       .flex.items-center.justify-between.gap-3
-        h2.text-sm.font-semibold style="color: var(--text-strong);" Consignes du jour
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Consignes du jour
         p.adm-tonetext.text-xs.font-medium data-bake-day-note-target="status"
           | Dernière mise à jour #{l(@bake_day.updated_at, format: :short)}
       .mt-4
@@ -44,7 +44,7 @@
               | Enregistrer maintenant
 
     .lg:col-span-1.min-w-0.adm-card.p-4.sm:p-6
-      h2.text-sm.font-semibold style="color: var(--text-strong);" Statut des commandes
+      h2.text-xl.font-semibold style="color: var(--text-strong);" Statut des commandes
       dl.mt-4.space-y-4
         .flex.items-center.justify-between
           dt.text-sm style="color: var(--text-muted);" Commandes en attente
@@ -98,7 +98,7 @@
                   = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
 
   .adm-card.p-4.sm:p-6
-    h2.text-sm.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
+    h2.text-xl.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
     = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, local: true, class: "mt-4 space-y-3" do |form|
       .flex.flex-wrap.gap-2
         = form.collection_check_boxes :baking_artisan_ids, Artisan.active.order(:name), :id, :name do |b|
@@ -126,7 +126,7 @@
   - fill_tone = adm_usage_tone(fill_pct)
   .adm-card.p-4.sm:p-6 style="background: var(--brand-tint); border-color: var(--sage-200);"
     .flex.flex-wrap.items-center.gap-3
-      h2.text-sm.font-semibold style="color: var(--text-strong);" Capacité de production
+      h2.text-xl.font-semibold style="color: var(--text-strong);" Capacité de production
       = adm_chip("#{fill_pct}%", tone: fill_tone)
 
     .mt-4.space-y-4.sm:mt-6
@@ -185,7 +185,7 @@
   .adm-card.overflow-hidden
     .adm-cardhd
       div
-        h2.text-sm.font-semibold style="color: var(--text-strong);" Quantités de pâte requises par type de farine
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Quantités de pâte requises par type de farine
         p.text-xs style="color: var(--text-muted);" Survolez une quantité pour voir le détail du calcul
     .overflow-x-auto
       table.adm-grid
@@ -255,7 +255,7 @@
     .adm-card.overflow-hidden
       .adm-cardhd
         div
-          h2.text-sm.font-semibold style="color: var(--text-strong);" Panification
+          h2.text-xl.font-semibold style="color: var(--text-strong);" Panification
           p.text-xs style="color: var(--text-muted);" Farine, sel, eau et levain calculés à partir des ratios de panification
       .overflow-x-auto
         table.adm-grid
@@ -313,7 +313,7 @@
 
   .adm-card.overflow-hidden
     .adm-cardhd
-      h2.text-sm.font-semibold style="color: var(--text-strong);" Ingrédients requis
+      h2.text-xl.font-semibold style="color: var(--text-strong);" Ingrédients requis
     .overflow-x-auto
       table.adm-grid
         thead

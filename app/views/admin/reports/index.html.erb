@@ -45,7 +45,7 @@
 </div>
 
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-1">Commissions Stripe &amp; CA net</h2>
+  <h2 class="text-xl font-medium text-gray-900 mb-1">Commissions Stripe &amp; CA net</h2>
   <p class="text-sm text-gray-500 mb-4">
     Commissions prélevées par Stripe sur les commandes payées en ligne. Les paiements par portefeuille ou hors ligne n'engendrent pas de commission.
   </p>
@@ -74,7 +74,7 @@
 
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
   <div class="flex items-center justify-between mb-1">
-    <h2 class="text-lg font-medium text-gray-900">Remboursements</h2>
+    <h2 class="text-xl font-medium text-gray-900">Remboursements</h2>
     <%= link_to "Voir le détail →",
                 refunds_admin_reports_path(start_date: @start_date, end_date: @end_date),
                 class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
@@ -116,7 +116,7 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par produit</h2>
+    <h2 class="text-xl font-medium text-gray-900 mb-1">Ventes par produit</h2>
     <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites — réconcilié avec le CA de la période.</p>
     <% if @sales_by_product.any? %>
       <div class="overflow-x-auto">
@@ -149,7 +149,7 @@
   </section>
 
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Top 10 des clients</h2>
+    <h2 class="text-xl font-medium text-gray-900 mb-4">Top 10 des clients</h2>
     <% if @top_customers.any? %>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -178,7 +178,7 @@
 </div>
 
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-1">Ventes par catégorie interne</h2>
+  <h2 class="text-xl font-medium text-gray-900 mb-1">Ventes par catégorie interne</h2>
   <p class="text-sm text-gray-500 mb-4">CA net, remises client déduites. Distingue la production maison des reventes (épicerie, traiteur…).</p>
   <% if @sales_by_internal_category.any? %>
     <div class="overflow-x-auto">
@@ -214,7 +214,7 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Comparaison mardi vs vendredi</h2>
+    <h2 class="text-xl font-medium text-gray-900 mb-4">Comparaison mardi vs vendredi</h2>
     <% if @weekday_comparison.any? %>
       <div class="mb-4 text-sm text-gray-600">
         <% @weekday_comparison.each do |entry| %>
@@ -236,7 +236,7 @@
   </section>
 
   <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Ventes par mois</h2>
+    <h2 class="text-xl font-medium text-gray-900 mb-4">Ventes par mois</h2>
     <% if @monthly_sales.any? %>
       <div class="mb-4 text-sm text-gray-600">
         <ul class="space-y-1">

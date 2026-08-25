@@ -58,7 +58,7 @@
 
   .space-y-4
     .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
-      h2.text-lg.font-semibold.text-gray-900 Variantes
+      h2.text-xl.font-semibold.text-gray-900 Variantes
       = link_to "Ajouter une variante", new_admin_product_variants_path(@product), class: "px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
     
     - if @variants.any?

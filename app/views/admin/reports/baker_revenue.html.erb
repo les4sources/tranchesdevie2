@@ -32,7 +32,7 @@
 
 <% if @report.warnings.any? %>
   <div class="mb-6 rounded-md bg-amber-50 border border-amber-200 p-4">
-    <h2 class="text-sm font-semibold text-amber-800">Avertissements</h2>
+    <h2 class="text-xl font-semibold text-amber-800">Avertissements</h2>
     <ul class="mt-2 list-disc list-inside text-sm text-amber-700 space-y-1">
       <% @report.warnings.each do |warning| %>
         <li><%= warning %></li>
@@ -76,7 +76,7 @@
 
 <%# Revenu final par artisan (après mise en commun des partenariats) %>
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-1">Revenu par boulanger (à verser sur la période)</h2>
+  <h2 class="text-xl font-medium text-gray-900 mb-1">Revenu par boulanger (à verser sur la période)</h2>
   <p class="text-sm text-gray-500 mb-4">
     « Part finale » = ce qui est dû à chaque boulanger. Pour les membres d'un partenariat,
     leurs parts brutes sont mises en commun puis réparties à parts égales — c'est la
@@ -127,7 +127,7 @@
 
 <%# Détail par jour de production %>
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-lg font-medium text-gray-900 mb-4">Détail par jour de production</h2>
+  <h2 class="text-xl font-medium text-gray-900 mb-4">Détail par jour de production</h2>
   <% if @report.days.any? %>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 text-sm">

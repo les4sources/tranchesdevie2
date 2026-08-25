@@ -8,21 +8,21 @@
     = link_to "Nouvel événement public", new_admin_party_event_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
 
 section.mb-8
-  h2.text-lg.font-semibold.text-gray-900.mb-3 Événements publics à venir
+  h2.text-xl.font-semibold.text-gray-900.mb-3 Événements publics à venir
   - if @public_events.any?
     = render "public_table", events: @public_events
   - else
     p.text-sm.text-gray-500 Aucun événement public à venir.
 
 section.mb-8
-  h2.text-lg.font-semibold.text-gray-900.mb-3 Événements publics passés
+  h2.text-xl.font-semibold.text-gray-900.mb-3 Événements publics passés
   - if @past_public_events.any?
     = render "public_table", events: @past_public_events
   - else
     p.text-sm.text-gray-500 Aucun événement public passé.
 
 section
-  h2.text-lg.font-semibold.text-gray-900.mb-3 Réservations privées à venir
+  h2.text-xl.font-semibold.text-gray-900.mb-3 Réservations privées à venir
   - if @private_events.any?
     .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
       table.min-w-full.divide-y.divide-gray-100.text-sm

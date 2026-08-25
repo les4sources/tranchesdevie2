@@ -207,7 +207,7 @@ Rails.application.routes.draw do
 
     # Événements party (#pizza-parties) : événements publics (CRUD) + blocages de
     # créneaux des parties privées.
-    resources :party_events, path: "parties", except: [ :show ]
+    resources :party_events, path: "parties"
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
 
     get "parametres", to: "settings#index", as: :settings

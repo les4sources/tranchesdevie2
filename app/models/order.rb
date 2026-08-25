@@ -102,6 +102,21 @@ class Order < ApplicationRecord
     bread_bags_count * price_cents
   end
 
+  # Commande de réservation d'une Pizza party PRIVÉE (par opposition à une
+  # inscription à une party publique, qui porte aussi `source: :party`).
+  def private_party?
+    party_event&.kind_private_party? || false
+  end
+
+  # Nombre de pâtons d'une commande party — soit, une boule par personne. La
+  # ligne « forfait » (une par commande, quel que soit le nombre de convives)
+  # n'en fait pas partie : seules comptent les variantes du produit party.
+  def party_paton_count
+    order_items.includes(product_variant: :product).sum do |item|
+      item.product_variant.product.pizza_party_role_party? ? item.qty : 0
+    end
+  end
+
   def can_be_cancelled_by_customer?
     !bake_day.cut_off_passed? && (paid? || unpaid?)
   end

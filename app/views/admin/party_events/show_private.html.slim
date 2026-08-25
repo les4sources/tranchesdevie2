@@ -1,0 +1,104 @@
+- content_for :title, "Pizza party privée du #{l(@event.held_on)}"
+- content_for :layout, "admin"
+
+- oven_hot = party_oven_already_hot?(@event.held_on)
+- customer = @reservation&.customer
+
+= adm_page_header "Pizza party privée" do
+  - if @reservation
+    = link_to "Voir la commande", admin_order_path(@reservation), class: adm_btn_class(:primary)
+  = link_to "Retour aux parties", admin_party_events_path, class: adm_btn_class(:default)
+
+.mb-4.flex.flex-wrap.items-center.gap-2
+  span.text-lg.font-semibold style="color: var(--text-strong);"
+    = l(@event.held_on, format: :long_with_day).capitalize
+  = adm_chip @event.slot_label, tone: :accent
+  - if @reservation
+    = adm_order_status_chip(@reservation.status)
+
+.grid.grid-cols-1.gap-4.lg:grid-cols-2
+  .adm-card.p-4.sm:p-6
+    h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Le groupe
+    - if customer
+      dl.space-y-3
+        div
+          dt.adm-eyebrow Client
+          dd.mt-1.text-sm
+            = link_to customer.full_name, admin_customer_path(customer), class: "adm-link"
+        div
+          dt.adm-eyebrow E-mail
+          dd.mt-1.text-sm style="color: var(--text-strong);" = customer.email.presence || "—"
+        div
+          dt.adm-eyebrow Téléphone
+          dd.mt-1.text-sm style="color: var(--text-strong);"
+            - if customer.phone_e164.present?
+              span.adm-grid-num = customer.phone_e164
+            - else
+              span style="color: var(--text-muted);" Aucun numéro de téléphone (client identifié par email)
+        div
+          dt.adm-eyebrow Nombre de personnes
+          dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
+            = party_paton_count(@reservation)
+    - else
+      p.text-sm style="color: var(--text-muted);"
+        | Aucune commande n'est rattachée à cette réservation.
+
+  .adm-card.p-4.sm:p-6
+    h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Le four
+    - if oven_hot
+      p.text-sm style="color: var(--text-strong);"
+        strong Four déjà chaud
+        |  (jour de boulangerie) — le groupe enfourne directement.
+    - else
+      p.text-sm style="color: var(--text-strong);"
+        | Le groupe devra
+        strong<>  chauffer le four
+        | , soit environ 3 heures avant de pouvoir enfourner.
+
+- if @reservation
+  .adm-card.mt-4.overflow-hidden
+    .adm-cardhd
+      h2.text-xl.font-semibold style="color: var(--text-strong);" La commande
+      span.adm-eyebrow = @reservation.order_number
+
+    .p-4.sm:p-6
+      dl.grid.grid-cols-1.gap-4.sm:grid-cols-4
+        div
+          dt.adm-eyebrow Statut
+          dd.mt-1 = adm_order_status_chip(@reservation.status)
+        div
+          dt.adm-eyebrow Réservée le
+          dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
+            = @reservation.created_at.strftime("%d/%m/%Y à %H:%M")
+        div
+          dt.adm-eyebrow Payée le
+          dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
+            = @reservation.paid_at ? l(@reservation.paid_at, format: :long) : "—"
+        div
+          dt.adm-eyebrow Montant total
+          dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
+            = number_to_currency(@reservation.total_euros, unit: "€", separator: ",", delimiter: "")
+
+    .overflow-x-auto
+      table.adm-grid
+        thead
+          tr
+            th Ligne
+            th.text-right Quantité
+            th.text-right Prix unitaire
+            th.text-right Sous-total
+        tbody
+          - @reservation.order_items.each do |item|
+            tr
+              td
+                span style="color: var(--text-strong);" = item.product_variant.product.name
+                span<  style="color: var(--text-muted);" = "— #{item.product_variant.name}"
+              td.adm-grid-num.text-right = item.qty
+              td.adm-grid-num.text-right
+                = number_to_currency(item.unit_price_cents / 100.0, unit: "€", separator: ",", delimiter: "")
+              td.adm-grid-num.text-right.font-medium style="color: var(--text-strong);"
+                = number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "")
+
+- if @orders.size > 1
+  p.mt-4.text-sm style="color: var(--text-muted);"
+    | Cette date porte #{@orders.size} commandes ; le détail ci-dessus est celui de la réservation retenue.

@@ -34,7 +34,7 @@ Tout se fait depuis la barre du haut. Voici à quoi sert chaque entrée :
 | **Jours de cuisson** | Les dates de fournée (mardi/vendredi) et la planification de la production. |
 | **Mangeurs** | Les clients : fiches, portefeuille, historique, SMS. |
 | **Produits** | Le catalogue : pains, variantes, prix, photos. |
-| **Parties** | Les pizza parties publiques et les blocages de créneaux. |
+| **Parties** | Les pizza parties : les réservations privées reçues, les événements publics et les blocages de créneaux. |
 | **Facturation** | Les factures et les paiements. |
 | **€ (Revenus boulangers)** | La répartition des revenus entre boulangers et Les 4 Sources. |
 | **📊 (Reporting)** | Les chiffres : refunds, payouts, parties. |

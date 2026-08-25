@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_25_031623) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -169,10 +169,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_031623) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "kneader_limit_grams"
-    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.5556", null: false
-    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.655", null: false
-    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.022", null: false
-    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12095", null: false
+    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.532", null: false
+    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.391", null: false
+    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.012", null: false
+    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12", null: false
     t.string "levain_type", default: "froment", null: false
     t.string "origin"
     t.string "grade"

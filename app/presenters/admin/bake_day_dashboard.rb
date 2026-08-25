@@ -218,19 +218,21 @@ module Admin
 
     def dough_quantities
       @dough_quantities ||= begin
-        # Chaque farine porte désormais son propre ratio de panification (#88).
+        # Chaque farine porte son propre ratio de panification (#88), et les
+        # QUATRE ingrédients sont des fractions de la PÂTE — décision boulangers
+        # du 25/08/2026. Avant, eau et sel se calculaient sur la farine, ce qui
+        # mélangeait deux bases dans le même tableau.
         per_flour = flour_type_stats.map do |stat|
           flour = stat[:flour]
           pate_grams = stat[:flour_quantity].to_f
-          farine_grams = flour.flour_ratio.to_f * pate_grams
 
           {
             flour: flour,
             levain_type: flour.levain_type,
             pate_kg:   (pate_grams / 1000.0).round(2),
-            farine_kg: (farine_grams / 1000.0).round(2),
-            sel_kg:    (farine_grams * flour.salt_ratio.to_f / 1000.0).round(3),
-            eau_l:     (farine_grams * flour.water_ratio.to_f / 1000.0).round(2),
+            farine_kg: (flour.flour_ratio.to_f * pate_grams / 1000.0).round(2),
+            sel_kg:    (flour.salt_ratio.to_f * pate_grams / 1000.0).round(3),
+            eau_l:     (flour.water_ratio.to_f * pate_grams / 1000.0).round(2),
             levain_kg: (flour.levain_ratio.to_f * pate_grams / 1000.0).round(3)
           }
         end

@@ -20,6 +20,7 @@
             th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Raffinage
             th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Prix/kg
             th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Limite pétrin
+            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Ratios
             th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Produits
             th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
         tbody.divide-y.divide-gray-200
@@ -36,6 +37,10 @@
               td.px-4.py-3.text-sm.text-gray-600
                 - if flour.kneader_limit_grams.present?
                   | #{flour.kneader_limit_grams / 1000} kg
+              td.px-4.py-3.text-sm
+                - margin = flour.panification_margin_percent
+                span class=(margin.negative? ? "text-red-700 font-semibold" : (margin > 10 ? "text-amber-700 font-semibold" : "text-gray-600"))
+                  | #{number_with_precision(flour.panification_ratios_sum * 100, precision: 1, strip_insignificant_zeros: true)} %
               td.px-4.py-3.text-sm.text-gray-600 = flour.product_flours.count
               td.px-4.py-3.text-sm
                 = link_to "Modifier", edit_admin_settings_flour_path(flour), class: "text-blue-600 hover:text-blue-800 mr-3"

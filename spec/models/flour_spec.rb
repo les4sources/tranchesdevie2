@@ -25,6 +25,30 @@ RSpec.describe Flour, type: :model do
     end
   end
 
+  # Base pâte (décision boulangers 25/08/2026) : les quatre ratios sont des
+  # fractions de la pâte, leur somme dit si la recette boucle.
+  describe 'panification ratios sum' do
+    it 'sums the four ratios' do
+      flour = build(:flour, flour_ratio: 0.532, water_ratio: 0.391, salt_ratio: 0.012, levain_ratio: 0.120)
+      expect(flour.panification_ratios_sum.to_f).to eq(1.055)
+    end
+
+    it 'reports the kneading margin above 100% of the dough' do
+      flour = build(:flour, flour_ratio: 0.532, water_ratio: 0.391, salt_ratio: 0.012, levain_ratio: 0.120)
+      expect(flour.panification_margin_percent).to eq(5.5)
+    end
+
+    it 'reports a negative margin when the recipe falls short of the dough weight' do
+      flour = build(:flour, flour_ratio: 0.5, water_ratio: 0.3, salt_ratio: 0.01, levain_ratio: 0.09)
+      expect(flour.panification_margin_percent).to eq(-10.0)
+    end
+
+    it 'reports no margin when the recipe closes exactly' do
+      flour = build(:flour, flour_ratio: 0.55, water_ratio: 0.35, salt_ratio: 0.02, levain_ratio: 0.08)
+      expect(flour.panification_margin_percent).to eq(0.0)
+    end
+  end
+
   describe 'price per kg' do
     it 'round-trips euros to cents' do
       flour = build(:flour)

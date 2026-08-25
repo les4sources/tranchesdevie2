@@ -3,10 +3,12 @@ FactoryBot.define do
     sequence(:name) { |n| "Farine #{n}" }
     sequence(:position) { |n| n }
     levain_type { "froment" }
-    flour_ratio { 0.5556 }
-    water_ratio { 0.655 }
-    salt_ratio { 0.022 }
-    levain_ratio { 0.12095 }
+    # Ratio de la boulangerie : quatre fractions de la PÂTE (somme 1,055, soit
+    # 5,5 % de marge de pétrissage).
+    flour_ratio { 0.532 }
+    water_ratio { 0.391 }
+    salt_ratio { 0.012 }
+    levain_ratio { 0.120 }
 
     trait :seigle do
       levain_type { "seigle" }

@@ -17,6 +17,20 @@ class Flour < ApplicationRecord
   scope :ordered, -> { order(position: :asc, name: :asc) }
   scope :not_deleted, -> { where(deleted_at: nil) }
 
+  # Les quatre ratios sont des fractions de la PÂTE (décision boulangers du
+  # 25/08/2026) : leur somme vaut donc 1,0 pour une recette qui boucle
+  # exactement. Au-dessus, l'écart est la marge de pétrissage (perte au
+  # façonnage) ; en-dessous, la fournée manquera de matière. On affiche la
+  # somme dans l'admin plutôt que de l'imposer — c'est un choix de boulanger.
+  def panification_ratios_sum
+    [ flour_ratio, water_ratio, salt_ratio, levain_ratio ].compact.sum
+  end
+
+  # Écart à 100 % de la pâte, en points de pourcentage (+5.5 = 5,5 % de marge).
+  def panification_margin_percent
+    ((panification_ratios_sum - 1) * 100).round(1)
+  end
+
   def price_per_kg_euros
     return nil if price_per_kg_cents.nil?
 

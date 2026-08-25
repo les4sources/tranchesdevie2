@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_25_031623) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -290,6 +290,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.string "group_name"
     t.bigint "pickup_location_id", null: false
     t.bigint "party_event_id"
+    t.text "customer_note"
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"

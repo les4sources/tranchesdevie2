@@ -26,6 +26,18 @@
   </tr>
 </table>
 
+<% if @order.customer_note.present? %>
+  <%# Rappel au client de ce qu'il nous a dit de son groupe (#169). %>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf7f2; border:1px solid #ece4d8; border-radius:12px; margin-bottom:24px;">
+    <tr>
+      <td style="padding:18px 20px;">
+        <div style="font-size:13px; color:#8a8178; text-transform:uppercase; letter-spacing:1px;">Ce que tu nous as dit</div>
+        <div style="margin-top:6px; white-space:pre-wrap; color:#2d2a26;"><%= @order.customer_note %></div>
+      </td>
+    </tr>
+  </table>
+<% end %>
+
 <!-- Items -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
   <thead>

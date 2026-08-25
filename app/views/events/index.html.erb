@@ -207,6 +207,27 @@
             </div>
           </div>
 
+          <%# Commentaire libre obligatoire (#169) : sans lui, l'équipe ne sait ni à
+              quelle heure le groupe arrive, ni ce qu'il vient fêter. %>
+          <div class="mt-5">
+            <label for="party_note" class="text-sm font-medium text-ink-900">Parle-nous de ton groupe *</label>
+            <p class="mt-1 text-[13px] leading-relaxed text-ink-500">
+              À quelle heure arrivez-vous&nbsp;? Quelle est l'occasion&nbsp;? Y a-t-il des enfants, des allergies, une contrainte particulière&nbsp;?
+            </p>
+            <textarea id="party_note"
+                      name="party_note"
+                      rows="4"
+                      required
+                      maxlength="<%= Order::CUSTOMER_NOTE_MAX_LENGTH %>"
+                      data-party-calendar-target="note"
+                      data-action="input->party-calendar#countNote"
+                      class="mt-2 w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]"
+                      placeholder="Ex. On arrive vers 18h30 pour l'anniversaire de Jules. On sera 8 adultes et 3 enfants, dont un sans gluten."></textarea>
+            <p class="mt-1 text-right text-xs text-ink-400">
+              <span data-party-calendar-target="noteCount">0</span>/<%= Order::CUSTOMER_NOTE_MAX_LENGTH %> caractères
+            </p>
+          </div>
+
           <p class="mt-4 hidden rounded-md border border-danger-200 bg-danger-100 px-3 py-2 text-sm text-danger-700" data-party-calendar-target="warning">
             Choisis une date et un créneau dans le calendrier pour réserver.
           </p>

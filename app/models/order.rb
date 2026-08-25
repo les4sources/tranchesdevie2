@@ -30,6 +30,10 @@ class Order < ApplicationRecord
   # datée par son `party_event`, SANS fournée.
   enum :source, { checkout: 0, calendar: 1, admin: 2, party: 3 }
 
+  # Longueur maximale du commentaire client (#169). Annoncée au client dans le
+  # formulaire et appliquée côté serveur.
+  CUSTOMER_NOTE_MAX_LENGTH = 500
+
   belongs_to :customer
   # Optionnel : une commande party n'a pas de fournée (elle porte un party_event).
   belongs_to :bake_day, optional: true
@@ -47,6 +51,10 @@ class Order < ApplicationRecord
 
   validates :total_cents, presence: true, numericality: { greater_than: 0 }
   validates :public_token, presence: true, uniqueness: true
+  # Commentaire libre du client sur une réservation de Pizza party privée (#169).
+  # Nullable en base : les commandes de pain n'en ont pas, et les réservations
+  # antérieures à cette colonne non plus.
+  validates :customer_note, length: { maximum: CUSTOMER_NOTE_MAX_LENGTH }, allow_nil: true
   validates :order_number, presence: true, uniqueness: true
   validates :status, presence: true
   validates :requires_invoice, inclusion: { in: [ true, false ] }

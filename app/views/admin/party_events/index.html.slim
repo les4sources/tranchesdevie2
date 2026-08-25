@@ -31,11 +31,20 @@ section
             th.px-4.py-3.text-left Date
             th.px-4.py-3.text-left Créneau
             th.px-4.py-3.text-left Client
+            th.px-4.py-3.text-left Mot du client
         tbody.divide-y.divide-gray-50.bg-white
           - @private_events.each do |event|
+            - reservation = event.orders.first
             tr.hover:bg-gray-50
               td.px-4.py-3.text-gray-900 = l(event.held_on)
               td.px-4.py-3.text-gray-600 = event.slot_label
-              td.px-4.py-3.text-gray-900 = event.orders.first&.customer&.full_name || "—"
+              td.px-4.py-3.text-gray-900 = reservation&.customer&.full_name || "—"
+              / Tronqué pour tenir dans la ligne ; le texte entier reste lisible
+              / en survol, et sur la fiche de commande (#169).
+              - note = reservation&.customer_note
+              - if note.present?
+                td.px-4.py-3.text-gray-600 title=note = truncate(note, length: 80)
+              - else
+                td.px-4.py-3.text-gray-400 —
   - else
     p.text-sm.text-gray-500 Aucune réservation privée à venir.

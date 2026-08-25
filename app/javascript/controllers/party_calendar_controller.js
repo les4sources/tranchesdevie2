@@ -6,7 +6,18 @@ import { Controller } from "@hotwired/stimulus"
 // serveur "YYYY-MM-DD|slot" (revalidé côté serveur à l'ajout panier).
 export default class extends Controller {
   static targets = ["day", "input", "slotPanel", "slotLabel", "slotButton", "warning", "placeholder",
-    "ovenHotNotice", "ovenColdNotice"]
+    "ovenHotNotice", "ovenColdNotice", "note", "noteCount"]
+
+  connect() {
+    this.countNote()
+  }
+
+  // Compteur de caractères du commentaire (#169). `maxlength` borne déjà la
+  // saisie ; ceci ne fait que la rendre visible.
+  countNote() {
+    if (!this.hasNoteTarget || !this.hasNoteCountTarget) return
+    this.noteCountTarget.textContent = this.noteTarget.value.length
+  }
 
   selectDay(event) {
     const day = event.currentTarget
@@ -44,13 +55,23 @@ export default class extends Controller {
     this.warningTarget.classList.add("hidden")
   }
 
-  // Bloque la soumission tant que (date, créneau) n'est pas choisi. Déclaré
-  // AVANT cart#add sur le formulaire pour pouvoir stopper la chaîne.
+  // Bloque la soumission tant que (date, créneau) n'est pas choisi, ou que le
+  // commentaire est vide (#169). Déclaré AVANT cart#add sur le formulaire pour
+  // pouvoir stopper la chaîne. Le serveur revalide les deux dans tous les cas.
   guard(event) {
-    if (this.inputTarget.value) return
+    const missingSlot = !this.inputTarget.value
+    const missingNote = this.hasNoteTarget && this.noteTarget.value.trim() === ""
+
+    if (!missingSlot && !missingNote) return
 
     event.preventDefault()
     event.stopImmediatePropagation()
+
+    this.warningTarget.textContent = missingSlot
+      ? "Choisis une date et un créneau dans le calendrier pour réserver."
+      : "Dis-nous un mot sur ton groupe avant de réserver."
     this.warningTarget.classList.remove("hidden")
+
+    if (!missingSlot && missingNote) this.noteTarget.focus()
   }
 }

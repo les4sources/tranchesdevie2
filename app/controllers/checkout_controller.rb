@@ -33,6 +33,8 @@ class CheckoutController < ApplicationController
       @party_checkout = true
       @party_date = Date.iso8601(session[:party_date])
       @party_slot = session[:party_slot]
+      # Modifiable une dernière fois avant paiement (#169).
+      @party_note = session[:party_note]
     elsif public_party_cart?
       @party_checkout = true
       @public_party_checkout = true
@@ -226,7 +228,8 @@ class CheckoutController < ApplicationController
         slot: session[:party_slot],
         cart_items: @cart,
         payment_method: "online",
-        group_name: json_params["group_name"]
+        group_name: json_params["group_name"],
+        customer_note: submitted_party_note(json_params)
       )
     elsif public_party_cart?
       service = PublicPartyRegistrationService.new(
@@ -400,7 +403,8 @@ class CheckoutController < ApplicationController
         slot: session[:party_slot],
         cart_items: cart_items,
         payment_method: "cash",
-        group_name: json_params["group_name"]
+        group_name: json_params["group_name"],
+        customer_note: submitted_party_note(json_params)
       )
     elsif public_party_cart?
       service = PublicPartyRegistrationService.new(
@@ -449,6 +453,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -592,6 +597,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -670,6 +676,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -709,6 +716,16 @@ class CheckoutController < ApplicationController
   rescue StandardError => e
     # L'observabilité ne doit jamais casser le tunnel.
     Rails.logger.error("[checkout] capture_checkout_issue a échoué: #{e.message}")
+  end
+
+  # Commentaire de la party (#169). Le client peut l'avoir corrigé sur la page de
+  # paiement : ce qu'il vient de soumettre l'emporte sur ce que porte la session,
+  # et on met la session à jour pour qu'un retour en arrière garde la correction.
+  def submitted_party_note(json_params)
+    submitted = json_params["customer_note"]
+    return session[:party_note] if submitted.nil?
+
+    session[:party_note] = submitted.to_s.strip
   end
 
   def checkout_sentry_context

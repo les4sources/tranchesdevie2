@@ -1,0 +1,17 @@
+NOUVELLE PIZZA PARTY PRIVÉE
+
+Une réservation vient d'arriver. Elle n'apparaît sur aucune feuille de production :
+pensez à planifier les pâtons.
+
+Date                : <%= I18n.l(@party_event.held_on, format: :long_with_day) %>
+Créneau             : <%= @party_event.slot_label %>
+Nombre de personnes : <%= @paton_count %> personne<%= "s" if @paton_count > 1 %> (<%= @paton_count %> pâton<%= "s" if @paton_count > 1 %>)
+Four                : <%= @oven_already_hot ? "Four déjà chaud (jour de boulangerie)" : "Le groupe devra chauffer le four (~3 h)" %>
+Client              : <%= @customer.full_name %>
+E-mail              : <%= @customer.email.presence || "—" %>
+Téléphone           : <%= @customer.phone_e164.presence || "Aucun numéro de téléphone (client identifié par email)" %>
+Commande            : <%= @order.order_number %>
+Montant total payé  : <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+
+Voir la commande dans l'admin :
+<%= @admin_order_url %>

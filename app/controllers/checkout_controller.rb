@@ -440,6 +440,9 @@ class CheckoutController < ApplicationController
 
     # Send order confirmation email (idempotent via EmailMessage guard)
     OrderNotificationService.send_confirmation(order)
+    # Une commande cash naît `unpaid` et ne passe pas par OrderPaymentFinalizer :
+    # la notification équipe d'une party privée se branche donc ici aussi (#168).
+    OrderNotificationService.send_party_team_notification(order)
 
     # Clear cart and session data
     session[:cart] = []

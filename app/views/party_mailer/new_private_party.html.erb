@@ -1,0 +1,83 @@
+<% content_for :title, "Nouvelle Pizza Party privée" %>
+
+<h1 style="margin:0 0 8px 0; font-family:Georgia,'Times New Roman',serif; font-size:22px; color:#7c2d12;">
+  Nouvelle Pizza Party privée
+</h1>
+
+<p style="margin:0 0 24px 0; color:#6b6259;">
+  Une réservation vient d'arriver. Elle n'apparaît sur aucune feuille de production :
+  pensez à planifier les pâtons.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="border-collapse:collapse; margin:0 0 24px 0;">
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178; width:170px;">Date</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; font-weight:bold;">
+      <%= I18n.l(@party_event.held_on, format: :long_with_day) %>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Créneau</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; font-weight:bold;"><%= @party_event.slot_label %></td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Nombre de personnes</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; font-weight:bold;">
+      <%= @paton_count %> personne<%= "s" if @paton_count > 1 %> (<%= @paton_count %> pâton<%= "s" if @paton_count > 1 %>)
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Four</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8;">
+      <% if @oven_already_hot %>
+        Four déjà chaud (jour de boulangerie)
+      <% else %>
+        Le groupe devra chauffer le four (~3 h)
+      <% end %>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Client</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; font-weight:bold;"><%= @customer.full_name %></td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">E-mail</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8;"><%= @customer.email.presence || "—" %></td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Téléphone</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8;">
+      <% if @customer.phone_e164.present? %>
+        <%= @customer.phone_e164 %>
+      <% else %>
+        Aucun numéro de téléphone (client identifié par email)
+      <% end %>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; color:#8a8178;">Commande</td>
+    <td style="padding:10px 0; border-bottom:1px solid #ece4d8; font-weight:bold;"><%= @order.order_number %></td>
+  </tr>
+  <tr>
+    <td style="padding:10px 0; color:#8a8178;">Montant total payé</td>
+    <td style="padding:10px 0; font-weight:bold;">
+      <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+    </td>
+  </tr>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+  <tr>
+    <td style="background-color:#7c2d12; border-radius:8px;">
+      <a href="<%= @admin_order_url %>"
+         style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none;">
+        Voir la commande dans l'admin
+      </a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0; font-size:13px; color:#8a8178;">
+  <%= @admin_order_url %>
+</p>

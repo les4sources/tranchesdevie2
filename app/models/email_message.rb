@@ -8,7 +8,8 @@ class EmailMessage < ApplicationRecord
     confirmation: 0,
     otp: 1,
     other: 2,
-    ready: 3
+    ready: 3,
+    party_team_notification: 4
   }
 
   belongs_to :customer, optional: true

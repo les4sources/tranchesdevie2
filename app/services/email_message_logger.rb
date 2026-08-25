@@ -10,7 +10,7 @@ class EmailMessageLogger
 
     EmailMessage.create!(
       direction: :outbound,
-      to_email: Array(mail.to).first,
+      to_email: recipients(mail),
       from_email: Array(mail.from).first,
       subject: mail.subject,
       body_html: extract_html(mail),
@@ -24,6 +24,14 @@ class EmailMessageLogger
     Rails.logger.error("EmailMessageLogger failed: #{e.class} - #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
     nil
+  end
+
+  # Destinataires réels de l'e-mail. Un e-mail interne (notification d'équipe,
+  # cf. PartyMailer) part à plusieurs adresses, To + Cc : n'en journaliser qu'une
+  # rendrait le log trompeur. Les e-mails à destinataire unique — tous ceux
+  # adressés à un client — sont enregistrés exactement comme avant.
+  def self.recipients(mail)
+    (Array(mail.to) + Array(mail.cc)).compact.uniq.join(", ")
   end
 
   def self.header_value(mail, name)

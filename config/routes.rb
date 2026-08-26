@@ -207,6 +207,13 @@ Rails.application.routes.draw do
 
     # Événements party (#pizza-parties) : événements publics (CRUD) + blocages de
     # créneaux des parties privées.
+    # Création à la main d'une party PRIVÉE (#204). Déclaré avant
+    # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.
+    resources :private_parties, path: "parties/privees", only: [ :new, :create, :edit, :update, :destroy ] do
+      member do
+        patch :toggle_paid
+      end
+    end
     resources :party_events, path: "parties"
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
 

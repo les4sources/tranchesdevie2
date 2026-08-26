@@ -113,7 +113,7 @@ RSpec.describe Admin::BakeDayDashboard, "parties à préparer" do
     end
   end
 
-  describe "parties publiques — comportement inchangé (hors périmètre)" do
+  describe "parties publiques — rattachées au jour même" do
     let(:public_product) { create(:product, :pizza_party_public, category: :dough_balls) }
     let(:adulte) do
       create(:product_variant, product: public_product, name: "adulte",
@@ -130,8 +130,13 @@ RSpec.describe Admin::BakeDayDashboard, "parties à préparer" do
       # Comptée en production le jour même…
       expect(dashboard_for(friday_bake).total_flour_quantity).to eq(1_000)
       expect(dashboard_for(tuesday_bake).total_flour_quantity).to eq(0)
-      # …mais pas listée dans le bloc, qui ne concerne que les parties privées.
-      expect(dashboard_for(friday_bake).parties_to_prepare).to be_empty
+      # …et depuis #202, listée dans le bloc du jour même — elle demande elle
+      # aussi des pâtons — mais JAMAIS sur la fournée précédente.
+      friday_entries = dashboard_for(friday_bake).parties_to_prepare
+      expect(friday_entries.size).to eq(1)
+      expect(friday_entries.first[:private]).to be false
+      expect(friday_entries.first[:kind_label]).to eq("Party publique")
+      expect(dashboard_for(tuesday_bake).parties_to_prepare).to be_empty
     end
   end
 end

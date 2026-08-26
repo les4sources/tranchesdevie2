@@ -121,10 +121,15 @@
 
 - else
   .adm-card.mt-4.overflow-hidden
-    .adm-cardhd
-      h2.text-xl.font-semibold style="color: var(--text-strong);" Les inscriptions
-      span.adm-eyebrow
-        = "#{@active_orders.size} inscription#{'s' if @active_orders.size > 1}"
+    .adm-cardhd.flex-wrap.gap-2
+      div
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Les inscriptions
+        span.adm-eyebrow
+          = "#{@active_orders.size} inscription#{'s' if @active_orders.size > 1}"
+      / Ajout à la main (#203) : des gens se rajoutent sur place ou en appelant.
+      / Interdit sur un import agrégé, dont les comptes vivent sur l'événement.
+      - unless @event.historical?
+        = link_to "Ajouter une inscription", new_admin_party_event_party_registration_path(@event), class: adm_btn_class(:primary)
 
     - if @orders.empty?
       p.p-4.text-sm.sm:p-6 style="color: var(--text-muted);"
@@ -148,10 +153,19 @@
               - cust = order.customer
               tr
                 td
-                  - if cust
-                    = link_to cust.full_name, admin_customer_path(cust), class: "adm-link"
-                  - else
-                    span style="color: var(--text-faint);" —
+                  .flex.flex-wrap.items-center.gap-2
+                    - if cust
+                      = link_to cust.full_name, admin_customer_path(cust), class: "adm-link"
+                    - else
+                      span style="color: var(--text-faint);" —
+                    / Une inscription manuelle se distingue d'une inscription
+                    / faite en ligne : elle se règle souvent sur place (#203).
+                    - if order.manually_added?
+                      = adm_chip "Manuelle", tone: :accent
+                  / Le nom saisi n'est repris que s'il diffère de celui du
+                  / client rattaché — sinon on l'afficherait deux fois.
+                  - if order.manually_added? && order.group_name.present? && order.group_name != cust&.full_name
+                    p.text-xs style="color: var(--text-muted);" = order.group_name
                 td.text-xs
                   - if cust&.email.present?
                     div style="color: var(--text-strong);" = cust.email
@@ -166,7 +180,14 @@
                 td = adm_order_status_chip(order.status)
                 td.adm-grid-num.whitespace-nowrap = order.created_at.strftime("%d/%m/%Y")
                 td.whitespace-nowrap.text-right
-                  = link_to "Voir", admin_order_path(order), class: "adm-rowaction"
+                  / `button_to` rend un `form` : sans conteneur flex, les
+                  / actions se collent les unes aux autres.
+                  .flex.flex-wrap.items-center.justify-end.gap-x-3.gap-y-1
+                    = link_to "Voir", admin_order_path(order), class: "adm-rowaction"
+                    - if order.manually_added?
+                      = link_to "Modifier", edit_admin_party_event_party_registration_path(@event, order), class: "adm-rowaction"
+                      = button_to (order.paid? ? "Marquer non payée" : "Marquer payée"), toggle_paid_admin_party_event_party_registration_path(@event, order), method: :patch, class: "adm-rowaction"
+                      = button_to "Supprimer", admin_party_event_party_registration_path(@event, order), method: :delete, form: { data: { turbo_confirm: "Supprimer cette inscription ? Les totaux et les revenus seront recalculés." } }, class: "adm-rowaction"
           tfoot
             tr.adm-grid-total
               td Total (hors annulées)

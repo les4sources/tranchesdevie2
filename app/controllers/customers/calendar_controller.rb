@@ -25,9 +25,13 @@ module Customers
 
       # Points de retrait ouverts, par fournée (#148) : la modale d'une date ne
       # propose que les lieux ouverts ce jour-là.
-      @pickup_locations_by_bake_day = @bake_days.index_with { |bake_day| bake_day.open_pickup_locations.to_a }
-      # Pré-remplissage : dernier lieu choisi par le client, à défaut le lieu par défaut.
-      @preferred_pickup_location = current_customer.last_pickup_location || PickupLocation.default_location
+      @pickup_locations_by_bake_day = @bake_days.index_with { |bake_day| bake_day.orderable_pickup_locations.to_a }
+      # Pré-remplissage : dernier lieu choisi par le client, à défaut le lieu par
+      # défaut. Un lieu devenu inactif (#199) ne se re-propose pas : on retombe
+      # sur le défaut, qui est toujours actif par validation.
+      last_location = current_customer.last_pickup_location
+      last_location = nil unless last_location&.active?
+      @preferred_pickup_location = last_location || PickupLocation.default_location
     end
 
     def mark_intro_seen

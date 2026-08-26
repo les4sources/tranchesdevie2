@@ -9,8 +9,12 @@ module Admin
     def index
       @public_events = PartyEvent.public_events.upcoming
       @past_public_events = PartyEvent.public_events.past
-      @private_events = PartyEvent.private_events.upcoming
-                                  .includes(orders: [ :customer, { order_items: { product_variant: :product } } ])
+      # Les parties PRIVÉES se listent depuis les COMMANDES et non depuis les
+      # événements (#205) : la plupart n'ont pas d'événement, et celles qui en
+      # ont disparaissaient de l'écran le lendemain de leur date.
+      @private_parties = Admin::PrivatePartyIndex.new
+      @upcoming_private_parties = @private_parties.upcoming
+      @past_private_parties = @private_parties.past
     end
 
     # Fiche d'un événement (#173). Les deux familles n'ont rien à montrer en

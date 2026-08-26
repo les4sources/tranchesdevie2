@@ -407,6 +407,10 @@
                     = location.name
                     - if location.deleted_at.present?
                       span.ml-2 = adm_chip "Lieu supprimé", tone: :warning
+                    / Inactif (#199) : plus proposé aux clients, mais ses
+                    / commandes et sa feuille de retrait restent là.
+                    - elsif !location.active?
+                      span.ml-2 = adm_chip "Lieu inactif", tone: :warning
                   - if location.description.present?
                     p.text-xs style="color: var(--text-muted);" = location.description
                   / `pluralize` n'accorde pas en locale fr (aucune règle d'inflexion

@@ -45,10 +45,19 @@ class BakeDay < ApplicationRecord
   # `accounted` en fait partie : un brouillon n'est jamais proposé au client.
   scope :visible_to_customers, -> { accounted.where("EXTRACT(DOW FROM baked_on) IN (?)", COOKING_WDAYS) }
 
-  # Lieux de retrait proposables au client sur cette fournée : les lieux ouverts,
-  # non supprimés, dans l'ordre d'affichage.
+  # Lieux de retrait OUVERTS sur cette fournée : les lieux non supprimés, dans
+  # l'ordre d'affichage. Inclut volontairement les lieux désactivés (#199) —
+  # c'est ce qui garde l'historique lisible côté admin (répartition du jour,
+  # feuille de retrait, édition d'une commande passée).
   def open_pickup_locations
     pickup_locations.not_deleted.ordered
+  end
+
+  # Ce qu'on PROPOSE au client : les lieux ouverts encore actifs. Séparer les
+  # deux notions est le coeur de #199 — désactiver un lieu doit le retirer des
+  # choix sans rien effacer de ce qui s'y est déjà passé.
+  def orderable_pickup_locations
+    open_pickup_locations.active
   end
 
   # Coût total des lieux de vente liés à la fournée (#150), résolu à la date de

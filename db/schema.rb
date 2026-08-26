@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_26_020000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -381,6 +381,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_020000) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true, null: false
     t.index ["default"], name: "index_pickup_locations_on_single_default", unique: true, where: "((\"default\" = true) AND (deleted_at IS NULL))"
     t.index ["deleted_at"], name: "index_pickup_locations_on_deleted_at"
   end

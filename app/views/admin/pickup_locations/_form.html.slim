@@ -26,6 +26,15 @@
     p.text-xs.text-gray-500
       | Un seul lieu peut être par défaut. Il est pré-sélectionné au checkout et automatiquement ouvert sur chaque nouvelle fournée.
 
+  / Actif (#199) : distinct de la suppression. Décocher retire le lieu des choix
+  / du client sans toucher aux commandes qui y sont déjà rattachées.
+  .space-y-2
+    label.flex.items-center.gap-2.cursor-pointer
+      = f.check_box :active, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      span.text-sm.font-medium.text-gray-700 Actif — proposé aux clients
+    p.text-xs.text-gray-500
+      | Décochez pour retirer ce lieu des choix au checkout et dans le calendrier, sans rien perdre : les commandes déjà rattachées, la répartition du jour de cuisson et la feuille de retrait restent intactes. Le point de retrait par défaut ne peut pas être désactivé.
+
   / Cochage bidirectionnel (#148) : on ouvre/ferme ce lieu sur les fournées à venir.
   / Les fournées passées ne sont pas listées — leur rattachement est conservé tel quel.
   .space-y-2

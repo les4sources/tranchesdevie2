@@ -18,8 +18,13 @@
         = adm_chip(@bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes", tone: @bake_day.cut_off_passed? ? :danger : :success)
         - if @bake_day.market_day?
           = adm_chip "Jour de marché", tone: :accent
+        - if @bake_day.draft?
+          = adm_chip "Brouillon — hors comptabilité", tone: :warning
       p.mt-1.text-sm style="color: var(--text-muted);"
         | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
+      - if @bake_day.draft?
+        p.mt-1.text-sm style="color: var(--warning-700);"
+          | Jour de travail : les calculs fonctionnent normalement, mais il n'est proposé à aucun client et n'entre ni dans les revenus boulangers, ni dans le reporting.
     .flex.flex-wrap.gap-2.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
       = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = link_to "Feuille compta", sheet_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)

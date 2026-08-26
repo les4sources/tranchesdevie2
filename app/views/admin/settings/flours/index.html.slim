@@ -32,8 +32,8 @@
               td.px-4.py-3.text-sm.text-gray-600 = flour.origin
               td.px-4.py-3.text-sm.text-gray-600 = flour.grade
               td.px-4.py-3.text-sm.text-gray-600
-                - if flour.price_per_kg_euros.present?
-                  | #{number_to_currency(flour.price_per_kg_euros, unit: "€", separator: ",", delimiter: "")}
+                - if flour.price_per_kg_euros_on.present?
+                  | #{number_to_currency(flour.price_per_kg_euros_on, unit: "€", separator: ",", delimiter: "")}
               td.px-4.py-3.text-sm.text-gray-600
                 - if flour.kneader_limit_grams.present?
                   | #{flour.kneader_limit_grams / 1000} kg
@@ -43,6 +43,7 @@
                   | #{number_with_precision(flour.panification_ratios_sum * 100, precision: 1, strip_insignificant_zeros: true)} %
               td.px-4.py-3.text-sm.text-gray-600 = flour.product_flours.count
               td.px-4.py-3.text-sm
+                = link_to "Prix", admin_settings_flour_kilo_prices_path(flour), class: "text-blue-600 hover:text-blue-800 mr-3"
                 = link_to "Modifier", edit_admin_settings_flour_path(flour), class: "text-blue-600 hover:text-blue-800 mr-3"
                 = button_to "Supprimer", admin_settings_flour_path(flour), method: :delete, data: { turbo_confirm: "Supprimer cette farine ?" }, class: "text-red-600 hover:text-red-800", form: { class: "inline" }
   - else

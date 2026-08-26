@@ -89,12 +89,14 @@ RSpec.describe "Admin — détail d'une party", type: :request do
       expect(response.body).to include("Nouvel événement public")
     end
 
-    it "montre le nombre de personnes et un lien vers la fiche" do
+    it "montre le nombre de pâtons et un lien vers la fiche" do
       event, = private_party(qty: 11)
 
       get admin_party_events_path
 
-      expect(response.body).to include("Personnes")
+      # « Personnes » est devenu « Pâtons » (#205) : c'est ce que les
+      # boulangers préparent, et la colonne voisine porte déjà le client.
+      expect(response.body).to include("Pâtons")
       expect(response.body).to include("11")
       expect(response.body).to include(admin_party_event_path(event))
     end

@@ -1,0 +1,6 @@
+- content_for :title, "Nouveau prix — #{@owner.name}"
+- content_for :layout, "admin"
+
+h1.mb-6.text-2xl.font-bold.text-gray-900 = "Nouveau prix — #{@owner.name}"
+
+= render "form", price: @price, url: owner_prices_path, method: :post, submit_label: "Enregistrer"

@@ -13,5 +13,12 @@ FactoryBot.define do
       key { RevenueParameter::FOUR_SOURCES_RATE }
       value { 3_000 } # 30 % en points de base
     end
+
+    # Taux 4 Sources des ATELIERS (#208). Sans palier saisi, un atelier reste
+    # volontairement non réparti : la réunion n'a pas tranché ce partage.
+    trait :workshop_rate do
+      key { RevenueParameter::WORKSHOP_FOUR_SOURCES_RATE }
+      value { 3_000 }
+    end
   end
 end

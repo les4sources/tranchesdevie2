@@ -36,7 +36,7 @@
               </div>
             </div>
 
-            <p class="mb-4 mt-2 text-sm text-ink-500">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 underline-offset-2 hover:underline">Contacte-nous pour commander</a></p>
+            <p class="mb-4 mt-2 text-sm text-ink-500">Pas de GSM ? <a href="mailto:<%= BakeryDetails::EMAIL %>" class="font-medium text-ember-600 underline-offset-2 hover:underline">Écris-nous</a> ou appelle le <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 underline-offset-2 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a></p>
 
             <%# Les deux canaux sont au même niveau : le client choisit de recevoir son code par SMS ou par e-mail. %>
             <div id="channel-buttons">

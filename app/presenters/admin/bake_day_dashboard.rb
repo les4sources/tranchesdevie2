@@ -329,25 +329,7 @@ module Admin
     #   - PUBLIQUE : le jour même, comme avant. Hors périmètre de #170, elles ont
     #     leur propre organisation.
     def party_orders
-      @party_orders ||= begin
-        private_event_ids = PartyEvent.prepared_by(bake_day).pluck(:id)
-
-        Order.where(source: :party, status: PRODUCTION_STATUSES)
-             .joins(:party_event)
-             .where(
-               "party_events.id IN (:private_ids) OR (party_events.kind = :public_kind AND party_events.held_on = :date)",
-               private_ids: private_event_ids.presence || [ -1 ],
-               public_kind: PartyEvent.kinds[:public_party],
-               date: bake_day.baked_on
-             )
-             .includes(order_items: {
-                         product_variant: [
-                           :mold_type,
-                           { product: { product_flours: :flour } }
-                         ]
-                       })
-             .to_a
-      end
+      @party_orders ||= BakeDayPartyOrders.production(bake_day)
     end
 
     # Une boule par personne. La ligne « forfait » — unique par commande, quel

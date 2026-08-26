@@ -15,6 +15,13 @@ module BakeryDetails
   COUNTRY = "Belgique"
   EMAIL = ENV.fetch("MAIL_FROM", "boulangerie@les4sources.be")
 
+  # Ligne dédiée de la boulangerie (eSIM + WhatsApp « Boulangerie Tranches de
+  # Vie »), distincte des numéros personnels des boulangers. Définie ici pour
+  # n'exister qu'une fois : c'est le canal à privilégier pour les questions sur
+  # les pizza parties privées (#201).
+  PHONE_E164 = "+32491240715"
+  PHONE_DISPLAY = "0491 24 07 15"
+
   module_function
 
   # Numéro d'entreprise (BCE/TVA). Optionnel : affiché seulement s'il est défini.

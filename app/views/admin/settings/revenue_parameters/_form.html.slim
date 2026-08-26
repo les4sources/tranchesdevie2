@@ -1,6 +1,9 @@
 - key = revenue_parameter.key
 - is_transport = key == RevenueParameter::TRANSPORT
 - unit_label = is_transport ? "Montant (€ / jour de production)" : "Taux (%)"
+/ Le taux ateliers (#208) porte sur la RECETTE, pas sur une marge brute : un
+/ atelier n'a ni coûtant, ni sacs, ni transport à déduire.
+- is_workshop_rate = revenue_parameter.key == RevenueParameter::WORKSHOP_FOUR_SOURCES_RATE
 - current_input = revenue_parameter.persisted? ? number_with_precision(revenue_parameter.value / 100.0, strip_insignificant_zeros: true) : nil
 
 = form_with model: revenue_parameter, url: (revenue_parameter.persisted? ? admin_settings_revenue_parameter_path(revenue_parameter) : admin_settings_revenue_parameters_path), method: (revenue_parameter.persisted? ? :patch : :post), local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
@@ -17,6 +20,9 @@
     .space-y-2
       = f.label :value_input, unit_label, class: "block text-sm font-medium text-gray-700"
       = f.text_field :value_input, value: current_input, inputmode: "decimal", required: true, class: admin_input_class
+      - if is_workshop_rate
+        p.text-xs.text-gray-500
+          | Part des 4 Sources sur la RECETTE d'un atelier — pas sur une marge brute : un atelier n'a ni coûtant matière, ni sacs, ni transport à déduire. Tant qu'aucun palier n'est saisi, les recettes d'atelier ne sont réparties à personne.
     .space-y-2
       = f.label :active_from, "À partir du", class: "block text-sm font-medium text-gray-700"
       = f.date_field :active_from, class: admin_input_class

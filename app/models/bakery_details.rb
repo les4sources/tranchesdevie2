@@ -15,6 +15,16 @@ module BakeryDetails
   COUNTRY = "Belgique"
   EMAIL = ENV.fetch("MAIL_FROM", "boulangerie@les4sources.be")
 
+  # Ligne dédiée de la boulangerie (#210) : eSIM + compte WhatsApp
+  # « Boulangerie Tranches de Vie », distincte des numéros personnels des
+  # boulangers. Définie ICI et nulle part ailleurs — deux copies d'un numéro
+  # de téléphone finissent toujours par diverger.
+  #
+  # `PHONE_E164` sert aux liens `tel:` (cliquables sur mobile),
+  # `PHONE_DISPLAY` à l'affichage au format belge lisible.
+  PHONE_E164 = "+32491240715"
+  PHONE_DISPLAY = "0491 24 07 15"
+
   module_function
 
   # Numéro d'entreprise (BCE/TVA). Optionnel : affiché seulement s'il est défini.
@@ -35,6 +45,7 @@ module BakeryDetails
     [ NAME, ADDRESS_LINE, POSTAL_CITY, COUNTRY ].tap do |lines|
       lines << "N° entreprise : #{company_number}" if company_number
       lines << EMAIL
+      lines << PHONE_DISPLAY
     end
   end
 end

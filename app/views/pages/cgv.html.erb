@@ -21,7 +21,7 @@
     [ "7. Annulation et remboursement", "Tu peux modifier ou annuler une commande planifiée jusqu'à l'heure de clôture du jour de cuisson concerné. Pour toute demande de remboursement, contacte-nous : nous procédons au remboursement sur le portefeuille ou le moyen de paiement initial selon le cas." ],
     [ "8. Allergènes", "Nos produits sont élaborés dans un atelier où des noix et fruits à coque sont utilisés. En cas d'allergie, contacte-nous avant de commander." ],
     [ "9. Responsabilité", "Tranches de Vie met tout en œuvre pour assurer la qualité et la disponibilité des produits. Notre responsabilité ne saurait être engagée en cas de force majeure ou d'indisponibilité ponctuelle d'une fournée." ],
-    [ "10. Contact", "Pour toute question relative à ta commande ou à ces conditions : boulangerie@les4sources.be." ]
+    [ "10. Contact", "Pour toute question relative à ta commande ou à ces conditions : #{BakeryDetails::EMAIL}, ou par téléphone au #{BakeryDetails::PHONE_DISPLAY}." ]
   ] %>
 
   <% sections.each do |title, body| %>
@@ -32,6 +32,7 @@
   <% end %>
 
   <p class="mt-10 text-sm text-ink-500">
-    Une question ? Écris-nous à <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 hover:text-ember-500 hover:underline">boulangerie@les4sources.be</a>.
+    Une question ? Écris-nous à <a href="mailto:<%= BakeryDetails::EMAIL %>" class="font-medium text-ember-600 hover:text-ember-500 hover:underline"><%= BakeryDetails::EMAIL %></a>
+    ou appelle-nous au <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 hover:text-ember-500 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a>.
   </p>
 </div>

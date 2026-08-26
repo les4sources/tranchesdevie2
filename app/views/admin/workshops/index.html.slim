@@ -1,0 +1,32 @@
+- content_for :title, "Ateliers"
+- content_for :layout, "admin"
+
+= adm_page_header "Ateliers" do
+  = link_to "Nouvel atelier", new_admin_workshop_path, class: adm_btn_class(:primary)
+
+p.mb-4.text-sm style="color: var(--text-muted);"
+  | Les ateliers sont un revenu complémentaire, suivi à part de la production.
+
+/ La répartition boulangers / 4 Sources des ateliers n'a pas été tranchée en
+/ réunion (#208). Tant qu'aucun taux n'est saisi, on le dit — plutôt que de
+/ répartir selon un chiffre deviné.
+- if @rate_basis_points.nil?
+  .adm-card.mb-4.p-4 style="background: var(--warning-100); border-color: var(--warning-200);"
+    .flex.flex-wrap.items-center.gap-2
+      = adm_chip "Répartition non définie", tone: :warning
+      p.text-sm.font-semibold style="color: var(--warning-700);" Les recettes d'atelier ne sont réparties à personne pour l'instant.
+    p.mt-1.text-sm style="color: var(--text-body);"
+      | Le partage boulangers / 4 Sources des ateliers n'a pas encore été décidé. Les recettes sont enregistrées et visibles, mais elles ne versent rien tant que le taux n'est pas saisi — on préfère un trou visible à un chiffre inventé.
+    p.mt-2.text-sm
+      = link_to "Définir le taux des ateliers →", new_admin_settings_revenue_parameter_path(key: RevenueParameter::WORKSHOP_FOUR_SOURCES_RATE), class: "adm-link font-semibold"
+- else
+  .adm-card.mb-4.p-4 style="background: var(--brand-tint); border-color: var(--sage-200);"
+    .flex.flex-wrap.items-center.gap-2
+      = adm_chip "#{(@rate_basis_points / 100.0).round(2)} % aux 4 Sources", tone: :brand
+      p.text-sm style="color: var(--text-body);"
+        | Le reste va aux boulangers, réparti entre les animateurs selon les mêmes règles que la production.
+    p.mt-1.text-xs style="color: var(--text-muted);"
+      | Le partage 70/30 des pains ne s'applique pas ici : un atelier n'a ni coûtant matière, ni sacs, ni transport — il n'y a pas de marge brute à partager, seulement une recette.
+
+= render "list", title: "Ateliers à venir", workshops: @upcoming, empty: "Aucun atelier à venir."
+= render "list", title: "Ateliers passés", workshops: @past, empty: "Aucun atelier passé."

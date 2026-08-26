@@ -36,7 +36,9 @@
                   Tranches de Vie &middot; Les 4 Sources, Fonds d'Ahinvaux 1, Yvoir
                 </p>
                 <p style="margin:0 0 6px 0;">
-                  <a href="mailto:boulangerie@les4sources.be" style="color:#7c2d12; text-decoration:none;">boulangerie@les4sources.be</a>
+                  <a href="mailto:<%= BakeryDetails::EMAIL %>" style="color:#7c2d12; text-decoration:none;"><%= BakeryDetails::EMAIL %></a>
+                  &nbsp;·&nbsp;
+                  <a href="tel:<%= BakeryDetails::PHONE_E164 %>" style="color:#7c2d12; text-decoration:none;"><%= BakeryDetails::PHONE_DISPLAY %></a>
                 </p>
                 <% if content_for?(:unsubscribe) %>
                   <p style="margin:12px 0 0 0; color:#a89f94;">

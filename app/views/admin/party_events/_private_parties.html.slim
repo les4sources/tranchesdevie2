@@ -1,0 +1,48 @@
+/ Une section de parties privées (à venir ou passées). Chaque ligne vient d'une
+/ COMMANDE ; l'événement n'est affiché que s'il existe (#205).
+section.mb-8
+  h2.text-xl.font-semibold.text-gray-900.mb-3 = title
+  - if parties.any?
+    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
+      table.min-w-full.divide-y.divide-gray-100.text-sm
+        thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
+          tr
+            th.px-4.py-3.text-left Date
+            th.px-4.py-3.text-left Créneau
+            th.px-4.py-3.text-right Pâtons
+            th.px-4.py-3.text-left Client
+            th.px-4.py-3.text-right Montant
+            th.px-4.py-3.text-left Forfait
+            th.px-4.py-3.text-left Mot du client
+            th.px-4.py-3.text-right Actions
+        tbody.divide-y.divide-gray-50.bg-white
+          - parties.each do |party|
+            tr.hover:bg-gray-50
+              td.px-4.py-3.text-gray-900
+                - if party.held_on
+                  = l(party.held_on)
+                - else
+                  span.text-gray-400 Sans date
+                / Une commande sans événement n'est pas une anomalie : c'est le
+                / cas de la plupart des parties encodées à la main.
+                - unless party.event?
+                  span.ml-2.inline-flex.items-center.rounded-full.bg-amber-100.px-2.py-0.5.text-xs.font-semibold.text-amber-800 Sans événement
+              td.px-4.py-3.text-gray-600 = party.slot_label || "—"
+              td.px-4.py-3.text-right.text-gray-900 = party.paton_count
+              td.px-4.py-3.text-gray-900 = party.customer&.full_name || "—"
+              td.px-4.py-3.text-right.text-gray-900
+                = number_to_currency(party.total_euros, unit: "€", separator: ",", delimiter: " ")
+              td.px-4.py-3.text-gray-600 = party.forfait? ? "Oui" : "Non"
+              / Tronqué pour tenir dans la ligne ; le texte entier reste lisible
+              / en survol, et sur la fiche de commande (#169).
+              - if party.note.present?
+                td.px-4.py-3.text-gray-600 title=party.note = truncate(party.note, length: 80)
+              - else
+                td.px-4.py-3.text-gray-400 —
+              td.px-4.py-3.text-right.whitespace-nowrap
+                - if party.event?
+                  = link_to "Voir le détail", admin_party_event_path(party.party_event), class: "text-blue-600 hover:text-blue-800"
+                - else
+                  = link_to "Voir la commande", admin_order_path(party.order), class: "text-blue-600 hover:text-blue-800"
+  - else
+    p.text-sm.text-gray-500 = empty

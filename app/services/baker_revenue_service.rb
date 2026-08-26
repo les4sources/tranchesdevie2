@@ -123,6 +123,14 @@ class BakerRevenueService
     :total_public_party_revenue_cents,
     :total_public_party_four_sources_cents,
     :total_public_party_bakers_cents,
+    # Ateliers (#208) : revenu COMPLÉMENTAIRE, identifiable séparément de la
+    # production. Inclus dans four_sources_cents / baker_pool_cents seulement
+    # quand ils sont effectivement répartis (taux tranché ET animateur désigné).
+    :workshops,
+    :total_workshop_revenue_cents,
+    :total_workshop_four_sources_cents,
+    :total_workshop_bakers_cents,
+    :workshops_undistributed_count,
     :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
     :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
@@ -139,7 +147,11 @@ class BakerRevenueService
 
   def call
     days = bake_days.map { |bake_day| build_day(bake_day) }
-    artisan_totals = consolidate_artisans(days)
+    # Les ateliers s'ajoutent COMME les parties : un bloc à part, qui ne touche
+    # à aucun calcul de la production. Leurs parts d'artisans rejoignent en
+    # revanche le même cumul, donc les mêmes partenariats.
+    workshops = WorkshopRevenueService.call(period_workshops)
+    artisan_totals = consolidate_artisans(days, workshops)
 
     Report.new(
       start_date: @start_date,
@@ -151,9 +163,9 @@ class BakerRevenueService
       total_transport_cents: sum(days, :transport_cents),
       total_commission_cents: sum(days, :commission_cents),
       total_sales_locations_cents: sum(days, :sales_locations_cents),
-      gross_margin_cents: sum(days, :gross_margin_cents),
-      four_sources_cents: sum(days, :four_sources_cents),
-      baker_pool_cents: sum(days, :baker_pool_cents),
+      gross_margin_cents: sum(days, :gross_margin_cents) + workshops.total_four_sources_cents + workshops.total_bakers_cents,
+      four_sources_cents: sum(days, :four_sources_cents) + workshops.total_four_sources_cents,
+      baker_pool_cents: sum(days, :baker_pool_cents) + workshops.total_bakers_cents,
       total_party_persons: sum(days, :party_persons),
       total_party_revenue_cents: sum(days, :party_revenue_cents),
       total_party_four_sources_cents: sum(days, :party_four_sources_cents),
@@ -162,6 +174,11 @@ class BakerRevenueService
       total_public_party_revenue_cents: sum(days, :public_party_revenue_cents),
       total_public_party_four_sources_cents: sum(days, :public_party_four_sources_cents),
       total_public_party_bakers_cents: sum(days, :public_party_bakers_cents),
+      workshops: workshops.workshops,
+      total_workshop_revenue_cents: workshops.total_revenue_cents,
+      total_workshop_four_sources_cents: workshops.total_four_sources_cents,
+      total_workshop_bakers_cents: workshops.total_bakers_cents,
+      workshops_undistributed_count: workshops.undistributed_count,
       artisan_totals: artisan_totals,
       artisan_settlements: build_settlements(artisan_totals),
       warnings: build_warnings(days)
@@ -170,8 +187,14 @@ class BakerRevenueService
 
   private
 
+  # Ateliers de la période (#208), avec leurs animateurs préchargés.
+  def period_workshops
+    Workshop.between(@start_date, @end_date).includes(artisans: :artisan_revenue_shares).order(:held_on)
+  end
+
   def bake_days
     BakeDay
+      .accounted
       .where(baked_on: @start_date..@end_date)
       .ordered
       .includes(:baking_artisans, sales_locations: :sales_location_costs)
@@ -185,7 +208,12 @@ class BakerRevenueService
     bread_bags_cents = day_bread_bags_cents(bake_day)
     # Pas de vente ce jour-là (CA = 0) → aucun transport facturé : pas de
     # fournée, donc pas de tournée. La marge brute (et le revenu net) reste à 0.
-    transport_cents = revenue_cents.zero? ? 0 : RevenueParameter.transport_cents_on(date)
+    #
+    # Le déclencheur reste le CA PROPRE de la fournée (#207) et non l'assiette
+    # élargie aux parties : une pizza party se tient sur place, elle ne
+    # déclenche aucune tournée. Sans cette distinction, une journée sans pain
+    # mais avec une party facturerait un transport qui n'a pas eu lieu.
+    transport_cents = day_own_revenue_cents(bake_day).zero? ? 0 : RevenueParameter.transport_cents_on(date)
     # Commissions Stripe des commandes EN LIGNE du jour (CA = 0 → aucune commande
     # → commission naturellement 0 : pas de paiement Stripe à déduire).
     commission_cents = day_commission_cents(date)
@@ -245,16 +273,44 @@ class BakerRevenueService
     )
   end
 
+  # Assiette comptable du jour (#207) : les commandes finalisées RATTACHÉES à la
+  # fournée, PLUS les commandes party que cette fournée prépare et qui, elles,
+  # n'ont pas de fournée (`bake_day: nil` par design).
+  #
+  # Les deux ensembles sont fusionnés puis dédupliqués par id : une commande qui
+  # porterait à la fois une fournée et un événement n'est comptée qu'une fois.
+  # `PartyEvent.prepared_by` garantit par ailleurs qu'une party n'est rattachée
+  # qu'à UNE fournée, donc aucun double comptage entre deux jours.
+  def day_accounted_orders(bake_day)
+    @day_accounted_orders ||= {}
+    @day_accounted_orders[bake_day.id] ||= begin
+      direct = bake_day.orders.completed
+                       .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+                       .to_a
+      via_event = BakeDayPartyOrders.completed(bake_day)
+
+      (direct + via_event).uniq(&:id)
+    end
+  end
+
   # Commandes finalisées du jour, préchargées pour le barème party
   # (PizzaPartyRevenueService itère les articles + le coûtant historisé).
   def day_party_orders(bake_day)
-    bake_day.orders.completed
-            .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+    day_accounted_orders(bake_day)
   end
 
-  # CA du jour : somme des commandes finalisées rattachées au jour de cuisson.
-  def day_revenue_cents(bake_day)
+  # CA des commandes RATTACHÉES à la fournée, hors parties venues par
+  # l'événement. Sert uniquement au déclenchement du transport (cf. build_day).
+  def day_own_revenue_cents(bake_day)
     bake_day.orders.completed.sum(:total_cents)
+  end
+
+  # CA du jour. Il DOIT porter sur la même assiette que `day_party_orders` :
+  # le CA party en est retranché pour isoler la marge « pain » (cf. build_day).
+  # Compter une party dans le split sans la compter dans le CA creuserait un
+  # trou du même montant dans la marge non-party.
+  def day_revenue_cents(bake_day)
+    day_accounted_orders(bake_day).sum(&:total_cents)
   end
 
   # Coûtant matières premières du jour : Σ (coûtant variante à la date × qty) sur
@@ -321,7 +377,7 @@ class BakerRevenueService
 
   # Cumul par artisan sur l'ensemble des jours (additionnable par mois côté
   # appelant en filtrant la période). Trié par nom pour un affichage stable.
-  def consolidate_artisans(days)
+  def consolidate_artisans(days, workshops = nil)
     grouped = Hash.new { |hash, key| hash[key] = { artisan: nil, amount_cents: 0, days_count: 0 } }
 
     days.each do |day|
@@ -330,6 +386,18 @@ class BakerRevenueService
         bucket[:artisan] = share.artisan
         bucket[:amount_cents] += share.amount_cents
         bucket[:days_count] += 1
+      end
+    end
+
+    # Les parts d'atelier (#208) rejoignent le MÊME cumul : c'est ce qui leur
+    # fait traverser la couche partenariat sans une ligne de code de plus.
+    # `days_count` compte les jours de production : un atelier n'en est pas un,
+    # il ne l'incrémente pas.
+    workshops&.workshops&.each do |workshop|
+      workshop.artisan_shares.each do |share|
+        bucket = grouped[share.artisan.id]
+        bucket[:artisan] = share.artisan
+        bucket[:amount_cents] += share.amount_cents
       end
     end
 

@@ -12,7 +12,7 @@
   </div>
 
   <% sections = [
-    [ "Responsable du traitement", "Les données sont traitées par Tranches de Vie / Les 4 Sources, à Yvoir. Contact : boulangerie@les4sources.be." ],
+    [ "Responsable du traitement", "Les données sont traitées par Tranches de Vie / Les 4 Sources, à Yvoir. Contact : #{BakeryDetails::EMAIL}, ou #{BakeryDetails::PHONE_DISPLAY}." ],
     [ "Données que nous collectons", "Selon ton usage : ton numéro de GSM (identifiant de connexion), ton prénom et nom, éventuellement ton adresse e-mail, l'historique de tes commandes et de ton portefeuille, et les informations techniques de paiement gérées par notre prestataire Stripe (nous ne stockons jamais tes données de carte)." ],
     [ "Finalités", "Tes données servent à : créer et sécuriser ton compte (codes de vérification par SMS ou e-mail), traiter et préparer tes commandes, te prévenir quand ta fournée est prête, gérer ton portefeuille et les paiements, et répondre à tes demandes." ],
     [ "Base légale", "Le traitement repose sur l'exécution du contrat (ta commande), notre intérêt légitime (te tenir informé·e de ta commande) et, pour les communications non essentielles, ton consentement (que tu peux retirer à tout moment)." ],
@@ -21,7 +21,7 @@
     [ "Durée de conservation", "Nous conservons tes données tant que ton compte est actif et aussi longtemps que nécessaire pour respecter nos obligations légales (notamment comptables). Tu peux demander la suppression de ton compte." ],
     [ "Tes droits", "Conformément au RGPD, tu disposes d'un droit d'accès, de rectification, d'effacement, de limitation et d'opposition, ainsi que d'un droit à la portabilité de tes données. Pour les exercer, écris-nous. Tu peux aussi introduire une réclamation auprès de l'Autorité de protection des données (Belgique)." ],
     [ "Cookies", "Le site utilise uniquement les cookies nécessaires à son fonctionnement (session, sécurité, panier). Aucun cookie publicitaire de pistage n'est déposé." ],
-    [ "Contact", "Pour toute question sur tes données : boulangerie@les4sources.be." ]
+    [ "Contact", "Pour toute question sur tes données : #{BakeryDetails::EMAIL}, ou par téléphone au #{BakeryDetails::PHONE_DISPLAY}." ]
   ] %>
 
   <% sections.each do |title, body| %>
@@ -32,6 +32,7 @@
   <% end %>
 
   <p class="mt-10 text-sm text-ink-500">
-    Une question ? Écris-nous à <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 hover:text-ember-500 hover:underline">boulangerie@les4sources.be</a>.
+    Une question ? Écris-nous à <a href="mailto:<%= BakeryDetails::EMAIL %>" class="font-medium text-ember-600 hover:text-ember-500 hover:underline"><%= BakeryDetails::EMAIL %></a>
+    ou appelle-nous au <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 hover:text-ember-500 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a>.
   </p>
 </div>

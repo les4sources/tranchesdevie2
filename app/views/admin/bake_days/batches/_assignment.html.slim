@@ -1,0 +1,73 @@
+/ Répartition à la main. Trois portées combinables : toute une variante, tout un
+/ client, une ligne. Elles écrivent sur les mêmes lignes — affecter « tous les
+/ petits épeautres » puis retirer un client précis fonctionne donc bien.
+- if stats.empty?
+  .adm-card.p-4.sm:p-5
+    p.text-sm style="color: var(--text-muted);"
+      | Créez au moins une fournée pour commencer à répartir les lignes.
+- else
+  .space-y-4
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        div
+          h4.text-sm.font-semibold style="color: var(--text-strong);" Affecter tout un produit
+          p.text-xs style="color: var(--text-muted);" Toutes les lignes de la variante basculent d'un coup.
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Produit / variante
+              th.text-right Unités
+              th.text-right Non affectées
+              th.text-right Fournée
+          tbody
+            - planner.variant_rows.each do |row|
+              tr
+                td
+                  p.font-semibold style="color: var(--text-strong);" = row[:variant].name
+                  p.text-xs style="color: var(--text-muted);" = row[:product].name
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = row[:units_count]
+                td.adm-grid-num.text-right style="color: var(--text-muted);"
+                  - if row[:unassigned_units].positive?
+                    span.font-semibold style="color: var(--accent);" = row[:unassigned_units]
+                  - else
+                    | —
+                td.text-right
+                  .flex.justify-end
+                    = render "admin/bake_days/batches/picker", stats: stats, current_batch_id: row[:uniform_batch_id], scope: "product_variant_id", scope_id: row[:variant].id, label: row[:variant].name
+
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        div
+          h4.text-sm.font-semibold style="color: var(--text-strong);" Affecter par client
+          p.text-xs style="color: var(--text-muted);" Le bouton de la ligne « client » bascule toutes ses lignes ; chaque ligne reste réglable ensuite.
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Client / ligne
+              th.text-right Unités
+              th.text-right Fournée
+          tbody
+            - planner.customer_rows.each do |row|
+              tr style="background: var(--surface-inset);"
+                td
+                  p.font-semibold style="color: var(--text-strong);"
+                    = row[:customer]&.full_name || "Sans client"
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = row[:units_count]
+                td.text-right
+                  .flex.justify-end
+                    - if row[:customer]
+                      = render "admin/bake_days/batches/picker", stats: stats, current_batch_id: row[:uniform_batch_id], scope: "customer_id", scope_id: row[:customer].id, label: row[:customer].full_name
+              - row[:lines].each do |line|
+                tr
+                  td.pl-8
+                    .flex.flex-wrap.items-center.gap-2
+                      span.text-sm style="color: var(--text-body);" = line[:variant].name
+                      span.text-xs style="color: var(--text-muted);" = line[:product].name
+                      - if line[:party]
+                        = adm_chip "Pizza party", tone: :accent
+                  td.adm-grid-num.text-right style="color: var(--text-strong);" = line[:qty]
+                  td.text-right
+                    .flex.justify-end
+                      = render "admin/bake_days/batches/picker", stats: stats, current_batch_id: line[:batch_id], scope: "order_item_id", scope_id: line[:order_item].id, label: "#{row[:customer]&.full_name} — #{line[:variant].name}"

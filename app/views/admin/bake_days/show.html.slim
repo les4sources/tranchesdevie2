@@ -352,6 +352,14 @@
           | Par point de retrait
         button.adm-tab type="button" data-dashboard-tabs-target="tab" data-tab="flags" data-action="dashboard-tabs#show"
           | Drapeaux
+        button.adm-tab type="button" data-dashboard-tabs-target="tab" data-tab="batches" data-action="dashboard-tabs#show"
+          | Fournées
+
+    / Calculateur de fournées (#194) : le panneau entier est remplacé par Turbo
+    / à chaque affectation, mais JAMAIS le conteneur d'onglet lui-même — sans
+    / quoi le `hidden` que pose `dashboard-tabs` serait perdu à chaque clic.
+    .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="batches"
+      = render "admin/bake_days/batches/planner", bake_day: @bake_day, planner: @planner, notice: nil
 
     / Répartition par point de retrait (#148) : commandes + récapitulatif agrégé
     / des articles pour chaque lieu, et la feuille d'émargement PDF à imprimer.

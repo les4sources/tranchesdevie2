@@ -1,0 +1,43 @@
+/ Calculateur de fournées (#194). Tout l'écran vit dans ce conteneur : chaque
+/ action le remplace par un Turbo Stream, donc les totaux se recalculent sous
+/ les yeux sans rechargement ni bouton « Enregistrer ».
+- stats = planner.batch_stats
+- total_lines = planner.total_lines_count
+- unassigned = planner.unassigned_lines_count
+
+#batch-planner data-controller="batch-planner" data-batch-planner-url-value=admin_bake_day_batch_assignment_path(bake_day) data-batch-planner-complete-value=(planner.fully_assigned? ? "true" : "false")
+  .space-y-5
+    .flex.flex-col.gap-3.lg:flex-row.lg:items-start.lg:justify-between
+      div.min-w-0
+        .flex.flex-wrap.items-center.gap-2
+          h3.text-lg.font-semibold style="color: var(--text-strong);" Calculateur de fournées
+          - if total_lines.zero?
+            = adm_chip "Aucune ligne à répartir", tone: :neutral
+          - elsif unassigned.zero?
+            = adm_chip "Tout est réparti", tone: :success
+          - else
+            = adm_chip "#{unassigned} ligne#{'s' if unassigned > 1} non affectée#{'s' if unassigned > 1}", tone: :warning
+        p.mt-1.text-sm style="color: var(--text-muted);"
+          | Cochez vous-même chaque ligne : rien n'est réparti automatiquement. #{planner.assigned_lines_count} / #{total_lines} lignes affectées.
+      .flex.flex-wrap.items-center.gap-2.shrink-0
+        p.adm-tonetext.text-xs.font-medium.adm-tone-success data-batch-planner-target="status" role="status" aria-live="polite"
+          = notice
+        = button_to "Ajouter une fournée", admin_bake_day_batches_path(bake_day), method: :post, form: { data: { turbo_stream: true } }, class: adm_btn_class(:primary)
+
+    - if stats.empty?
+      .adm-card.p-6.text-center
+        p.text-sm style="color: var(--text-body);"
+          | Aucune fournée pour l'instant — le jour s'enfourne d'un seul coup.
+        p.mt-1.text-xs style="color: var(--text-muted);"
+          | Créez une fournée dès que le pétrin ou le four ne suffisent plus en une fois. Le tableau global du jour, lui, ne bouge pas.
+    - else
+      / Une seule fournée prend toute la largeur ; à partir de deux, on les met
+      / côte à côte pour comparer les poids d'un coup d'oeil.
+      .grid.gap-4 class=("xl:grid-cols-2" if stats.size > 1)
+        - stats.each_with_index do |entry, index|
+          = render "admin/bake_days/batches/card", bake_day: bake_day, entry: entry, index: index
+
+    = render "admin/bake_days/batches/unassigned", planner: planner
+
+    - if total_lines.positive?
+      = render "admin/bake_days/batches/assignment", bake_day: bake_day, planner: planner, stats: stats

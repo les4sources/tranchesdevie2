@@ -199,6 +199,14 @@ Rails.application.routes.draw do
         # (validation des chiffres boulangers/4S, format feuille de Stéphanie).
         get :sheet
       end
+
+      # Calculateur de fournées (#194) : découpe manuelle du jour en 1 à N
+      # enfournements, et affectation des lignes de commande à chacun.
+      # Chemin distinct de `fournees/:id` à dessein : imbriquer l'affectation
+      # sous le même segment ferait matcher `batches#update` avec
+      # `id: "affectations"` selon l'ordre de déclaration (cf. #200).
+      resource :batch_assignment, path: "affectation-fournee", only: [ :update ]
+      resources :batches, path: "fournees", only: [ :create, :update, :destroy ]
     end
 
     # Points de retrait (#148) : CRUD + cochage des fournées ouvertes.

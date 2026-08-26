@@ -1,0 +1,22 @@
+/ Les lignes non affectées ne se cachent jamais : on ne peut pas « oublier » un
+/ pain sans le voir passer ici.
+- count = planner.unassigned_lines_count
+
+- if count.positive?
+  .adm-card.p-4.sm:p-5 style="background: var(--accent-tint); border-color: var(--ember-200);"
+    .flex.flex-wrap.items-center.justify-between.gap-3
+      div
+        .flex.items-center.gap-2
+          h4.text-sm.font-semibold style="color: var(--text-strong);" Lignes non affectées
+          = adm_chip count.to_s, tone: :accent
+        p.mt-1.text-xs style="color: var(--text-muted);"
+          | #{planner.unassigned_units_count} unité#{'s' if planner.unassigned_units_count > 1} qui n'entrent dans aucune fournée. Elles restent comptées dans le tableau global du jour.
+      p.adm-batchweight style="font-size: 1.75rem;"
+        = count
+- elsif planner.total_lines_count.positive?
+  .adm-card.p-4.sm:p-5 style="background: var(--brand-tint); border-color: var(--sage-200);"
+    .flex.items-center.gap-2
+      h4.text-sm.font-semibold style="color: var(--text-strong);" Tout est réparti
+      = adm_chip "#{planner.total_lines_count} lignes", tone: :success
+    p.mt-1.text-xs style="color: var(--text-muted);"
+      | Additionnées, les fournées retombent exactement sur le tableau global du jour.

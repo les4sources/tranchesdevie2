@@ -13,8 +13,10 @@ class EventsController < ApplicationController
     # créneaux midi/soir (blocages admin, parties publiques du soir et capacité
     # déjà déduits). La sélection est revalidée à l'ajout panier et au checkout.
     if @product && @selected_variant
-      # Premier jour réservable : délai minimum d'une semaine (PRIVATE_MIN_LEAD_DAYS).
-      @availability_start = Date.current + PartyEvent::PRIVATE_MIN_LEAD_DAYS.days
+      # Le calendrier part d'aujourd'hui (#201) : la réservation court jusqu'à
+      # la veille 16 h, donc le premier mardi ou vendredi soir encore ouvert
+      # peut être demain. C'est `private_availability` qui tranche jour par jour.
+      @availability_start = Date.current
       @party_availability = PartyEvent.private_availability(@availability_start..(@availability_start + 8.weeks))
     end
   end

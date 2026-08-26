@@ -72,8 +72,11 @@ class Order < ApplicationRecord
   scope :by_bake_day, ->(bake_day) { where(bake_day: bake_day) }
   scope :completed, -> { where(status: COMPLETED_STATUSES) }
   scope :ready_unpaid, -> { ready.left_joins(:payment).where(payments: { id: nil }) }
+  # Porte d'entrée de tout le reporting daté. L'exclusion des jours brouillon
+  # (#197) vit ici plutôt que dans chaque rapport : un brouillon est une
+  # calculatrice de boulanger, il ne doit apparaître dans aucun chiffre.
   scope :in_bake_day_range, lambda { |start_date, end_date|
-    joins(:bake_day).where(bake_days: { baked_on: start_date..end_date })
+    joins(:bake_day).where(bake_days: { baked_on: start_date..end_date, draft: false })
   }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }

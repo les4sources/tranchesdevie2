@@ -23,6 +23,16 @@
     = f.check_box :market_day, style: "accent-color: var(--brand);"
     span.text-sm.font-medium style="color: var(--text-body);" Jour de marché (capacité four étendue)
 
+/ Brouillon (#197) : le jour sert de calculatrice — panification, moules,
+/ pâtons — sans exister commercialement.
+.mb-4
+  label.flex.cursor-pointer.items-start.gap-2
+    = f.check_box :draft, style: "accent-color: var(--brand); margin-top: 3px;"
+    span
+      span.block.text-sm.font-medium style="color: var(--text-body);" Brouillon
+      span.block.text-xs style="color: var(--text-muted);"
+        | Le jour n'est pas proposé aux clients et n'entre ni dans les revenus boulangers, ni dans le reporting, ni dans la feuille compta. Les calculs de panification, de moules et de capacité fonctionnent normalement.
+
 = render "pickup_locations", f: f, bake_day: bake_day
 
 = render "sales_locations", f: f, bake_day: bake_day

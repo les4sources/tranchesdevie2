@@ -35,14 +35,29 @@ class BakeDay < ApplicationRecord
   scope :future, -> { where("baked_on >= ?", Date.current) }
   scope :past, -> { where("baked_on < ?", Date.current) }
   scope :ordered, -> { order(:baked_on) }
+  # Jours qui comptent commercialement (#197). Un brouillon existe pour ses
+  # calculs — panification, moules, pâtons — et pour rien d'autre : il n'entre
+  # ni dans les revenus, ni dans le reporting, ni dans la boutique.
+  scope :accounted, -> { where(draft: false) }
+  scope :drafts, -> { where(draft: true) }
   # Pendant SQL de `visible_to_customers?` : EXTRACT(DOW) suit la même convention
   # que `Date#wday` (0=dimanche … 6=samedi), les deux se comparent directement.
-  scope :visible_to_customers, -> { where("EXTRACT(DOW FROM baked_on) IN (?)", COOKING_WDAYS) }
+  # `accounted` en fait partie : un brouillon n'est jamais proposé au client.
+  scope :visible_to_customers, -> { accounted.where("EXTRACT(DOW FROM baked_on) IN (?)", COOKING_WDAYS) }
 
-  # Lieux de retrait proposables au client sur cette fournée : les lieux ouverts,
-  # non supprimés, dans l'ordre d'affichage.
+  # Lieux de retrait OUVERTS sur cette fournée : les lieux non supprimés, dans
+  # l'ordre d'affichage. Inclut volontairement les lieux désactivés (#199) —
+  # c'est ce qui garde l'historique lisible côté admin (répartition du jour,
+  # feuille de retrait, édition d'une commande passée).
   def open_pickup_locations
     pickup_locations.not_deleted.ordered
+  end
+
+  # Ce qu'on PROPOSE au client : les lieux ouverts encore actifs. Séparer les
+  # deux notions est le coeur de #199 — désactiver un lieu doit le retirer des
+  # choix sans rien effacer de ce qui s'y est déjà passé.
+  def orderable_pickup_locations
+    open_pickup_locations.active
   end
 
   # Coût total des lieux de vente liés à la fournée (#150), résolu à la date de
@@ -77,7 +92,7 @@ class BakeDay < ApplicationRecord
   # wday à COOKING_DAYS rendrait rétroactivement visibles toutes les fournées
   # déjà posées ce jour-là.
   def visible_to_customers?
-    COOKING_WDAYS.include?(baked_on.wday)
+    !draft? && COOKING_WDAYS.include?(baked_on.wday)
   end
 
   # Commandable par le client : visible ET avant le cut-off. Le calendrier, lui,

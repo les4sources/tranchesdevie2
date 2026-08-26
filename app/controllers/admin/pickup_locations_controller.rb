@@ -56,6 +56,6 @@ class Admin::PickupLocationsController < Admin::BaseController
   end
 
   def pickup_location_params
-    params.require(:pickup_location).permit(:name, :description, :default, :position, bake_day_ids: [])
+    params.require(:pickup_location).permit(:name, :description, :default, :active, :position, bake_day_ids: [])
   end
 end

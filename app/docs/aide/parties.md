@@ -25,7 +25,7 @@ Tout se passe sur la page publique de réservation, sans nous. Le client :
 1. Ouvre la page **Pizza Party privée** du site.
 2. Choisit une **date** dans le calendrier — seuls les jours disponibles sont
    cliquables.
-3. Choisit le **créneau** (midi ou soir) et le **nombre de personnes**.
+3. Confirme le **créneau du soir** — c'est le seul proposé — et le **nombre de personnes**.
 4. Le **forfait de 40 €** s'ajoute tout seul au panier.
 5. S'**identifie**, par son GSM **ou** par son adresse email.
 6. **Paie en ligne**.
@@ -40,24 +40,29 @@ proposé aux autres.
 - **40 € de forfait**, une seule fois par party, quel que soit le nombre de
   convives. Il couvre la préparation, le bois, le matériel et la mise en place.
 
+### Quand une party privée est-elle possible ?
+
+**Le mardi soir et le vendredi soir, uniquement.** Ce sont nos jours de boulangerie : le four est déjà chaud et nous sommes sur place. Aucun autre jour, et **aucun créneau de midi** — à midi la fournée est en cours, les températures ne sont pas les mêmes et personne n'est disponible pour accueillir un groupe.
+
+Les réservations sont ouvertes **jusqu'à la veille à 16 h 00**. Passé cette heure, le créneau du lendemain se ferme tout seul.
+
 ### Pourquoi une date n'est pas disponible
 
-Le calendrier ferme un créneau tout seul dans quatre cas :
+Le calendrier ferme un créneau tout seul dans cinq cas :
 
-1. **Moins de 7 jours** avant la date — il faut ce délai pour préparer les
-   pâtons.
-2. Le créneau a été **bloqué par l'équipe** (voir plus bas).
-3. Une **party publique** occupe déjà cette soirée — les parties publiques sont
+1. Ce n'est **ni un mardi ni un vendredi**, ou c'est le **créneau de midi**.
+2. Il est **plus de 16 h la veille** de la date.
+3. Le créneau a été **bloqué par l'équipe** (voir plus bas).
+4. Une **party publique** occupe déjà cette soirée — les parties publiques sont
    toujours en soirée, donc elles ne ferment que le créneau du soir.
-4. La **capacité de parties privées** sur ce créneau est atteinte. Ce nombre se
+5. La **capacité de parties privées** sur ce créneau est atteinte. Ce nombre se
    règle dans **Paramètres → Production**.
 
 ### Le four sera-t-il chaud ?
 
-Les **mardis et vendredis** sont nos jours de boulangerie : le four est **déjà
-chaud**, le groupe enfourne directement. Les autres jours, le groupe doit
-prévoir **environ 3 heures de chauffe** avant de pouvoir enfourner. Le client
-voit cette information au moment où il choisit sa date.
+Oui, toujours. Les parties privées n'ayant lieu que les mardis et vendredis
+soir — nos jours de boulangerie — le four est **déjà chaud** et le groupe
+enfourne directement. Plus aucun groupe n'a à chauffer le four lui-même.
 
 ## Ce que le client reçoit — et ce qu'il ne reçoit pas
 
@@ -88,9 +93,15 @@ Deux endroits :
 
 ## Ce que le formulaire ne demande pas
 
-Le formulaire de réservation ne collecte **que** la date, le créneau et le
-nombre de personnes. Il ne demande **ni l'heure d'arrivée, ni l'occasion, ni les
-allergies, ni qui s'occupe du feu**.
+Le formulaire de réservation collecte la date, le nombre de personnes et une
+**note obligatoire** où le client indique **l'occasion et son heure d'arrivée**.
+Il ne demande **ni qui s'occupe du feu, ni de régime alimentaire** : nous ne
+faisons **pas de pâtons sans gluten**, et la page ne laisse pas croire le
+contraire.
+
+La pizza party **n'inclut pas la location d'une salle** : un groupe qui en veut
+une passe par Les 4 Sources. Pour toute question, le client est invité à
+**téléphoner** au numéro de la boulangerie.
 
 Pour tout le reste, **il faut contacter le client**. Et attention : un client qui
 s'est identifié **par son email n'a aucun numéro de téléphone enregistré** —

@@ -13,8 +13,10 @@
 #   slug     : nom du fichier PNG et référence markdown (obligatoire)
 #   path     : URL relative à visiter (ex. /admin/orders)
 #   record   : résout un enregistrement de démo (order | bake_day | customer |
-#              product | group | pickup_location). Seul, il vise la fiche ;
-#              combiné à `path`, il y remplace `:id` (ex. /admin/orders/:id/edit)
+#              product | flour | group | pickup_location). Seul, il vise la
+#              fiche ; combiné à `path`, il y remplace `:id`
+#              (ex. /admin/orders/:id/edit). `:variant_id` est remplacé par la
+#              première variante du produit résolu.
 #   selector : capture seulement cet élément CSS (sinon page entière)
 #   auth     : false pour les pages hors authentification (ex. login)
 #
@@ -97,6 +99,16 @@
 - slug: product-variant-new
   record: product
   path: /admin/products/:id/variants/new
+
+# Quantité de pâte d'une variante (#211) : l'écran où les boulangers règlent
+# eux-mêmes leurs grammages.
+- slug: product-variant-edit
+  record: product
+  path: /admin/products/:id/variants/:variant_id/edit
+
+# Ratios de panification d'une farine (#211).
+- slug: settings-flour-edit
+  record: flour
 
 # --- Parties -----------------------------------------------------------------
 - slug: parties-index

@@ -9,6 +9,19 @@
 = adm_page_header "Feuille compta — #{l(@sheet.date)}"
 p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app (mêmes calculs que « Revenus boulangers »). CA net par format + split boulangers / 4 Sources du jour.
 
+/ La feuille d'un brouillon est VIDE par construction : elle se nourrit des
+/ mêmes requêtes que les revenus, qui excluent désormais les brouillons (#197).
+/ On l'annonce plutôt que de laisser lire « Aucune donnée » comme une panne.
+- if @sheet.bake_day.draft?
+  .adm-card.mb-4.p-4 style="background: var(--warning-100); border-color: var(--warning-200);"
+    .flex.flex-wrap.items-center.gap-2
+      = adm_chip "Brouillon", tone: :warning
+      p.text-sm.font-semibold style="color: var(--warning-700);" Cette feuille n'est PAS comptabilisée.
+    p.mt-1.text-sm style="color: var(--text-body);"
+      | Ce jour de cuisson est un brouillon : ses chiffres n'entrent ni dans « Revenus boulangers », ni dans le reporting, donc cette feuille reste vide — ce n'est pas une panne.
+    p.mt-2.text-sm
+      = link_to "Voir les quantités du jour (panification, moules, capacité) →", admin_bake_day_path(@sheet.bake_day), class: "adm-link font-semibold"
+
 - unless day
   .adm-card.p-6.text-sm style="color: var(--text-muted);" Aucune donnée pour ce jour.
 - else

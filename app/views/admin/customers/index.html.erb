@@ -1,127 +1,134 @@
 <% content_for :title, "Mangeurs" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-  <h1 class="text-2xl font-bold text-gray-900">Mangeurs</h1>
-  <div class="flex gap-3">
-    <%= link_to "Groupes",
-                admin_groups_path,
-                class: "inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
-    <%= link_to "Nouveau mangeur",
-                new_admin_customer_path,
-                class: "inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
-  </div>
-</div>
+<%
+  sorted_by_last_order = params[:sort] == "last_order"
+  sorted_by_name = !sorted_by_last_order
+%>
 
-<div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-  <div class="px-6 py-4 border-b border-gray-200">
-    <div class="flex justify-between items-center">
-      <%= form_with url: admin_customers_path, method: :get, local: true, class: "flex space-x-2" do |f| %>
-        <%= f.text_field :search, 
-            value: params[:search],
-            placeholder: "Rechercher par nom, téléphone ou email...",
-            class: admin_input_class("min-w-64") %>
-        <%= f.submit "Rechercher", class: "px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700" %>
-        <% if params[:search].present? %>
-          <%= link_to "Effacer", admin_customers_path, class: "px-3 py-1 bg-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-400" %>
-        <% end %>
+<%= adm_page_header "Mangeurs" do %>
+  <%= link_to "Groupes", admin_groups_path, class: adm_btn_class(:default) %>
+  <%= link_to new_admin_customer_path, class: adm_btn_class(:primary) do %>
+    <%= lucide "plus", size: 15 %> Nouveau mangeur
+  <% end %>
+<% end %>
+
+<div class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <%= form_with url: admin_customers_path, method: :get, local: true, class: "flex flex-wrap items-center gap-2" do |f| %>
+      <div class="relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: var(--text-faint);">
+          <%= lucide "search", size: 16 %>
+        </span>
+        <%= f.text_field :search,
+              value: params[:search],
+              placeholder: "Nom, téléphone ou e-mail…",
+              class: adm_field_class("min-w-64 !pl-10") %>
+      </div>
+      <%= f.submit "Rechercher", class: adm_btn_class(:primary) %>
+      <% if params[:search].present? %>
+        <%= link_to "Effacer", admin_customers_path, class: adm_btn_class(:ghost) %>
       <% end %>
-    </div>
+    <% end %>
+
+    <span class="adm-eyebrow"><%= @customers.size %> mangeur<%= "s" if @customers.size > 1 %></span>
   </div>
 
   <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <%= link_to admin_customers_path(search: params[:search], sort: "name"),
-              class: "hover:text-gray-700 #{'text-gray-900 font-bold' if params[:sort].blank? || params[:sort] == 'name'}" do %>
-            Nom <%= "▲" if params[:sort].blank? || params[:sort] == "name" %>
-          <% end %>
-        </th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SMS</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Groupes</th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Cash OK : le client peut régler ses commandes en espèces au comptoir. Sinon, paiement en ligne obligatoire à la commande.">Cash OK</span>
-        </th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Fact. : client facturable — reçoit un relevé mensuel groupé de ses commandes (à joindre à sa facture).">Fact.</span>
-        </th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Interne : client interne/collectif — ses commandes ne sont pas bloquées par la vérification du solde de portefeuille (peut commander sans provision).">Interne</span>
-        </th>
-        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <span class="cursor-help underline decoration-dotted decoration-gray-400" title="Portf. : solde du portefeuille (prépaiement) du client. Vide si le solde est nul ou jamais utilisé.">Portf.</span>
-        </th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <%= link_to admin_customers_path(search: params[:search], sort: "last_order"),
-              class: "hover:text-gray-700 #{'text-gray-900 font-bold' if params[:sort] == 'last_order'}" do %>
-            Dernière commande <%= "▼" if params[:sort] == "last_order" %>
-          <% end %>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      <% if @customers.any? %>
-        <% @customers.each do |customer| %>
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <%= link_to customer.full_name, admin_customer_path(customer), class: "text-blue-600 hover:text-blue-800 hover:underline" %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= customer.sms_enabled? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                <%= customer.sms_enabled? ? '✓ SMS' : '<s>SMS</s>'.html_safe %>
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              <% if customer.groups.any? %>
-                <% customer.groups.each do |group| %>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">
-                    <%= group.name %>
-                  </span>
-                <% end %>
-              <% else %>
-                <span class="text-gray-400">—</span>
-              <% end %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-              <%= boolean_status_icon(customer.cash_payment_allowed?, label: "Paiement cash autorisé") %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-              <%= boolean_status_icon(customer.billable?, label: "Facturable") %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-              <%= boolean_status_icon(customer.skip_wallet_check?, label: "Client interne") %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
-              <% wallet_balance = customer.wallet&.balance_cents.to_i %>
-              <%= number_to_currency(wallet_balance / 100.0, unit: "€", separator: ",", delimiter: " ", format: "%n %u") if wallet_balance.positive? %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              <% last_order = customer.orders.max_by(&:created_at) %>
-              <% if last_order %>
-                <% days_ago = (Date.current - last_order.created_at.to_date).to_i %>
-                <span title="<%= l(last_order.created_at.to_date, format: :long) %>">
-                  <%= days_ago == 0 ? "Aujourd'hui" : "Il y a #{days_ago} #{days_ago == 1 ? 'jour' : 'jours'}" %>
-                </span>
-              <% else %>
-                <span class="text-gray-400">—</span>
-              <% end %>
-            </td>
-          </tr>
-        <% end %>
-      <% else %>
+    <table class="adm-grid">
+      <thead>
         <tr>
-          <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
-            <% if params[:search].present? %>
-              Aucun mangeur trouvé pour cette recherche.
-            <% else %>
-              Aucun mangeur enregistré.
+          <th>
+            <%= link_to admin_customers_path(search: params[:search], sort: "name"),
+                        class: sorted_by_name ? "font-bold" : nil,
+                        style: sorted_by_name ? "color: var(--text-strong);" : nil do %>
+              Nom <%= "▲" if sorted_by_name %>
             <% end %>
-          </td>
+          </th>
+          <th>SMS</th>
+          <th>Groupes</th>
+          <th class="text-center">
+            <span class="adm-popover-trigger" title="Cash OK : le client peut régler ses commandes en espèces au comptoir. Sinon, paiement en ligne obligatoire à la commande.">Cash OK</span>
+          </th>
+          <th class="text-center">
+            <span class="adm-popover-trigger" title="Fact. : client facturable — reçoit un relevé mensuel groupé de ses commandes (à joindre à sa facture).">Fact.</span>
+          </th>
+          <th class="text-center">
+            <span class="adm-popover-trigger" title="Interne : client interne/collectif — ses commandes ne sont pas bloquées par la vérification du solde de portefeuille (peut commander sans provision).">Interne</span>
+          </th>
+          <th class="text-center">
+            <span class="adm-popover-trigger" title="Portf. : solde du portefeuille (prépaiement) du client. Vide si le solde est nul ou jamais utilisé.">Portf.</span>
+          </th>
+          <th>
+            <%= link_to admin_customers_path(search: params[:search], sort: "last_order"),
+                        class: sorted_by_last_order ? "font-bold" : nil,
+                        style: sorted_by_last_order ? "color: var(--text-strong);" : nil do %>
+              Dernière commande <%= "▼" if sorted_by_last_order %>
+            <% end %>
+          </th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% if @customers.any? %>
+          <% @customers.each do |customer| %>
+            <tr>
+              <td class="whitespace-nowrap font-medium">
+                <%= link_to customer.full_name, admin_customer_path(customer), class: "adm-link" %>
+              </td>
+              <td class="whitespace-nowrap">
+                <% if customer.sms_enabled? %>
+                  <%= adm_chip "SMS", tone: :success, icon: "check" %>
+                <% else %>
+                  <%= adm_chip "SMS", tone: :danger %>
+                <% end %>
+              </td>
+              <td>
+                <% if customer.groups.any? %>
+                  <% customer.groups.each do |group| %>
+                    <%= adm_chip group.name, tone: :brand %>
+                  <% end %>
+                <% else %>
+                  <span style="color: var(--text-faint);">—</span>
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap text-center">
+                <%= boolean_status_icon(customer.cash_payment_allowed?, label: "Paiement cash autorisé") %>
+              </td>
+              <td class="whitespace-nowrap text-center">
+                <%= boolean_status_icon(customer.billable?, label: "Facturable") %>
+              </td>
+              <td class="whitespace-nowrap text-center">
+                <%= boolean_status_icon(customer.skip_wallet_check?, label: "Client interne") %>
+              </td>
+              <td class="adm-grid-num whitespace-nowrap text-center font-medium" style="color: var(--text-strong);">
+                <% wallet_balance = customer.wallet&.balance_cents.to_i %>
+                <%= number_to_currency(wallet_balance / 100.0, unit: "€", separator: ",", delimiter: " ", format: "%n %u") if wallet_balance.positive? %>
+              </td>
+              <td class="whitespace-nowrap">
+                <% last_order = customer.orders.max_by(&:created_at) %>
+                <% if last_order %>
+                  <% days_ago = (Date.current - last_order.created_at.to_date).to_i %>
+                  <span title="<%= l(last_order.created_at.to_date, format: :long) %>">
+                    <%= days_ago == 0 ? "Aujourd'hui" : "Il y a #{days_ago} #{days_ago == 1 ? 'jour' : 'jours'}" %>
+                  </span>
+                <% else %>
+                  <span style="color: var(--text-faint);">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <%= adm_empty_row(colspan: 8,
+                            title: params[:search].present? ? "Aucun mangeur trouvé pour cette recherche." : "Aucun mangeur enregistré.",
+                            hint: params[:search].present? ? "Vérifiez l'orthographe du nom, ou cherchez sur le téléphone ou l'e-mail." : "Créez un mangeur pour pouvoir enregistrer une commande en son nom.") do %>
+            <% if params[:search].present? %>
+              <%= link_to "Effacer la recherche", admin_customers_path, class: adm_btn_class(:default) %>
+            <% else %>
+              <%= link_to "Nouveau mangeur", new_admin_customer_path, class: adm_btn_class(:primary) %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 </div>

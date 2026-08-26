@@ -1,0 +1,79 @@
+<%# Champs communs à `new` et `edit`. Seul `edit` expose l'interrupteur SMS :
+    un mangeur qui n'existe pas encore n'a rien à refuser. %>
+<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+  <div>
+    <%= f.label :first_name, "Prénom", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :first_name, required: true, class: adm_field_class %>
+  </div>
+
+  <div>
+    <%= f.label :last_name, "Nom", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :last_name, class: adm_field_class %>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+  <div>
+    <%= f.label :phone_e164, "Téléphone (format E.164)", class: "adm-eyebrow mb-1 block" %>
+    <%= f.telephone_field :phone_e164, placeholder: "+33612345678", class: adm_field_class %>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Optionnel. Laissez vide pour les mangeurs sans téléphone.</p>
+  </div>
+
+  <div>
+    <%= f.label :email, "Email", class: "adm-eyebrow mb-1 block" %>
+    <%= f.email_field :email, class: adm_field_class %>
+  </div>
+</div>
+
+<div class="mt-6">
+  <%= f.label :group_ids, "Groupes", class: "adm-eyebrow mb-1 block" %>
+  <p class="mb-2 mt-1 text-sm" style="color: var(--text-muted);">Un mangeur peut appartenir à plusieurs groupes. La remise la plus élevée sera appliquée.</p>
+  <div class="space-y-2">
+    <%= f.collection_check_boxes :group_ids, groups, :id, :name do |b| %>
+      <div class="flex items-center">
+        <%= b.check_box style: "accent-color: var(--brand);" %>
+        <%= b.label class: "ml-2 block text-sm", style: "color: var(--text-body);" do %>
+          <%= b.text %>
+          <span class="ml-1 text-xs" style="color: var(--text-muted);">(<%= b.object.discount_percent %>% de remise)</span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+  <% if groups.empty? %>
+    <p class="text-sm" style="color: var(--text-muted);">Aucun groupe créé.</p>
+  <% end %>
+</div>
+
+<% if show_sms_opt_out %>
+  <div class="mt-6">
+    <div class="flex items-center">
+      <%= f.check_box :sms_opt_out, style: "accent-color: var(--brand);" %>
+      <%= f.label :sms_opt_out, "Désactiver les SMS", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
+    </div>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Cochez cette case si le mangeur ne souhaite plus recevoir de SMS.</p>
+  </div>
+<% end %>
+
+<div class="mt-6">
+  <div class="flex items-center">
+    <%= f.check_box :billable, style: "accent-color: var(--brand);" %>
+    <%= f.label :billable, "Facturable", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
+  </div>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">Cochez pour les points de dépôt et clients pro qui reçoivent une facture mensuelle.</p>
+</div>
+
+<div class="mt-6">
+  <div class="flex items-center">
+    <%= f.check_box :cash_payment_allowed, style: "accent-color: var(--brand);" %>
+    <%= f.label :cash_payment_allowed, "Paiement cash autorisé", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
+  </div>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">Autorise ce client à commander sans payer en ligne (paiement en liquide / facture). Par défaut, le paiement en ligne est obligatoire.</p>
+</div>
+
+<div class="mt-6">
+  <div class="flex items-center">
+    <%= f.check_box :skip_wallet_check, style: "accent-color: var(--brand);" %>
+    <%= f.label :skip_wallet_check, "Client interne (pas de vérification de solde)", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
+  </div>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">Ce mangeur peut passer des commandes planifiées sans solde dans son portefeuille.</p>
+</div>

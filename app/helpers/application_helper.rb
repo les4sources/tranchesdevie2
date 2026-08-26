@@ -89,7 +89,7 @@ module ApplicationHelper
       tag.title(label) + tag.path(nil, "stroke-linecap": "round", "stroke-linejoin": "round", d: path),
       xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
       "stroke-width": "1.5", stroke: "currentColor",
-      class: "w-5 h-5 text-gray-500 shrink-0", role: "img", "aria-label": label
+      class: "w-5 h-5 shrink-0", style: "color: var(--text-muted);", role: "img", "aria-label": label
     )
   end
 
@@ -100,14 +100,15 @@ module ApplicationHelper
 
   def boolean_status_icon(active, label:)
     state = active ? "actif" : "inactif"
-    color = active ? "text-green-600" : "text-gray-300"
+    color = active ? "var(--success-600)" : "var(--border-strong)"
 
     tag.svg(
       tag.title("#{label} : #{state}") +
         tag.path(nil, "stroke-linecap": "round", "stroke-linejoin": "round", d: CHECK_CIRCLE_ICON_PATH),
       xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24",
       "stroke-width": "1.5", stroke: "currentColor",
-      class: "w-5 h-5 #{color} shrink-0 inline-block", role: "img", "aria-label": "#{label} : #{state}"
+      class: "w-5 h-5 shrink-0 inline-block", style: "color: #{color};",
+      role: "img", "aria-label": "#{label} : #{state}"
     )
   end
 end

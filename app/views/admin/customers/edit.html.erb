@@ -1,110 +1,18 @@
 <% content_for :title, "Modifier le mangeur" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-900">Modifier le mangeur</h1>
-  <p class="mt-1 text-sm text-gray-600">Mettez à jour les informations du mangeur.</p>
-</div>
+<%= adm_page_header "Modifier le mangeur" %>
+<p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">Mettez à jour les informations du mangeur.</p>
 
-<% if @customer.errors.any? %>
-  <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-    <h2 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h2>
-    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
-      <% @customer.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
-  </div>
-<% end %>
+<%= render "errors", customer: @customer %>
 
-<div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+<div class="adm-card p-4 sm:p-6">
   <%= form_with model: @customer, url: admin_customer_path(@customer), local: true do |f| %>
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div>
-        <%= f.label :first_name, "Prénom", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.text_field :first_name,
-                         required: true,
-                         class: "mt-1 #{admin_input_class}" %>
-      </div>
+    <%= render "form_fields", f: f, groups: @groups, show_sms_opt_out: true %>
 
-      <div>
-        <%= f.label :last_name, "Nom", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.text_field :last_name,
-                         class: "mt-1 #{admin_input_class}" %>
-      </div>
-    </div>
-
-    <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div>
-        <%= f.label :phone_e164, "Téléphone (format E.164)", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.telephone_field :phone_e164,
-                              placeholder: "+33612345678",
-                              class: "mt-1 #{admin_input_class}" %>
-        <p class="mt-1 text-sm text-gray-500">Optionnel. Laissez vide pour les mangeurs sans téléphone.</p>
-      </div>
-
-      <div>
-        <%= f.label :email, "Email", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.email_field :email,
-                          class: "mt-1 #{admin_input_class}" %>
-      </div>
-    </div>
-
-    <div class="mt-6">
-      <%= f.label :group_ids, "Groupes", class: "block text-sm font-medium text-gray-700" %>
-      <p class="mt-1 text-sm text-gray-500 mb-2">Un mangeur peut appartenir à plusieurs groupes. La remise la plus élevée sera appliquée.</p>
-      <div class="space-y-2">
-        <%= f.collection_check_boxes :group_ids, @groups, :id, :name do |b| %>
-          <div class="flex items-center">
-            <%= b.check_box class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-            <%= b.label class: "ml-2 block text-sm text-gray-900" do %>
-              <%= b.text %>
-              <span class="text-gray-500 text-xs ml-1">(<%= b.object.discount_percent %>% de remise)</span>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-      <% if @groups.empty? %>
-        <p class="text-sm text-gray-500">Aucun groupe créé.</p>
-      <% end %>
-    </div>
-
-    <div class="mt-6">
-      <div class="flex items-center">
-        <%= f.check_box :sms_opt_out, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-        <%= f.label :sms_opt_out, "Désactiver les SMS", class: "ml-2 block text-sm text-gray-900" %>
-      </div>
-      <p class="mt-1 text-sm text-gray-500">Cochez cette case si le mangeur ne souhaite plus recevoir de SMS.</p>
-    </div>
-
-    <div class="mt-6">
-      <div class="flex items-center">
-        <%= f.check_box :billable, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-        <%= f.label :billable, "Facturable", class: "ml-2 block text-sm text-gray-900" %>
-      </div>
-      <p class="mt-1 text-sm text-gray-500">Cochez pour les points de dépôt et clients pro qui reçoivent une facture mensuelle.</p>
-    </div>
-
-    <div class="mt-6">
-      <div class="flex items-center">
-        <%= f.check_box :cash_payment_allowed, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-        <%= f.label :cash_payment_allowed, "Paiement cash autorisé", class: "ml-2 block text-sm text-gray-900" %>
-      </div>
-      <p class="mt-1 text-sm text-gray-500">Autorise ce client à commander sans payer en ligne (paiement en liquide / facture). Par défaut, le paiement en ligne est obligatoire.</p>
-    </div>
-
-    <div class="mt-6">
-      <div class="flex items-center">
-        <%= f.check_box :skip_wallet_check, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-        <%= f.label :skip_wallet_check, "Client interne (pas de vérification de solde)", class: "ml-2 block text-sm text-gray-900" %>
-      </div>
-      <p class="mt-1 text-sm text-gray-500">Ce mangeur peut passer des commandes planifiées sans solde dans son portefeuille.</p>
-    </div>
-
-    <div class="mt-8 flex justify-end space-x-3">
-      <%= link_to "Annuler", admin_customer_path(@customer), class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
-      <%= f.submit "Mettre à jour", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    <div class="mt-8 flex flex-wrap items-center justify-end gap-2">
+      <%= link_to "Annuler", admin_customer_path(@customer), class: adm_btn_class(:ghost) %>
+      <%= f.submit "Mettre à jour", class: adm_btn_class(:primary) %>
     </div>
   <% end %>
 </div>
-

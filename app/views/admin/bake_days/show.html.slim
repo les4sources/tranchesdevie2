@@ -492,6 +492,14 @@
         / que l'en-tête produits (thead.sticky.top-0) reste figé au défilement vertical.
         .overflow-auto class="max-h-[75vh]" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
           table.adm-grid.adm-grid-matrix
+            / Les largeurs vivent ici, pas sur les cellules : en `table-layout:
+            / fixed`, seul le premier rang compte, et son en-tête produit porte
+            / un `colspan` qui écraserait les largeurs de variantes (#196).
+            colgroup
+              col style="width: 15rem;"
+              - all_variants.each do
+                col style="width: 5.5rem;"
+              col style="width: 6rem;"
             thead
               tr
                 th.sticky.left-0.z-30 rowspan=2 style="position: sticky; left: 0;"
@@ -503,7 +511,7 @@
               tr
                 - variants_by_product.each do |product, stats|
                   - stats.each do |stat|
-                    th.align-bottom title=stat[:variant].name style="width: 100px; border-left: 1px solid var(--border-strong);"
+                    th.align-bottom title=stat[:variant].name style="border-left: 1px solid var(--border-strong);"
                       div
                         p.text-xs.normal-case.leading-snug style="color: var(--text-body);" = stat[:variant].name
                         p.adm-grid-num.font-medium.normal-case.leading-snug style="color: var(--text-faint); font-size: 11px;" = number_to_currency(stat[:variant].price_euros, unit: "€", separator: ",", delimiter: " ")
@@ -513,7 +521,7 @@
                 td.sticky.left-0.z-30 style="position: sticky; left: 0;" Total
                 - all_variants.each do |variant|
                   - column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 }
-                  td.adm-grid-num.text-center style="width: 50px;"
+                  td.adm-grid-num.text-center
                     = column_total
                 td.adm-grid-num.sticky.right-0.z-30.text-right style="position: sticky; right: 0;"
                   = customer_variant_quantities.values.sum { |q| q.values.sum }
@@ -527,12 +535,15 @@
                     = customer.full_name
                   - all_variants.each do |variant|
                     - qty = quantities[variant.id] || 0
-                    td.adm-grid-num.text-center style="width: 50px; border-left: 1px solid var(--border-strong); color: var(--text-strong);"
+                    td.adm-grid-num.text-center style="border-left: 1px solid var(--border-strong); color: var(--text-strong);"
                       - if qty > 0
                         span.font-semibold = qty
                       - else
                         span style="color: var(--text-faint);" —
-                  td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  / La colonne Total était figée dans l'en-tête et dans la ligne
+                  / de total, mais pas dans le corps : au défilement horizontal,
+                  / les totaux par client glissaient sous leur propre en-tête.
+                  td.adm-grid-num.sticky.right-0.z-10.text-right.font-semibold style="position: sticky; right: 0; background: var(--surface-card); color: var(--text-strong);"
                     = row_total
       - else
         p.text-center.text-sm style="color: var(--text-muted);" Aucun client n'a encore passé commande.

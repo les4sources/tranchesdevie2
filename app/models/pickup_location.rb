@@ -20,12 +20,18 @@ class PickupLocation < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { conditions: -> { where(deleted_at: nil) } }
   validate :single_default_location
+  validate :default_location_stays_active
   validate :bake_days_in_use_still_open
 
   after_save :sync_bake_days
 
   scope :not_deleted, -> { where(deleted_at: nil) }
   scope :ordered, -> { order(position: :asc, name: :asc) }
+  # Lieux encore proposables au client (#199). `active` est un drapeau
+  # d'exploitation, pas une suppression : un lieu inactif garde ses commandes,
+  # sa feuille de retrait et sa place dans la répartition du jour.
+  scope :active, -> { where(active: true) }
+  scope :inactive, -> { where(active: false) }
 
   # Le lieu par défaut (« Les 4 Sources ») : pré-sélectionné au checkout, ouvert
   # automatiquement sur chaque nouvelle fournée. Peut être nil sur une base neuve
@@ -61,6 +67,15 @@ class PickupLocation < ApplicationRecord
     return unless conflicting.exists?
 
     errors.add(:default, "ne peut être coché que sur un seul point de retrait")
+  end
+
+  # Le lieu par défaut est pré-sélectionné au checkout : le laisser devenir
+  # inactif reviendrait à proposer d'office un lieu qu'on vient de retirer.
+  # On interdit plutôt que de transférer le défaut dans le dos de l'admin.
+  def default_location_stays_active
+    return unless default? && !active?
+
+    errors.add(:active, "ne peut pas être décoché sur le point de retrait par défaut — désignez d'abord un autre lieu par défaut")
   end
 
   def assignable_bake_day_ids

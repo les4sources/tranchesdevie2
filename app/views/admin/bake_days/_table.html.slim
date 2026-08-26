@@ -22,6 +22,10 @@
                 span.ml-2 = adm_chip "Demain", tone: :warning
               - if bake_day.market_day?
                 span.ml-2 = adm_chip "Marché", tone: :accent
+              / Brouillon (#197) : ce jour ne compte nulle part, il faut que ça
+              / se voie dès la liste — sinon on cherche un CA qui n'existe pas.
+              - if bake_day.draft?
+                span.ml-2 = adm_chip "Brouillon", tone: :warning
             td.adm-grid-num
               = link_to bake_day.orders.count, admin_orders_path(bake_day_id: bake_day.id), class: "adm-link"
             td

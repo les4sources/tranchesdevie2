@@ -29,6 +29,8 @@ module Admin
                       .order(:created_at)
                       .to_a
       @active_orders = @orders.reject(&:cancelled?)
+      # Liste nominative importée (#206) : documentaire, hors comptabilité.
+      @participants = @event.party_participants.ordered.to_a
 
       if @event.kind_private_party?
         # Une party privée naît d'une réservation unique ; on prend la plus

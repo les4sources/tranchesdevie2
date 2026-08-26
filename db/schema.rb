@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_26_050000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -338,6 +338,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_050000) do
     t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
     t.index ["held_on"], name: "index_party_events_on_held_on"
     t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
+  end
+
+  create_table "party_participants", force: :cascade do |t|
+    t.bigint "party_event_id", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "email"
+    t.string "ticket_kind", null: false
+    t.string "external_reference"
+    t.string "external_ticket_label"
+    t.integer "price_cents"
+    t.boolean "external_paid", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["party_event_id", "external_reference", "last_name", "first_name", "ticket_kind"], name: "index_party_participants_uniqueness", unique: true
+    t.index ["party_event_id"], name: "index_party_participants_on_party_event_id"
   end
 
   create_table "party_slot_blocks", force: :cascade do |t|
@@ -767,6 +783,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_050000) do
   add_foreign_key "orders", "customers"
   add_foreign_key "orders", "party_events"
   add_foreign_key "orders", "pickup_locations"
+  add_foreign_key "party_participants", "party_events"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"
   add_foreign_key "product_flours", "flours"

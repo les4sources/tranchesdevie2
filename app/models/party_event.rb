@@ -28,6 +28,10 @@ class PartyEvent < ApplicationRecord
   scope :private_events, -> { kind_private_party }
   scope :upcoming, -> { not_deleted.where(held_on: Date.current..).order(:held_on, :slot) }
   scope :past, -> { not_deleted.where(held_on: ...Date.current).order(held_on: :desc) }
+
+  # Liste nominative importée d'une billetterie externe (#206). Purement
+  # documentaire : la compta de ces événements vient de l'agrégat `historical_*`.
+  has_many :party_participants, dependent: :destroy
   # Événements dont les ventes ont été importées en agrégé (ex. BilletWeb).
   scope :historical, -> { not_deleted.where.not(historical_source: nil) }
 

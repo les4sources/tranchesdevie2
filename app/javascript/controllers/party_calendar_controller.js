@@ -6,7 +6,7 @@ import { Controller } from "@hotwired/stimulus"
 // serveur "YYYY-MM-DD|slot" (revalidé côté serveur à l'ajout panier).
 export default class extends Controller {
   static targets = ["day", "input", "slotPanel", "slotLabel", "slotButton", "warning", "placeholder",
-    "ovenHotNotice", "ovenColdNotice", "note", "noteCount"]
+    "ovenHotNotice", "note", "noteCount"]
 
   connect() {
     this.countNote()
@@ -36,10 +36,9 @@ export default class extends Controller {
     this.slotPanelTarget.classList.remove("hidden")
     this.warningTarget.classList.add("hidden")
 
-    // Info chauffe : four déjà chaud les jours de boulangerie, sinon ~3 h de
-    // chauffe gérées par le groupe.
+    // Les parties n'ont lieu que les jours de boulangerie (#201), donc le four
+    // est toujours chaud — il n'y a plus de cas « four froid » à annoncer.
     this.toggleNotice(this.ovenHotNoticeTarget, day.dataset.ovenHot === "true")
-    this.toggleNotice(this.ovenColdNoticeTarget, day.dataset.ovenHot !== "true")
   }
 
   toggleNotice(el, show) {

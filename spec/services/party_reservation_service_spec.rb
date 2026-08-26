@@ -9,7 +9,11 @@ RSpec.describe PartyReservationService do
     create(:product_variant, product: party_product, name: 'une boule', price_cents: 500, channel: 'store')
   end
   let(:customer) { create(:customer) }
-  let(:date) { Date.current + 7 }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:date) { Date.current.next_occurring(:tuesday) + 7 }
   let(:cart) { [ { 'product_variant_id' => party_variant.id.to_s, 'qty' => 4 } ] }
 
   # Le commentaire client est obligatoire depuis #169 : le helper en fournit un

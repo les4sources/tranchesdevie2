@@ -214,6 +214,13 @@ Rails.application.routes.draw do
     # rendant `party_slot_blocks#index` inatteignable. Le chemin le plus
     # spécifique passe donc devant. Ne pas réinverser.
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
+    # Création à la main d'une party PRIVÉE (#204). Déclaré avant
+    # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.
+    resources :private_parties, path: "parties/privees", only: [ :new, :create, :edit, :update, :destroy ] do
+      member do
+        patch :toggle_paid
+      end
+    end
     resources :party_events, path: "parties" do
       # Inscriptions ajoutées à la main sur une party publique (#203).
       resources :party_registrations, path: "inscriptions", only: [ :new, :create, :edit, :update, :destroy ] do

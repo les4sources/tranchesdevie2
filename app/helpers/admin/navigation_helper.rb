@@ -11,6 +11,7 @@ module Admin::NavigationHelper
     { key: "customers",    label: "Mangeurs",          icon: "users",           path: :admin_customers_path },
     { key: "products",     label: "Produits",          icon: "wheat",           path: :admin_products_path },
     { key: "party_events", label: "Parties",           icon: "party-popper",    path: :admin_party_events_path },
+    { key: "workshops",    label: "Ateliers",          icon: "sprout",          path: :admin_workshops_path },
     { key: "billing",      label: "Facturation",       icon: "badge-euro",      path: :admin_billing_path },
     { key: "reports",      label: "Revenus boulangers", icon: "euro",           path: :baker_revenue_admin_reports_path },
     { key: "reports",      label: "Reporting",         icon: "chart-column",    path: :admin_reports_path },

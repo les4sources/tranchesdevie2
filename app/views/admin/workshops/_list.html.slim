@@ -1,0 +1,49 @@
+section.mb-8
+  h2.mb-3.text-xl.font-semibold style="color: var(--text-strong);" = title
+  - if workshops.any?
+    .adm-card.overflow-hidden
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Date
+              th Intitulé
+              th Animateurs
+              th.text-right Recette
+              th Notes
+              th
+          tbody
+            - workshops.each do |workshop|
+              tr
+                td.whitespace-nowrap.font-semibold style="color: var(--text-strong);" = l(workshop.held_on)
+                td
+                  p.font-semibold style="color: var(--text-strong);" = workshop.title
+                  - if workshop.description.present?
+                    p.text-xs style="color: var(--text-muted);" = truncate(workshop.description, length: 80)
+                td
+                  - if workshop.unassigned?
+                    = adm_chip "Non réparti — aucun animateur", tone: :warning
+                  - else
+                    = workshop.artisans.map(&:name).join(", ")
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  = number_to_currency(workshop.revenue_euros, unit: "€", separator: ",", delimiter: " ")
+                td.text-xs style="color: var(--text-muted);"
+                  - if workshop.notes.present?
+                    span title=workshop.notes = truncate(workshop.notes, length: 60)
+                  - else
+                    | —
+                td.whitespace-nowrap.text-right
+                  .flex.flex-wrap.items-center.justify-end.gap-x-3
+                    = link_to "Modifier", edit_admin_workshop_path(workshop), class: "adm-rowaction"
+                    = button_to "Supprimer", admin_workshop_path(workshop), method: :delete, form: { data: { turbo_confirm: "Supprimer cet atelier ? Sa recette disparaîtra du rapport." } }, class: "adm-rowaction"
+          tfoot
+            tr.adm-grid-total
+              td Total
+              td
+              td
+              td.adm-grid-num.text-right
+                = number_to_currency(workshops.sum(&:revenue_euros), unit: "€", separator: ",", delimiter: " ")
+              td
+              td
+  - else
+    p.text-sm style="color: var(--text-muted);" = empty

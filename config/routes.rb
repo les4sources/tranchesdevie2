@@ -210,6 +210,9 @@ Rails.application.routes.draw do
     resources :party_events, path: "parties"
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
 
+    # Ateliers (#208) : revenu complémentaire, à part de la production.
+    resources :workshops, path: "ateliers"
+
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"

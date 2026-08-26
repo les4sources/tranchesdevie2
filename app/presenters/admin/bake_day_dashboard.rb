@@ -275,23 +275,39 @@ module Admin
       end
     end
 
-    # Parties PRIVÉES que cette fournée doit préparer, avec de quoi les annoncer
-    # aux boulangers : date, créneau, nombre de pâtons, client.
+    # Parties dont les pâtons se pétrissent sur CETTE fournée, avec de quoi les
+    # annoncer aux boulangers : date, créneau, nombre de pâtons, client.
+    #
+    # Privées ET publiques (#202) : les deux demandent des pâtons en plus des
+    # pains, et le boulanger qui ouvre sa journée doit voir les deux. Elles
+    # restent distinguées par `private`, parce qu'elles ne s'organisent pas
+    # pareil. La sélection vient de `party_orders`, qui applique déjà
+    # `PartyEvent#preparation_bake_day` : une party de midi apparaît donc sur la
+    # fournée qui la prépare, pas sur celle du jour où elle a lieu.
     def parties_to_prepare
       @parties_to_prepare ||= party_orders
-        .select { |order| order.party_event&.kind_private_party? }
+        .select { |order| order.party_event.present? }
         .sort_by { |order| [ order.party_event.held_on, order.party_event.slot.to_s ] }
-        .map do |order|
-          {
-            order: order,
-            party_event: order.party_event,
-            held_on: order.party_event.held_on,
-            slot_label: order.party_event.slot_label,
-            same_day: order.party_event.held_on == bake_day.baked_on,
-            paton_count: paton_count_for(order),
-            customer_name: order.customer&.full_name
-          }
-        end
+        .map { |order| party_entry(order) }
+    end
+
+    # Les mêmes parties, indexées par commande : le flux des commandes s'en sert
+    # pour poser le badge à côté du nom du client.
+    def party_entry_by_order_id
+      @party_entry_by_order_id ||= parties_to_prepare.index_by { |entry| entry[:order].id }
+    end
+
+    # Flux du jour : les commandes de pain de la fournée ET les commandes party
+    # qu'elle prépare, dans l'ordre d'arrivée. Les party n'ont pas de `bake_day`
+    # (par design) : sans cette fusion, elles seraient absentes de la seule liste
+    # où les boulangers lisent « qui a commandé quoi » (#202).
+    def timeline_entries
+      @timeline_entries ||= begin
+        regular = orders.map { |order| { order: order, party: nil } }
+        parties = parties_to_prepare.map { |entry| { order: entry[:order], party: entry } }
+
+        (regular + parties).sort_by { |entry| entry[:order].created_at }
+      end
     end
 
     private
@@ -329,25 +345,23 @@ module Admin
     #   - PUBLIQUE : le jour même, comme avant. Hors périmètre de #170, elles ont
     #     leur propre organisation.
     def party_orders
-      @party_orders ||= begin
-        private_event_ids = PartyEvent.prepared_by(bake_day).pluck(:id)
+      @party_orders ||= BakeDayPartyOrders.production(bake_day)
+    end
 
-        Order.where(source: :party, status: PRODUCTION_STATUSES)
-             .joins(:party_event)
-             .where(
-               "party_events.id IN (:private_ids) OR (party_events.kind = :public_kind AND party_events.held_on = :date)",
-               private_ids: private_event_ids.presence || [ -1 ],
-               public_kind: PartyEvent.kinds[:public_party],
-               date: bake_day.baked_on
-             )
-             .includes(order_items: {
-                         product_variant: [
-                           :mold_type,
-                           { product: { product_flours: :flour } }
-                         ]
-                       })
-             .to_a
-      end
+    def party_entry(order)
+      event = order.party_event
+
+      {
+        order: order,
+        party_event: event,
+        held_on: event.held_on,
+        slot_label: event.slot_label,
+        private: event.kind_private_party?,
+        kind_label: event.kind_private_party? ? "Party privée" : "Party publique",
+        same_day: event.held_on == bake_day.baked_on,
+        paton_count: paton_count_for(order),
+        customer_name: order.customer&.full_name
+      }
     end
 
     # Une boule par personne. La ligne « forfait » — unique par commande, quel

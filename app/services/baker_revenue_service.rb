@@ -194,6 +194,7 @@ class BakerRevenueService
 
   def bake_days
     BakeDay
+      .accounted
       .where(baked_on: @start_date..@end_date)
       .ordered
       .includes(:baking_artisans, sales_locations: :sales_location_costs)
@@ -207,7 +208,12 @@ class BakerRevenueService
     bread_bags_cents = day_bread_bags_cents(bake_day)
     # Pas de vente ce jour-là (CA = 0) → aucun transport facturé : pas de
     # fournée, donc pas de tournée. La marge brute (et le revenu net) reste à 0.
-    transport_cents = revenue_cents.zero? ? 0 : RevenueParameter.transport_cents_on(date)
+    #
+    # Le déclencheur reste le CA PROPRE de la fournée (#207) et non l'assiette
+    # élargie aux parties : une pizza party se tient sur place, elle ne
+    # déclenche aucune tournée. Sans cette distinction, une journée sans pain
+    # mais avec une party facturerait un transport qui n'a pas eu lieu.
+    transport_cents = day_own_revenue_cents(bake_day).zero? ? 0 : RevenueParameter.transport_cents_on(date)
     # Commissions Stripe des commandes EN LIGNE du jour (CA = 0 → aucune commande
     # → commission naturellement 0 : pas de paiement Stripe à déduire).
     commission_cents = day_commission_cents(date)
@@ -267,16 +273,44 @@ class BakerRevenueService
     )
   end
 
+  # Assiette comptable du jour (#207) : les commandes finalisées RATTACHÉES à la
+  # fournée, PLUS les commandes party que cette fournée prépare et qui, elles,
+  # n'ont pas de fournée (`bake_day: nil` par design).
+  #
+  # Les deux ensembles sont fusionnés puis dédupliqués par id : une commande qui
+  # porterait à la fois une fournée et un événement n'est comptée qu'une fois.
+  # `PartyEvent.prepared_by` garantit par ailleurs qu'une party n'est rattachée
+  # qu'à UNE fournée, donc aucun double comptage entre deux jours.
+  def day_accounted_orders(bake_day)
+    @day_accounted_orders ||= {}
+    @day_accounted_orders[bake_day.id] ||= begin
+      direct = bake_day.orders.completed
+                       .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+                       .to_a
+      via_event = BakeDayPartyOrders.completed(bake_day)
+
+      (direct + via_event).uniq(&:id)
+    end
+  end
+
   # Commandes finalisées du jour, préchargées pour le barème party
   # (PizzaPartyRevenueService itère les articles + le coûtant historisé).
   def day_party_orders(bake_day)
-    bake_day.orders.completed
-            .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+    day_accounted_orders(bake_day)
   end
 
-  # CA du jour : somme des commandes finalisées rattachées au jour de cuisson.
-  def day_revenue_cents(bake_day)
+  # CA des commandes RATTACHÉES à la fournée, hors parties venues par
+  # l'événement. Sert uniquement au déclenchement du transport (cf. build_day).
+  def day_own_revenue_cents(bake_day)
     bake_day.orders.completed.sum(:total_cents)
+  end
+
+  # CA du jour. Il DOIT porter sur la même assiette que `day_party_orders` :
+  # le CA party en est retranché pour isoler la marge « pain » (cf. build_day).
+  # Compter une party dans le split sans la compter dans le CA creuserait un
+  # trou du même montant dans la marge non-party.
+  def day_revenue_cents(bake_day)
+    day_accounted_orders(bake_day).sum(&:total_cents)
   end
 
   # Coûtant matières premières du jour : Σ (coûtant variante à la date × qty) sur

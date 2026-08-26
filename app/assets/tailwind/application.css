@@ -359,6 +359,19 @@
   .adm-grid-matrix thead th { position: static; }
   .adm-grid-matrix thead .adm-grid-total > td { background: var(--surface-sunk); }
 
+  /* Largeurs de colonnes imposées (#196). Sans `table-layout: fixed`, un
+     `width` sur une cellule n'est qu'une suggestion : le moteur l'ignore dès
+     que le contenu est plus large, et une variante au nom long (« Classique
+     800 gr rond cuit sur pierre ») étirait sa colonne à elle seule. En layout
+     fixe, ce sont les `<col>` qui décident, et le nom passe à la ligne.
+     `min-width: 100%` garde le tableau pleine largeur quand il y a peu de
+     variantes ; `width: auto` le laisse déborder — et donc défiler dans son
+     conteneur — quand il y en a beaucoup. */
+  .adm-grid-matrix { table-layout: fixed; width: auto; min-width: 100%; }
+  /* Le `nowrap` global des en-têtes est ce qui empêchait le nom de se replier :
+     dans la matrice, et là seulement, on autorise le retour à la ligne. */
+  .adm-grid-matrix thead th { white-space: normal; overflow-wrap: anywhere; }
+
   /* ── Bulle d'explication (survol d'une quantité de pâte) ──────────────── */
   .adm-popover { background: var(--surface-card); border: 1px solid var(--border-subtle);
                  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); text-align: left; }

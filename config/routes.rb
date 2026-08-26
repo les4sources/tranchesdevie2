@@ -230,6 +230,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # Ateliers (#208) : revenu complémentaire, à part de la production.
+    resources :workshops, path: "ateliers"
+
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
       resources :flours, path: "farines"

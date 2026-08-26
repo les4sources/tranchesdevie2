@@ -123,6 +123,14 @@ class BakerRevenueService
     :total_public_party_revenue_cents,
     :total_public_party_four_sources_cents,
     :total_public_party_bakers_cents,
+    # Ateliers (#208) : revenu COMPLÉMENTAIRE, identifiable séparément de la
+    # production. Inclus dans four_sources_cents / baker_pool_cents seulement
+    # quand ils sont effectivement répartis (taux tranché ET animateur désigné).
+    :workshops,
+    :total_workshop_revenue_cents,
+    :total_workshop_four_sources_cents,
+    :total_workshop_bakers_cents,
+    :workshops_undistributed_count,
     :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
     :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
@@ -139,7 +147,11 @@ class BakerRevenueService
 
   def call
     days = bake_days.map { |bake_day| build_day(bake_day) }
-    artisan_totals = consolidate_artisans(days)
+    # Les ateliers s'ajoutent COMME les parties : un bloc à part, qui ne touche
+    # à aucun calcul de la production. Leurs parts d'artisans rejoignent en
+    # revanche le même cumul, donc les mêmes partenariats.
+    workshops = WorkshopRevenueService.call(period_workshops)
+    artisan_totals = consolidate_artisans(days, workshops)
 
     Report.new(
       start_date: @start_date,
@@ -151,9 +163,9 @@ class BakerRevenueService
       total_transport_cents: sum(days, :transport_cents),
       total_commission_cents: sum(days, :commission_cents),
       total_sales_locations_cents: sum(days, :sales_locations_cents),
-      gross_margin_cents: sum(days, :gross_margin_cents),
-      four_sources_cents: sum(days, :four_sources_cents),
-      baker_pool_cents: sum(days, :baker_pool_cents),
+      gross_margin_cents: sum(days, :gross_margin_cents) + workshops.total_four_sources_cents + workshops.total_bakers_cents,
+      four_sources_cents: sum(days, :four_sources_cents) + workshops.total_four_sources_cents,
+      baker_pool_cents: sum(days, :baker_pool_cents) + workshops.total_bakers_cents,
       total_party_persons: sum(days, :party_persons),
       total_party_revenue_cents: sum(days, :party_revenue_cents),
       total_party_four_sources_cents: sum(days, :party_four_sources_cents),
@@ -162,6 +174,11 @@ class BakerRevenueService
       total_public_party_revenue_cents: sum(days, :public_party_revenue_cents),
       total_public_party_four_sources_cents: sum(days, :public_party_four_sources_cents),
       total_public_party_bakers_cents: sum(days, :public_party_bakers_cents),
+      workshops: workshops.workshops,
+      total_workshop_revenue_cents: workshops.total_revenue_cents,
+      total_workshop_four_sources_cents: workshops.total_four_sources_cents,
+      total_workshop_bakers_cents: workshops.total_bakers_cents,
+      workshops_undistributed_count: workshops.undistributed_count,
       artisan_totals: artisan_totals,
       artisan_settlements: build_settlements(artisan_totals),
       warnings: build_warnings(days)
@@ -169,6 +186,11 @@ class BakerRevenueService
   end
 
   private
+
+  # Ateliers de la période (#208), avec leurs animateurs préchargés.
+  def period_workshops
+    Workshop.between(@start_date, @end_date).includes(artisans: :artisan_revenue_shares).order(:held_on)
+  end
 
   def bake_days
     BakeDay
@@ -355,7 +377,7 @@ class BakerRevenueService
 
   # Cumul par artisan sur l'ensemble des jours (additionnable par mois côté
   # appelant en filtrant la période). Trié par nom pour un affichage stable.
-  def consolidate_artisans(days)
+  def consolidate_artisans(days, workshops = nil)
     grouped = Hash.new { |hash, key| hash[key] = { artisan: nil, amount_cents: 0, days_count: 0 } }
 
     days.each do |day|
@@ -364,6 +386,18 @@ class BakerRevenueService
         bucket[:artisan] = share.artisan
         bucket[:amount_cents] += share.amount_cents
         bucket[:days_count] += 1
+      end
+    end
+
+    # Les parts d'atelier (#208) rejoignent le MÊME cumul : c'est ce qui leur
+    # fait traverser la couche partenariat sans une ligne de code de plus.
+    # `days_count` compte les jours de production : un atelier n'en est pas un,
+    # il ne l'incrémente pas.
+    workshops&.workshops&.each do |workshop|
+      workshop.artisan_shares.each do |share|
+        bucket = grouped[share.artisan.id]
+        bucket[:artisan] = share.artisan
+        bucket[:amount_cents] += share.amount_cents
       end
     end
 

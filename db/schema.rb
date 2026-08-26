@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_26_060000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_070000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -758,6 +758,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_060000) do
     t.index ["customer_id"], name: "index_wallets_on_customer_id", unique: true
   end
 
+  create_table "workshop_artisans", force: :cascade do |t|
+    t.bigint "workshop_id", null: false
+    t.bigint "artisan_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id"], name: "index_workshop_artisans_on_artisan_id"
+    t.index ["workshop_id", "artisan_id"], name: "index_workshop_artisans_on_workshop_id_and_artisan_id", unique: true
+    t.index ["workshop_id"], name: "index_workshop_artisans_on_workshop_id"
+  end
+
+  create_table "workshops", force: :cascade do |t|
+    t.date "held_on", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.text "notes"
+    t.integer "revenue_cents", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["held_on"], name: "index_workshops_on_held_on"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "artisan_revenue_shares", "artisans"
@@ -812,4 +833,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_060000) do
   add_foreign_key "wallet_transactions", "orders"
   add_foreign_key "wallet_transactions", "wallets"
   add_foreign_key "wallets", "customers"
+  add_foreign_key "workshop_artisans", "artisans"
+  add_foreign_key "workshop_artisans", "workshops"
 end

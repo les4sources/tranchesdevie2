@@ -76,6 +76,49 @@
         dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
           = number_to_currency(@event.historical_fees_euros || 0, unit: "€", separator: ",", delimiter: "")
 
+  / Liste NOMINATIVE importée (#206) : savoir qui est venu, pouvoir
+  / recontacter. Bloc distinct de l'agrégat, et qui le dit — la compta vient
+  / des chiffres ci-dessus, jamais de cette liste.
+  - participants = @participants || []
+  - if participants.any?
+    .adm-card.mt-4.overflow-hidden
+      .adm-cardhd.flex-wrap.gap-2
+        div
+          h2.text-xl.font-semibold style="color: var(--text-strong);" Qui était là
+          span.adm-eyebrow
+            = "#{participants.size} participant#{'s' if participants.size > 1} · #{participants.count(&:adult?)} adultes · #{participants.size - participants.count(&:adult?)} enfants"
+        = adm_chip "Liste nominative — hors comptabilité", tone: :warning
+
+      p.px-4.pt-4.text-sm.sm:px-6 style="color: var(--text-muted);"
+        | Cette liste sert à savoir qui est venu et à pouvoir recontacter. Elle n'entre dans <b>aucun</b> calcul : la comptabilité de cet événement vient des chiffres agrégés ci-dessus, et aucune commande n'a été créée pour ces participants.
+
+      .mt-4.overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Participant
+              th Contact
+              th Place
+              th Référence
+              th.text-right Prix
+          tbody
+            - participants.each do |participant|
+              tr
+                td.font-semibold style="color: var(--text-strong);" = participant.full_name
+                td.text-xs
+                  - if participant.email.present?
+                    = participant.email
+                  - else
+                    span style="color: var(--text-faint);" —
+                td
+                  = adm_chip participant.kind_label, tone: participant.adult? ? :neutral : :water
+                td.adm-grid-num.text-xs style="color: var(--text-muted);" = participant.external_reference || "—"
+                td.adm-grid-num.text-right style="color: var(--text-body);"
+                  - if participant.price_euros
+                    = number_to_currency(participant.price_euros, unit: "€", separator: ",", delimiter: "")
+                  - else
+                    | —
+
 - else
   .adm-card.mt-4.overflow-hidden
     .adm-cardhd

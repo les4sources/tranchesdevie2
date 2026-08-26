@@ -172,6 +172,7 @@ class BakerRevenueService
 
   def bake_days
     BakeDay
+      .accounted
       .where(baked_on: @start_date..@end_date)
       .ordered
       .includes(:baking_artisans, sales_locations: :sales_location_costs)

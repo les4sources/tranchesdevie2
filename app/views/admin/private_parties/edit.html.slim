@@ -1,0 +1,7 @@
+- content_for :title, "Modifier la pizza party privée"
+- content_for :layout, "admin"
+
+= adm_page_header "Modifier la pizza party privée" do
+  = link_to "Retour à la party", admin_party_event_path(@event), class: adm_btn_class(:default)
+
+= render "form", form: @form, customers: @customers, url: admin_private_party_path(@event), method: :patch, submit_label: "Enregistrer", errors: @errors

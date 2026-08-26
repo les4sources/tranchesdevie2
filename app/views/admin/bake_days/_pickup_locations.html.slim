@@ -9,10 +9,14 @@
   - locations = PickupLocation.not_deleted.ordered
   - if locations.any?
     .grid.grid-cols-1.sm:grid-cols-2.lg:grid-cols-3.gap-2
+      / Un lieu inactif (#199) reste cochable — il peut porter des commandes
+      / historiques sur cette fournée — mais on dit qu'il ne sera pas proposé.
       = f.collection_check_boxes :pickup_location_ids, locations, :id, :name do |b|
         label.adm-option.flex.cursor-pointer.items-center.gap-2.rounded-md.px-3.py-2.text-sm style="border: 1px solid var(--border-subtle); color: var(--text-body);"
           = b.check_box style: "accent-color: var(--brand);"
           = b.text
+          - unless b.object.active?
+            = adm_chip "inactif", tone: :warning
     p.mt-2.text-xs style="color: var(--text-muted);"
       | Le lieu par défaut est toujours ouvert à la création d'une fournée.
   - else

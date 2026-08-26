@@ -75,7 +75,9 @@ class CheckoutController < ApplicationController
     # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
     # est pré-sélectionné. Une commande party n'a pas de choix de lieu (le modèle
     # retombe sur le lieu par défaut, cf. Order#assign_default_pickup_location).
-    @pickup_locations = @party_checkout ? [] : @bake_day.open_pickup_locations
+    # `orderable_` et non `open_` : un lieu désactivé (#199) reste ouvert sur la
+    # fournée — ses commandes passées en dépendent — mais n'est plus proposé.
+    @pickup_locations = @party_checkout ? [] : @bake_day.orderable_pickup_locations
     @selected_pickup_location = @pickup_locations.find(&:default?) || @pickup_locations.first
 
     # Exclusions produit ↔ lieu de retrait (#152) : pour chaque lieu, les noms

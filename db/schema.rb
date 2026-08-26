@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,7 +105,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
     t.datetime "updated_at", null: false
     t.text "internal_note"
     t.boolean "market_day", default: false, null: false
+    t.boolean "draft", default: false, null: false
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
+    t.index ["draft"], name: "index_bake_days_on_draft"
+  end
+
+  create_table "batches", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bake_day_id", "position"], name: "index_batches_on_bake_day_id_and_position"
+    t.index ["bake_day_id"], name: "index_batches_on_bake_day_id"
   end
 
   create_table "bread_bag_prices", force: :cascade do |t|
@@ -268,6 +280,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
     t.integer "unit_price_cents", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "batch_id"
+    t.index ["batch_id"], name: "index_order_items_on_batch_id"
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
   end
@@ -291,6 +305,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
     t.bigint "pickup_location_id", null: false
     t.bigint "party_event_id"
     t.text "customer_note"
+    t.boolean "manually_added", default: false, null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
@@ -323,6 +338,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
     t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
     t.index ["held_on"], name: "index_party_events_on_held_on"
     t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
+  end
+
+  create_table "party_participants", force: :cascade do |t|
+    t.bigint "party_event_id", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "email"
+    t.string "ticket_kind", null: false
+    t.string "external_reference"
+    t.string "external_ticket_label"
+    t.integer "price_cents"
+    t.boolean "external_paid", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["party_event_id", "external_reference", "last_name", "first_name", "ticket_kind"], name: "index_party_participants_uniqueness", unique: true
+    t.index ["party_event_id"], name: "index_party_participants_on_party_event_id"
   end
 
   create_table "party_slot_blocks", force: :cascade do |t|
@@ -367,6 +398,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true, null: false
     t.index ["default"], name: "index_pickup_locations_on_single_default", unique: true, where: "((\"default\" = true) AND (deleted_at IS NULL))"
     t.index ["deleted_at"], name: "index_pickup_locations_on_deleted_at"
   end
@@ -735,6 +767,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
   add_foreign_key "bake_day_pickup_locations", "pickup_locations"
   add_foreign_key "bake_day_sales_locations", "bake_days"
   add_foreign_key "bake_day_sales_locations", "sales_locations"
+  add_foreign_key "batches", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
   add_foreign_key "group_product_discounts", "groups"
@@ -743,12 +776,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_25_200000) do
   add_foreign_key "invoice_orders", "invoices"
   add_foreign_key "invoice_orders", "orders"
   add_foreign_key "invoices", "customers"
+  add_foreign_key "order_items", "batches"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"
   add_foreign_key "orders", "customers"
   add_foreign_key "orders", "party_events"
   add_foreign_key "orders", "pickup_locations"
+  add_foreign_key "party_participants", "party_events"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"
   add_foreign_key "product_flours", "flours"

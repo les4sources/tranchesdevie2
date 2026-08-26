@@ -16,38 +16,46 @@ RSpec.describe 'Pizza party — choix de la date et du créneau', type: :request
     create(:product_variant, product: forfait_product, name: 'forfait', price_cents: 4000, channel: 'store')
   end
 
-  let(:date) { Date.current + 7 }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:date) { Date.current.next_occurring(:tuesday) + 7 }
   let(:slot_choice) { "#{date.iso8601}|soir" }
 
   describe 'GET /evenements' do
-    it 'affiche le calendrier avec les deux créneaux disponibles' do
+    # Depuis #201, seul le SOIR est réservable, et seulement le mardi ou le
+    # vendredi : le midi reste rendu dans le calendrier mais toujours à false.
+    it 'ouvre le créneau du soir sur un mardi, jamais celui de midi' do
       get pizza_party_privee_path
 
       expect(response.body).to include('Choisis ta date')
       expect(response.body).to include(%(data-date="#{date.iso8601}"))
       day_button = response.body[/data-date="#{date.iso8601}".{0,200}/m]
-      expect(day_button).to include('data-midi="true"')
+      expect(day_button).to include('data-midi="false"')
       expect(day_button).to include('data-soir="true"')
     end
 
-    it 'marque un créneau bloqué comme indisponible' do
+    it 'ne rend aucun bouton pour un mercredi — plus aucun créneau ouvert' do
+      wednesday = date + 1
+
+      get pizza_party_privee_path
+
+      expect(response.body).not_to include(%(data-date="#{wednesday.iso8601}"))
+    end
+
+    it "ne rend aucun bouton pour un mardi dont le soir est bloqué" do
       create(:party_slot_block, blocked_on: date, slot: :soir)
 
       get pizza_party_privee_path
 
-      day_button = response.body[/data-date="#{date.iso8601}".{0,200}/m]
-      expect(day_button).to include('data-midi="true"')
-      expect(day_button).to include('data-soir="false"')
+      expect(response.body).not_to include(%(data-date="#{date.iso8601}"))
     end
 
     it 'marque les jours de cuisson (four déjà chaud) via data-oven-hot' do
-      tuesday = (Date.current + 7..Date.current + 13).find(&:tuesday?)
-      wednesday = (Date.current + 7..Date.current + 13).find(&:wednesday?)
-
       get pizza_party_privee_path
 
-      expect(response.body[/data-date="#{tuesday.iso8601}".{0,120}/m]).to include('data-oven-hot="true"')
-      expect(response.body[/data-date="#{wednesday.iso8601}".{0,120}/m]).to include('data-oven-hot="false"')
+      expect(response.body[/data-date="#{date.iso8601}".{0,120}/m]).to include('data-oven-hot="true"')
     end
 
     it 'ne rend pas de bouton pour un jour entièrement bloqué' do

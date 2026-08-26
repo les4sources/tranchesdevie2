@@ -15,7 +15,12 @@ RSpec.describe 'Pizza party privée — commentaire du client', type: :request d
     create(:product_variant, product: forfait_product, name: 'forfait', price_cents: 4000, channel: 'store')
   end
 
-  let(:slot_choice) { "#{(Date.current + 8).iso8601}|soir" }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:party_date) { Date.current.next_occurring(:tuesday) + 7 }
+  let(:slot_choice) { "#{party_date.iso8601}|soir" }
   let(:note) { "On arrive vers 18h30 pour l'anniversaire de Jules. 8 adultes, 3 enfants, un sans gluten." }
 
   before do

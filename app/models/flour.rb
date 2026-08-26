@@ -1,7 +1,15 @@
 # frozen_string_literal: true
 
 class Flour < ApplicationRecord
+  include HistorisedKiloPrice
+
   has_soft_deletion
+
+  # Prix au kilo historisés par date d'effet (#209). L'ancienne colonne
+  # `price_per_kg_cents` est conservée telle quelle (ses valeurs ont été
+  # reprises comme premier palier par la migration), mais ce n'est plus elle
+  # qui fait foi : `price_per_kg_cents_on(date)` interroge l'historique.
+  has_kilo_price_history :flour_prices
 
   has_many :product_flours, dependent: :restrict_with_error
 
@@ -31,7 +39,11 @@ class Flour < ApplicationRecord
     ((panification_ratios_sum - 1) * 100).round(1)
   end
 
+  # Prix affiché « aujourd'hui » : il vient désormais de l'historique, avec
+  # repli sur l'ancienne colonne tant qu'aucun palier n'existe.
   def price_per_kg_euros
+    from_history = price_per_kg_euros_on
+    return from_history unless from_history.nil?
     return nil if price_per_kg_cents.nil?
 
     (price_per_kg_cents / 100.0).round(2)

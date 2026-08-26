@@ -51,8 +51,23 @@
       = f.label :grade, "Type / raffinage", class: "block text-sm font-medium text-gray-700"
       = f.text_field :grade, class: admin_input_class, placeholder: "T110, T170…"
     .space-y-2
-      = f.label :price_per_kg_euros, "Prix au kg (€)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :price_per_kg_euros, step: 0.01, min: 0, value: flour.price_per_kg_euros, class: admin_input_class
+      / Le prix au kilo est désormais historisé par date d'effet (#209) : il se
+      / saisit dans son propre écran, pour qu'un changement n'altère jamais un
+      / reporting passé.
+      span.block.text-sm.font-medium.text-gray-700 Prix au kg
+      - if flour.persisted?
+        p.mt-1.text-sm.text-gray-900
+          - current = flour.price_per_kg_euros_on
+          - if current
+            = number_to_currency(current, unit: "€", separator: ",", delimiter: " ")
+            span.text-xs.text-gray-500
+              |  (en vigueur aujourd'hui)
+          - else
+            span.text-xs.text-amber-700 aucun prix enregistré
+        p.mt-1
+          = link_to "Gérer l'historique des prix →", admin_settings_flour_kilo_prices_path(flour), class: "text-sm text-blue-600 hover:text-blue-800"
+      - else
+        p.mt-1.text-xs.text-gray-500 Enregistrez la farine, puis saisissez ses prix avec leur date d'effet.
 
   .space-y-2
     = f.label :notes, "Notes (quantité de son, variété…)", class: "block text-sm font-medium text-gray-700"

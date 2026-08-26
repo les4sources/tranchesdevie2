@@ -1,0 +1,66 @@
+<% content_for :title, "Coût des matières premières" %>
+<% content_for :layout, "admin" %>
+
+<h1 class="text-2xl font-bold text-gray-900 mb-2">Coût des matières premières</h1>
+<p class="text-sm text-gray-600 mb-6">
+  Chaque quantité est valorisée <strong>au prix en vigueur à la date de sa fournée</strong>, jamais au prix
+  d'aujourd'hui. Changer un prix aujourd'hui ne modifie donc aucun chiffre de ce tableau pour une période passée.
+</p>
+
+<%= render "date_range_filter", url: ingredient_costs_admin_reports_path, start_date: @start_date, end_date: @end_date %>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 my-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Coût total valorisé</h2>
+    <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@costs.total_cost_cents) %></p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Éléments sans prix</h2>
+    <p class="mt-2 text-2xl font-bold <%= @costs.unpriced_count.positive? ? "text-amber-700" : "text-gray-900" %>">
+      <%= @costs.unpriced_count %>
+    </p>
+    <p class="mt-1 text-xs text-gray-500">Leur quantité est affichée, mais elle n'est pas valorisée — jamais comptée pour zéro.</p>
+  </div>
+</div>
+
+<% [["Ingrédients", @costs.ingredient_lines], ["Farines", @costs.flour_lines]].each do |title, lines| %>
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-xl font-medium text-gray-900 mb-4"><%= title %></h2>
+    <% if lines.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100 text-sm">
+          <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left">Élément</th>
+              <th class="px-4 py-3 text-right">Quantité</th>
+              <th class="px-4 py-3 text-right">Coût valorisé</th>
+              <th class="px-4 py-3 text-left">Prix</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50 bg-white">
+            <% lines.each do |line| %>
+              <tr class="<%= "bg-amber-50" if line.partially_priced? %>">
+                <td class="px-4 py-3 text-gray-900"><%= line.subject.name %></td>
+                <td class="px-4 py-3 text-right text-gray-900"><%= number_with_precision(line.kilos, precision: 3, strip_insignificant_zeros: true) %> kg</td>
+                <td class="px-4 py-3 text-right text-gray-900">
+                  <% if line.priced? %><%= reports_currency(line.cost_cents) %><% else %><span class="text-xs text-amber-700">non valorisé</span><% end %>
+                </td>
+                <td class="px-4 py-3 text-gray-600 text-xs">
+                  <% if line.partially_priced? %>
+                    <span class="text-amber-700">
+                      <%= number_with_precision(line.missing_price_grams / 1000.0, precision: 3, strip_insignificant_zeros: true) %> kg sans prix à leur date
+                    </span>
+                  <% else %>
+                    Valorisé au prix de chaque fournée
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500">Aucune consommation sur la période.</p>
+    <% end %>
+  </section>
+<% end %>

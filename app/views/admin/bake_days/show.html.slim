@@ -114,42 +114,51 @@
           p.adm-grid-num.mt-2.text-2xl.font-semibold style="color: var(--text-strong);" = card[:value]
           p.mt-1.text-xs style="color: var(--text-muted);" = card[:meta]
 
-  / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170). Ce
-  / n'est pas toujours le jour même : une party de midi, ou un jour sans
+  / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170, #202).
+  / Ce n'est pas toujours le jour même : une party de midi, ou un jour sans
   / fournée, se prépare la fournée d'avant.
+  /
+  / L'encart est délibérément gros (#202) : « quand on voit les journées, on a
+  / notre topo, on sait ce qui arrive ». Les pâtons et le créneau se lisent de
+  / loin, pas en petits caractères au fond d'un tableau.
   - parties = @dashboard.parties_to_prepare
   - if parties.any?
-    .adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
+    - total_patons = parties.sum { |party| party[:paton_count] }
+    #parties-a-preparer.adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
       .flex.flex-wrap.items-center.gap-3
-        h2.text-sm.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
+        = lucide "party-popper", size: 20, color: "var(--accent)"
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
         = adm_chip(pluralize(parties.size, "party", "parties"), tone: :accent)
+        = adm_chip("#{total_patons} pâton#{'s' if total_patons > 1} au total", tone: :accent)
       p.mt-1.text-sm style="color: var(--text-muted);"
-        | Ces pâtons se pétrissent aujourd'hui. Ils comptent dans le pétrin et la farine, pas dans le four.
+        | Ces pâtons se pétrissent aujourd'hui, en plus des pains. Ils comptent dans le pétrin et la farine, pas dans le four.
 
-      .mt-4.overflow-x-auto
-        table.adm-grid
-          thead
-            tr
-              th Quand
-              th Créneau
-              th.text-right Personnes
-              th Client
-              th
-          tbody
-            - parties.each do |party|
-              tr
-                td.whitespace-nowrap
-                  - if party[:same_day]
-                    = adm_chip "Aujourd'hui", tone: :success
-                  - else
-                    span style="color: var(--text-strong);"
-                      | à préparer pour le #{l(party[:held_on], format: :long_with_day)}
-                td.whitespace-nowrap = party[:slot_label]
-                td.adm-grid-num.whitespace-nowrap.text-right.font-semibold style="color: var(--text-strong);"
+      .mt-4.grid.gap-3 class="sm:grid-cols-2 xl:grid-cols-3"
+        - parties.each do |party|
+          .adm-card.p-4 style="background: var(--surface-card);"
+            .flex.flex-wrap.items-center.gap-2
+              = link_to admin_party_event_path(party[:party_event]), class: "shrink-0"
+                = adm_chip(party[:kind_label], tone: party[:private] ? :accent : :brand)
+              - if party[:same_day]
+                = adm_chip "Aujourd'hui", tone: :success
+              - else
+                = adm_chip "pour le #{l(party[:held_on], format: :long_with_day)}", tone: :warning
+
+            .mt-3.flex.items-end.gap-4
+              div
+                p.adm-eyebrow Pâtons
+                p.adm-grid-num.mt-1.font-bold style="color: var(--text-strong); font-size: 2rem; line-height: 1;"
                   = party[:paton_count]
-                td = party[:customer_name] || "—"
-                td.whitespace-nowrap.text-right
-                  = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
+              div
+                p.adm-eyebrow Créneau
+                p.mt-1.text-xl.font-bold style="color: var(--accent);"
+                  = party[:slot_label]
+
+            p.mt-3.text-base.font-semibold style="color: var(--text-strong);"
+              = party[:customer_name] || "Sans client"
+            .mt-2.flex.flex-wrap.gap-3
+              = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
+              = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
 
   .adm-card.p-4.sm:p-6
     h2.text-xl.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
@@ -592,8 +601,12 @@
       - else
         p.text-center.text-sm style="color: var(--text-muted);" Aucun client n'a encore passé commande.
 
+    / Flux du jour (#202) : les commandes de pain ET les commandes party que
+    / cette fournée prépare. Les party n'ont pas de `bake_day`, elles étaient
+    / donc absentes de la seule liste où l'on lit qui a commandé quoi — d'où
+    / « tu ne sais pas qui ».
     .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="timeline"
-      - if @dashboard.orders.any?
+      - if @dashboard.timeline_entries.any?
         .space-y-4 data-controller="dashboard-filter"
           .flex.flex-wrap.items-center.gap-2(data-filter-group)
             button.adm-filter.adm-filter-active type="button" data-filter="all" data-action="dashboard-filter#change"
@@ -602,12 +615,22 @@
               button.adm-filter type="button" data-filter=order_status data-action="dashboard-filter#change"
                 = order_status_label(order_status)
           .overflow-hidden style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
-            - @dashboard.orders.each do |order|
-              .flex.flex-col.gap-4.border-b.px-4.py-4.last:border-b-0.sm:px-6.lg:flex-row.lg:items-center.lg:justify-between style="border-color: var(--border-subtle);" data-dashboard-filter-target="row" data-category="#{order.status}"
+            - @dashboard.timeline_entries.each do |entry|
+              - order = entry[:order]
+              - party = entry[:party]
+              .flex.flex-col.gap-4.border-b.px-4.py-4.last:border-b-0.sm:px-6.lg:flex-row.lg:items-center.lg:justify-between style="border-color: var(--border-subtle);#{' background: var(--accent-tint);' if party}" data-dashboard-filter-target="row" data-category="#{order.status}"
                 div
-                  p.font-semibold style="color: var(--text-strong);" = order.customer.full_name
+                  .flex.flex-wrap.items-center.gap-2
+                    p.font-semibold style="color: var(--text-strong);" = order.customer&.full_name || "Sans client"
+                    / Badge party à côté du nom : « Fabienne, avec un petit pizza
+                    / party noté à côté, et tu cliques, tu vas de suite à son détail ».
+                    - if party
+                      = link_to admin_party_event_path(party[:party_event])
+                        = adm_chip("#{party[:kind_label]} · #{party[:paton_count]} pâton#{'s' if party[:paton_count] > 1} · #{party[:slot_label]}", tone: party[:private] ? :accent : :brand)
                   p.text-sm style="color: var(--text-muted);"
                     | #{order.created_at.strftime("%d/%m/%Y à %H:%M")}
+                    - if party && !party[:same_day]
+                      |  · party du #{l(party[:held_on], format: :long_with_day)}
                 .flex.-space-x-2
                   - order.order_items.each do |order_item|
                     - variant = order_item.product_variant

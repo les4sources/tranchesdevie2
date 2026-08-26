@@ -7,38 +7,13 @@
     = link_to "Créneaux privés (blocages)", admin_party_slot_blocks_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
     = link_to "Nouvel événement public", new_admin_party_event_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
 
-section.mb-8
-  h2.text-xl.font-semibold.text-gray-900.mb-3 Réservations privées à venir
-  - if @private_events.any?
-    .bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-      table.min-w-full.divide-y.divide-gray-100.text-sm
-        thead.bg-gray-50.text-xs.uppercase.tracking-wide.text-gray-500
-          tr
-            th.px-4.py-3.text-left Date
-            th.px-4.py-3.text-left Créneau
-            th.px-4.py-3.text-right Personnes
-            th.px-4.py-3.text-left Client
-            th.px-4.py-3.text-left Mot du client
-            th.px-4.py-3.text-right Actions
-        tbody.divide-y.divide-gray-50.bg-white
-          - @private_events.each do |event|
-            - reservation = event.orders.reject(&:cancelled?).last || event.orders.last
-            tr.hover:bg-gray-50
-              td.px-4.py-3.text-gray-900 = l(event.held_on)
-              td.px-4.py-3.text-gray-600 = event.slot_label
-              td.px-4.py-3.text-right.text-gray-900 = reservation ? party_paton_count(reservation) : "—"
-              td.px-4.py-3.text-gray-900 = reservation&.customer&.full_name || "—"
-              / Tronqué pour tenir dans la ligne ; le texte entier reste lisible
-              / en survol, et sur la fiche de commande (#169).
-              - note = reservation&.customer_note
-              - if note.present?
-                td.px-4.py-3.text-gray-600 title=note = truncate(note, length: 80)
-              - else
-                td.px-4.py-3.text-gray-400 —
-              td.px-4.py-3.text-right.whitespace-nowrap
-                = link_to "Voir le détail", admin_party_event_path(event), class: "text-blue-600 hover:text-blue-800"
-  - else
-    p.text-sm.text-gray-500 Aucune réservation privée à venir.
+/ Parties privées (#205) : listées depuis les COMMANDES, comme le rapport.
+/ Beaucoup n'ont pas de `PartyEvent` — elles ont été encodées directement en
+/ commande — et sans cette section « passées », celles qui en ont un
+/ disparaissaient de l'écran le lendemain de leur date.
+= render "private_parties", title: "Réservations privées à venir", parties: @upcoming_private_parties, empty: "Aucune réservation privée à venir."
+
+= render "private_parties", title: "Pizza parties privées passées", parties: @past_private_parties, empty: "Aucune pizza party privée passée."
 
 section.mb-8
   h2.text-xl.font-semibold.text-gray-900.mb-3 Événements publics à venir

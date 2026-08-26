@@ -1,0 +1,40 @@
+/ Inscription ajoutée à la main (#203). Une inscription prise sur place peut
+/ n'avoir qu'un nom : téléphone et e-mail restent facultatifs.
+= form_with model: registration, url: url, method: method, local: true, scope: :registration, class: "adm-card p-4 sm:p-6 space-y-5" do |f|
+  - if defined?(errors) && errors.present?
+    .rounded-md.p-4 style="background: var(--danger-100); border: 1px solid var(--danger-200);"
+      h2.text-sm.font-semibold style="color: var(--danger-700);" Correction requise
+      ul.mt-2.list-disc.space-y-1.pl-5.text-sm style="color: var(--danger-700);"
+        - errors.each do |message|
+          li = message
+
+  .grid.grid-cols-1.gap-4 class="md:grid-cols-3"
+    div
+      = f.label :name, "Nom", class: "adm-eyebrow mb-1 block"
+      = f.text_field :name, class: adm_field_class, required: true, placeholder: "Ex. Fabienne Renard"
+    div
+      = f.label :phone, "Téléphone (facultatif)", class: "adm-eyebrow mb-1 block"
+      = f.telephone_field :phone, class: adm_field_class, placeholder: "+32…"
+    div
+      = f.label :email, "E-mail (facultatif)", class: "adm-eyebrow mb-1 block"
+      = f.email_field :email, class: adm_field_class
+
+  .grid.grid-cols-1.gap-4 class="md:grid-cols-2"
+    div
+      = f.label :adults, "Adultes", class: "adm-eyebrow mb-1 block"
+      = f.number_field :adults, class: adm_field_class, min: 0, step: 1
+    div
+      = f.label :children, "Enfants", class: "adm-eyebrow mb-1 block"
+      = f.number_field :children, class: adm_field_class, min: 0, step: 1
+
+  div
+    label.flex.cursor-pointer.items-start.gap-2
+      = f.check_box :paid, style: "accent-color: var(--brand); margin-top: 3px;"
+      span
+        span.block.text-sm.font-medium style="color: var(--text-body);" Déjà payée
+        span.block.text-xs style="color: var(--text-muted);"
+          | Une inscription non payée est enregistrée et compte dans la jauge, mais n'entre dans les revenus qu'une fois marquée payée. L'état se change à tout moment depuis la liste.
+
+  .flex.flex-wrap.justify-end.gap-3
+    = link_to "Annuler", admin_party_event_path(event), class: adm_btn_class(:default)
+    = f.submit submit_label, class: adm_btn_class(:primary)

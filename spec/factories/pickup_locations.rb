@@ -17,5 +17,10 @@ FactoryBot.define do
     trait :deleted do
       deleted_at { Time.current }
     end
+
+    # Lieu désactivé (#199) : hors des choix client, intact dans l'historique.
+    trait :inactive do
+      active { false }
+    end
   end
 end

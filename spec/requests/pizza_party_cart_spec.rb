@@ -17,7 +17,12 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
   end
 
   # Créneau valide requis depuis le calendrier de disponibilités (#pizza-parties).
-  let(:slot_choice) { "#{(Date.current + 7).iso8601}|soir" }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:party_date) { Date.current.next_occurring(:tuesday) + 7 }
+  let(:slot_choice) { "#{party_date.iso8601}|soir" }
 
   def forfait_lines(cart)
     (cart || []).select { |item| item['product_variant_id'] == forfait_variant.id.to_s }

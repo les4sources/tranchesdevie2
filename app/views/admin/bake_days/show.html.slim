@@ -18,8 +18,13 @@
         = adm_chip(@bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes", tone: @bake_day.cut_off_passed? ? :danger : :success)
         - if @bake_day.market_day?
           = adm_chip "Jour de marché", tone: :accent
+        - if @bake_day.draft?
+          = adm_chip "Brouillon — hors comptabilité", tone: :warning
       p.mt-1.text-sm style="color: var(--text-muted);"
         | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
+      - if @bake_day.draft?
+        p.mt-1.text-sm style="color: var(--warning-700);"
+          | Jour de travail : les calculs fonctionnent normalement, mais il n'est proposé à aucun client et n'entre ni dans les revenus boulangers, ni dans le reporting.
     .flex.flex-wrap.gap-2.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
       = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = link_to "Feuille compta", sheet_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
@@ -28,21 +33,56 @@
       = link_to "Annuler la fournée", confirm_cancel_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, form: { data: { turbo_confirm: "Supprimer ce jour de cuisson ? Cette action est définitive." } }, class: adm_btn_class(:danger)
 
-  .grid.gap-4.lg:grid-cols-3
-    .lg:col-span-2.adm-card.p-4.sm:p-6
-      .flex.items-center.justify-between.gap-3
-        h2.text-xl.font-semibold style="color: var(--text-strong);" Consignes du jour
+  / Consignes du jour (#195) : un bandeau d'une ligne, et l'éditeur dans une
+  / modale. Le point dur n'est pas la modale, c'est qu'une consigne saisie ne
+  / disparaisse pas de la vue — d'où la pastille ET l'aperçu, lisibles sans clic.
+  - note_text = strip_tags(@bake_day.internal_note.to_s).squish
+  - note_present = note_text.present?
+
+  .adm-card.p-4 data-controller="bake-day-note" data-bake-day-note-url-value=admin_bake_day_path(@bake_day)
+    .flex.flex-col.gap-3.lg:flex-row.lg:items-center.lg:justify-between
+      .flex.min-w-0.flex-wrap.items-center.gap-x-3.gap-y-1
+        h2.text-sm.font-semibold.shrink-0 style="color: var(--text-strong);" Consignes du jour
+        span.adm-chip class=(note_present ? "adm-chip-accent" : "adm-chip-neutral") data-bake-day-note-target="chip"
+          = note_present ? "Consigne active" : "Aucune consigne"
+        p.min-w-0.truncate.text-sm data-bake-day-note-target="preview" style="color: var(--text-body);"
+          = note_text
+        / Toujours rendu, masqué quand une consigne existe : c'est le contrôleur
+        / qui le rebascule si l'on vide la consigne, sans recharger la page.
+        p.text-sm class=("hidden" if note_present) data-bake-day-note-target="placeholder" style="color: var(--text-muted);"
+          | Rien de particulier aujourd'hui.
+      .flex.shrink-0.items-center.gap-3
         p.adm-tonetext.text-xs.font-medium data-bake-day-note-target="status"
           | Dernière mise à jour #{l(@bake_day.updated_at, format: :short)}
-      .mt-4
-        = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, html: { class: "space-y-4", data: { controller: "bake-day-note", turbo: false, "bake-day-note-url-value": admin_bake_day_path(@bake_day), "bake-day-note-target": "form" } } do |form|
-          = form.hidden_field :internal_note, id: note_input_id
-          trix-editor class="trix-content adm-trix" input=note_input_id data-action="trix-change->bake-day-note#queueSave"
-          .mt-2.flex.items-center.justify-between.gap-3.text-xs style="color: var(--text-muted);"
-            span Partagez les consignes d'approvisionnement, allergies, retards, etc.
-            button class=adm_btn_class(:default) type="button" data-action="bake-day-note#save"
-              | Enregistrer maintenant
+        button class=adm_btn_class(:default) type="button" data-action="bake-day-note#open"
+          = note_present ? "Modifier" : "Ajouter"
 
+    / La modale est seulement masquée, jamais vidée : fermer puis rouvrir
+    / retrouve la saisie en cours, et `close` force l'enregistrement en attente.
+    .hidden.fixed.inset-0.z-50.overflow-y-auto data-bake-day-note-target="modal" data-action="keydown@window->bake-day-note#closeWithEscape"
+      .fixed.inset-0 style="background: rgba(43, 38, 32, .45);" data-bake-day-note-target="overlay" data-action="click->bake-day-note#closeBackground"
+      .relative.flex.min-h-full.items-start.justify-center.p-4
+        .adm-card.w-full.p-4.sm:p-6 class="sm:my-8 sm:max-w-3xl" style="box-shadow: var(--shadow-lg);"
+          .flex.items-start.justify-between.gap-3
+            div
+              h3.text-xl.font-semibold style="color: var(--text-strong);" Consignes du jour
+              p.mt-1.text-xs style="color: var(--text-muted);"
+                | Partagez les consignes d'approvisionnement, allergies, retards, etc.
+            button class=adm_btn_class(:ghost) type="button" data-action="bake-day-note#close" aria-label="Fermer"
+              | Fermer
+          .mt-4
+            = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, html: { class: "space-y-4", data: { turbo: false, "bake-day-note-target": "form" } } do |form|
+              = form.hidden_field :internal_note, id: note_input_id
+              trix-editor class="trix-content adm-trix" input=note_input_id data-action="trix-change->bake-day-note#queueSave"
+              .mt-2.flex.flex-wrap.items-center.justify-end.gap-3.text-xs
+                button class=adm_btn_class(:default) type="button" data-action="bake-day-note#save"
+                  | Enregistrer maintenant
+                button class=adm_btn_class(:primary) type="button" data-action="bake-day-note#close"
+                  | Terminé
+
+  / L'espace libéré par le bandeau va aux indicateurs : le statut et les KPI
+  / partagent désormais la même rangée, sans trou à la place de l'éditeur.
+  .grid.gap-4.lg:grid-cols-3
     .lg:col-span-1.min-w-0.adm-card.p-4.sm:p-6
       h2.text-xl.font-semibold style="color: var(--text-strong);" Statut des commandes
       dl.mt-4.space-y-4
@@ -59,6 +99,20 @@
               .flex.items-center.justify-between.text-sm
                 span = adm_order_status_chip(status)
                 span.adm-grid-num.font-semibold style="color: var(--text-strong);" = count
+
+    - kpi_cards = [ \
+        { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
+        { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },
+        { label: "Chiffre d'affaires", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC" },
+        { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
+      ]
+
+    .lg:col-span-2.grid.gap-4.grid-cols-1 class="sm:grid-cols-2"
+      - kpi_cards.each do |card|
+        .adm-card.p-4
+          p.adm-eyebrow = card[:label]
+          p.adm-grid-num.mt-2.text-2xl.font-semibold style="color: var(--text-strong);" = card[:value]
+          p.mt-1.text-xs style="color: var(--text-muted);" = card[:meta]
 
   / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170, #202).
   / Ce n'est pas toujours le jour même : une party de midi, ou un jour sans
@@ -116,20 +170,6 @@
             span.text-sm.font-medium style="color: var(--text-body);" = b.text
       button class=adm_btn_class(:default) type="submit"
         | Enregistrer
-
-  - kpi_cards = [ \
-      { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
-      { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },
-      { label: "Chiffre d'affaires", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC" },
-      { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
-    ]
-
-  .grid.gap-4.grid-cols-1.sm:grid-cols-2.xl:grid-cols-4
-    - kpi_cards.each do |card|
-      .adm-card.p-4
-        p.adm-eyebrow = card[:label]
-        p.adm-grid-num.mt-2.text-2xl.font-semibold style="color: var(--text-strong);" = card[:value]
-        p.mt-1.text-xs style="color: var(--text-muted);" = card[:meta]
 
   - fill_pct = capacity.fill_percentage
   - fill_tone = adm_usage_tone(fill_pct)
@@ -376,6 +416,10 @@
                     = location.name
                     - if location.deleted_at.present?
                       span.ml-2 = adm_chip "Lieu supprimé", tone: :warning
+                    / Inactif (#199) : plus proposé aux clients, mais ses
+                    / commandes et sa feuille de retrait restent là.
+                    - elsif !location.active?
+                      span.ml-2 = adm_chip "Lieu inactif", tone: :warning
                   - if location.description.present?
                     p.text-xs style="color: var(--text-muted);" = location.description
                   / `pluralize` n'accorde pas en locale fr (aucune règle d'inflexion
@@ -501,6 +545,14 @@
         / que l'en-tête produits (thead.sticky.top-0) reste figé au défilement vertical.
         .overflow-auto class="max-h-[75vh]" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
           table.adm-grid.adm-grid-matrix
+            / Les largeurs vivent ici, pas sur les cellules : en `table-layout:
+            / fixed`, seul le premier rang compte, et son en-tête produit porte
+            / un `colspan` qui écraserait les largeurs de variantes (#196).
+            colgroup
+              col style="width: 15rem;"
+              - all_variants.each do
+                col style="width: 5.5rem;"
+              col style="width: 6rem;"
             thead
               tr
                 th.sticky.left-0.z-30 rowspan=2 style="position: sticky; left: 0;"
@@ -512,7 +564,7 @@
               tr
                 - variants_by_product.each do |product, stats|
                   - stats.each do |stat|
-                    th.align-bottom title=stat[:variant].name style="width: 100px; border-left: 1px solid var(--border-strong);"
+                    th.align-bottom title=stat[:variant].name style="border-left: 1px solid var(--border-strong);"
                       div
                         p.text-xs.normal-case.leading-snug style="color: var(--text-body);" = stat[:variant].name
                         p.adm-grid-num.font-medium.normal-case.leading-snug style="color: var(--text-faint); font-size: 11px;" = number_to_currency(stat[:variant].price_euros, unit: "€", separator: ",", delimiter: " ")
@@ -522,7 +574,7 @@
                 td.sticky.left-0.z-30 style="position: sticky; left: 0;" Total
                 - all_variants.each do |variant|
                   - column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 }
-                  td.adm-grid-num.text-center style="width: 50px;"
+                  td.adm-grid-num.text-center
                     = column_total
                 td.adm-grid-num.sticky.right-0.z-30.text-right style="position: sticky; right: 0;"
                   = customer_variant_quantities.values.sum { |q| q.values.sum }
@@ -536,12 +588,15 @@
                     = customer.full_name
                   - all_variants.each do |variant|
                     - qty = quantities[variant.id] || 0
-                    td.adm-grid-num.text-center style="width: 50px; border-left: 1px solid var(--border-strong); color: var(--text-strong);"
+                    td.adm-grid-num.text-center style="border-left: 1px solid var(--border-strong); color: var(--text-strong);"
                       - if qty > 0
                         span.font-semibold = qty
                       - else
                         span style="color: var(--text-faint);" —
-                  td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  / La colonne Total était figée dans l'en-tête et dans la ligne
+                  / de total, mais pas dans le corps : au défilement horizontal,
+                  / les totaux par client glissaient sous leur propre en-tête.
+                  td.adm-grid-num.sticky.right-0.z-10.text-right.font-semibold style="position: sticky; right: 0; background: var(--surface-card); color: var(--text-strong);"
                     = row_total
       - else
         p.text-center.text-sm style="color: var(--text-muted);" Aucun client n'a encore passé commande.

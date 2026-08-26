@@ -207,8 +207,14 @@ Rails.application.routes.draw do
 
     # Événements party (#pizza-parties) : événements publics (CRUD) + blocages de
     # créneaux des parties privées.
-    resources :party_events, path: "parties"
+    #
+    # L'ORDRE COMPTE (#200). `resources :party_events, path: "parties"` génère
+    # `GET /admin/parties/:id` : déclaré en premier, il capturait
+    # `/admin/parties/blocages` avec `id: "blocages"` et renvoyait une 404, en
+    # rendant `party_slot_blocks#index` inatteignable. Le chemin le plus
+    # spécifique passe donc devant. Ne pas réinverser.
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
+    resources :party_events, path: "parties"
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do

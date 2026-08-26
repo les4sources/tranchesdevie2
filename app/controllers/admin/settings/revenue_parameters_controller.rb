@@ -76,7 +76,8 @@ module Admin
         number = raw.to_s.tr(",", ".").to_f
         case key
         when RevenueParameter::TRANSPORT then (number * 100).round       # € → cents
-        when RevenueParameter::FOUR_SOURCES_RATE then (number * 100).round # % → points de base
+        when RevenueParameter::FOUR_SOURCES_RATE, RevenueParameter::WORKSHOP_FOUR_SOURCES_RATE
+          (number * 100).round # % → points de base
         else number.round
         end
       end

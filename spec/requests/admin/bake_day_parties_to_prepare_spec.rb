@@ -61,8 +61,7 @@ RSpec.describe "Admin — Pizza parties à préparer", type: :request do
 
     get admin_bake_day_path(friday_bake)
 
-    expect(response.body).to include("à préparer pour le")
-    expect(response.body).to include("samedi 5 septembre 2026")
+    expect(response.body).to include("pour le samedi 5 septembre 2026")
   end
 
   it "n'affiche aucun bloc quand la fournée n'a pas de party à préparer" do

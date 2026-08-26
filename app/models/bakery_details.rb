@@ -18,7 +18,8 @@ module BakeryDetails
   # Ligne dédiée de la boulangerie (#210) : eSIM + compte WhatsApp
   # « Boulangerie Tranches de Vie », distincte des numéros personnels des
   # boulangers. Définie ICI et nulle part ailleurs — deux copies d'un numéro
-  # de téléphone finissent toujours par diverger.
+  # de téléphone finissent toujours par diverger. C'est aussi le canal à
+  # privilégier pour les questions sur les pizza parties privées (#201).
   #
   # `PHONE_E164` sert aux liens `tel:` (cliquables sur mobile),
   # `PHONE_DISPLAY` à l'affichage au format belge lisible.

@@ -16,7 +16,14 @@
 class RevenueParameter < ApplicationRecord
   TRANSPORT = "transport"
   FOUR_SOURCES_RATE = "four_sources_rate"
-  KEYS = [ TRANSPORT, FOUR_SOURCES_RATE ].freeze
+  # Taux 4 Sources sur la RECETTE d'un atelier (#208), en points de base.
+  #
+  # Délibérément SANS valeur de repli : la réunion du 25/08/2026 n'a pas tranché
+  # cette répartition. Tant qu'aucun palier n'est saisi, un atelier est affiché
+  # avec sa recette mais explicitement « non réparti » — on préfère un trou
+  # visible à un chiffre inventé qui finirait par être cru.
+  WORKSHOP_FOUR_SOURCES_RATE = "workshop_four_sources_rate"
+  KEYS = [ TRANSPORT, FOUR_SOURCES_RATE, WORKSHOP_FOUR_SOURCES_RATE ].freeze
 
   # Valeurs de référence utilisées comme repli quand aucun palier n'est saisi
   # pour la date demandée (le moteur reste calculable « out of the box »).
@@ -52,5 +59,11 @@ class RevenueParameter < ApplicationRecord
   # Taux 4 Sources en points de base applicable à `date`, avec repli.
   def self.four_sources_basis_points_on(date = Date.current)
     value_on(FOUR_SOURCES_RATE, date) || DEFAULT_FOUR_SOURCES_BASIS_POINTS
+  end
+
+  # Taux 4 Sources des ATELIERS (points de base), ou `nil` si la répartition
+  # n'a pas encore été tranchée. Pas de repli : voir la constante.
+  def self.workshop_basis_points_on(date = Date.current)
+    value_on(WORKSHOP_FOUR_SOURCES_RATE, date)
   end
 end

@@ -21,10 +21,9 @@ export default class extends Controller {
   update() {
     this.tabTargets.forEach((tab) => {
       const isActive = tab.dataset.tab === this.activeValue
-      tab.classList.toggle("bg-white", isActive)
-      tab.classList.toggle("text-gray-900", isActive)
-      tab.classList.toggle("shadow", isActive)
-      tab.classList.toggle("bg-gray-100", !isActive)
+      // L'apparence de l'onglet actif vit dans `.adm-tab-active` (CSS) : ici on
+      // ne bascule qu'un état, jamais une couleur.
+      tab.classList.toggle("adm-tab-active", isActive)
       tab.setAttribute("aria-selected", isActive)
     })
 

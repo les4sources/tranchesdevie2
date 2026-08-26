@@ -58,6 +58,12 @@ export default class extends Controller {
     document.body.style.overflow = ''
   }
 
+  // Laisse le lien de téléchargement de facture (#38) suivre son href sans
+  // ouvrir la modale : on stoppe la propagation vers le clic de la carte.
+  download(event) {
+    event.stopPropagation()
+  }
+
   closeBackground(event) {
     if (event.target === this.overlayTarget) {
       this.close()
@@ -104,7 +110,10 @@ export default class extends Controller {
   }
 
   renderOrderDetails(order) {
-    const bakeDay = order.bake_day
+    // Une commande party n'a pas de fournée : elle est datée par son événement
+    // (party_event.held_on), sans cutoff → pas d'annulation client.
+    const bakeDay = order.bake_day || {}
+    const partyEvent = order.party_event
     const orderItems = order.order_items || []
     // Vérifier si le cut_off est passé en comparant avec l'heure actuelle
     const cutOffAt = bakeDay.cut_off_at ? new Date(bakeDay.cut_off_at) : null
@@ -116,12 +125,9 @@ export default class extends Controller {
       return sum + (item.qty * item.unit_price_cents)
     }, 0)
 
-    // Calculer la remise si le client a un groupe avec discount_percent
-    const customer = order.customer
-    const discountPercent = customer?.group?.discount_percent || 0
-    const discountCents = discountPercent > 0 
-      ? Math.round(subtotalCents * discountPercent / 100)
-      : 0
+    // Remise = différence entre le sous-total (prix public) et le total réel
+    // de la commande (qui fait foi, remises globale et/ou ciblées comprises).
+    const discountCents = Math.max(0, subtotalCents - order.total_cents)
 
     // Déterminer la couleur du statut
     const statusColors = {
@@ -161,9 +167,17 @@ export default class extends Controller {
         </div>
 
         <div>
-          <h4 class="text-sm font-medium text-gray-500 mb-1">Jour de cuisson</h4>
-          <p class="text-gray-900">${new Date(bakeDay.baked_on).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+          <h4 class="text-sm font-medium text-gray-500 mb-1">${partyEvent ? "Pizza party" : "Jour de cuisson"}</h4>
+          <p class="text-gray-900">${new Date(partyEvent ? partyEvent.held_on : bakeDay.baked_on).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
         </div>
+
+        ${order.pickup_location ? `
+          <div>
+            <h4 class="text-sm font-medium text-gray-500 mb-1">Point de retrait</h4>
+            <p class="text-gray-900 font-semibold">${order.pickup_location.name}</p>
+            ${order.pickup_location.description ? `<p class="text-sm text-gray-500">${order.pickup_location.description}</p>` : ""}
+          </div>
+        ` : ""}
 
         <div>
           <h4 class="text-sm font-medium text-gray-500 mb-2">Articles</h4>
@@ -198,7 +212,7 @@ export default class extends Controller {
           </div>
           ${discountCents > 0 ? `
             <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Remise (${discountPercent}%)</span>
+              <span class="text-sm text-gray-600">Remise</span>
               <span class="text-sm text-green-600 font-medium">
                 -${(discountCents / 100).toFixed(2)}€
               </span>

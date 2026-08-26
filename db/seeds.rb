@@ -69,6 +69,9 @@ breads = [
 ]
 
 # Category: Dough balls
+# Le produit « Pizza party privée » et son forfait sont gérés plus bas dans un
+# bloc dédié (#68) : ils demandent un rôle (pizza_party_role) et un rename
+# idempotent que la boucle générique ci-dessous ne sait pas faire.
 dough_balls = [
   {
     name: "Boule de pâte à pizza à emporter",
@@ -76,14 +79,6 @@ dough_balls = [
     position: 1,
     variants: [
       { name: "une boule", price_cents: 200 }
-    ]
-  },
-  {
-    name: "Boule de pâte à pizza pour Pizza Party privée",
-    description: "Boule de pâte à pizza pour Pizza Party privée",
-    position: 2,
-    variants: [
-      { name: "une boule", price_cents: 500 }
     ]
   }
 ]
@@ -121,6 +116,96 @@ dough_balls.each do |product_data|
   end
 end
 
+# --- Pizza party privée (#68) -----------------------------------------------
+# Le produit « party » (1 boule de pâte / personne) et son « forfait » 40 €.
+#
+# Le produit party a été renommé : on le retrouve par son NOUVEAU nom OU son
+# ANCIEN nom (rename historique) pour rester idempotent et ne jamais créer de
+# doublon. Le forfait est un produit `channel: "admin"` (donc absent du
+# catalogue store et non ajoutable directement) dont l'UNIQUE variante reste en
+# `channel: "store"` : ainsi elle survit au filtre panier
+# `remove_unavailable_cart_items!` (qui teste la variante, pas le produit), et
+# le forfait peut être injecté comme ligne de panier par PizzaPartyForfaitService.
+
+pizza_party_new_name = "Pizza party privée – Nombre de personnes"
+pizza_party_old_name = "Boule de pâte à pizza pour Pizza Party privée"
+
+pizza_party_product =
+  Product.find_by(name: pizza_party_new_name) ||
+  Product.find_by(name: pizza_party_old_name) ||
+  Product.new(name: pizza_party_new_name)
+
+pizza_party_product.update!(
+  name: pizza_party_new_name,
+  description: "Une boule de pâte à pizza par personne pour ta Pizza party privée.",
+  category: :dough_balls,
+  position: 2,
+  active: true,
+  channel: "store",
+  pizza_party_role: :party
+)
+
+ProductVariant.find_or_create_by!(product: pizza_party_product, name: "une boule") do |v|
+  v.price_cents = 500
+  v.active = true
+  v.channel = "store"
+end
+
+forfait_product =
+  Product.find_by(pizza_party_role: :forfait) ||
+  Product.find_by(name: "Forfait Pizza party privée") ||
+  Product.new(name: "Forfait Pizza party privée")
+
+forfait_product.update!(
+  name: "Forfait Pizza party privée",
+  description: "Forfait Pizza party privée (matériel, four à bois). Ajouté automatiquement à ta commande.",
+  category: :dough_balls,
+  position: 3,
+  active: true,
+  channel: "admin",
+  pizza_party_role: :forfait
+)
+
+ProductVariant.find_or_create_by!(product: forfait_product, name: "forfait") do |v|
+  v.price_cents = 4000
+  v.active = true
+  v.channel = "store"
+end
+
+# --- Pizza party publique (#pizza-parties) ----------------------------------
+# Produit public (variantes adulte/enfant), réservable depuis /evenements, hors
+# catalogue. Base 4 Sources par variante (3 € adulte, 2 € enfant) ; base
+# boulangers = prix − base. Pas de forfait.
+public_party_product =
+  Product.find_by(pizza_party_role: :public_party) ||
+  Product.find_by(name: "Pizza party publique") ||
+  Product.new(name: "Pizza party publique")
+
+public_party_product.update!(
+  name: "Pizza party publique",
+  description: "Rejoins-nous pour une Pizza party ouverte à tous : chacun garnit et enfourne son pâton.",
+  category: :dough_balls,
+  position: 4,
+  active: true,
+  channel: "store",
+  pizza_party_role: :public_party
+)
+
+ProductVariant.find_or_create_by!(product: public_party_product, name: "adulte") do |v|
+  v.price_cents = 1000
+  v.party_four_sources_base_cents = 300
+  v.active = true
+  v.channel = "store"
+end
+
+ProductVariant.find_or_create_by!(product: public_party_product, name: "enfant") do |v|
+  v.price_cents = 600
+  v.party_four_sources_base_cents = 200
+  v.active = true
+  v.channel = "store"
+end
+# ---------------------------------------------------------------------------
+
 puts "✅ Products and variants created"
 
 # Create some sample bake days for testing
@@ -128,7 +213,7 @@ puts "✅ Products and variants created"
 today = Date.current
 end_date = today + 4.months
 
-[2, 5].each do |weekday|
+[ 2, 5 ].each do |weekday|
   date = today + ((weekday - today.wday) % 7).days
 
   while date <= end_date
@@ -151,7 +236,7 @@ next_friday = today + ((5 - today.wday) % 7).days
 next_friday_bake_day = BakeDay.find_by!(baked_on: next_friday)
 
 variant_lookup = ProductVariant.includes(:product).each_with_object({}) do |variant, memo|
-  memo[[variant.product.name, variant.name]] = variant
+  memo[[ variant.product.name, variant.name ]] = variant
 end
 
 sample_orders = [
@@ -258,7 +343,7 @@ sample_orders.each do |order_data|
   total_cents = 0
 
   order_data[:items].each do |item|
-    variant = variant_lookup[[item[:product_name], item[:variant_name]]]
+    variant = variant_lookup[[ item[:product_name], item[:variant_name] ]]
     raise "Unknown product variant for #{item.inspect}" unless variant
 
     unit_price_cents = variant.price_cents
@@ -276,3 +361,12 @@ sample_orders.each do |order_data|
 end
 
 puts "✅ Sample orders created"
+
+# Artisan-boulangers (Stéphanie, Romane, Thomas)
+%w[Stéphanie Romane Thomas].each do |name|
+  Artisan.find_or_create_by!(name: name) do |a|
+    a.active = true
+  end
+end
+
+puts "✅ Artisans created"

@@ -1,12 +1,20 @@
 class OtpService
-  TELERIVET_API_URL = 'https://api.telerivet.com/v1'
+  SMSTOOLS_API_URL = "https://api.smsgatewayapi.com/v1/message/send"
 
-  def self.send_otp(phone_e164)
-    return { success: false, error: 'Phone number required' } if phone_e164.blank?
+  # Sends a login OTP to the customer.
+  #   channel: :sms (default) — primary channel via Smstools
+  #           :email          — fallback channel via AuthMailer (only when an
+  #                             email address is already on file for this phone)
+  def self.send_otp(phone_e164, channel: :sms, email: nil, allow_email_entry: false)
+    return { success: false, error: "Phone number required" } if phone_e164.blank?
+
+    if channel.to_sym == :email
+      return send_otp_via_email(phone_e164, email: email, allow_email_entry: allow_email_entry)
+    end
 
     # Check cooldown
     unless PhoneVerification.can_send_new?(phone_e164)
-      return { success: false, error: 'Veuillez patienter 20 secondes avant de redemander un code' }
+      return { success: false, error: "Veuillez patienter 20 secondes avant de redemander un code" }
     end
 
     verification = PhoneVerification.create_for_phone(phone_e164)
@@ -14,7 +22,7 @@ class OtpService
     # Find customer if exists
     customer = Customer.find_by(phone_e164: phone_e164)
 
-    # Send SMS via Telerivet
+    # Send SMS via Smstools
     message = "Salut, c'est Tranches de Vie ! Voici ton code de connexion pour passer ta commande : #{verification.code}"
     sms_sent = send_otp_sms(
       to: phone_e164,
@@ -24,14 +32,163 @@ class OtpService
 
     unless sms_sent
       verification.destroy # Remove verification if SMS failed
-      return { success: false, error: 'Erreur lors de l\'envoi du SMS. Veuillez réessayer.' }
+      return { success: false, error: "Erreur lors de l'envoi du SMS. Veuillez réessayer." }
     end
 
     { success: true, verification_id: verification.id }
   rescue StandardError => e
     Rails.logger.error("OTP Service Error: #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
-    { success: false, error: 'Une erreur est survenue' }
+    { success: false, error: "Une erreur est survenue" }
+  end
+
+  # ---------------------------------------------------------------------------
+  # Login API — SMS and email at parity, driven by a single identifier field.
+  # The customer types EITHER a phone number OR an email address; we detect
+  # which it is and send the code through the matching channel.
+  # ---------------------------------------------------------------------------
+
+  # Classifies a raw identifier typed at login.
+  #   { type: :phone, phone: "+32..." } | { type: :email, email: "x@y.be" } | { type: :invalid }
+  def self.classify_identifier(raw)
+    value = raw.to_s.strip
+    return { type: :invalid } if value.blank?
+
+    if value.include?("@")
+      email = value.downcase
+      return { type: :email, email: email } if email.match?(URI::MailTo::EMAIL_REGEXP)
+
+      return { type: :invalid }
+    end
+
+    # Letters without an "@" can't be a phone number (normalize_phone would
+    # silently strip them) and isn't a valid email either.
+    return { type: :invalid } if value.match?(/[A-Za-z]/)
+
+    phone = normalize_phone(value)
+    return { type: :phone, phone: phone } if valid_e164?(phone)
+
+    { type: :invalid }
+  end
+
+  # Sends the login code through the channel matching the identifier.
+  # Returns { success:, channel: :sms|:email, identifier:, ... } or an error.
+  def self.send_code(identifier:)
+    id = classify_identifier(identifier)
+
+    case id[:type]
+    when :phone
+      send_otp(id[:phone]).merge(channel: :sms, identifier: id[:phone])
+    when :email
+      send_login_email(id[:email])
+    else
+      { success: false, error: invalid_identifier_error }
+    end
+  end
+
+  # Verifies a login code against the verification keyed by the identifier
+  # (phone OR email).
+  def self.verify_code(identifier:, code:)
+    id = classify_identifier(identifier)
+
+    case id[:type]
+    when :phone
+      verify_otp(id[:phone], code)
+    when :email
+      verification = PhoneVerification.for_email(id[:email]).active.order(created_at: :desc).first
+      verify_against(verification, code)
+    else
+      { success: false, error: invalid_identifier_error }
+    end
+  end
+
+  # Email login channel: the typed address IS the identity. Reuses an active
+  # code for that email if one exists, otherwise generates a new one.
+  def self.send_login_email(email)
+    customer = Customer.find_by("lower(email) = ?", email)
+
+    verification = PhoneVerification.for_email(email).active.order(created_at: :desc).first
+
+    if verification.nil?
+      unless PhoneVerification.can_send_new_for?(email: email)
+        return { success: false, error: "Veuillez patienter 20 secondes avant de redemander un code" }
+      end
+
+      verification = PhoneVerification.create_for_email(email)
+    end
+
+    AuthMailer.otp(email, verification.code, customer: customer).deliver_now
+
+    { success: true, channel: :email, identifier: email, email: email }
+  rescue StandardError => e
+    Rails.logger.error("OTP Login Email Error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
+  end
+
+  def self.invalid_identifier_error
+    "Entre un numéro de GSM ou une adresse e-mail valide."
+  end
+
+  def self.normalize_phone(phone)
+    return nil if phone.blank?
+
+    phone = phone.gsub(/[^\d+]/, "")
+    phone = phone.sub(/^0/, "+32") if phone.start_with?("0")
+    phone = "+32#{phone}" unless phone.start_with?("+")
+    phone
+  end
+
+  def self.valid_e164?(phone)
+    phone.present? && phone.match?(/\A\+[1-9]\d{1,14}\z/)
+  end
+
+  # Email fallback. Determines the recipient according to the agreed rules:
+  #   - existing account WITH an email on file -> always sent to that address
+  #     (a typed address is ignored, so a code can never be redirected)
+  #   - existing account WITHOUT an email      -> not eligible (contact the bakery)
+  #   - unregistered phone                     -> a typed address is accepted,
+  #     but only when allow_email_entry is true (checkout flow)
+  # Reuses the current active code if one exists (so it matches a code already
+  # requested by SMS), otherwise generates a new one.
+  def self.send_otp_via_email(phone_e164, email: nil, allow_email_entry: false)
+    customer = Customer.find_by(phone_e164: phone_e164)
+
+    target_email =
+      if customer
+        if customer.email.blank?
+          return { success: false, error: no_email_on_file_error }
+        end
+
+        customer.email
+      else
+        return { success: false, error: no_email_on_file_error } unless allow_email_entry
+        return { success: false, need_email: true, error: "Saisis l'adresse e-mail où recevoir ton code." } if email.blank?
+        return { success: false, need_email: true, error: "Cette adresse e-mail semble invalide." } unless email.match?(URI::MailTo::EMAIL_REGEXP)
+
+        email
+      end
+
+    verification = PhoneVerification.for_phone(phone_e164).active.order(created_at: :desc).first
+
+    if verification.nil?
+      unless PhoneVerification.can_send_new?(phone_e164)
+        return { success: false, error: "Veuillez patienter 20 secondes avant de redemander un code" }
+      end
+      verification = PhoneVerification.create_for_phone(phone_e164)
+    end
+
+    AuthMailer.otp(target_email, verification.code, customer: customer).deliver_now
+
+    { success: true, verification_id: verification.id, channel: :email, email: target_email }
+  rescue StandardError => e
+    Rails.logger.error("OTP Email Error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
+  end
+
+  def self.no_email_on_file_error
+    "Aucune adresse e-mail n'est associée à ce numéro. Contacte-nous à boulangerie@les4sources.be."
   end
 
   def self.verify_otp(phone_e164, code)
@@ -40,10 +197,16 @@ class OtpService
                                     .order(created_at: :desc)
                                     .first
 
-    return { success: false, error: 'Code invalide ou expiré' } unless verification
+    verify_against(verification, code)
+  end
+
+  # Shared verification logic for both channels: enforces max attempts and
+  # expiry, then consumes (destroys) the code on success.
+  def self.verify_against(verification, code)
+    return { success: false, error: "Code invalide ou expiré" } unless verification
 
     if verification.max_attempts_reached?
-      return { success: false, error: 'Trop de tentatives. Veuillez redemander un code' }
+      return { success: false, error: "Trop de tentatives. Veuillez redemander un code" }
     end
 
     verification.increment_attempts!
@@ -52,7 +215,7 @@ class OtpService
       verification.destroy # Remove used OTP
       { success: true }
     else
-      error = verification.expired? ? 'Code expiré' : 'Code incorrect'
+      error = verification.expired? ? "Code expiré" : "Code incorrect"
       { success: false, error: error }
     end
   end
@@ -60,75 +223,84 @@ class OtpService
   private
 
   def self.send_otp_sms(to:, body:, customer_id: nil)
-    return false unless api_key && project_id && phone_id
-
-    # Don't send SMS in development, only log it
-    unless Rails.env.production?
-      Rails.logger.info("OTP SMS (not sent in #{Rails.env}): To: #{to}, Body: #{body}")
-      SmsMessage.create!(
-        direction: :outbound,
-        to_e164: to,
-        from_e164: phone_number,
-        body: body,
-        kind: :otp,
-        external_id: nil,
-        customer_id: customer_id,
-        sent_at: Time.current
-      )
+    # En développement, on n'envoie jamais de vrai SMS : on journalise le
+    # message (code inclus) pour tester le flux OTP en local. Aucun effet en prod.
+    if Rails.env.development?
+      Rails.logger.warn("OTP Service - SMS non envoyé en développement. To: #{to} | Message: #{body}")
       return true
     end
 
+    unless client_id.present? && client_secret.present? && sender.present?
+      Rails.logger.error("OTP Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
+      return false
+    end
+
+    # Format phone number: remove + if present (Smstools expects international format without +)
+    formatted_to = to.to_s.gsub(/^\+/, "")
+
+    # Use test mode in development (validates parameters but doesn't send SMS or consume credits)
+    test_mode = !Rails.env.production?
+
+    # Log request details
+    Rails.logger.info("OTP Service (#{Rails.env}): To: #{formatted_to}, Sender: #{sender}, Test: #{test_mode}")
+    Rails.logger.debug("OTP Service - Client ID present: #{client_id.present?}, Client Secret present: #{client_secret.present?}, Sender present: #{sender.present?}")
+
+    request_body = {
+      message: body,
+      to: formatted_to,
+      sender: sender,
+      test: test_mode
+    }
+
     response = HTTParty.post(
-      "#{TELERIVET_API_URL}/projects/#{project_id}/messages/send",
+      SMSTOOLS_API_URL,
       headers: {
-        'Content-Type' => 'application/json',
-        'Authorization' => "Basic #{Base64.strict_encode64("#{api_key}:")}"
+        "Content-Type" => "application/json",
+        "X-Client-Id" => client_id,
+        "X-Client-Secret" => client_secret
       },
-      body: {
-        to_number: to,
-        content: body,
-        phone_id: phone_id
-      }.to_json
+      body: request_body.to_json
     )
 
+    Rails.logger.info("OTP Service - Response status: #{response.code}, Success: #{response.success?}")
+    Rails.logger.debug("OTP Service - Response body: #{response.body}")
+
     if response.success?
-      external_id = response['id']
+      # Smstools returns {"messageid": "..."} for single recipient
+      external_id = response["messageid"] || (response["messageids"]&.first)
       sent_at = Time.current
       SmsMessage.create!(
         direction: :outbound,
         to_e164: to,
-        from_e164: phone_number,
+        from_e164: sender,
         body: body,
         kind: :otp,
         external_id: external_id,
         customer_id: customer_id,
         sent_at: sent_at
       )
+      Rails.logger.info("OTP Service - SMS sent successfully. External ID: #{external_id}")
       true
     else
-      Rails.logger.error("Failed to send OTP SMS: #{response.body}")
+      Rails.logger.error("Failed to send OTP SMS - Status: #{response.code}, Body: #{response.body}, Request: #{request_body.inspect}")
       false
     end
   rescue StandardError => e
-    Rails.logger.error("OTP SMS Service Error: #{e.message}")
+    Rails.logger.error("OTP SMS Service Error: #{e.class} - #{e.message}")
+    Rails.logger.error("OTP SMS Service Error Backtrace: #{e.backtrace.first(5).join("\n")}")
     Sentry.capture_exception(e) if defined?(Sentry)
     false
   end
 
-  def self.api_key
-    ENV['TELERIVET_API_KEY']
+  def self.client_id
+    ENV["SMSTOOLS_CLIENT_ID"]
   end
 
-  def self.project_id
-    ENV['TELERIVET_PROJECT_ID']
+  def self.client_secret
+    ENV["SMSTOOLS_CLIENT_SECRET"]
   end
 
-  def self.phone_id
-    ENV['TELERIVET_PHONE_ID']
-  end
-
-  def self.phone_number
-    ENV['TELERIVET_PHONE_NUMBER'] || '+32XXXXXXXXX'
+  def self.sender
+    ENV["SMSTOOLS_SENDER"]
   end
 end
-

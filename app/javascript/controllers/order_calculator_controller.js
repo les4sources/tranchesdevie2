@@ -42,12 +42,7 @@ export default class extends Controller {
       target.textContent = this.formatCurrency(cents)
     })
 
-    // Calculer la remise si un client est sélectionné
-    const selectedCustomerId = this.getSelectedCustomerId()
-    const discountPercent = this.getDiscountPercent(selectedCustomerId)
-    const discountCents = discountPercent > 0 
-      ? Math.round(subtotalCents * discountPercent / 100)
-      : 0
+    const discountCents = this.computeDiscountCents(this.getSelectedCustomer())
     const totalCents = subtotalCents - discountCents
 
     if (this.hasTotalAmountTarget) {
@@ -55,13 +50,47 @@ export default class extends Controller {
     }
   }
 
-  updateDiscountInfo() {
-    const selectedCustomerId = this.getSelectedCustomerId()
-    const discountPercent = this.getDiscountPercent(selectedCustomerId)
+  // Réplique exacte de GroupDiscountService#total_discount_cents :
+  // lignes ciblées (remise unitaire préchargée) + remise globale en % sur le
+  // sous-total agrégé des lignes non ciblées (arrondi une seule fois).
+  computeDiscountCents(customer) {
+    if (!customer) return 0
 
-    if (discountPercent > 0 && this.hasDiscountMessageTarget && this.hasDiscountTextTarget) {
+    const targeted = customer.targeted_unit_discounts || {}
+    const percent = customer.discount_percent || 0
+
+    let targetedDiscount = 0
+    let nonTargetedSubtotal = 0
+
+    this.quantityTargets.forEach((input) => {
+      const qty = parseInt(input.value, 10) || 0
+      if (qty <= 0) return
+
+      const variantId = input.dataset.variantId
+      const priceCents = parseInt(input.dataset.priceCents, 10) || 0
+
+      if (variantId && Object.prototype.hasOwnProperty.call(targeted, variantId)) {
+        targetedDiscount += qty * (parseInt(targeted[variantId], 10) || 0)
+      } else {
+        nonTargetedSubtotal += qty * priceCents
+      }
+    })
+
+    const percentDiscount = percent > 0 ? Math.round(nonTargetedSubtotal * percent / 100) : 0
+    return targetedDiscount + percentDiscount
+  }
+
+  updateDiscountInfo() {
+    const customer = this.getSelectedCustomer()
+    const percent = customer?.discount_percent || 0
+    const hasTargeted = customer && customer.targeted_unit_discounts &&
+      Object.keys(customer.targeted_unit_discounts).length > 0
+
+    if (customer && (percent > 0 || hasTargeted) && this.hasDiscountMessageTarget && this.hasDiscountTextTarget) {
       this.discountMessageTarget.classList.remove('hidden')
-      this.discountTextTarget.textContent = `Ce montant tient compte d'une remise de ${discountPercent}% appliquée au client sélectionné.`
+      this.discountTextTarget.textContent = hasTargeted
+        ? "Ce montant tient compte des remises (globale et/ou ciblées) du client sélectionné."
+        : `Ce montant tient compte d'une remise de ${percent}% appliquée au client sélectionné.`
     } else if (this.hasDiscountMessageTarget) {
       this.discountMessageTarget.classList.add('hidden')
     }
@@ -73,10 +102,10 @@ export default class extends Controller {
     return value ? parseInt(value, 10) : null
   }
 
-  getDiscountPercent(customerId) {
-    if (!customerId || !this.customersValue) return 0
-    const customer = this.customersValue.find(c => c.id === customerId)
-    return customer?.discount_percent || 0
+  getSelectedCustomer() {
+    const customerId = this.getSelectedCustomerId()
+    if (!customerId || !this.customersValue) return null
+    return this.customersValue.find(c => c.id === customerId) || null
   }
 
   resetQuantities(event) {
@@ -104,4 +133,3 @@ export default class extends Controller {
     return this._currencyFormatter
   }
 }
-

@@ -16,28 +16,111 @@
   .grid.grid-cols-1.md:grid-cols-2.gap-6
     .space-y-2
       = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :name, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.text_field :name, class: admin_input_class
     .space-y-2
-      = f.label :price_cents, "Prix (en centimes)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :price_cents, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.label :price_euros, "Prix (€)", class: "block text-sm font-medium text-gray-700"
+      = f.number_field :price_euros, step: 0.01, min: 0, class: admin_input_class
     .space-y-2
       = f.label :flour_quantity, "Quantité de pâte requise", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :flour_quantity, min: 0, step: 1, class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      = f.number_field :flour_quantity, min: 0, step: 1, class: admin_input_class
+    .space-y-2
+      = f.label :mold_type_id, "Type de moule", class: "block text-sm font-medium text-gray-700"
+      = f.collection_select :mold_type_id, MoldType.not_deleted.ordered, :id, :name, { include_blank: "Aucun" }, class: admin_input_class
+    - if @product.pizza_party_role_public_party?
+      .space-y-2
+        = f.label :party_four_sources_base_euros, "Base 4 Sources (€)", class: "block text-sm font-medium text-gray-700"
+        = f.number_field :party_four_sources_base_euros, step: 0.01, min: 0, class: admin_input_class
+        p.text-xs.text-gray-500 Part fixe 4 Sources / personne (ex. 3 € adulte, 2 € enfant). Base boulangers = prix − cette base.
+    .space-y-2.flex.items-start.md:col-span-2
+      .flex.items-center.h-5
+        = f.check_box :track_capacity_separately, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+      .ml-3.text-sm
+        = f.label :track_capacity_separately, "Compter séparément dans le planning (bloc « Moules »)", class: "font-medium text-gray-700"
+        p.text-gray-500 La variante reste comptée dans la capacité de son moule, mais son nombre apparaît en plus sur une ligne dédiée (« dont … »).
+
+  .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    span.block.text-sm.font-medium.text-gray-700 Prix coûtant (historisé par date d'activation)
+    p.text-sm.text-gray-500.mb-3
+      | Saisissez le prix coûtant de la variante et la date à partir de laquelle il s'applique. L'historique est conservé : le coûtant retenu à une date donnée est le dernier saisi dont la date d'activation est antérieure ou égale.
+    .space-y-3
+      = f.fields_for :variant_cost_prices do |cp_form|
+        - cost_price = cp_form.object
+        .flex.flex-col.gap-3.sm:flex-row.sm:items-end.sm:gap-4.border-b.border-gray-100.pb-3
+          - if cost_price.persisted?
+            = cp_form.hidden_field :id
+          .flex-1
+            = cp_form.label :amount_euros, "Montant (€)", class: "block text-xs font-medium text-gray-600"
+            = cp_form.number_field :amount_euros, step: 0.01, min: 0, class: admin_input_class
+          .flex-1
+            = cp_form.label :active_from, "Date d'activation", class: "block text-xs font-medium text-gray-600"
+            = cp_form.date_field :active_from, class: admin_input_class
+          - if cost_price.persisted?
+            .flex.items-center.gap-2
+              = cp_form.check_box :_destroy, class: "h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+              = cp_form.label :_destroy, "Supprimer", class: "text-sm text-gray-600"
+
+  .space-y-3.border.border-gray-200.rounded-lg.p-4.bg-gray-50
+    span.block.text-sm.font-medium.text-gray-700 En vente en ligne
+    p.text-sm.text-gray-500.mb-3 Pour qu'une variante soit visible et achetable sur le site, elle doit être « Active » et en canal « Vente en ligne ».
+    .space-y-3
+      .flex.items-center.space-x-3
+        = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
+      .space-y-2
+        span.block.text-xs.font-medium.text-gray-600 Canal de vente
+        .flex.items-center.space-x-4
+          .flex.items-center
+            = f.radio_button :channel, "store", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm text-gray-700"
+          .flex.items-center
+            = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            = f.label :channel, "Boulangers uniquement", value: "admin", class: "ml-2 text-sm text-gray-700"
 
   .space-y-3
-    span.block.text-sm.font-medium.text-gray-700 Statut
-    .flex.items-center.space-x-3
-      = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-      = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
-  .space-y-2
-    span.block.text-sm.font-medium.text-gray-700 Canal de vente
-    .space-y-2.mt-2
-      .flex.items-center
-        = f.radio_button :channel, "store", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm font-medium text-gray-700"
-      .flex.items-center
-        = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Administrateurs uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
+    span.block.text-sm.font-medium.text-gray-700 Restrictions par groupe
+    p.text-sm.text-gray-500.mb-2 Laissez vide pour rendre cette variante visible à tous. Sélectionnez un ou plusieurs groupes pour restreindre l'accès.
+    .border.border-gray-200.rounded-lg.p-4.bg-gray-50
+      - groups = Group.order(:name)
+      - if groups.any?
+        - groups.each do |group|
+          .flex.items-center.mb-2
+            = check_box_tag "product_variant[group_ids][]", group.id, @variant.restricted_groups.include?(group), id: "group_#{group.id}", class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            = label_tag "group_#{group.id}", class: "ml-2 text-sm font-medium text-gray-700" do
+              = group.name
+              span.text-gray-500.text-xs.ml-1 = "(#{group.discount_percent}% de remise)"
+        = hidden_field_tag "product_variant[group_ids][]", ""
+      - else
+        p.text-sm.text-gray-500.italic
+          | Aucun groupe créé.
+          = link_to "Créer un groupe", new_admin_group_path, class: "text-blue-600 hover:underline ml-1"
+
+  = render "admin/products/weekday_restriction_fields", variant: @variant
+
+  .space-y-3 data-controller="variant-ingredients"
+    .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
+      label.block.text-sm.font-medium.text-gray-700 Ingrédients
+      button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap w-fit" data-action="variant-ingredients#add" Ajouter un ingrédient
+
+    #variant-ingredients.space-y-3 data-variant-ingredients-target="container"
+      = f.fields_for :variant_ingredients do |vi_form|
+        - variant_ingredient = vi_form.object
+        .variant-ingredient-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.flex-col.gap-4.sm:flex-row.sm:items-center.sm:gap-4 data-variant-ingredients-target="item"
+          = vi_form.hidden_field :id if variant_ingredient.persisted?
+          .flex-1.min-w-0
+            = vi_form.collection_select :ingredient_id, Ingredient.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner un ingrédient" }, class: "ingredient-select #{admin_input_class}", data: { action: "change->variant-ingredients#updateUnit" }
+          .flex.flex-col.gap-2.sm:flex-row.sm:items-center.sm:gap-2.sm:min-w-0
+            .flex.items-center.gap-2.flex-1.sm:flex-initial class="sm:min-w-[7rem]"
+              = vi_form.number_field :quantity, step: 0.01, min: 0, class: "#{admin_input_class} w-full min-w-[5rem] sm:w-24", placeholder: "Quantité"
+              span.text-sm.text-gray-500.unit-label.whitespace-nowrap = variant_ingredient.ingredient&.unit_label || "g"
+            .flex-shrink-0
+              = vi_form.hidden_field :_destroy, value: false, class: "destroy-field"
+              button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="variant-ingredients#remove" Supprimer
+
+      - if @variant.variant_ingredients.empty?
+        .text-sm.text-gray-500.text-center.py-4 data-variant-ingredients-target="empty" Aucun ingrédient assigné
+
+    script type="application/json" data-variant-ingredients-target="ingredientsData"
+      = raw Ingredient.not_deleted.ordered.map { |i| { id: i.id, name: i.name, unit_label: i.unit_label } }.to_json
 
   .space-y-3
     .flex.justify-between.items-center

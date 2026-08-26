@@ -1,38 +1,35 @@
 - content_for :title, "Jours de cuisson"
 - content_for :layout, "admin"
 
-.mb-6.flex.justify-between.items-center
-  h1.text-2xl.font-bold.text-gray-900 Jours de cuisson
-  = link_to "Nouveau jour", new_admin_bake_day_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+= adm_page_header "Jours de cuisson" do
+  = link_to new_admin_bake_day_path, class: adm_btn_class(:primary)
+    = lucide "plus", size: 15
+    |  Nouveau jour
 
 / Section Jours futurs
 .mb-8
   - if @future_bake_days.any?
-    = render "table", 
-             bake_days: @future_bake_days, 
-             show_future: true
+    = render "table", bake_days: @future_bake_days, show_future: true
   - else
-    p.text-gray-500 Aucun jour de cuisson à venir.
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);"
+      | Aucun jour de cuisson à venir.
 
 / Section Jours passés
 div
-  h2.text-xl.font-semibold.text-gray-900.mb-4 Jours de cuisson passés
-  
+  h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Jours de cuisson passés
+
   / Filtres
-  .mb-4.flex.gap-4.items-center
-    = form_with url: admin_bake_days_path, method: :get, local: true, class: "flex gap-4 items-center" do |f|
-      .flex.items-center.gap-2
-        label.text-sm.font-medium.text-gray-700 for="year" Année:
-        = select_tag :year, options_for_select(@available_years.map { |y| [y, y] }, @selected_year), onchange: "this.form.submit()", class: "px-3 py-1 border border-gray-300 rounded-md text-sm"
-      
-      .flex.items-center.gap-2
-        label.text-sm.font-medium.text-gray-700 for="month" Mois:
-        = select_tag :month, options_for_select([["Tous les mois", ""], ["Janvier", 1], ["Février", 2], ["Mars", 3], ["Avril", 4], ["Mai", 5], ["Juin", 6], ["Juillet", 7], ["Août", 8], ["Septembre", 9], ["Octobre", 10], ["Novembre", 11], ["Décembre", 12]], @selected_month), onchange: "this.form.submit()", class: "px-3 py-1 border border-gray-300 rounded-md text-sm"
+  = form_with url: admin_bake_days_path, method: :get, local: true, class: "adm-card mb-4 flex flex-wrap items-center gap-3 p-3" do |f|
+    .flex.items-center.gap-2
+      label.adm-eyebrow for="year" Année
+      = select_tag :year, options_for_select(@available_years.map { |y| [y, y] }, @selected_year), onchange: "this.form.submit()", class: adm_field_class("!w-auto")
+
+    .flex.items-center.gap-2
+      label.adm-eyebrow for="month" Mois
+      = select_tag :month, options_for_select([["Tous les mois", ""], ["Janvier", 1], ["Février", 2], ["Mars", 3], ["Avril", 4], ["Mai", 5], ["Juin", 6], ["Juillet", 7], ["Août", 8], ["Septembre", 9], ["Octobre", 10], ["Novembre", 11], ["Décembre", 12]], @selected_month), onchange: "this.form.submit()", class: adm_field_class("!w-auto")
 
   - if @past_bake_days.any?
-    = render "table", 
-             bake_days: @past_bake_days,
-             show_future: false
+    = render "table", bake_days: @past_bake_days, show_future: false
   - else
-    p.text-gray-500 Aucun jour de cuisson trouvé pour les critères sélectionnés.
-
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);"
+      | Aucun jour de cuisson trouvé pour les critères sélectionnés.

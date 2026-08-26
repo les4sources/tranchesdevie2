@@ -23,14 +23,14 @@ export default class extends Controller {
   selectVariant(option) {
     // Remove selected state from all options
     this.optionTargets.forEach(opt => {
-      opt.classList.remove('border-green-500', 'bg-green-50')
+      opt.classList.remove('border-sage-600', 'bg-sage-100')
       opt.classList.add('border-gray-300')
       
       // Remove green border from the absolute border element
       const absoluteBorders = opt.querySelectorAll('.absolute')
       absoluteBorders.forEach(border => {
         if (border.classList.contains('-inset-px') || border.classList.contains('border-2')) {
-          border.classList.remove('border-green-500')
+          border.classList.remove('border-sage-600')
         }
       })
       
@@ -45,19 +45,19 @@ export default class extends Controller {
 
     // Add selected state to clicked option
     option.classList.remove('border-gray-300')
-    option.classList.add('border-green-500', 'bg-green-50')
+    option.classList.add('border-sage-600', 'bg-sage-100')
     
     // Add green border to the absolute border element
     const absoluteBorders = option.querySelectorAll('.absolute')
     absoluteBorders.forEach(border => {
       if (border.classList.contains('-inset-px') || border.classList.contains('border-2')) {
-        border.classList.add('border-green-500')
+        border.classList.add('border-sage-600')
       }
     })
     
     // Add check icon
     const checkIcon = document.createElement('span')
-    checkIcon.className = 'material-symbols-outlined text-green-600 absolute top-4 right-4'
+    checkIcon.className = 'material-symbols-outlined text-sage-700 absolute top-4 right-4'
     checkIcon.textContent = 'check_circle'
     option.appendChild(checkIcon)
 

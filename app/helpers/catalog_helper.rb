@@ -45,12 +45,23 @@ module CatalogHelper
     end
   end
 
+  def product_internal_category_heading(internal_category)
+    case internal_category.to_s
+    when "boulangerie" then "Boulangerie"
+    when "epicerie" then "Épicerie"
+    when "traiteur" then "Traiteur"
+    when "autre" then "Autre"
+    else internal_category.to_s.tr("_", " ").capitalize
+    end
+  end
+
   def product_flour_label(flour)
     return "Aucune" if flour.blank?
 
     case flour
     when "wheat" then "Froment"
     when "spelled" then "Épeautre"
+    when "small_spelled" then "Petit épeautre"
     when "ancien_wheat" then "Blé ancien"
     else flour.to_s.tr("_", " ").capitalize
     end
@@ -61,7 +72,7 @@ module CatalogHelper
     if product.product_images.any? && product.product_images.first.image.attached?
       product_image = product.product_images.first.image
       if product_image.variable?
-        rails_blob_url(product_image.variant(resize_to_limit: [800, 800]))
+        rails_blob_url(product_image.variant(resize_to_limit: [ 800, 800 ]))
       else
         rails_blob_url(product_image)
       end
@@ -77,26 +88,26 @@ module CatalogHelper
     variants.each do |variant|
       variant.product_images.each do |product_image|
         next unless product_image.image.attached?
-        
+
         image_url = if product_image.image.variable?
-          rails_blob_url(product_image.image.variant(resize_to_limit: [800, 800]))
+          rails_blob_url(product_image.image.variant(resize_to_limit: [ 800, 800 ]))
         else
           rails_blob_url(product_image.image)
         end
-        
+
         images << {
           url: image_url,
           variant_name: variant.name
         }
       end
     end
-    
+
     # If no variant images, fallback to product image or static image
     if images.empty?
       fallback_url = product_background_image(product)
       images << { url: fallback_url, variant_name: nil }
     end
-    
+
     images
   end
 
@@ -121,4 +132,3 @@ module CatalogHelper
     }
   end
 end
-

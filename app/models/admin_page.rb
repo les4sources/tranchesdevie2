@@ -6,4 +6,3 @@ class AdminPage < ApplicationRecord
     slug
   end
 end
-

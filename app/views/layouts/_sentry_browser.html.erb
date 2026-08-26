@@ -1,0 +1,25 @@
+<%# Sentry côté navigateur — production uniquement, et seulement si un DSN est %>
+<%# configuré. Indispensable pour voir les échecs au "moment du paiement" %>
+<%# (stripe.confirmPayment / Bancontact), qui sont purement client-side et %>
+<%# n'atteignaient jamais le serveur ni Sentry. Le DSN Sentry est conçu pour %>
+<%# être public (embarqué dans le JS) ; on réutilise le même projet que le %>
+<%# back — on pourra séparer un projet front plus tard si besoin. %>
+<% if Rails.env.production? && ENV["SENTRY_DSN"].present? %>
+  <script src="https://browser.sentry-cdn.com/7.120.0/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    if (window.Sentry) {
+      window.Sentry.init({
+        dsn: "<%= ENV["SENTRY_DSN"] %>",
+        environment: "<%= Rails.env %>",
+        tracesSampleRate: 0,
+        beforeSend: function (event) {
+          // Masquer les numéros de téléphone, comme côté serveur.
+          if (event && event.message) {
+            event.message = event.message.replace(/\+\d{10,15}/g, "[PHONE_MASKED]");
+          }
+          return event;
+        }
+      });
+    }
+  </script>
+<% end %>

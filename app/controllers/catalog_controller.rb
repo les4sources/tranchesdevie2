@@ -2,27 +2,38 @@ class CatalogController < ApplicationController
   def index
     @products = load_all_active_products
     @seasonal_promotion = seasonal_promotion_content
+    # `open_to_customers` et pas `can_order?` : une fournée réservée aux
+    # boulangers (marché, production spéciale) ne doit pas être annoncée à des
+    # clients qui ne pourront pas commander dessus.
+    @next_bake_day = BakeDay.open_to_customers.first
   end
 
   private
 
   def load_all_active_products
-    Product.not_deleted.active.store_channel.ordered.includes(
-      product_variants: { product_images: :image_attachment },
+    selected_wday = selected_bake_day_wday
+
+    # Les pizza parties (privée & publique) sont retirées du catalogue : elles se
+    # réservent depuis la page Événements (#pizza-parties). Le forfait (channel
+    # admin) est déjà exclu.
+    Product.not_deleted.active.store_channel
+           .where.not(pizza_party_role: [ :party, :public_party ]).ordered.includes(
+      product_variants: [ :variant_group_restrictions, { product_images: :image_attachment } ],
       product_images: :image_attachment
     ).map do |product|
-      variants = product.product_variants.active.store_channel
-      [product, variants] if variants.any?
+      variants = product.product_variants.active.store_channel.visible_to_customer(current_customer)
+      variants = variants.select { |v| v.available_on_weekday?(selected_wday) } if selected_wday
+      [ product, variants ] if variants.any?
     end.compact
   end
 
   def seasonal_promotion_content
     {
-      title: "Ça y est, on cuit le mardi, et on a un site !",
-      description: "Hourra, le four à pain des 4 Sources va désormais chauffer pour vous les mardis et vendredis ! 🎉 Commande dès maintenant tes pains pour la semaine prochaine.",
-      cta_text: "",
-      cta_path: nil
+      active: false,
+      title: "🧀 Bientôt la première Camembert Party de 2026 !",
+      description: "Viens aux 4 Sources ce 13 février pour déguster une \"mini-fondue\" en trempant du pain frais dans ton fromage tout juste sorti du four et dégoulinant à point ! 😋 Le tout accompagné de tes petits légumes préférés ! ",
+      cta_text: "Infos et réservations",
+      cta_path: "https://www.les4sources.be/evenements/camembert-party-10-octobre-2025"
     }
   end
 end
-

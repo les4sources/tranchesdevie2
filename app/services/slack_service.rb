@@ -6,8 +6,8 @@ class SlackService
   end
 
   def initialize(webhook_url: nil)
-    @webhook_url = webhook_url || ENV['SLACK_WEBHOOK_URL']
-    raise Error, 'SLACK_WEBHOOK_URL environment variable is not set' if @webhook_url.blank?
+    @webhook_url = webhook_url || ENV["SLACK_WEBHOOK_URL"]
+    raise Error, "SLACK_WEBHOOK_URL environment variable is not set" if @webhook_url.blank?
   end
 
   def send_message(text)
@@ -17,7 +17,7 @@ class SlackService
         text: text
       }.to_json,
       headers: {
-        'Content-Type' => 'application/json'
+        "Content-Type" => "application/json"
       }
     )
 
@@ -30,4 +30,3 @@ class SlackService
     raise Error, "HTTP error while sending Slack message: #{e.message}"
   end
 end
-

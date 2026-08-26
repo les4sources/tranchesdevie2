@@ -10,7 +10,7 @@ module CustomerAuthentication
   def authenticate_customer!
     return if customer_signed_in?
 
-    redirect_to customer_login_path, alert: 'Veuillez vous connecter'
+    redirect_to customer_login_path, alert: "Veuillez vous connecter"
   end
 
   def current_customer
@@ -28,4 +28,3 @@ module CustomerAuthentication
     current_customer.present?
   end
 end
-

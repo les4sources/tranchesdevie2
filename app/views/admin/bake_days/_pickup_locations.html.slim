@@ -1,0 +1,25 @@
+/ Points de retrait ouverts sur cette fournée (#148). Partial partagé par `new`
+/ et `edit`, qui sont sinon dupliquées.
+/
+/ Un lieu déjà utilisé par des commandes de cette fournée ne peut pas être
+/ décoché : la validation du modèle refuse l'enregistrement et le formulaire est
+/ ré-affiché avec le nombre de commandes concernées.
+.mb-4
+  span.adm-eyebrow.mb-2.block Points de retrait ouverts sur cette fournée
+  - locations = PickupLocation.not_deleted.ordered
+  - if locations.any?
+    .grid.grid-cols-1.sm:grid-cols-2.lg:grid-cols-3.gap-2
+      / Un lieu inactif (#199) reste cochable — il peut porter des commandes
+      / historiques sur cette fournée — mais on dit qu'il ne sera pas proposé.
+      = f.collection_check_boxes :pickup_location_ids, locations, :id, :name do |b|
+        label.adm-option.flex.cursor-pointer.items-center.gap-2.rounded-md.px-3.py-2.text-sm style="border: 1px solid var(--border-subtle); color: var(--text-body);"
+          = b.check_box style: "accent-color: var(--brand);"
+          = b.text
+          - unless b.object.active?
+            = adm_chip "inactif", tone: :warning
+    p.mt-2.text-xs style="color: var(--text-muted);"
+      | Le lieu par défaut est toujours ouvert à la création d'une fournée.
+  - else
+    p.text-sm style="color: var(--text-muted);"
+      | Aucun point de retrait défini.
+      =< link_to "En créer un", new_admin_pickup_location_path, class: "adm-link"

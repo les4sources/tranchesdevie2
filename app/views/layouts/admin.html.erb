@@ -1,55 +1,117 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Administration - Tranches de Vie" %></title>
+    <title><%= content_for(:title) || "Tranches de Vie" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="bg-gray-50">
-    <nav class="bg-white shadow-sm">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 justify-between items-center">
-          <div class="flex">
-            <%= link_to admin_orders_path, class: "flex items-center" do %>
-              <span class="text-xl font-bold text-gray-900">Administration - Tranches de Vie</span>
+  <body class="adm-shell min-h-screen font-sans <%= 'dev-warning-border' if Rails.env.development? %>" <%= ' data-controller="mobile-menu"'.html_safe if admin_authenticated? %>>
+    <% if admin_authenticated? %>
+      <div class="flex min-h-screen">
+        <%# ── Barre latérale (desktop) ──────────────────────────────────── %>
+        <aside class="adm-sidebar hidden w-56 flex-none flex-col md:flex">
+          <div class="flex h-14 items-center px-4">
+            <%= link_to admin_orders_path, class: "tdv-script text-2xl leading-none" do %>
+              Tranches de Vie
             <% end %>
           </div>
-          <div class="flex items-center space-x-4">
-            <%= link_to "Commandes", admin_orders_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Mangeurs", admin_customers_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Produits", admin_products_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Jours de cuisson", admin_bake_days_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Reporting", admin_reports_path, class: "text-gray-700 hover:text-gray-900" %>
-            <%= link_to "Déconnexion", admin_logout_path, method: :delete, data: { turbo_method: :delete }, class: "text-gray-700 hover:text-gray-900" %>
+
+          <nav class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3">
+            <% admin_nav_items.each do |item| %>
+              <%= link_to item[:href], class: item[:active] ? "adm-navlink adm-navlink-active" : "adm-navlink" do %>
+                <%= lucide item[:icon], size: 15 %>
+                <span class="truncate"><%= item[:label] %></span>
+              <% end %>
+            <% end %>
+          </nav>
+
+          <div class="border-t px-2 py-2" style="border-color: var(--border-subtle);">
+            <%= link_to admin_logout_path, data: { turbo_method: :delete }, class: "adm-navlink" do %>
+              <%= lucide "log-out", size: 15 %>
+              <span>Déconnexion</span>
+            <% end %>
           </div>
+        </aside>
+
+        <div class="flex min-w-0 flex-1 flex-col">
+          <%# ── Barre haute mobile ─────────────────────────────────────────── %>
+          <header class="flex h-14 flex-none items-center justify-between border-b px-4 md:hidden"
+                  style="border-color: var(--border-subtle); background: var(--surface-card);">
+            <%= link_to "Tranches de Vie", admin_orders_path, class: "tdv-script text-2xl leading-none" %>
+            <button type="button" data-mobile-menu-target="button" data-action="click->mobile-menu#toggle"
+                    class="adm-btn adm-btn-ghost" aria-label="Ouvrir le menu">
+              <%= lucide "menu", size: 20 %>
+            </button>
+          </header>
+
+          <main class="min-w-0 flex-1 px-4 py-5 sm:px-6">
+            <% if notice %>
+              <div class="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                   style="background: var(--success-100); color: var(--success-700);">
+                <%= lucide "check", size: 15 %><%= notice %>
+              </div>
+            <% end %>
+
+            <% if alert %>
+              <div class="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                   style="background: var(--danger-100); color: var(--danger-700);">
+                <%= lucide "alert-triangle", size: 15 %><%= alert %>
+              </div>
+            <% end %>
+
+            <%= yield %>
+          </main>
         </div>
       </div>
-    </nav>
 
-    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      <% if notice %>
-        <div class="rounded-md bg-green-50 p-4 mb-4">
-          <p class="text-sm font-medium text-green-800"><%= notice %></p>
+      <%# ── Tiroir mobile ──────────────────────────────────────────────────── %>
+      <div data-mobile-menu-target="menu" class="fixed inset-0 z-50 hidden md:hidden" style="background: var(--surface-card);">
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--border-subtle);">
+            <h2 class="tdv-script text-2xl leading-none">Menu</h2>
+            <button type="button" data-action="click->mobile-menu#close" class="adm-btn adm-btn-ghost" aria-label="Fermer le menu">
+              <%= lucide "x", size: 20 %>
+            </button>
+          </div>
+          <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
+            <% admin_nav_items.each do |item| %>
+              <%= link_to item[:href],
+                          class: "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium #{item[:active] ? 'adm-navlink adm-navlink-active' : 'adm-navlink'}",
+                          data: { action: "click->mobile-menu#close" } do %>
+                <%= lucide item[:icon], size: 18 %>
+                <%= item[:label] %>
+              <% end %>
+            <% end %>
+            <div class="mt-3 border-t pt-3" style="border-color: var(--border-subtle);">
+              <%= link_to admin_logout_path, data: { turbo_method: :delete, action: "click->mobile-menu#close" },
+                          class: "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium adm-navlink" do %>
+                <%= lucide "log-out", size: 18 %>
+                Déconnexion
+              <% end %>
+            </div>
+          </nav>
         </div>
-      <% end %>
-
-      <% if alert %>
-        <div class="rounded-md bg-red-50 p-4 mb-4">
-          <p class="text-sm font-medium text-red-800"><%= alert %></p>
-        </div>
-      <% end %>
-
-      <%= yield %>
-    </main>
+      </div>
+    <% else %>
+      <%# Page de connexion : pas de navigation, la coque se réduit au contenu. %>
+      <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <% if notice %>
+          <div class="mb-4 rounded-md px-3 py-2 text-sm font-medium" style="background: var(--success-100); color: var(--success-700);"><%= notice %></div>
+        <% end %>
+        <% if alert %>
+          <div class="mb-4 rounded-md px-3 py-2 text-sm font-medium" style="background: var(--danger-100); color: var(--danger-700);"><%= alert %></div>
+        <% end %>
+        <%= yield %>
+      </main>
+    <% end %>
   </body>
 </html>
-

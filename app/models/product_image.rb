@@ -6,7 +6,7 @@ class ProductImage < ApplicationRecord
 
   validates :product, presence: true
   validate :product_variant_belongs_to_product
-  
+
   # Auto-set product_id from product_variant if not set
   before_validation :set_product_from_variant, if: -> { product_variant.present? && product_id.blank? }
   before_validation :set_position, on: :create, if: -> { position.nil? }
@@ -39,4 +39,3 @@ class ProductImage < ApplicationRecord
     end
   end
 end
-

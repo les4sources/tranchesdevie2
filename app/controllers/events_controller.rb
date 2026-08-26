@@ -1,0 +1,37 @@
+class EventsController < ApplicationController
+  # Page publique « Pizza Party privée » (/pizza-party-privee, #pizza-parties) :
+  # la party privée se réserve ICI, hors du catalogue produits normal. Elle
+  # réutilise le flux panier → checkout existant (le forfait 40 € est
+  # auto-synchronisé par PizzaPartyForfaitService). Les parties PUBLIQUES
+  # auront leur propre page (formulaire retiré d'ici en attendant).
+  def index
+    @product = party_product(:party)
+    @variants = variants_for(@product)
+    @selected_variant = @variants&.first
+
+    # Calendrier des disponibilités de la party privée : 8 semaines glissantes,
+    # créneaux midi/soir (blocages admin, parties publiques du soir et capacité
+    # déjà déduits). La sélection est revalidée à l'ajout panier et au checkout.
+    if @product && @selected_variant
+      # Le calendrier part d'aujourd'hui (#201) : la réservation court jusqu'à
+      # la veille 16 h, donc le premier mardi ou vendredi soir encore ouvert
+      # peut être demain. C'est `private_availability` qui tranche jour par jour.
+      @availability_start = Date.current
+      @party_availability = PartyEvent.private_availability(@availability_start..(@availability_start + 8.weeks))
+    end
+  end
+
+  private
+
+  def party_product(role)
+    Product.not_deleted.active.store_channel.find_by(pizza_party_role: role)
+  end
+
+  def variants_for(product)
+    return nil if product.nil?
+
+    variants = product.product_variants.active.store_channel
+                      .visible_to_customer(current_customer).order(:name)
+    variants.presence
+  end
+end

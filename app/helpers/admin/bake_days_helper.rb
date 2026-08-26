@@ -6,17 +6,10 @@ module Admin::BakeDaysHelper
     variant_image&.image || product_image&.image
   end
 
-  def status_pill_classes(status)
-    {
-      "pending" => "bg-yellow-100 text-yellow-800",
-      "unpaid" => "bg-orange-100 text-orange-800",
-      "paid" => "bg-blue-100 text-blue-800",
-      "ready" => "bg-emerald-100 text-emerald-800",
-      "picked_up" => "bg-gray-100 text-gray-800",
-      "no_show" => "bg-red-100 text-red-800",
-      "cancelled" => "bg-red-100 text-red-800"
-    }[status.to_s] || "bg-gray-100 text-gray-800"
+  # Point de statut d'une commande dans la bulle « détail du calcul de pâte ».
+  # La tonalité vient de la même table que les pastilles (`ORDER_STATUS_TONES`) :
+  # une commande prête est verte au même titre dans la bulle et dans la liste.
+  def dough_tooltip_dot(status)
+    adm_dot(tone: Admin::UiHelper::ORDER_STATUS_TONES.fetch(status.to_s, :neutral))
   end
 end
-
-

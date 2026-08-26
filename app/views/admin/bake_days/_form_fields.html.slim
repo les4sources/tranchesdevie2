@@ -1,0 +1,38 @@
+/ Champs communs à `new` et `edit`, qui ne différaient que par le libellé du
+/ bouton et la présence de l'indice de pré-remplissage de la date limite.
+- note_input_id = dom_id(bake_day, :internal_note)
+
+.mb-4
+  = f.label :baked_on, "Date de cuisson", class: "adm-eyebrow mb-1 block"
+  = f.date_field :baked_on, class: adm_field_class, required: true, data: { bake_day_cutoff_target: "bakedOn", action: "change->bake-day-cutoff#fill input->bake-day-cutoff#fill" }
+
+.mb-4
+  = f.label :cut_off_at, "Date limite de commande", class: "adm-eyebrow mb-1 block"
+  = f.datetime_local_field :cut_off_at, class: adm_field_class, required: true, data: { bake_day_cutoff_target: "cutOff" }
+  - if cut_off_hint
+    p.mt-1.text-xs style="color: var(--text-muted);" Pré-rempli à la veille de la cuisson, 16h00 — modifiable.
+
+.mb-4
+  = f.label :internal_note, "Note interne du jour", class: "adm-eyebrow mb-1 block"
+  = f.hidden_field :internal_note, id: note_input_id
+  trix-editor class="trix-content adm-trix" input=note_input_id
+  p.mt-2.text-xs style="color: var(--text-muted);" Ajoutez des consignes pour l'équipe (pâte en retard, allergies, etc.).
+
+.mb-4
+  label.flex.cursor-pointer.items-center.gap-2
+    = f.check_box :market_day, style: "accent-color: var(--brand);"
+    span.text-sm.font-medium style="color: var(--text-body);" Jour de marché (capacité four étendue)
+
+/ Brouillon (#197) : le jour sert de calculatrice — panification, moules,
+/ pâtons — sans exister commercialement.
+.mb-4
+  label.flex.cursor-pointer.items-start.gap-2
+    = f.check_box :draft, style: "accent-color: var(--brand); margin-top: 3px;"
+    span
+      span.block.text-sm.font-medium style="color: var(--text-body);" Brouillon
+      span.block.text-xs style="color: var(--text-muted);"
+        | Le jour n'est pas proposé aux clients et n'entre ni dans les revenus boulangers, ni dans le reporting, ni dans la feuille compta. Les calculs de panification, de moules et de capacité fonctionnent normalement.
+
+= render "pickup_locations", f: f, bake_day: bake_day
+
+= render "sales_locations", f: f, bake_day: bake_day

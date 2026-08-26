@@ -12,32 +12,27 @@ export default class extends Controller {
     this.currentCountry = this.defaultCountryValue
     this.flagEmojis = this.getFlagEmojis()
     this.countries = this.getAllCountries()
-    
-    // Initialiser le drapeau
-    this.updateFlag()
-    
-    // Gérer le focus pour pré-remplir si vide
-    this.inputTarget.addEventListener("focus", this.handleFocus.bind(this))
+
+    // Le champ accepte un GSM OU un e-mail : on n'affiche le drapeau et on ne
+    // formate que tant que la saisie ressemble à un numéro.
+    this.syncFlagVisibility()
+
     this.inputTarget.addEventListener("input", this.handleInput.bind(this))
     this.inputTarget.addEventListener("blur", this.handleBlur.bind(this))
   }
 
-  handleFocus() {
-    // Ne pas réinitialiser si le champ a déjà une valeur (même partielle)
-    const currentValue = this.inputTarget.value || ""
-    if (currentValue.trim() === "" || currentValue === "+32") {
-      // Seulement si vraiment vide ou juste le préfixe, pré-remplir avec +32
-      if (currentValue.trim() === "") {
-        this.inputTarget.value = "+32"
-        this.currentCountry = "BE"
-        this.updateFlag()
-      }
-    }
+  // Une saisie contenant une lettre ou un "@" est traitée comme un e-mail :
+  // on ne lui applique ni formatage téléphonique ni préfixe pays.
+  looksLikeEmail(value) {
+    return /[A-Za-z@]/.test(value || "")
   }
 
   handleInput(event) {
     const value = event.target.value
-    
+
+    this.syncFlagVisibility()
+    if (this.looksLikeEmail(value)) return
+
     // Détecter si l'utilisateur a changé le code pays
     if (value.startsWith("+")) {
       const detectedCountry = this.detectCountryFromInput(value)
@@ -46,15 +41,15 @@ export default class extends Controller {
         this.updateFlag()
       }
     }
-    
-    // Formater en temps réel
+
+    // Formater en temps réel (uniquement pour les numéros)
     this.formatPhoneNumber(value)
   }
 
   handleBlur() {
-    // S'assurer que le numéro est en format E.164
+    // S'assurer que le numéro est en format E.164 (jamais pour un e-mail)
     const value = this.inputTarget.value
-    if (value) {
+    if (value && !this.looksLikeEmail(value)) {
       try {
         const phoneNumber = parsePhoneNumber(value, this.currentCountry)
         if (phoneNumber.isValid()) {
@@ -64,6 +59,12 @@ export default class extends Controller {
         // Ignorer les erreurs de parsing
       }
     }
+  }
+
+  // Masque le drapeau quand la saisie ressemble à un e-mail, l'affiche sinon.
+  syncFlagVisibility() {
+    if (!this.hasFlagTarget) return
+    this.flagTarget.style.display = this.looksLikeEmail(this.inputTarget.value) ? "none" : ""
   }
 
   detectCountryFromInput(value) {

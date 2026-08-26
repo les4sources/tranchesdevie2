@@ -1,0 +1,154 @@
+- content_for :title, "Feuille compta #{@sheet.date.strftime('%d/%m/%Y')}"
+- content_for :layout, "admin"
+- euro = ->(c) { number_to_currency((c || 0) / 100.0, unit: "€", format: "%n %u", separator: ",", delimiter: " ") }
+- day = @sheet.day
+
+.mb-4
+  = link_to "← Jour de cuisson", admin_bake_day_path(@sheet.bake_day), class: "adm-link text-sm font-semibold"
+
+= adm_page_header "Feuille compta — #{l(@sheet.date)}"
+p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app (mêmes calculs que « Revenus boulangers »). CA net par format + split boulangers / 4 Sources du jour.
+
+/ La feuille d'un brouillon est VIDE par construction : elle se nourrit des
+/ mêmes requêtes que les revenus, qui excluent désormais les brouillons (#197).
+/ On l'annonce plutôt que de laisser lire « Aucune donnée » comme une panne.
+- if @sheet.bake_day.draft?
+  .adm-card.mb-4.p-4 style="background: var(--warning-100); border-color: var(--warning-200);"
+    .flex.flex-wrap.items-center.gap-2
+      = adm_chip "Brouillon", tone: :warning
+      p.text-sm.font-semibold style="color: var(--warning-700);" Cette feuille n'est PAS comptabilisée.
+    p.mt-1.text-sm style="color: var(--text-body);"
+      | Ce jour de cuisson est un brouillon : ses chiffres n'entrent ni dans « Revenus boulangers », ni dans le reporting, donc cette feuille reste vide — ce n'est pas une panne.
+    p.mt-2.text-sm
+      = link_to "Voir les quantités du jour (panification, moules, capacité) →", admin_bake_day_path(@sheet.bake_day), class: "adm-link font-semibold"
+
+- unless day
+  .adm-card.p-6.text-sm style="color: var(--text-muted);" Aucune donnée pour ce jour.
+- else
+  / --- Tableau par format vendu ---
+  section.mb-8
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Ventes par format
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Format
+              th.text-right Prix classique
+              th.text-right Coûtant / u
+              th.text-right Commandes
+              th.text-right CA brut
+              th.text-right Remise
+              th.text-right CA net
+          tbody
+            - @sheet.rows.each do |row|
+              tr
+                td.font-medium style="color: var(--text-strong);" = row.label
+                td.adm-grid-num.text-right = euro.(row.unit_price_cents)
+                td.adm-grid-num.text-right style="color: var(--text-muted);" = euro.(row.unit_cost_cents)
+                td.adm-grid-num.text-right style="color: var(--text-strong);" = row.qty
+                td.adm-grid-num.text-right = euro.(row.gross_cents)
+                td.adm-grid-num.text-right
+                  - if row.discount_cents.positive?
+                    span style="color: var(--danger-700);" = "− #{euro.(row.discount_cents)}"
+                    span.block.text-xs style="color: var(--text-faint);" = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
+                  - else
+                    span style="color: var(--text-faint);" —
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(row.sale_cents)
+          tfoot
+            tr.adm-grid-total
+              td Total CA
+              td
+              td
+              td.adm-grid-num.text-right = @sheet.rows.sum(&:qty)
+              td.adm-grid-num.text-right = euro.(@sheet.total_gross_cents)
+              td.adm-grid-num.text-right style="color: var(--danger-700);" = @sheet.total_discount_cents.positive? ? "− #{euro.(@sheet.total_discount_cents)}" : "—"
+              td.adm-grid-num.text-right = euro.(@sheet.total_sale_cents)
+
+  / --- Répartition boulangers / 4 Sources (authoritative) ---
+  - party_sale = day.party_revenue_cents + day.public_party_revenue_cents
+  - bread_ca = day.revenue_cents - party_sale
+  - bread_4s = day.four_sources_cents - day.party_four_sources_cents - day.public_party_four_sources_cents
+  - bread_bakers = day.baker_pool_cents - day.party_bakers_cents - day.public_party_bakers_cents
+  - bread_margin = bread_4s + bread_bakers
+
+  section.mb-8
+    .adm-card.mb-3.p-3.text-xs style="border-color: var(--warning-200); background: var(--warning-100); color: var(--warning-700);"
+      | Le split 70/30 s'applique à la marge du jour APRÈS déduction des coûts partagés (coûtant pain, sacs, transport, commissions Stripe, lieux de vente). Les pizza parties suivent leur barème spécial, hors 70/30.
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Répartition boulangers / 4 Sources
+      table.adm-grid
+        tbody
+          tr
+            td style="color: var(--text-body);" CA pains (hors parties)
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(bread_ca)
+          tr
+            td style="color: var(--text-muted);" − Coûtant pains
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.cost_price_cents)}"
+          tr
+            td style="color: var(--text-muted);" − Sacs à pain
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.bread_bags_cents)}"
+          tr
+            td style="color: var(--text-muted);" − Transport
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.transport_cents)}"
+          tr
+            td style="color: var(--text-muted);" − Commissions Stripe
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.commission_cents)}"
+          tr
+            td style="color: var(--text-muted);" − Lieux de vente
+            td.adm-grid-num.text-right style="color: var(--text-muted);" = "− #{euro.(day.sales_locations_cents)}"
+          tr.adm-grid-total
+            td Marge pains
+            td.adm-grid-num.text-right = euro.(bread_margin)
+          tr
+            td style="color: var(--text-body);" → Boulangers (70 %)
+            td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(bread_bakers)
+          tr
+            td style="color: var(--text-body);" → 4 Sources (30 %)
+            td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(bread_4s)
+
+  / --- Pizza parties (barème spécial) ---
+  - if day.party_persons.positive? || day.public_party_persons.positive?
+    section.mb-8
+      .adm-card.overflow-hidden
+        .adm-cardhd
+          h2.text-xl.font-semibold style="color: var(--text-strong);" Pizza parties (barème spécial)
+        .overflow-x-auto
+          table.adm-grid
+            thead
+              tr
+                th Type
+                th.text-right Pers.
+                th.text-right CA
+                th.text-right Boulangers
+                th.text-right 4 Sources
+            tbody
+              - if day.party_persons.positive?
+                tr
+                  td style="color: var(--text-strong);" Privée
+                  td.adm-grid-num.text-right = day.party_persons
+                  td.adm-grid-num.text-right = euro.(day.party_revenue_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.party_bakers_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.party_four_sources_cents)
+              - if day.public_party_persons.positive?
+                tr
+                  td style="color: var(--text-strong);" Publique
+                  td.adm-grid-num.text-right = day.public_party_persons
+                  td.adm-grid-num.text-right = euro.(day.public_party_revenue_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_bakers_cents)
+                  td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_four_sources_cents)
+
+  / --- Totaux du jour ---
+  section
+    .grid.grid-cols-1.sm:grid-cols-3.gap-4
+      .adm-card.p-4
+        p.adm-eyebrow CA total
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--text-strong);" = euro.(day.revenue_cents)
+      .adm-card.p-4 style="border-color: var(--water-200);"
+        p.adm-eyebrow style="color: var(--water-700);" Total boulangers
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--water-700);" = euro.(day.baker_pool_cents)
+      .adm-card.p-4 style="border-color: var(--success-200);"
+        p.adm-eyebrow style="color: var(--success-700);" Total 4 Sources
+        p.adm-grid-num.mt-1.text-xl.font-bold style="color: var(--success-700);" = euro.(day.four_sources_cents)

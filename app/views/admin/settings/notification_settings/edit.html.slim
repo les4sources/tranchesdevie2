@@ -1,0 +1,42 @@
+- content_for :title, "Notifications"
+- content_for :layout, "admin"
+
+.mb-6.flex.items-center.gap-3
+  = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+  h1.text-2xl.font-bold.text-gray-900 Notifications
+
+= form_with model: [:admin, :settings, @notification_setting], url: admin_settings_notification_setting_path, method: :patch, local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if @notification_setting.errors.any?
+    .rounded-md.bg-red-50.p-4
+      h2.text-sm.font-semibold.text-red-800 Correction requise
+      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+        - @notification_setting.errors.full_messages.each do |message|
+          li= message
+
+  .rounded-md.bg-blue-50.border.border-blue-100.p-4.text-sm.text-blue-900
+    p Ce message est envoyé au client quand les boulangers marquent sa commande « prête ». Le même texte part
+      strong> &nbsp;par SMS et par email.
+    p.mt-2
+      | Variables disponibles (remplacées automatiquement) :
+      - NotificationSetting::AVAILABLE_VARIABLES.each do |var|
+        code.mx-1.px-1.5.py-0.5.bg-white.border.border-blue-200.rounded ="{#{var}}"
+    p.mt-1.text-xs.text-blue-800 prenom · nom · montant (total à payer) · numero (n° de commande)
+
+  .space-y-2
+    = f.label :ready_sms_body, "Message — commande prête (payée)", class: "block text-sm font-medium text-gray-700"
+    = f.text_area :ready_sms_body, rows: 4, class: admin_input_class
+    p.text-xs.text-gray-500 Envoyé quand la commande est déjà payée.
+
+  .space-y-2
+    = f.label :ready_sms_body_unpaid, "Message — commande prête (à payer sur place)", class: "block text-sm font-medium text-gray-700"
+    = f.text_area :ready_sms_body_unpaid, rows: 5, class: admin_input_class
+    p.text-xs.text-gray-500 Envoyé quand la commande n'est pas encore payée. Pense à garder <code>{montant}</code> pour indiquer le total.
+
+  .space-y-2
+    = f.label :ready_email_subject, "Objet de l'email", class: "block text-sm font-medium text-gray-700"
+    = f.text_field :ready_email_subject, class: admin_input_class
+    p.text-xs.text-gray-500 Objet de l'email « commande prête » (le corps reprend le message ci-dessus).
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", admin_settings_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

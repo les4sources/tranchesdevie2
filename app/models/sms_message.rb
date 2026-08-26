@@ -26,11 +26,11 @@ class SmsMessage < ApplicationRecord
   scope :ordered_by_sent_at, -> { order(sent_at: :desc, created_at: :desc) }
 
   def self.create_inbound(from, to, body)
-    kind = if body.upcase.strip == 'STOP'
+    kind = if body.upcase.strip == "STOP"
              :other # Will be handled by webhook processor
-           else
+    else
              :other
-           end
+    end
 
     create!(
       direction: :inbound,
@@ -41,4 +41,3 @@ class SmsMessage < ApplicationRecord
     )
   end
 end
-

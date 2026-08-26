@@ -1,21 +1,56 @@
 class Admin::CustomersController < Admin::BaseController
-  before_action :set_customer, only: [:show, :edit, :update, :send_sms]
+  before_action :set_customer, only: [ :show, :edit, :update, :destroy, :send_sms ]
 
   def index
-    @customers = Customer.order(created_at: :desc).includes(:orders)
-    
-    if params[:search].present?
-      search_term = "%#{params[:search]}%"
-      @customers = @customers.where(
-        "first_name ILIKE ? OR last_name ILIKE ? OR phone_e164 ILIKE ? OR email ILIKE ?",
-        search_term, search_term, search_term, search_term
-      )
+    @customers = Customer.includes(:orders, :groups, :wallet)
+
+    @customers = @customers.search(params[:search]) if params[:search].present?
+
+    case params[:sort]
+    when "orders"
+      @customers = @customers.left_joins(:orders)
+                              .group("customers.id")
+                              .order(Arel.sql("COUNT(orders.id) DESC"))
+    when "last_order"
+      @customers = @customers.left_joins(:orders)
+                              .group("customers.id")
+                              .order(Arel.sql("MAX(orders.created_at) DESC NULLS LAST"))
+    else
+      @customers = @customers.order(:last_name, :first_name)
     end
   end
 
+  # Autocomplétion JSON du filtre client (page Commandes). Renvoie une poignée
+  # de clients correspondant à la saisie, avec de quoi les distinguer d'un coup
+  # d'oeil : nom, e-mail, téléphone et nombre de commandes.
+  def search
+    term = params[:q].to_s.strip
+
+    customers = if term.blank?
+                  Customer.none
+    else
+                  Customer.search(term)
+                          .left_joins(:orders)
+                          .select("customers.*, COUNT(orders.id) AS orders_count")
+                          .group("customers.id")
+                          .order(Arel.sql("COUNT(orders.id) DESC, customers.last_name ASC, customers.first_name ASC"))
+                          .limit(8)
+    end
+
+    render json: {
+      query: term,
+      results: customers.map { |customer| customer_search_payload(customer) }
+    }
+  end
+
   def show
-    @orders = @customer.orders.includes(:bake_day).order(created_at: :desc)
+    @orders = @customer.orders.includes(:bake_day, :payment, :wallet_transactions).order(created_at: :desc)
     @sms_messages = @customer.sms_messages.ordered_by_sent_at
+    @email_messages = @customer.email_messages.ordered_by_sent_at
+    @wallet = @customer.wallet
+    # Mouvements du portefeuille en lecture seule (#138), commande préchargée pour
+    # éviter les N+1, du plus récent au plus ancien.
+    @wallet_transactions = @wallet ? @wallet.wallet_transactions.includes(:order).order(created_at: :desc) : []
   end
 
   def new
@@ -28,9 +63,9 @@ class Admin::CustomersController < Admin::BaseController
     @customer.skip_phone_validation = true if @customer.phone_e164.blank?
 
     if @customer.save
-      redirect_to admin_customers_path, notice: 'Mangeur créé avec succès'
+      redirect_to admin_customers_path, notice: "Mangeur créé avec succès"
     elsif @customer.phone_e164.present? && (existing_customer = Customer.find_by(phone_e164: @customer.phone_e164))
-      redirect_to admin_customer_path(existing_customer), alert: 'Ce mangeur existe déjà. Redirection vers sa page.'
+      redirect_to admin_customer_path(existing_customer), alert: "Ce mangeur existe déjà. Redirection vers sa page."
     else
       @groups = Group.order(:name)
       render :new, status: :unprocessable_entity
@@ -43,49 +78,68 @@ class Admin::CustomersController < Admin::BaseController
 
   def update
     @customer.skip_phone_validation = true if customer_params[:phone_e164].blank?
-    
+
     if @customer.update(customer_params)
-      redirect_to admin_customer_path(@customer), notice: 'Mangeur mis à jour avec succès'
+      redirect_to admin_customer_path(@customer), notice: "Mangeur mis à jour avec succès"
     else
       @groups = Group.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
 
+  def destroy
+    if @customer.orders.exists?
+      redirect_to admin_customer_path(@customer), alert: "Impossible de supprimer un mangeur qui a des commandes."
+      return
+    end
+
+    @customer.destroy
+    redirect_to admin_customers_path, notice: "Mangeur supprimé avec succès"
+  end
+
   def send_sms
     body = params[:body]
-    
+
     if body.blank?
-      render json: { success: false, error: 'Le message ne peut pas être vide' }, status: :unprocessable_entity
+      render json: { success: false, error: "Le message ne peut pas être vide" }, status: :unprocessable_entity
       return
     end
 
     unless @customer.sms_enabled?
-      render json: { success: false, error: 'Les SMS sont désactivés pour ce client' }, status: :unprocessable_entity
+      render json: { success: false, error: "Les SMS sont désactivés pour ce client" }, status: :unprocessable_entity
       return
     end
 
     if SmsService.send_custom(@customer, body)
-      render json: { success: true, message: 'SMS envoyé avec succès' }
+      render json: { success: true, message: "SMS envoyé avec succès" }
     else
-      render json: { success: false, error: 'Erreur lors de l\'envoi du SMS' }, status: :unprocessable_entity
+      render json: { success: false, error: "Erreur lors de l'envoi du SMS" }, status: :unprocessable_entity
     end
   rescue StandardError => e
     Rails.logger.error("Error sending SMS: #{e.message}")
-    render json: { success: false, error: 'Une erreur est survenue' }, status: :unprocessable_entity
+    render json: { success: false, error: "Une erreur est survenue" }, status: :unprocessable_entity
   end
 
   private
+
+  def customer_search_payload(customer)
+    {
+      id: customer.id,
+      name: customer.full_name,
+      email: customer.email,
+      phone: customer.phone_e164,
+      orders_count: customer.orders_count.to_i
+    }
+  end
 
   def set_customer
     @customer = Customer.find(params[:id])
   end
 
   def customer_params
-    permitted = params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :group_id)
+    permitted = params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :email_opt_out, :skip_wallet_check, :billable, :cash_payment_allowed, group_ids: [])
     # Convertir les chaînes vides en nil pour phone_e164
     permitted[:phone_e164] = nil if permitted[:phone_e164].blank?
     permitted
   end
 end
-

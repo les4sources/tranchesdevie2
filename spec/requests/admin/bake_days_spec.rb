@@ -1,0 +1,151 @@
+require "rails_helper"
+
+RSpec.describe "Admin::BakeDays", type: :request do
+  before do
+    ENV["ADMIN_PASSWORD"] = "test-admin-pw"
+    post admin_login_path, params: { password: "test-admin-pw" }
+  end
+
+  # #148 : le tableau des fournées expose une colonne « Points de retrait » listant
+  # les lieux ouverts sur chaque fournée. Un lieu soft-deleted encore rattaché à une
+  # fournée passée ne doit pas apparaître (cf. PickupLocation#not_deleted).
+  describe "GET /admin/bake_days — colonne points de retrait" do
+    it "liste les lieux ouverts de la fournée et masque les lieux supprimés" do
+      bake_day = create(:bake_day, :tuesday) # ouvre « Les 4 Sources » (défaut) automatiquement
+      marche = create(:pickup_location, name: "Marché d'Anhée")
+      supprime = create(:pickup_location, :deleted, name: "Ancien dépôt")
+      BakeDayPickupLocation.create!(bake_day: bake_day, pickup_location: marche)
+      BakeDayPickupLocation.create!(bake_day: bake_day, pickup_location: supprime)
+
+      get admin_bake_days_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Points de retrait")
+      expect(response.body).to include("Les 4 Sources")
+      expect(response.body).to include("Marché d&#39;Anhée")
+      expect(response.body).not_to include("Ancien dépôt")
+    end
+  end
+
+  # #71 : le planning du jour de cuisson contient la matrice « Commandes par client »
+  # (produits en colonnes) dont l'en-tête doit rester figé au défilement. On vérifie
+  # ici que la page rend sans erreur quand il y a au moins une commande (la matrice
+  # est alors affichée), suite au passage du conteneur en scroll vertical.
+  describe "GET /admin/bake_days/:id" do
+    it "rend le planning avec la matrice commandes par client sans erreur" do
+      bake_day = create(:bake_day)
+      customer = create(:customer)
+      product = create(:product, :bread)
+      variant = create(:product_variant, product: product, price_cents: 550)
+      order = create(:order, :paid, customer: customer, bake_day: bake_day, total_cents: 1100)
+      create(:order_item, order: order, product_variant: variant, qty: 2, unit_price_cents: 550)
+
+      get admin_bake_day_path(bake_day)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Commandes par client")
+    end
+  end
+
+  # #133 : l'annulation d'une fournée passe par un écran de confirmation chiffré
+  # + une garde délibérée (retaper la date). Aucune annulation possible sans elle.
+  describe "confirmation renforcée avant annulation (#133)" do
+    let(:bake_day) { create(:bake_day, :cut_off_passed) }
+    let(:expected_date) { bake_day.baked_on.strftime("%d/%m/%Y") }
+
+    before { allow(SmsService).to receive(:send_bake_cancelled).and_return(true) }
+
+    def wallet_paid_order(total_cents: 1100)
+      customer = create(:customer)
+      wallet = create(:wallet, customer: customer, balance_cents: 0)
+      order = create(:order, :paid, customer: customer, bake_day: bake_day, total_cents: total_cents)
+      create(:wallet_transaction, :order_debit, wallet: wallet, order: order)
+      order
+    end
+
+    describe "GET /admin/bake_days/:id/confirm_cancel" do
+      it "affiche l'impact chiffré de l'annulation" do
+        wallet_paid_order(total_cents: 2000)
+
+        get confirm_cancel_admin_bake_day_path(bake_day)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Impact de l'annulation")
+        expect(response.body).to include("Portefeuille")
+        expect(response.body).to include(expected_date)
+      end
+    end
+
+    describe "POST /admin/bake_days/:id/cancel" do
+      it "refuse d'annuler sans la garde saisie (aucun remboursement, aucun SMS)" do
+        order = wallet_paid_order
+
+        expect(SmsService).not_to receive(:send_bake_cancelled)
+        post cancel_admin_bake_day_path(bake_day), params: { confirmation: "" }
+
+        expect(response).to redirect_to(confirm_cancel_admin_bake_day_path(bake_day))
+        expect(order.reload.status).to eq("paid")
+        expect(order.customer.wallet.reload.balance_cents).to eq(0)
+      end
+
+      it "refuse d'annuler avec une garde erronée" do
+        order = wallet_paid_order
+
+        post cancel_admin_bake_day_path(bake_day), params: { confirmation: "31/12/1999" }
+
+        expect(response).to redirect_to(confirm_cancel_admin_bake_day_path(bake_day))
+        expect(order.reload.status).to eq("paid")
+      end
+
+      it "annule la fournée quand la date exacte est retapée" do
+        order = wallet_paid_order
+
+        expect(SmsService).to receive(:send_bake_cancelled).with(order, refunded: true)
+        post cancel_admin_bake_day_path(bake_day), params: { confirmation: expected_date }
+
+        expect(response).to redirect_to(admin_bake_day_path(bake_day))
+        expect(order.reload.status).to eq("cancelled")
+        expect(order.customer.wallet.reload.balance_cents).to eq(1100)
+      end
+
+      it "reste neutre s'il n'y a plus aucune commande annulable" do
+        post cancel_admin_bake_day_path(bake_day), params: { confirmation: expected_date }
+
+        expect(response).to redirect_to(admin_bake_day_path(bake_day))
+        follow_redirect!
+        expect(response.body).to include("Aucune commande à annuler")
+      end
+    end
+  end
+
+  # `new` et `edit` partagent le partial `_form_fields` : ce smoke test garantit
+  # que les deux écrans rendent bien tous leurs champs, y compris les cases des
+  # lieux de retrait et de vente qui vivent dans des partials séparés.
+  describe "formulaires de fournée" do
+    let!(:pickup_location) { create(:pickup_location, name: "Ferme du Ry") }
+
+    it "rend le formulaire de création avec tous ses champs" do
+      get new_admin_bake_day_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Date de cuisson")
+      expect(response.body).to include("Date limite de commande")
+      expect(response.body).to include("Note interne du jour")
+      expect(response.body).to include("Jour de marché")
+      expect(response.body).to include("Points de retrait ouverts sur cette fournée")
+      expect(response.body).to include("Ferme du Ry")
+      expect(response.body).to include("Créer le jour de cuisson")
+    end
+
+    it "rend le formulaire d'édition pré-rempli" do
+      bake_day = create(:bake_day)
+
+      get edit_admin_bake_day_path(bake_day)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Date de cuisson")
+      expect(response.body).to include("Points de retrait ouverts sur cette fournée")
+      expect(response.body).to include("Mettre à jour le jour de cuisson")
+    end
+  end
+end

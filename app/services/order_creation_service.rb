@@ -1,30 +1,52 @@
 class OrderCreationService
   attr_reader :order, :errors
 
-  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: 'online')
+  def initialize(customer:, bake_day:, cart_items:, payment_intent_id: nil, payment_method: "online", skip_capacity_check: false, group_name: nil, pickup_location: nil)
     @customer = customer
     @bake_day = bake_day
     @cart_items = cart_items
     @payment_intent_id = payment_intent_id
     @payment_method = payment_method
+    @skip_capacity_check = skip_capacity_check
+    @group_name = group_name.presence
+    @pickup_location = pickup_location
     @errors = []
   end
 
   def call
     return false unless valid?
 
-    initial_status = @payment_method == 'cash' ? :unpaid : :pending
+    initial_status = @payment_method == "cash" ? :unpaid : :pending
 
-    @order = Order.create!(
-      customer: @customer,
-      bake_day: @bake_day,
-      total_cents: calculate_total,
-      payment_intent_id: @payment_intent_id,
-      status: initial_status
-    )
+    ActiveRecord::Base.transaction do
+      # Advisory lock on bake_day to prevent race conditions
+      unless @skip_capacity_check
+        ActiveRecord::Base.connection.execute("SELECT pg_advisory_xact_lock(#{@bake_day.id})")
 
-    create_order_items
-    @order
+        # Re-check capacity inside the lock
+        result = BakeCapacityService.new(@bake_day).cart_fits?(@cart_items)
+        unless result[:fits]
+          @errors.concat(result[:errors])
+          raise ActiveRecord::Rollback
+        end
+      end
+
+      # `pickup_location` nil → le modèle retombe sur le lieu par défaut de la
+      # fournée (cf. Order#assign_default_pickup_location).
+      @order = Order.create!(
+        customer: @customer,
+        bake_day: @bake_day,
+        total_cents: calculate_total,
+        payment_intent_id: @payment_intent_id,
+        status: initial_status,
+        group_name: @group_name,
+        pickup_location: @pickup_location
+      )
+
+      create_order_items
+    end
+
+    @errors.empty? ? @order : false
   end
 
   private
@@ -32,46 +54,85 @@ class OrderCreationService
   def valid?
     @errors = []
 
-    @errors << 'Bake day cut-off has passed' unless BakeDayService.can_order_for?(@bake_day.baked_on)
-    @errors << 'Cart is empty' if @cart_items.empty?
-    @errors << 'Customer is required' unless @customer
+    @errors << "Bake day cut-off has passed" unless BakeDayService.can_order_for?(@bake_day.baked_on)
+    @errors << "Cart is empty" if @cart_items.empty?
+    @errors << "Customer is required" unless @customer
+
+    # Garde-fou serveur (#148) : un lieu non ouvert sur la fournée est rejeté ici,
+    # proprement, plutôt que de laisser la validation du modèle lever un
+    # RecordInvalid (500) au moment du `create!`.
+    if @pickup_location && !@bake_day.pickup_location_ids.include?(@pickup_location.id)
+      @errors << "Le point de retrait choisi n'est pas disponible pour cette fournée"
+    end
+
+    # Garde-fou serveur (#152) : un produit exclu pour le lieu de retrait choisi
+    # ne peut pas être commandé à ce lieu. Message dédié nommant le produit, le
+    # lieu et l'action possible (retirer le produit OU changer de lieu).
+    excluded_products_for_pickup.each do |product|
+      @errors << "« #{product.name} » n'est pas disponible au point de retrait " \
+                 "« #{@pickup_location.name} ». Retirez ce produit du panier ou " \
+                 "choisissez un autre point de retrait."
+    end
 
     # Check if order with same payment_intent_id already exists (idempotency)
     # Only check for online payments (cash orders don't have payment_intent_id)
-    if @payment_method == 'online' && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
-      @errors << 'Order already exists for this payment intent'
+    if @payment_method == "online" && @payment_intent_id.present? && Order.exists?(payment_intent_id: @payment_intent_id)
+      @errors << "Order already exists for this payment intent"
       return false
+    end
+
+    # Check capacity (pre-check before lock, will re-check inside lock)
+    unless @skip_capacity_check
+      result = BakeCapacityService.new(@bake_day).cart_fits?(@cart_items)
+      @errors.concat(result[:errors]) unless result[:fits]
+    end
+
+    # Ensure each variant is still available for online sale
+    @cart_items.each do |item|
+      variant = ProductVariant.find(item["product_variant_id"])
+      unless variant.active? && variant.channel == "store"
+        @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est plus disponible"
+      end
+
+      # Garde-fou : variante restreinte à certains jours de cuisson uniquement.
+      unless variant.available_on_weekday?(@bake_day.baked_on.wday)
+        @errors << "La version '#{variant.name}' du produit '#{variant.product.name}' n'est pas disponible le #{BakeDay::WDAY_LABELS[@bake_day.baked_on.wday]}"
+      end
     end
 
     @errors.empty?
   end
 
-  def calculate_total
-    subtotal = @cart_items.sum do |item|
-      variant = ProductVariant.find(item['product_variant_id'])
-      item['qty'].to_i * variant.price_cents
+  # Produits distincts du panier exclus pour le lieu de retrait choisi (#152).
+  # Vide si aucun lieu choisi ou aucune exclusion → aucune régression.
+  def excluded_products_for_pickup
+    return [] if @pickup_location.nil?
+
+    products = @cart_items.filter_map do |item|
+      ProductVariant.find(item["product_variant_id"]).product
     end
 
-    # Appliquer la remise du groupe si le client en a un
-    discount_cents = calculate_discount(subtotal)
-    subtotal - discount_cents
+    products.uniq.reject { |product| product.orderable_at?(@pickup_location) }
   end
 
-  def calculate_discount(subtotal)
-    return 0 unless @customer&.group&.discount_percent
+  def calculate_total
+    lines = @cart_items.map do |item|
+      { variant: ProductVariant.find(item["product_variant_id"]), qty: item["qty"].to_i }
+    end
 
-    (subtotal * @customer.group.discount_percent / 100.0).round
+    subtotal = lines.sum { |line| line[:variant].price_cents * line[:qty] }
+    discount_cents = GroupDiscountService.new(@customer).total_discount_cents(lines)
+    subtotal - discount_cents
   end
 
   def create_order_items
     @cart_items.each do |item|
-      variant = ProductVariant.find(item['product_variant_id'])
+      variant = ProductVariant.find(item["product_variant_id"])
       @order.order_items.create!(
         product_variant: variant,
-        qty: item['qty'].to_i,
+        qty: item["qty"].to_i,
         unit_price_cents: variant.price_cents
       )
     end
   end
 end
-

@@ -3,16 +3,16 @@ require "rails_helper"
 # #205 — vérification demandée par l'issue : CHAQUE commande de party privée
 # finalisée d'une période contribue-t-elle à `BakerRevenueService` ?
 #
-# La réponse, aujourd'hui, est NON pour les parties réservées EN LIGNE : elles
-# sont créées avec `bake_day: nil` (`PartyOrderCreationService`), or
-# `BakerRevenueService#day_party_orders` part de `bake_day.orders`. C'est le bug
-# traité par l'issue « la pizza party du 4 septembre n'apparaît pas dans la
-# feuille compta » (#207), pas par celle-ci.
+# La réponse était NON pour les parties réservées EN LIGNE : elles sont créées
+# avec `bake_day: nil` (`PartyOrderCreationService`), or
+# `BakerRevenueService#day_party_orders` partait de `bake_day.orders`. C'est le
+# bug « la pizza party du 4 septembre n'apparaît pas dans la feuille compta »
+# (#207), corrigé depuis : le service ratisse aussi les commandes rattachées à
+# un `PartyEvent` du jour, via `BakeDayPartyOrders`.
 #
-# Ces specs le CONSTATENT et le NOMMENT plutôt que de le taire. L'exemple qui
-# décrit l'état voulu est `pending` : il échoue tant que #207 n'est pas corrigé,
-# et RSpec le signalera bruyamment le jour où il passera — c'est le rappel de
-# retirer le `pending`.
+# Ces specs verrouillent la couverture des DEUX chemins — la party encodée en
+# commande sur la fournée, et celle réservée en ligne — et nomment toute
+# commande qui y échapperait à nouveau.
 RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
   let(:date) { Date.new(2026, 9, 4) }
   let!(:default_pickup) { create(:pickup_location, :default) }
@@ -27,7 +27,7 @@ RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
     create(:variant_cost_price, product_variant: paton, amount_cents: 26, active_from: date - 30)
   end
 
-  # Encodée en commande sur la fournée : le chemin qui FONCTIONNE aujourd'hui.
+  # Encodée en commande sur la fournée : le chemin historique.
   def party_on_bake_day(qty: 8)
     order = create(:order, :paid, customer: customer, bake_day: bake_day, total_cents: qty * 500)
     create(:order_item, order: order, product_variant: paton, qty: qty, unit_price_cents: 500)
@@ -47,10 +47,12 @@ RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
     BakerRevenueService.new(start_date: date, end_date: date).call
   end
 
-  # Commandes de party privée finalisées de la période, et celles qui manquent
-  # aux revenus — la spec les NOMME, comme l'issue le demande.
+  # Commandes de party privée finalisées de la période qui manquent aux revenus.
+  # La référence est ce que le rapport COMPTE réellement : les commandes de la
+  # fournée PLUS celles rattachées à un événement du jour (#207).
   def uncovered_orders
-    counted_ids = bake_day.orders.completed.pluck(:id).to_set
+    counted_ids = (bake_day.orders.completed.pluck(:id) +
+                   BakeDayPartyOrders.completed(bake_day).map(&:id)).to_set
 
     Admin::PrivatePartyIndex.new
       .entries
@@ -66,21 +68,16 @@ RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
     expect(uncovered_orders).to be_empty
   end
 
-  it "NOMME les parties qui échappent aux revenus, plutôt que de les taire" do
-    online = party_on_event(qty: 8)
+  it "NOMME toute party qui échapperait aux revenus, plutôt que de la taire" do
+    party_on_event(qty: 8)
 
     missing = uncovered_orders
 
-    expect(missing.map(&:id)).to eq([ online.id ]),
+    expect(missing).to be_empty,
       "commandes de party privée absentes des revenus : #{missing.map(&:order_number).join(', ')}"
-    # Et le rapport ne les voit effectivement pas.
-    expect(report.total_party_persons).to eq(0)
   end
 
   it "réservée en ligne, une party privée contribue aux revenus du jour" do
-    pending "bloqué par #207 : PartyOrderCreationService crée la commande avec bake_day: nil, " \
-            "or BakerRevenueService#day_party_orders part de bake_day.orders"
-
     party_on_event(qty: 8)
 
     expect(report.total_party_persons).to eq(8)

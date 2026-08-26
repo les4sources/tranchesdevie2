@@ -7,15 +7,19 @@
 #   part 4 Sources  = recette × taux 4S ateliers (paramètre historisé)
 #   part boulangers = recette − part 4 Sources
 #
-# Le partage 70/30 des pains ne s'applique PAS mécaniquement ici : un atelier
-# n'a ni coûtant matière, ni sacs, ni transport, ni commission — il n'y a pas de
-# « marge brute » à partager, seulement une recette. Le taux est donc un
-# paramètre propre aux ateliers, distinct de celui de la production.
+# L'assiette n'est PAS la même que pour les pains : un atelier n'a ni coûtant
+# matière, ni sacs, ni transport, ni commission — il n'y a pas de « marge
+# brute » à partager, seulement une recette. Le taux reste donc un paramètre
+# propre aux ateliers, réglable séparément de celui de la production, même si
+# les deux valent 30 % aujourd'hui.
 #
-# **Ce taux n'a pas été tranché en réunion.** Tant qu'aucun palier n'est saisi,
-# `RevenueParameter.workshop_basis_points_on` renvoie `nil` et l'atelier est
-# marqué NON RÉPARTI : sa recette est affichée, mais elle ne verse rien à
-# personne. On préfère un trou visible à un chiffre deviné.
+# **Taux tranché le 26/08/2026 par Michael : le même que pour les productions**,
+# soit 30 % aux 4 Sources et 70 % aux boulangers, saisi comme palier historisé
+# au 01/01/2025. Le taux reste un paramètre saisi et non une constante : si
+# aucun palier ne couvre la date, `RevenueParameter.workshop_basis_points_on`
+# renvoie `nil` et l'atelier est marqué NON RÉPARTI — sa recette est affichée,
+# mais elle ne verse rien à personne. On préfère un trou visible à un chiffre
+# deviné.
 #
 # La part boulangers, une fois calculée, passe par le MÊME chemin que la
 # production : une part par artisan animateur au pourcentage configuré

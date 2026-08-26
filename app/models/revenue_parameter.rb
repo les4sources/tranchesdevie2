@@ -18,10 +18,15 @@ class RevenueParameter < ApplicationRecord
   FOUR_SOURCES_RATE = "four_sources_rate"
   # Taux 4 Sources sur la RECETTE d'un atelier (#208), en points de base.
   #
-  # Délibérément SANS valeur de repli : la réunion du 25/08/2026 n'a pas tranché
-  # cette répartition. Tant qu'aucun palier n'est saisi, un atelier est affiché
-  # avec sa recette mais explicitement « non réparti » — on préfère un trou
-  # visible à un chiffre inventé qui finirait par être cru.
+  # TRANCHÉ le 26/08/2026 par Michael : « c'est le même que pour les
+  # productions » — 30 % aux 4 Sources, 70 % aux boulangers, saisi comme palier
+  # historisé au 01/01/2025 (même date de départ que `four_sources_rate`).
+  #
+  # Reste délibérément SANS valeur de repli en code : c'est un paramètre saisi,
+  # pas une constante. Si personne ne l'a saisi (installation neuve, période
+  # antérieure au premier palier), un atelier est affiché avec sa recette mais
+  # explicitement « non réparti » — on préfère un trou visible à un chiffre
+  # inventé qui finirait par être cru.
   WORKSHOP_FOUR_SOURCES_RATE = "workshop_four_sources_rate"
   KEYS = [ TRANSPORT, FOUR_SOURCES_RATE, WORKSHOP_FOUR_SOURCES_RATE ].freeze
 

@@ -1,0 +1,19 @@
+= form_with model: price, url: url, method: method, scope: :kilo_price, local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+  - if price.errors.any?
+    .rounded-md.bg-red-50.p-4
+      ul.list-disc.list-inside.text-sm.text-red-700
+        - price.errors.full_messages.each do |message|
+          li= message
+
+  .grid.grid-cols-1.md:grid-cols-2.gap-6
+    .space-y-2
+      = f.label :amount_euros, "Prix au kilo (€)", class: "block text-sm font-medium text-gray-700"
+      = f.text_field :amount_euros, value: price.amount_euros, inputmode: "decimal", required: true, class: admin_input_class
+    .space-y-2
+      = f.label :active_from, "À partir du", class: "block text-sm font-medium text-gray-700"
+      = f.date_field :active_from, required: true, class: admin_input_class
+      p.text-xs.text-gray-500 Le prix s'applique à partir de cette date incluse. Les périodes antérieures gardent le prix précédent.
+
+  .flex.justify-end.space-x-3
+    = link_to "Annuler", owner_prices_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+    = f.submit submit_label, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"

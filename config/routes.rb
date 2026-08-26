@@ -138,6 +138,8 @@ Rails.application.routes.draw do
         get :baker_revenue
         get :payouts
         get :pizza_parties
+        # Coût des matières premières valorisé aux prix historisés (#209).
+        get :ingredient_costs
       end
     end
     get "billing", to: "billing#index", as: :billing
@@ -235,7 +237,12 @@ Rails.application.routes.draw do
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
-      resources :flours, path: "farines"
+      # Prix au kilo historisés par date d'effet (#209) : mêmes écrans pour les
+      # farines et les ingrédients, un seul contrôleur.
+      resources :flours, path: "farines" do
+        resources :kilo_prices, controller: "kilo_prices", path: "prix",
+                                only: [ :index, :new, :create, :edit, :update, :destroy ]
+      end
       resources :artisans do
         resources :revenue_shares, only: [ :index, :new, :create, :edit, :update, :destroy ],
                                    controller: "artisan_revenue_shares", path: "parts-de-revenu"
@@ -245,7 +252,10 @@ Rails.application.routes.draw do
       # à 50/50).
       resources :revenue_partnerships, path: "partenariats",
                 only: [ :index, :new, :create, :edit, :update, :destroy ]
-      resources :ingredients
+      resources :ingredients do
+        resources :kilo_prices, controller: "kilo_prices", path: "prix",
+                                only: [ :index, :new, :create, :edit, :update, :destroy ]
+      end
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
       # Message « commande prête » éditable (SMS + email) — page « Notifications ».

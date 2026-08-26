@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_26_070000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -174,6 +174,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_070000) do
     t.index ["order_id"], name: "index_email_messages_on_order_id"
   end
 
+  create_table "flour_prices", force: :cascade do |t|
+    t.bigint "flour_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flour_id", "active_from"], name: "index_flour_prices_on_flour_id_and_active_from"
+    t.index ["flour_id"], name: "index_flour_prices_on_flour_id"
+  end
+
   create_table "flours", force: :cascade do |t|
     t.string "name", null: false
     t.integer "position", default: 0
@@ -214,6 +224,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_070000) do
     t.integer "discount_percent", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "ingredient_prices", force: :cascade do |t|
+    t.bigint "ingredient_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ingredient_id", "active_from"], name: "index_ingredient_prices_on_ingredient_id_and_active_from"
+    t.index ["ingredient_id"], name: "index_ingredient_prices_on_ingredient_id"
   end
 
   create_table "ingredients", force: :cascade do |t|
@@ -791,9 +811,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_26_070000) do
   add_foreign_key "batches", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
+  add_foreign_key "flour_prices", "flours"
   add_foreign_key "group_product_discounts", "groups"
   add_foreign_key "group_product_discounts", "product_variants"
   add_foreign_key "group_product_discounts", "products"
+  add_foreign_key "ingredient_prices", "ingredients"
   add_foreign_key "invoice_orders", "invoices"
   add_foreign_key "invoice_orders", "orders"
   add_foreign_key "invoices", "customers"

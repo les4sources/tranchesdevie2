@@ -9,11 +9,57 @@ RSpec.describe PartyReservationService do
     create(:product_variant, product: party_product, name: 'une boule', price_cents: 500, channel: 'store')
   end
   let(:customer) { create(:customer) }
-  let(:date) { Date.current + 7 }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:date) { Date.current.next_occurring(:tuesday) + 7 }
   let(:cart) { [ { 'product_variant_id' => party_variant.id.to_s, 'qty' => 4 } ] }
 
-  def service(slot: 'soir', **options)
-    described_class.new(customer: customer, date: date.iso8601, slot: slot, cart_items: cart, **options)
+  # Le commentaire client est obligatoire depuis #169 : le helper en fournit un
+  # par défaut, pour que les exemples qui testent autre chose restent lisibles.
+  def service(slot: 'soir', customer_note: 'On arrive vers 18h30, anniversaire de Jules.', **options)
+    described_class.new(customer: customer, date: date.iso8601, slot: slot, cart_items: cart,
+                        customer_note: customer_note, **options)
+  end
+
+  describe 'commentaire du client (#169)' do
+    it 'persiste le commentaire sur la commande créée' do
+      order = service(customer_note: 'On arrive vers 18h30, anniversaire de Jules.').call
+
+      expect(order.customer_note).to eq('On arrive vers 18h30, anniversaire de Jules.')
+    end
+
+    it 'refuse une réservation sans commentaire, sans rien créer' do
+      svc = service(customer_note: nil)
+
+      expect { expect(svc.call).to be(false) }.not_to change(Order, :count)
+      expect(svc.errors.join).to include('ton groupe')
+    end
+
+    it "refuse un commentaire fait uniquement d'espaces" do
+      svc = service(customer_note: "  \n ")
+
+      expect(svc.call).to be(false)
+      expect(svc.errors.join).to include('ton groupe')
+    end
+
+    it 'refuse un commentaire de plus de 500 caractères' do
+      svc = service(customer_note: 'a' * 501)
+
+      expect { expect(svc.call).to be(false) }.not_to change(PartyEvent, :count)
+      expect(svc.errors.join).to include('500')
+    end
+
+    it 'accepte 500 caractères pile' do
+      expect(service(customer_note: 'a' * 500).call.customer_note.length).to eq(500)
+    end
+
+    it 'détoure les espaces autour du commentaire' do
+      order = service(customer_note: "   Un mot   ").call
+
+      expect(order.customer_note).to eq('Un mot')
+    end
   end
 
   it 'crée un PartyEvent privé et sa commande party' do
@@ -46,7 +92,8 @@ RSpec.describe PartyReservationService do
   end
 
   it 'refuse une date ou un créneau invalide' do
-    svc = described_class.new(customer: customer, date: 'n’importe quoi', slot: 'soir', cart_items: cart)
+    svc = described_class.new(customer: customer, date: 'n’importe quoi', slot: 'soir', cart_items: cart,
+                              customer_note: 'Un mot pour l’équipe.')
     expect(svc.call).to be(false)
     expect(svc.errors.join).to include('invalide')
 

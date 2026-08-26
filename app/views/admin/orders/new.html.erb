@@ -31,22 +31,27 @@
                      data: { searchable_select_target: "select", order_calculator_target: "customerSelect", action: "change->order-calculator#onCustomerChange" } %>
       </div>
 
-      <div>
+      <%# Régularisation (#198) : les jours passés sont proposés, dans un groupe
+          distinct, et le choix d'un jour passé lève un avertissement immédiat. %>
+      <div data-controller="past-bake-day" data-past-bake-day-past-ids-value="<%= admin_past_bake_day_ids(@order).to_json %>">
         <%= f.label :bake_day_id, "Jour de cuisson", class: "adm-eyebrow mb-1 block" %>
-        <% bake_day_options = @bake_days.map do |bake_day|
-             label = bake_day.baked_on.strftime("%A %d/%m/%Y")
-             [label, bake_day.id]
-           end %>
         <%= f.select :bake_day_id,
-                     options_for_select(bake_day_options, @order.bake_day_id),
+                     grouped_options_for_select(admin_bake_day_options(@order), @order.bake_day_id),
                      { include_blank: "Sélectionner un jour" },
-                     class: adm_field_class %>
+                     class: adm_field_class,
+                     data: { past_bake_day_target: "select", action: "change->past-bake-day#toggle" } %>
+        <div class="hidden mt-2 rounded-md p-3" style="background: var(--warning-100); border: 1px solid var(--warning-200);" data-past-bake-day-target="warning">
+          <p class="text-sm font-semibold" style="color: var(--warning-700);">Jour de cuisson passé — régularisation</p>
+          <p class="mt-1 text-xs" style="color: var(--text-body);">
+            Cette commande sera comptée dans la feuille compta et les revenus boulangers de ce jour-là, pas d'aujourd'hui. Elle est à régler hors ligne.
+          </p>
+        </div>
       </div>
     </div>
 
     <div class="mt-6">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Produits et variantes</h2>
+        <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Produits et variantes</h2>
         <button type="button" class="<%= adm_btn_class(:ghost) %>" data-action="order-calculator#resetQuantities">
           Réinitialiser les quantités
         </button>

@@ -1,5 +1,10 @@
 class Ingredient < ApplicationRecord
+  include HistorisedKiloPrice
+
   has_soft_deletion
+
+  # Prix au kilo historisés par date d'effet (#209).
+  has_kilo_price_history :ingredient_prices
 
   enum :unit_type, { weight: 0, piece: 1 }
 

@@ -174,6 +174,8 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `SES_REGION` (SES region, defaults to `eu-west-1`)
 - `MAIL_FROM` (sender address, defaults to `boulangerie@les4sources.be`)
 - `APP_HOST` (production host for links in emails — unsubscribe, order pages)
+- `PARTY_NOTIFICATION_TO` (internal recipient of the new-private-party notification, defaults to `boulangerie@les4sources.be`)
+- `PARTY_NOTIFICATION_CC` (copied on that notification, defaults to `sejours@les4sources.be`)
 - `TRANCHESDEVIE_API_KEY` (Bearer token for the private read-only agent API — see Agent API below)
 
 ## Agent API (private, read-only)

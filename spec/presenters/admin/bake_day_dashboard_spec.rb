@@ -53,6 +53,9 @@ RSpec.describe Admin::BakeDayDashboard do
 
   # ISC-88 : la panification utilise le ratio par farine, et expose deux totaux
   # de levain distincts (froment / seigle).
+  #
+  # Depuis la décision boulangers du 25/08/2026, les QUATRE ingrédients sont des
+  # fractions de la pâte — l'eau et le sel ne se calculent plus sur la farine.
   describe '#dough_quantities' do
     let(:froment) { create(:flour, name: "Froment T65", flour_ratio: 0.5, water_ratio: 0.6, salt_ratio: 0.02, levain_ratio: 0.10) }
     let(:seigle) { create(:flour, :seigle, name: "Seigle T130", flour_ratio: 0.5, water_ratio: 0.8, salt_ratio: 0.03, levain_ratio: 0.20) }
@@ -80,6 +83,31 @@ RSpec.describe Admin::BakeDayDashboard do
 
       expect(froment_col[:levain_kg]).to eq(0.1)  # 1000 g pâte * 0.10 / 1000
       expect(seigle_col[:levain_kg]).to eq(0.2)   # 1000 g pâte * 0.20 / 1000
+    end
+
+    it 'computes the four ingredients on the dough weight, not on the flour' do
+      data = dashboard.dough_quantities
+      froment_col = data[:per_flour].find { |c| c[:flour] == froment }
+      seigle_col = data[:per_flour].find { |c| c[:flour] == seigle }
+
+      # 1000 g de pâte froment : 50 % farine, 60 % eau, 2 % sel, 10 % levain.
+      expect(froment_col[:pate_kg]).to eq(1.0)
+      expect(froment_col[:farine_kg]).to eq(0.5)
+      expect(froment_col[:eau_l]).to eq(0.6)     # 0.6 * 1000 g de PÂTE, pas 0.6 * 500 g de farine
+      expect(froment_col[:sel_kg]).to eq(0.02)   # idem : 2 % de la pâte
+
+      expect(seigle_col[:eau_l]).to eq(0.8)
+      expect(seigle_col[:sel_kg]).to eq(0.03)
+    end
+
+    it 'sums each ingredient across flours' do
+      totals = dashboard.dough_quantities[:totals]
+
+      expect(totals[:pate_kg]).to eq(2.0)
+      expect(totals[:farine_kg]).to eq(1.0)
+      expect(totals[:eau_l]).to eq(1.4)
+      expect(totals[:sel_kg]).to eq(0.05)
+      expect(totals[:levain_kg]).to eq(0.3)
     end
 
     it 'splits the levain totals by type (base for #83)' do
@@ -112,8 +140,21 @@ RSpec.describe Admin::BakeDayDashboard do
       expect(stat[:flour_quantity]).to eq(14 * 250)
     end
 
-    it 'ignores party orders held on another date' do
-      party_event.update!(held_on: bake_day.baked_on + 7)
+    # Depuis #170, une party n'est plus rattachée à la fournée du même jour mais
+    # à celle qui PRÉPARE ses pâtons. Une party qui tombe après une fournée
+    # ultérieure appartient donc à celle-là, plus à celle-ci.
+    it 'ignores a party prepared by a later bake day' do
+      later_bake_day = create(:bake_day, baked_on: bake_day.baked_on + 7,
+                                         cut_off_at: bake_day.baked_on + 5)
+      party_event.update!(held_on: later_bake_day.baked_on)
+
+      expect(dashboard.flour_type_stats.find { |s| s[:flour] == patons }).to be_nil
+      expect(described_class.new(later_bake_day).flour_type_stats
+                            .find { |s| s[:flour] == patons }).to be_present
+    end
+
+    it 'ignores a party held before this bake day' do
+      party_event.update!(held_on: bake_day.baked_on - 7)
 
       expect(dashboard.flour_type_stats.find { |s| s[:flour] == patons }).to be_nil
     end

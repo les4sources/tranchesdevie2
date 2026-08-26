@@ -34,7 +34,7 @@
   <%# ── Section 1 : Versements Stripe (ce qui est tombé en banque) ───────────── %>
   <section class="mb-8">
     <div class="flex items-end justify-between mb-3">
-      <h2 class="text-lg font-semibold text-gray-900">Versements reçus en banque</h2>
+      <h2 class="text-xl font-semibold text-gray-900">Versements reçus en banque</h2>
       <div class="text-right">
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Net total versé</p>
         <p class="text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_net_paid_cents) %></p>
@@ -76,7 +76,7 @@
   <%# ── Section 2 : Activité en ligne de la période (notre base) ─────────────── %>
   <section>
     <div class="flex items-end justify-between mb-3">
-      <h2 class="text-lg font-semibold text-gray-900">Activité en ligne de la période</h2>
+      <h2 class="text-xl font-semibold text-gray-900">Activité en ligne de la période</h2>
       <p class="text-sm text-gray-500"><%= @report.period_orders_count %> commande<%= "s" if @report.period_orders_count > 1 %> en ligne</p>
     </div>
 

@@ -9,7 +9,8 @@ class PartyOrderCreationService
   attr_reader :order, :errors
 
   def initialize(customer:, party_event:, cart_items:, payment_intent_id: nil,
-                 payment_method: "online", group_name: nil, pickup_location: nil)
+                 payment_method: "online", group_name: nil, pickup_location: nil,
+                 customer_note: nil)
     @customer = customer
     @party_event = party_event
     @cart_items = cart_items
@@ -17,6 +18,7 @@ class PartyOrderCreationService
     @payment_method = payment_method
     @group_name = group_name.presence
     @pickup_location = pickup_location
+    @customer_note = customer_note.presence
     @errors = []
   end
 
@@ -37,7 +39,8 @@ class PartyOrderCreationService
         payment_intent_id: @payment_intent_id,
         status: initial_status,
         group_name: @group_name,
-        pickup_location: @pickup_location
+        pickup_location: @pickup_location,
+        customer_note: @customer_note
       )
 
       create_order_items

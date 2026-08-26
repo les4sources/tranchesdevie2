@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_26_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,7 +105,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.datetime "updated_at", null: false
     t.text "internal_note"
     t.boolean "market_day", default: false, null: false
+    t.boolean "draft", default: false, null: false
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
+    t.index ["draft"], name: "index_bake_days_on_draft"
+  end
+
+  create_table "batches", force: :cascade do |t|
+    t.bigint "bake_day_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bake_day_id", "position"], name: "index_batches_on_bake_day_id_and_position"
+    t.index ["bake_day_id"], name: "index_batches_on_bake_day_id"
   end
 
   create_table "bread_bag_prices", force: :cascade do |t|
@@ -162,6 +174,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.index ["order_id"], name: "index_email_messages_on_order_id"
   end
 
+  create_table "flour_prices", force: :cascade do |t|
+    t.bigint "flour_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flour_id", "active_from"], name: "index_flour_prices_on_flour_id_and_active_from"
+    t.index ["flour_id"], name: "index_flour_prices_on_flour_id"
+  end
+
   create_table "flours", force: :cascade do |t|
     t.string "name", null: false
     t.integer "position", default: 0
@@ -169,10 +191,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "kneader_limit_grams"
-    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.5556", null: false
-    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.655", null: false
-    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.022", null: false
-    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12095", null: false
+    t.decimal "flour_ratio", precision: 10, scale: 5, default: "0.532", null: false
+    t.decimal "water_ratio", precision: 10, scale: 5, default: "0.391", null: false
+    t.decimal "salt_ratio", precision: 10, scale: 5, default: "0.012", null: false
+    t.decimal "levain_ratio", precision: 10, scale: 5, default: "0.12", null: false
     t.string "levain_type", default: "froment", null: false
     t.string "origin"
     t.string "grade"
@@ -202,6 +224,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.integer "discount_percent", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "ingredient_prices", force: :cascade do |t|
+    t.bigint "ingredient_id", null: false
+    t.integer "amount_cents", null: false
+    t.date "active_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ingredient_id", "active_from"], name: "index_ingredient_prices_on_ingredient_id_and_active_from"
+    t.index ["ingredient_id"], name: "index_ingredient_prices_on_ingredient_id"
   end
 
   create_table "ingredients", force: :cascade do |t|
@@ -268,6 +300,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.integer "unit_price_cents", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "batch_id"
+    t.index ["batch_id"], name: "index_order_items_on_batch_id"
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
   end
@@ -290,6 +324,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.string "group_name"
     t.bigint "pickup_location_id", null: false
     t.bigint "party_event_id"
+    t.text "customer_note"
+    t.boolean "manually_added", default: false, null: false
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number"
@@ -322,6 +358,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
     t.index ["held_on"], name: "index_party_events_on_held_on"
     t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
+  end
+
+  create_table "party_participants", force: :cascade do |t|
+    t.bigint "party_event_id", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "email"
+    t.string "ticket_kind", null: false
+    t.string "external_reference"
+    t.string "external_ticket_label"
+    t.integer "price_cents"
+    t.boolean "external_paid", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["party_event_id", "external_reference", "last_name", "first_name", "ticket_kind"], name: "index_party_participants_uniqueness", unique: true
+    t.index ["party_event_id"], name: "index_party_participants_on_party_event_id"
   end
 
   create_table "party_slot_blocks", force: :cascade do |t|
@@ -366,6 +418,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true, null: false
     t.index ["default"], name: "index_pickup_locations_on_single_default", unique: true, where: "((\"default\" = true) AND (deleted_at IS NULL))"
     t.index ["deleted_at"], name: "index_pickup_locations_on_deleted_at"
   end
@@ -725,6 +778,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
     t.index ["customer_id"], name: "index_wallets_on_customer_id", unique: true
   end
 
+  create_table "workshop_artisans", force: :cascade do |t|
+    t.bigint "workshop_id", null: false
+    t.bigint "artisan_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artisan_id"], name: "index_workshop_artisans_on_artisan_id"
+    t.index ["workshop_id", "artisan_id"], name: "index_workshop_artisans_on_workshop_id_and_artisan_id", unique: true
+    t.index ["workshop_id"], name: "index_workshop_artisans_on_workshop_id"
+  end
+
+  create_table "workshops", force: :cascade do |t|
+    t.date "held_on", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.text "notes"
+    t.integer "revenue_cents", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["held_on"], name: "index_workshops_on_held_on"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "artisan_revenue_shares", "artisans"
@@ -734,20 +808,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
   add_foreign_key "bake_day_pickup_locations", "pickup_locations"
   add_foreign_key "bake_day_sales_locations", "bake_days"
   add_foreign_key "bake_day_sales_locations", "sales_locations"
+  add_foreign_key "batches", "bake_days"
   add_foreign_key "customer_groups", "customers"
   add_foreign_key "customer_groups", "groups"
+  add_foreign_key "flour_prices", "flours"
   add_foreign_key "group_product_discounts", "groups"
   add_foreign_key "group_product_discounts", "product_variants"
   add_foreign_key "group_product_discounts", "products"
+  add_foreign_key "ingredient_prices", "ingredients"
   add_foreign_key "invoice_orders", "invoices"
   add_foreign_key "invoice_orders", "orders"
   add_foreign_key "invoices", "customers"
+  add_foreign_key "order_items", "batches"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "orders", "bake_days"
   add_foreign_key "orders", "customers"
   add_foreign_key "orders", "party_events"
   add_foreign_key "orders", "pickup_locations"
+  add_foreign_key "party_participants", "party_events"
   add_foreign_key "payments", "orders"
   add_foreign_key "product_availabilities", "product_variants"
   add_foreign_key "product_flours", "flours"
@@ -776,4 +855,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_013551) do
   add_foreign_key "wallet_transactions", "orders"
   add_foreign_key "wallet_transactions", "wallets"
   add_foreign_key "wallets", "customers"
+  add_foreign_key "workshop_artisans", "artisans"
+  add_foreign_key "workshop_artisans", "workshops"
 end

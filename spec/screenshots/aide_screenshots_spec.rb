@@ -41,7 +41,8 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
     "order" => "/admin/orders/:id",
     "bake_day" => "/admin/bake_days/:id",
     "customer" => "/admin/customers/:id",
-    "product" => "/admin/products/:id"
+    "product" => "/admin/products/:id",
+    "flour" => "/admin/parametres/farines/:id/edit"
   }.freeze
 
   # Marqueurs des pages d'erreur Rails : une capture qui en contient un n'est
@@ -79,6 +80,9 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
       bake_day: bake_days[:upcoming],
       customer: customers.first,
       product: products.first,
+      # Farine de démo (#211) : le chapitre « quantités et recettes » montre le
+      # formulaire de ratios de panification.
+      flour: flours[:froment],
       group: groups.first,
       pickup_location: pickup_locations.first
     }
@@ -238,7 +242,19 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
     record = records[record_key.to_sym]
     raise "Aucun enregistrement de démo pour record=#{record_key}" unless record
 
-    template.sub(":id", record.id.to_s)
+    path = template.sub(":id", record.id.to_s)
+
+    # `:variant_id` (#211) : la fiche d'une variante demande DEUX ids. On prend
+    # la première variante du produit résolu — le jeu de démo est déterministe,
+    # donc la capture l'est aussi.
+    if path.include?(":variant_id")
+      variant = record.respond_to?(:product_variants) ? record.product_variants.order(:id).first : nil
+      raise "record=#{record_key} n'a pas de variante pour :variant_id" if variant.nil?
+
+      path = path.sub(":variant_id", variant.id.to_s)
+    end
+
+    path
   end
 
   def sign_in_admin

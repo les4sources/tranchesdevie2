@@ -10,6 +10,13 @@ require "rqrcode"
 # articles (nom produit + variante, quantité, prix unitaire, total ligne),
 # total. Pas de bloc TVA / HT-TTC, pas de mention « Facture ».
 #
+# Les articles sont TOUJOURS au **prix standard** (c'est ce que portent les
+# lignes de commande). Quand le client bénéficie d'une remise, elle apparaît
+# donc sur sa propre ligne — taux effectif et montant — entre le montant au
+# prix standard et le montant dû, au lieu d'être fondue dans un prix déjà
+# réduit. Le client voit sa ristourne, et la compta peut la reporter telle
+# quelle sur la facture.
+#
 # S'y ajoutent :
 #   - une invitation à consulter le détail des commandes en ligne ;
 #   - un QR code menant à l'espace client (liste des commandes) ;
@@ -127,9 +134,23 @@ class InvoicePdfService
       render_flat_table(pdf, group.lines)
 
       pdf.move_down 4
-      pdf.text "Sous-total cuisson : #{euros(group.total_cents)}", size: 9, style: :bold, align: :right
+      render_group_totals(pdf, group)
       pdf.move_down 14
     end
+  end
+
+  # Sous-total d'un jour de cuisson. Sans remise, une seule ligne comme avant.
+  # Avec remise, trois lignes : prix standard, ristourne, montant dû.
+  def render_group_totals(pdf, group)
+    unless group.discount_applied?
+      pdf.text "Sous-total cuisson : #{euros(group.total_cents)}", size: 9, style: :bold, align: :right
+      return
+    end
+
+    pdf.text "Sous-total au prix standard : #{euros(group.gross_cents)}", size: 9, align: :right
+    pdf.text "#{discount_label(group.discount_percent)} : -#{euros(group.discount_cents)}",
+      size: 9, align: :right
+    pdf.text "Sous-total cuisson : #{euros(group.total_cents)}", size: 9, style: :bold, align: :right
   end
 
   def render_flat_table(pdf, lines)
@@ -157,17 +178,42 @@ class InvoicePdfService
     [ total - 210, 50, 80, 80 ]
   end
 
-  # Un seul total (montant des commandes) — aucun découpage HT / TVA / TTC.
+  # Total du relevé — aucun découpage HT / TVA / TTC. Quand une remise a été
+  # appliquée, elle est exposée sur sa propre ligne (taux effectif + montant)
+  # entre le montant au prix standard et le montant dû.
   def render_total(pdf)
     pdf.move_down 6
+
+    rows = []
+    if @presenter.discount_applied?
+      rows << [ "Total au prix standard", euros(@presenter.gross_cents) ]
+      rows << [ discount_label(@presenter.discount_percent), "-#{euros(@presenter.discount_cents)}" ]
+    end
+    rows << [ "Total", euros(@presenter.total_cents) ]
+
     pdf.table(
-      [ [ "Total", euros(@presenter.total_cents) ] ],
+      rows,
       position: :right,
-      column_widths: [ 120, 90 ],
+      column_widths: [ 170, 90 ],
       cell_style: { size: 12, padding: [ 4, 6 ], borders: [], font_style: :bold }
     ) do |t|
       t.columns(0..1).align = :right
+      if rows.size > 1
+        t.rows(0..(rows.size - 2)).font_style = :normal
+        t.rows(0..(rows.size - 2)).size = 10
+      end
     end
+  end
+
+  # « Remise 10 % », « Remise 7,3 % » — virgule française, pas de décimale
+  # inutile. Le taux est EFFECTIF : il peut mêler la remise globale du groupe et
+  # des remises ciblées par produit ou variante (#87).
+  def discount_label(percent)
+    value = percent.to_f
+    return "Remise" unless value.positive?
+
+    formatted = (value % 1).zero? ? value.to_i.to_s : format("%.1f", value).tr(".", ",")
+    "Remise #{formatted} %"
   end
 
   # Bloc « accès en ligne » : mention, QR code vers l'espace client, et rappel

@@ -36,7 +36,7 @@
               </div>
             </div>
 
-            <p class="mb-4 mt-2 text-sm text-ink-500">Pas de GSM ? <a href="mailto:boulangerie@les4sources.be" class="font-medium text-ember-600 underline-offset-2 hover:underline">Contacte-nous pour commander</a></p>
+            <p class="mb-4 mt-2 text-sm text-ink-500">Pas de GSM ? <a href="mailto:<%= BakeryDetails::EMAIL %>" class="font-medium text-ember-600 underline-offset-2 hover:underline">Écris-nous</a> ou appelle le <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 underline-offset-2 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a></p>
 
             <%# Les deux canaux sont au même niveau : le client choisit de recevoir son code par SMS ou par e-mail. %>
             <div id="channel-buttons">
@@ -142,6 +142,19 @@
             <% end %>
           </p>
         </div>
+
+        <%# Dernière occasion de corriger le mot laissé à l'équipe (#169). %>
+        <% unless @public_party_checkout %>
+          <div class="mb-4 rounded-md border border-flour-300 bg-flour-100 p-4">
+            <label for="order_customer_note" class="mb-1 block text-[13px] font-medium text-ink-700">Ce que tu nous as dit sur ton groupe *</label>
+            <textarea id="order_customer_note"
+                      rows="4"
+                      required
+                      maxlength="<%= Order::CUSTOMER_NOTE_MAX_LENGTH %>"
+                      class="w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]"><%= @party_note %></textarea>
+            <p class="mt-1 text-[13px] text-ink-500">Tu peux encore le compléter — il part directement aux boulangers.</p>
+          </div>
+        <% end %>
       <% end %>
 
       <!-- Point de retrait (#148) : uniquement les lieux ouverts sur la fournée choisie. -->
@@ -451,6 +464,13 @@
     return checked ? checked.value : '';
   }
 
+  // Commentaire de la Pizza party privée (#169) : renvoyé tel que corrigé ici.
+  // Absent du DOM hors party privée → undefined, et le serveur garde la session.
+  function customerNoteValue() {
+    const el = document.getElementById('order_customer_note');
+    return el ? el.value.trim() : undefined;
+  }
+
   // Achat pour un groupe « 4 Sources » (#99) : valeur envoyée à la commande.
   function groupNameValue() {
     const cb = document.getElementById('group_purchase_checkbox');
@@ -605,6 +625,7 @@
         last_name: document.getElementById('customer_last_name')?.value || '',
         email: document.getElementById('customer_email')?.value || '',
         group_name: groupNameValue(),
+        customer_note: customerNoteValue(),
         pickup_location_id: pickupLocationValue()
       })
     })
@@ -772,6 +793,7 @@
             last_name: document.getElementById('customer_last_name')?.value || '',
             email: document.getElementById('customer_email')?.value || '',
             group_name: groupNameValue(),
+            customer_note: customerNoteValue(),
             pickup_location_id: pickupLocationValue()
           })
         });
@@ -833,6 +855,7 @@
             last_name: document.getElementById('customer_last_name')?.value || '',
             email: document.getElementById('customer_email')?.value || '',
             group_name: groupNameValue(),
+            customer_note: customerNoteValue(),
             pickup_location_id: pickupLocationValue()
           })
         });

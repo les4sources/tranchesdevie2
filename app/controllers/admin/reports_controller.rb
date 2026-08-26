@@ -23,6 +23,16 @@ class Admin::ReportsController < Admin::BaseController
 
   # Drill-down depuis le total des remboursements (#100) : liste détaillée des
   # remboursements de la période (Stripe + portefeuille).
+  # Coût des matières premières (#209) : chaque quantité est valorisée au prix
+  # en vigueur À LA DATE DE SA FOURNÉE, jamais au prix d'aujourd'hui.
+  def ingredient_costs
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_month
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @costs = IngredientCostReportService.call(start_date: @start_date, end_date: @end_date)
+  end
+
   def refunds
     @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
     @end_date = parsed_date(params[:end_date]) || Date.current

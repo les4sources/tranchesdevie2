@@ -1,0 +1,62 @@
+/ Party privée créée à la main (#204). Les règles de réservation CLIENT
+/ (mardi/vendredi soir, délai de la veille 16 h) ne s'appliquent pas ici : elles
+/ protègent l'organisation contre des demandes spontanées, alors que l'admin
+/ enregistre une party déjà convenue par mail ou par téléphone.
+= form_with model: form, url: url, method: method, local: true, scope: :private_party, class: "adm-card p-4 sm:p-6 space-y-5" do |f|
+  - if defined?(errors) && errors.present?
+    .rounded-md.p-4 style="background: var(--danger-100); border: 1px solid var(--danger-200);"
+      h2.text-sm.font-semibold style="color: var(--danger-700);" Correction requise
+      ul.mt-2.list-disc.space-y-1.pl-5.text-sm style="color: var(--danger-700);"
+        - errors.each do |message|
+          li = message
+
+  .grid.grid-cols-1.gap-4 class="md:grid-cols-3"
+    div
+      = f.label :held_on, "Date", class: "adm-eyebrow mb-1 block"
+      = f.date_field :held_on, class: adm_field_class, required: true
+      p.mt-1.text-xs style="color: var(--text-muted);" N'importe quel jour — les règles du site ne s'appliquent pas ici.
+    div
+      = f.label :slot, "Créneau", class: "adm-eyebrow mb-1 block"
+      = f.select :slot, PartyEvent::SLOT_LABELS.map { |value, label| [ label, value ] }, {}, class: adm_field_class
+    div
+      = f.label :persons, "Nombre de personnes", class: "adm-eyebrow mb-1 block"
+      = f.number_field :persons, class: adm_field_class, min: 1, step: 1, required: true
+      p.mt-1.text-xs style="color: var(--text-muted);" Un pâton par personne.
+
+  .rounded-md.p-4 style="background: var(--surface-inset); border: 1px solid var(--border-subtle);"
+    p.adm-eyebrow.mb-2 Le client
+    p.mb-3.text-xs style="color: var(--text-muted);"
+      | Choisissez un client existant, ou laissez vide et saisissez un nom pour en créer un. Le téléphone n'est pas obligatoire — une party convenue par mail peut n'avoir qu'une adresse.
+    .grid.grid-cols-1.gap-4 class="md:grid-cols-2"
+      div data-controller="searchable-select" data-searchable-select-placeholder-value="Choisir un client existant..."
+        = f.label :customer_id, "Client existant", class: "adm-eyebrow mb-1 block"
+        = f.select :customer_id, options_for_select(customers.map { |c| [ c.full_name, c.id ] }, form.customer_id), { include_blank: "— Nouveau client —" }, class: adm_field_class, data: { searchable_select_target: "select" }
+      div
+        = f.label :name, "Nom (nouveau client)", class: "adm-eyebrow mb-1 block"
+        = f.text_field :name, class: adm_field_class, placeholder: "Ex. Fabienne Renard"
+    .mt-4.grid.grid-cols-1.gap-4 class="md:grid-cols-2"
+      div
+        = f.label :phone, "Téléphone (facultatif)", class: "adm-eyebrow mb-1 block"
+        = f.telephone_field :phone, class: adm_field_class, placeholder: "+32…"
+      div
+        = f.label :email, "E-mail (facultatif)", class: "adm-eyebrow mb-1 block"
+        = f.email_field :email, class: adm_field_class
+
+  .space-y-3
+    label.flex.cursor-pointer.items-start.gap-2
+      = f.check_box :forfait, style: "accent-color: var(--brand); margin-top: 3px;"
+      span
+        span.block.text-sm.font-medium style="color: var(--text-body);" Inclure le forfait de 40 €
+        span.block.text-xs style="color: var(--text-muted);"
+          | Il couvre la préparation, le bois, le matériel et la mise en place. Décochez-le si la party n'en porte pas : le barème ne le compte que si la ligne est réellement là.
+
+    label.flex.cursor-pointer.items-start.gap-2
+      = f.check_box :paid, style: "accent-color: var(--brand); margin-top: 3px;"
+      span
+        span.block.text-sm.font-medium style="color: var(--text-body);" Déjà payée
+        span.block.text-xs style="color: var(--text-muted);"
+          | Une party non payée apparaît partout — écran Parties, jour de cuisson, pâtons à préparer — mais n'entre dans les revenus qu'une fois marquée payée.
+
+  .flex.flex-wrap.justify-end.gap-3
+    = link_to "Annuler", admin_party_events_path, class: adm_btn_class(:default)
+    = f.submit submit_label, class: adm_btn_class(:primary)

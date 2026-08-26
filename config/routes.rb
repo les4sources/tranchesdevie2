@@ -138,6 +138,8 @@ Rails.application.routes.draw do
         get :baker_revenue
         get :payouts
         get :pizza_parties
+        # Coût des matières premières valorisé aux prix historisés (#209).
+        get :ingredient_costs
       end
     end
     get "billing", to: "billing#index", as: :billing
@@ -207,12 +209,40 @@ Rails.application.routes.draw do
 
     # Événements party (#pizza-parties) : événements publics (CRUD) + blocages de
     # créneaux des parties privées.
-    resources :party_events, path: "parties", except: [ :show ]
+    #
+    # L'ORDRE COMPTE (#200). `resources :party_events, path: "parties"` génère
+    # `GET /admin/parties/:id` : déclaré en premier, il capturait
+    # `/admin/parties/blocages` avec `id: "blocages"` et renvoyait une 404, en
+    # rendant `party_slot_blocks#index` inatteignable. Le chemin le plus
+    # spécifique passe donc devant. Ne pas réinverser.
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
+    # Création à la main d'une party PRIVÉE (#204). Déclaré avant
+    # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.
+    resources :private_parties, path: "parties/privees", only: [ :new, :create, :edit, :update, :destroy ] do
+      member do
+        patch :toggle_paid
+      end
+    end
+    resources :party_events, path: "parties" do
+      # Inscriptions ajoutées à la main sur une party publique (#203).
+      resources :party_registrations, path: "inscriptions", only: [ :new, :create, :edit, :update, :destroy ] do
+        member do
+          patch :toggle_paid
+        end
+      end
+    end
+
+    # Ateliers (#208) : revenu complémentaire, à part de la production.
+    resources :workshops, path: "ateliers"
 
     get "parametres", to: "settings#index", as: :settings
     scope path: "parametres", as: "settings", module: "settings" do
-      resources :flours, path: "farines"
+      # Prix au kilo historisés par date d'effet (#209) : mêmes écrans pour les
+      # farines et les ingrédients, un seul contrôleur.
+      resources :flours, path: "farines" do
+        resources :kilo_prices, controller: "kilo_prices", path: "prix",
+                                only: [ :index, :new, :create, :edit, :update, :destroy ]
+      end
       resources :artisans do
         resources :revenue_shares, only: [ :index, :new, :create, :edit, :update, :destroy ],
                                    controller: "artisan_revenue_shares", path: "parts-de-revenu"
@@ -222,7 +252,10 @@ Rails.application.routes.draw do
       # à 50/50).
       resources :revenue_partnerships, path: "partenariats",
                 only: [ :index, :new, :create, :edit, :update, :destroy ]
-      resources :ingredients
+      resources :ingredients do
+        resources :kilo_prices, controller: "kilo_prices", path: "prix",
+                                only: [ :index, :new, :create, :edit, :update, :destroy ]
+      end
       resources :mold_types, path: "types-de-moules"
       resource :production_setting, path: "capacites-de-production", only: [ :edit, :update ]
       # Message « commande prête » éditable (SMS + email) — page « Notifications ».

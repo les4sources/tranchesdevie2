@@ -30,6 +30,10 @@ class Order < ApplicationRecord
   # datée par son `party_event`, SANS fournée.
   enum :source, { checkout: 0, calendar: 1, admin: 2, party: 3 }
 
+  # Longueur maximale du commentaire client (#169). Annoncée au client dans le
+  # formulaire et appliquée côté serveur.
+  CUSTOMER_NOTE_MAX_LENGTH = 500
+
   belongs_to :customer
   # Optionnel : une commande party n'a pas de fournée (elle porte un party_event).
   belongs_to :bake_day, optional: true
@@ -47,6 +51,10 @@ class Order < ApplicationRecord
 
   validates :total_cents, presence: true, numericality: { greater_than: 0 }
   validates :public_token, presence: true, uniqueness: true
+  # Commentaire libre du client sur une réservation de Pizza party privée (#169).
+  # Nullable en base : les commandes de pain n'en ont pas, et les réservations
+  # antérieures à cette colonne non plus.
+  validates :customer_note, length: { maximum: CUSTOMER_NOTE_MAX_LENGTH }, allow_nil: true
   validates :order_number, presence: true, uniqueness: true
   validates :status, presence: true
   validates :requires_invoice, inclusion: { in: [ true, false ] }
@@ -64,8 +72,11 @@ class Order < ApplicationRecord
   scope :by_bake_day, ->(bake_day) { where(bake_day: bake_day) }
   scope :completed, -> { where(status: COMPLETED_STATUSES) }
   scope :ready_unpaid, -> { ready.left_joins(:payment).where(payments: { id: nil }) }
+  # Porte d'entrée de tout le reporting daté. L'exclusion des jours brouillon
+  # (#197) vit ici plutôt que dans chaque rapport : un brouillon est une
+  # calculatrice de boulanger, il ne doit apparaître dans aucun chiffre.
   scope :in_bake_day_range, lambda { |start_date, end_date|
-    joins(:bake_day).where(bake_days: { baked_on: start_date..end_date })
+    joins(:bake_day).where(bake_days: { baked_on: start_date..end_date, draft: false })
   }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }
@@ -100,6 +111,21 @@ class Order < ApplicationRecord
   def bread_bags_cost_cents(on: bake_day&.baked_on || Date.current)
     price_cents = BreadBagPrice.amount_cents_on(on) || 0
     bread_bags_count * price_cents
+  end
+
+  # Commande de réservation d'une Pizza party PRIVÉE (par opposition à une
+  # inscription à une party publique, qui porte aussi `source: :party`).
+  def private_party?
+    party_event&.kind_private_party? || false
+  end
+
+  # Nombre de pâtons d'une commande party — soit, une boule par personne. La
+  # ligne « forfait » (une par commande, quel que soit le nombre de convives)
+  # n'en fait pas partie : seules comptent les variantes du produit party.
+  def party_paton_count
+    order_items.includes(product_variant: :product).sum do |item|
+      item.product_variant.product.pizza_party_role_party? ? item.qty : 0
+    end
   end
 
   def can_be_cancelled_by_customer?

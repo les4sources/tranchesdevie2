@@ -33,6 +33,8 @@ class CheckoutController < ApplicationController
       @party_checkout = true
       @party_date = Date.iso8601(session[:party_date])
       @party_slot = session[:party_slot]
+      # Modifiable une dernière fois avant paiement (#169).
+      @party_note = session[:party_note]
     elsif public_party_cart?
       @party_checkout = true
       @public_party_checkout = true
@@ -73,7 +75,9 @@ class CheckoutController < ApplicationController
     # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
     # est pré-sélectionné. Une commande party n'a pas de choix de lieu (le modèle
     # retombe sur le lieu par défaut, cf. Order#assign_default_pickup_location).
-    @pickup_locations = @party_checkout ? [] : @bake_day.open_pickup_locations
+    # `orderable_` et non `open_` : un lieu désactivé (#199) reste ouvert sur la
+    # fournée — ses commandes passées en dépendent — mais n'est plus proposé.
+    @pickup_locations = @party_checkout ? [] : @bake_day.orderable_pickup_locations
     @selected_pickup_location = @pickup_locations.find(&:default?) || @pickup_locations.first
 
     # Exclusions produit ↔ lieu de retrait (#152) : pour chaque lieu, les noms
@@ -226,7 +230,8 @@ class CheckoutController < ApplicationController
         slot: session[:party_slot],
         cart_items: @cart,
         payment_method: "online",
-        group_name: json_params["group_name"]
+        group_name: json_params["group_name"],
+        customer_note: submitted_party_note(json_params)
       )
     elsif public_party_cart?
       service = PublicPartyRegistrationService.new(
@@ -400,7 +405,8 @@ class CheckoutController < ApplicationController
         slot: session[:party_slot],
         cart_items: cart_items,
         payment_method: "cash",
-        group_name: json_params["group_name"]
+        group_name: json_params["group_name"],
+        customer_note: submitted_party_note(json_params)
       )
     elsif public_party_cart?
       service = PublicPartyRegistrationService.new(
@@ -440,12 +446,16 @@ class CheckoutController < ApplicationController
 
     # Send order confirmation email (idempotent via EmailMessage guard)
     OrderNotificationService.send_confirmation(order)
+    # Une commande cash naît `unpaid` et ne passe pas par OrderPaymentFinalizer :
+    # la notification équipe d'une party privée se branche donc ici aussi (#168).
+    OrderNotificationService.send_party_team_notification(order)
 
     # Clear cart and session data
     session[:cart] = []
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -589,6 +599,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -667,6 +678,7 @@ class CheckoutController < ApplicationController
     session[:bake_day_id] = nil
     session[:party_date] = nil
     session[:party_slot] = nil
+    session[:party_note] = nil
     session[:public_party_event_id] = nil
     session[:phone_e164] = nil
     session[:otp_verified] = false
@@ -706,6 +718,16 @@ class CheckoutController < ApplicationController
   rescue StandardError => e
     # L'observabilité ne doit jamais casser le tunnel.
     Rails.logger.error("[checkout] capture_checkout_issue a échoué: #{e.message}")
+  end
+
+  # Commentaire de la party (#169). Le client peut l'avoir corrigé sur la page de
+  # paiement : ce qu'il vient de soumettre l'emporte sur ce que porte la session,
+  # et on met la session à jour pour qu'un retour en arrière garde la correction.
+  def submitted_party_note(json_params)
+    submitted = json_params["customer_note"]
+    return session[:party_note] if submitted.nil?
+
+    session[:party_note] = submitted.to_s.strip
   end
 
   def checkout_sentry_context

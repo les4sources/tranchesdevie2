@@ -218,19 +218,21 @@ module Admin
 
     def dough_quantities
       @dough_quantities ||= begin
-        # Chaque farine porte désormais son propre ratio de panification (#88).
+        # Chaque farine porte son propre ratio de panification (#88), et les
+        # QUATRE ingrédients sont des fractions de la PÂTE — décision boulangers
+        # du 25/08/2026. Avant, eau et sel se calculaient sur la farine, ce qui
+        # mélangeait deux bases dans le même tableau.
         per_flour = flour_type_stats.map do |stat|
           flour = stat[:flour]
           pate_grams = stat[:flour_quantity].to_f
-          farine_grams = flour.flour_ratio.to_f * pate_grams
 
           {
             flour: flour,
             levain_type: flour.levain_type,
             pate_kg:   (pate_grams / 1000.0).round(2),
-            farine_kg: (farine_grams / 1000.0).round(2),
-            sel_kg:    (farine_grams * flour.salt_ratio.to_f / 1000.0).round(3),
-            eau_l:     (farine_grams * flour.water_ratio.to_f / 1000.0).round(2),
+            farine_kg: (flour.flour_ratio.to_f * pate_grams / 1000.0).round(2),
+            sel_kg:    (flour.salt_ratio.to_f * pate_grams / 1000.0).round(3),
+            eau_l:     (flour.water_ratio.to_f * pate_grams / 1000.0).round(2),
             levain_kg: (flour.levain_ratio.to_f * pate_grams / 1000.0).round(3)
           }
         end
@@ -273,6 +275,41 @@ module Admin
       end
     end
 
+    # Parties dont les pâtons se pétrissent sur CETTE fournée, avec de quoi les
+    # annoncer aux boulangers : date, créneau, nombre de pâtons, client.
+    #
+    # Privées ET publiques (#202) : les deux demandent des pâtons en plus des
+    # pains, et le boulanger qui ouvre sa journée doit voir les deux. Elles
+    # restent distinguées par `private`, parce qu'elles ne s'organisent pas
+    # pareil. La sélection vient de `party_orders`, qui applique déjà
+    # `PartyEvent#preparation_bake_day` : une party de midi apparaît donc sur la
+    # fournée qui la prépare, pas sur celle du jour où elle a lieu.
+    def parties_to_prepare
+      @parties_to_prepare ||= party_orders
+        .select { |order| order.party_event.present? }
+        .sort_by { |order| [ order.party_event.held_on, order.party_event.slot.to_s ] }
+        .map { |order| party_entry(order) }
+    end
+
+    # Les mêmes parties, indexées par commande : le flux des commandes s'en sert
+    # pour poser le badge à côté du nom du client.
+    def party_entry_by_order_id
+      @party_entry_by_order_id ||= parties_to_prepare.index_by { |entry| entry[:order].id }
+    end
+
+    # Flux du jour : les commandes de pain de la fournée ET les commandes party
+    # qu'elle prépare, dans l'ordre d'arrivée. Les party n'ont pas de `bake_day`
+    # (par design) : sans cette fusion, elles seraient absentes de la seule liste
+    # où les boulangers lisent « qui a commandé quoi » (#202).
+    def timeline_entries
+      @timeline_entries ||= begin
+        regular = orders.map { |order| { order: order, party: nil } }
+        parties = parties_to_prepare.map { |entry| { order: entry[:order], party: entry } }
+
+        (regular + parties).sort_by { |entry| entry[:order].created_at }
+      end
+    end
+
     private
 
     # Récapitulatif agrégé des articles par variante, sur un sous-ensemble de
@@ -297,21 +334,42 @@ module Admin
       @production_orders ||= orders.select { |order| PRODUCTION_STATUSES.include?(order.status.to_sym) }
     end
 
-    # Commandes party (privées/publiques) dont l'événement tombe le jour de la
-    # fournée. Elles n'ont pas de fournée (`bake_day: nil` par design) mais leur
-    # pâte est bien pétrie ce jour-là : elles comptent dans les quantités de
+    # Commandes party dont la pâte est pétrie sur CETTE fournée. Elles n'ont pas
+    # de fournée (`bake_day: nil` par design) mais comptent dans les quantités de
     # production (farine, pâte, ingrédients), pas dans le CA ni les retraits.
+    #
+    # Deux règles distinctes, à dessein (#170) :
+    #   - PRIVÉE : la fournée de préparation, qui n'est pas toujours celle du
+    #     jour même (cf. PartyEvent#preparation_bake_day) — une party de midi se
+    #     prépare la fournée d'avant, et un samedi n'a pas de fournée du tout ;
+    #   - PUBLIQUE : le jour même, comme avant. Hors périmètre de #170, elles ont
+    #     leur propre organisation.
     def party_orders
-      @party_orders ||= Order.where(source: :party, status: PRODUCTION_STATUSES)
-                             .joins(:party_event)
-                             .where(party_events: { held_on: bake_day.baked_on })
-                             .includes(order_items: {
-                                         product_variant: [
-                                           :mold_type,
-                                           { product: { product_flours: :flour } }
-                                         ]
-                                       })
-                             .to_a
+      @party_orders ||= BakeDayPartyOrders.production(bake_day)
+    end
+
+    def party_entry(order)
+      event = order.party_event
+
+      {
+        order: order,
+        party_event: event,
+        held_on: event.held_on,
+        slot_label: event.slot_label,
+        private: event.kind_private_party?,
+        kind_label: event.kind_private_party? ? "Party privée" : "Party publique",
+        same_day: event.held_on == bake_day.baked_on,
+        paton_count: paton_count_for(order),
+        customer_name: order.customer&.full_name
+      }
+    end
+
+    # Une boule par personne. La ligne « forfait » — unique par commande, quel
+    # que soit le nombre de convives — n'est pas un pâton.
+    def paton_count_for(order)
+      order.order_items.sum do |item|
+        item.product_variant.product.pizza_party_role_party? ? item.qty : 0
+      end
     end
 
     def production_order_items

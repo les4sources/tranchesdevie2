@@ -185,7 +185,9 @@
               <div class="flex flex-col gap-3">
                 <span class="inline-flex items-start gap-2.5 text-[14px] leading-snug text-flour-100 opacity-85"><span class="mt-0.5 flex-shrink-0"><%= lucide "map-pin", size: 16, color: "var(--sage-300)" %></span><span>Les 4 Sources<br>Entre Yvoir et Crupet</span></span>
                 <span class="inline-flex items-center gap-2.5 text-[14px] text-flour-100 opacity-85"><%= lucide "clock", size: 16, color: "var(--sage-300)" %> Le jour de cuisson ou le lendemain</span>
-                <a href="mailto:boulangerie@les4sources.be" class="inline-flex items-center gap-2.5 text-[14px] text-flour-100 opacity-85 hover:opacity-100"><%= lucide "mail", size: 16, color: "var(--sage-300)" %> boulangerie@les4sources.be</a>
+                <a href="mailto:<%= BakeryDetails::EMAIL %>" class="inline-flex items-center gap-2.5 text-[14px] text-flour-100 opacity-85 hover:opacity-100"><%= lucide "mail", size: 16, color: "var(--sage-300)" %> <%= BakeryDetails::EMAIL %></a>
+                <%# Ligne dédiée de la boulangerie (#210) : cliquable sur mobile. %>
+                <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="inline-flex items-center gap-2.5 text-[14px] text-flour-100 opacity-85 hover:opacity-100"><%= lucide "phone", size: 16, color: "var(--sage-300)" %> <%= BakeryDetails::PHONE_DISPLAY %></a>
                 <a href="https://www.les4sources.be/a-propos/acces-ahinvaux" target="_blank" rel="noopener" class="inline-flex items-center gap-2.5 text-[14px] font-medium text-sage-300 hover:underline"><%= lucide "navigation", size: 16, color: "var(--sage-300)" %> Accès et itinéraire</a>
               </div>
             </div>

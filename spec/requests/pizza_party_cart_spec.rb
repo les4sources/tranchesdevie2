@@ -17,7 +17,12 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
   end
 
   # Créneau valide requis depuis le calendrier de disponibilités (#pizza-parties).
-  let(:slot_choice) { "#{(Date.current + 7).iso8601}|soir" }
+  # Depuis #201, une party privée ne se réserve que le mardi ou le vendredi
+  # SOIR. On vise le mardi de la semaine suivante : entre 8 et 14 jours, donc
+  # toujours au-delà de la limite « veille 16 h », quelle que soit l'heure à
+  # laquelle la suite tourne.
+  let(:party_date) { Date.current.next_occurring(:tuesday) + 7 }
+  let(:slot_choice) { "#{party_date.iso8601}|soir" }
 
   def forfait_lines(cart)
     (cart || []).select { |item| item['product_variant_id'] == forfait_variant.id.to_s }
@@ -25,7 +30,7 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
 
   describe 'POST /cart/add avec une variante de produit party' do
     it 'injecte automatiquement la ligne forfait' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
 
       cart = session[:cart]
       expect(forfait_lines(cart).size).to eq(1)
@@ -35,15 +40,15 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
 
     it 'porte un sous-total = 500 × N + 4000 (forfait compté une fois)' do
       n = 4
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: n }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: n }
 
       subtotal = session[:cart].sum { |item| item['qty'].to_i * item['price_cents'].to_i }
       expect(subtotal).to eq((500 * n) + 4000)
     end
 
     it 'ne double pas le forfait quand on ajoute encore des boules' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 2 }
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 3 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 2 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 3 }
 
       cart = session[:cart]
       expect(forfait_lines(cart).size).to eq(1)
@@ -54,7 +59,7 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
 
   describe 'DELETE /cart/remove du produit party' do
     it 'retire aussi le forfait' do
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 2 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 2 }
       expect(forfait_lines(session[:cart]).size).to eq(1)
 
       delete cart_remove_path(party_variant.id.to_s)
@@ -73,7 +78,7 @@ RSpec.describe 'Pizza party — panier & forfait', type: :request do
       post '/connexion', params: { identifier: customer.phone_e164 }
       post '/connexion', params: { identifier: customer.phone_e164, otp_code: '123456' }
 
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, qty: 4 }
+      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'On arrive vers 18h30.', qty: 4 }
       stub_stripe_payment_intent_create(amount: (500 * 4) + 4000)
     end
 

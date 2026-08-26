@@ -70,15 +70,23 @@
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
-          <span>Les <b class="font-semibold text-ink-900">mardis et vendredis</b>, le four est déjà chaud (jours de boulangerie). Les autres jours, prévois <b class="font-semibold text-ink-900">environ 3 heures de chauffe</b> (gérée par ton groupe) avant d'enfourner.</span>
+          <span>Les pizza parties privées ont lieu <b class="font-semibold text-ink-900">le mardi soir et le vendredi soir</b> : ce sont les jours de boulangerie, le four est déjà chaud et les boulangers sont là.</span>
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "shopping-basket", size: 18, color: "var(--sage-700)" %>
-          <span>Tu amènes <b class="font-semibold text-ink-900">tous les ingrédients</b> pour garnir : passata, légumes, fromages… Et tu réserves <b class="font-semibold text-ink-900">au moins une semaine à l'avance</b>.</span>
+          <span>Tu amènes <b class="font-semibold text-ink-900">tous les ingrédients</b> pour garnir : passata, légumes, fromages… Les réservations sont ouvertes <b class="font-semibold text-ink-900">jusqu'à la veille 16 h</b> — mais plus tôt tu t'y prends, plus tu as de chances d'avoir ta date.</span>
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "bed-double", size: 18, color: "var(--sage-700)" %>
           <span>Envie de loger sur place avant ou après ? <a href="https://www.les4sources.be/sejours" target="_blank" rel="noopener" class="font-medium text-ember-600 underline-offset-2 hover:underline">Découvre les hébergements des 4 Sources</a>.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "info", size: 18, color: "var(--sage-700)" %>
+          <span>La pizza party <b class="font-semibold text-ink-900">n'inclut pas la location d'une salle</b>. Si ton groupe en souhaite une, passe par <a href="https://www.les4sources.be" target="_blank" rel="noopener" class="font-medium text-ember-600 underline-offset-2 hover:underline">Les 4 Sources</a>.</span>
+        </p>
+        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+          <%= lucide "phone", size: 18, color: "var(--ember-600)" %>
+          <span>Une question sur ta pizza party ? <b class="font-semibold text-ink-900">Téléphone-nous</b>, c'est le plus simple : <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 underline-offset-2 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a>.</span>
         </p>
       </div>
     </div>
@@ -125,8 +133,10 @@
                               data-soir="<%= slots["soir"] %>"
                               data-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") }.capitalize %>">
                         <span class="text-base font-semibold sm:text-lg"><%= date.day %></span>
+                        <%# Un seul créneau depuis #201 : une seule pastille.
+                            En garder deux laisserait un indicateur « midi »
+                            éteint en permanence. %>
                         <span class="flex gap-1">
-                          <span class="h-1.5 w-1.5 rounded-full <%= slots["midi"] ? "bg-sage-500 group-aria-pressed:bg-white" : "bg-flour-300" %>"></span>
                           <span class="h-1.5 w-1.5 rounded-full <%= slots["soir"] ? "bg-ember-500 group-aria-pressed:bg-white" : "bg-flour-300" %>"></span>
                         </span>
                       </button>
@@ -140,9 +150,9 @@
           </div>
 
           <p class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-500">
-            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-sage-500"></span> Midi disponible</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ember-500"></span> Soir disponible</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ember-500"></span> Soirée disponible</span>
             <span class="inline-flex items-center gap-1.5 text-ink-400"><span class="h-1.5 w-1.5 rounded-full bg-flour-300"></span> Complet ou indisponible</span>
+            <span class="text-ink-400">Les pizza parties ont lieu le mardi soir et le vendredi soir.</span>
           </p>
         </div>
 
@@ -163,15 +173,9 @@
 
           <div class="mt-5 hidden" data-party-calendar-target="slotPanel">
             <p class="text-sm font-semibold text-ink-900" data-party-calendar-target="slotLabel"></p>
-            <div class="mt-2 grid grid-cols-2 gap-2">
-              <button type="button"
-                      class="inline-flex items-center justify-center gap-2 rounded-md border border-flour-400 px-3 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-sage-400 aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white disabled:cursor-not-allowed disabled:border-flour-200 disabled:bg-flour-100 disabled:text-ink-300 disabled:line-through"
-                      aria-pressed="false"
-                      data-slot="midi"
-                      data-party-calendar-target="slotButton"
-                      data-action="click->party-calendar#selectSlot">
-                <%= lucide "sun", size: 16 %> Midi
-              </button>
+            <%# Un seul créneau depuis #201 : le bouton « Midi » a disparu, il
+                serait désactivé en permanence. %>
+            <div class="mt-2 grid gap-2">
               <button type="button"
                       class="inline-flex items-center justify-center gap-2 rounded-md border border-flour-400 px-3 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-sage-400 aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white disabled:cursor-not-allowed disabled:border-flour-200 disabled:bg-flour-100 disabled:text-ink-300 disabled:line-through"
                       aria-pressed="false"
@@ -183,15 +187,12 @@
             </div>
           </div>
 
-          <%# Info chauffe du four : dépend du jour choisi (mardi/vendredi = four
-              déjà chaud pour la boulangerie ; sinon le groupe gère ~3 h de chauffe). %>
+          <%# Le four est désormais TOUJOURS chaud : les parties n'ont lieu que
+              les jours de boulangerie. La mention « ~3 h de chauffe » a disparu
+              avec le cas qui la justifiait (#201). %>
           <p class="mt-3 hidden items-start gap-2 rounded-md border border-sage-200 bg-sage-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenHotNotice">
             <%= lucide "flame", size: 16, color: "var(--sage-700)" %>
-            <span>Bonne nouvelle : ce jour-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie) — vous enfournez directement.</span>
-          </p>
-          <p class="mt-3 hidden items-start gap-2 rounded-md border border-warning-200 bg-warning-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenColdNotice">
-            <%= lucide "flame", size: 16, color: "var(--warning-600)" %>
-            <span>Ce jour-là, ton groupe se charge de la chauffe du four : prévois <b class="font-semibold text-ink-900">environ 3 heures</b> avant de pouvoir enfourner.</span>
+            <span>Ce soir-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie) — vous enfournez directement.</span>
           </p>
 
           <div class="mt-5">
@@ -205,6 +206,27 @@
                 <%= lucide "plus", size: 16, color: "var(--ink-700)" %>
               </button>
             </div>
+          </div>
+
+          <%# Commentaire libre obligatoire (#169) : sans lui, l'équipe ne sait ni à
+              quelle heure le groupe arrive, ni ce qu'il vient fêter. %>
+          <div class="mt-5">
+            <label for="party_note" class="text-sm font-medium text-ink-900">Parle-nous de ton groupe *</label>
+            <p class="mt-1 text-[13px] leading-relaxed text-ink-500">
+              Quelle est l'occasion&nbsp;? À quelle heure arrivez-vous&nbsp;?
+            </p>
+            <textarea id="party_note"
+                      name="party_note"
+                      rows="4"
+                      required
+                      maxlength="<%= Order::CUSTOMER_NOTE_MAX_LENGTH %>"
+                      data-party-calendar-target="note"
+                      data-action="input->party-calendar#countNote"
+                      class="mt-2 w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]"
+                      placeholder="Ex. C'est l'anniversaire de Jules, on arrive vers 18h30."></textarea>
+            <p class="mt-1 text-right text-xs text-ink-400">
+              <span data-party-calendar-target="noteCount">0</span>/<%= Order::CUSTOMER_NOTE_MAX_LENGTH %> caractères
+            </p>
           </div>
 
           <p class="mt-4 hidden rounded-md border border-danger-200 bg-danger-100 px-3 py-2 text-sm text-danger-700" data-party-calendar-target="warning">

@@ -8,7 +8,7 @@
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
   <div class="adm-card">
     <div class="adm-cardhd">
-      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Informations</h2>
+      <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Informations</h2>
     </div>
 
     <dl class="space-y-3 p-4">
@@ -45,6 +45,14 @@
           <dd class="text-sm" style="color: var(--text-muted);">Date limite : <%= @order.bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M") %></dd>
         <% elsif @order.party_event&.title.present? %>
           <dd class="text-sm" style="color: var(--text-muted);"><%= @order.party_event.title %></dd>
+        <% end %>
+
+        <% if @order.customer_note.present? %>
+          <%# Le mot laissé par le client à la réservation (#169) — heure d'arrivée,
+              occasion, allergies : ce que les boulangers doivent savoir. %>
+          <dt class="adm-eyebrow mt-4">Mot du client</dt>
+          <dd class="mt-1 whitespace-pre-wrap rounded-md p-3 text-sm"
+              style="background: var(--surface-inset); color: var(--text-strong);"><%= @order.customer_note %></dd>
         <% end %>
 
         <% if @order.pickup_location %>
@@ -103,7 +111,7 @@
 
   <div class="adm-card">
     <div class="adm-cardhd">
-      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Actions</h2>
+      <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Actions</h2>
     </div>
 
     <div class="space-y-3 p-4">
@@ -164,7 +172,7 @@
 
 <div class="adm-card mt-4 overflow-hidden">
   <div class="adm-cardhd">
-    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Articles</h2>
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Articles</h2>
     <span class="adm-eyebrow"><%= pluralize(@order.order_items.size, "article") %></span>
   </div>
 

@@ -1,0 +1,200 @@
+- content_for :title, "Party publique — #{@event.title}"
+- content_for :layout, "admin"
+
+- taken = @event.seats_taken
+- remaining = @event.seats_remaining
+- total_cents = @active_orders.sum(&:total_cents)
+
+= adm_page_header @event.title.presence || "Party publique" do
+  = link_to "Modifier", edit_admin_party_event_path(@event), class: adm_btn_class(:default)
+  = link_to "Retour aux parties", admin_party_events_path, class: adm_btn_class(:default)
+
+.mb-4.flex.flex-wrap.items-center.gap-2
+  span.text-lg.font-semibold style="color: var(--text-strong);"
+    = l(@event.held_on, format: :long_with_day).capitalize
+  = adm_chip(@event.active? ? "Actif" : "Inactif", tone: @event.active? ? :success : :neutral)
+  - if @event.historical?
+    = adm_chip "Import #{@event.historical_source}", tone: :accent
+
+.grid.grid-cols-1.gap-4.lg:grid-cols-2
+  .adm-card.p-4.sm:p-6
+    h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" L'événement
+    dl.space-y-3
+      div
+        dt.adm-eyebrow Date
+        dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);" = l(@event.held_on, format: :long_with_day)
+      div
+        dt.adm-eyebrow Capacité
+        dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);" = @event.capacity || "Illimitée"
+      div
+        dt.adm-eyebrow Clôture des inscriptions
+        dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
+          = @event.registration_closes_at ? l(@event.registration_closes_at, format: :long) : "—"
+      - if @event.description.present?
+        div
+          dt.adm-eyebrow Description
+          dd.mt-1.whitespace-pre-wrap.text-sm style="color: var(--text-strong);" = @event.description
+
+  .adm-card.p-4.sm:p-6
+    h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" La jauge
+    - if @event.historical?
+      p.text-sm style="color: var(--text-muted);"
+        | Ventes importées en agrégé : cet événement n'a pas d'inscription en ligne.
+    - else
+      dl.space-y-3
+        div
+          dt.adm-eyebrow Places prises
+          dd.adm-grid-num.mt-1.text-2xl.font-semibold style="color: var(--text-strong);" = taken
+        div
+          dt.adm-eyebrow Places restantes
+          dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);" = remaining.nil? ? "Illimitées" : remaining
+        - if @event.capacity.to_i.positive?
+          div
+            dt.adm-eyebrow Remplissage
+            dd.mt-2
+              - pct = (taken.to_f / @event.capacity * 100).round
+              = adm_meter(pct)
+              p.adm-tonetext.adm-grid-num.mt-1.text-xs.font-medium class="adm-tone-#{adm_usage_tone(pct)}" = "#{pct} %"
+
+- if @event.historical?
+  .adm-card.mt-4.p-4.sm:p-6
+    h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Ventes importées
+    p.mb-4.text-sm style="color: var(--text-muted);"
+      | Ces chiffres viennent d'un import #{@event.historical_source} : ils remplacent la liste des inscriptions.
+    dl.grid.grid-cols-2.gap-4.sm:grid-cols-4
+      div
+        dt.adm-eyebrow Adultes
+        dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);" = @event.historical_adults || 0
+      div
+        dt.adm-eyebrow Enfants
+        dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);" = @event.historical_children || 0
+      div
+        dt.adm-eyebrow Sourciers
+        dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);" = @event.historical_sourciers || 0
+      div
+        dt.adm-eyebrow Frais
+        dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
+          = number_to_currency(@event.historical_fees_euros || 0, unit: "€", separator: ",", delimiter: "")
+
+  / Liste NOMINATIVE importée (#206) : savoir qui est venu, pouvoir
+  / recontacter. Bloc distinct de l'agrégat, et qui le dit — la compta vient
+  / des chiffres ci-dessus, jamais de cette liste.
+  - participants = @participants || []
+  - if participants.any?
+    .adm-card.mt-4.overflow-hidden
+      .adm-cardhd.flex-wrap.gap-2
+        div
+          h2.text-xl.font-semibold style="color: var(--text-strong);" Qui était là
+          span.adm-eyebrow
+            = "#{participants.size} participant#{'s' if participants.size > 1} · #{participants.count(&:adult?)} adultes · #{participants.size - participants.count(&:adult?)} enfants"
+        = adm_chip "Liste nominative — hors comptabilité", tone: :warning
+
+      p.px-4.pt-4.text-sm.sm:px-6 style="color: var(--text-muted);"
+        | Cette liste sert à savoir qui est venu et à pouvoir recontacter. Elle n'entre dans <b>aucun</b> calcul : la comptabilité de cet événement vient des chiffres agrégés ci-dessus, et aucune commande n'a été créée pour ces participants.
+
+      .mt-4.overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Participant
+              th Contact
+              th Place
+              th Référence
+              th.text-right Prix
+          tbody
+            - participants.each do |participant|
+              tr
+                td.font-semibold style="color: var(--text-strong);" = participant.full_name
+                td.text-xs
+                  - if participant.email.present?
+                    = participant.email
+                  - else
+                    span style="color: var(--text-faint);" —
+                td
+                  = adm_chip participant.kind_label, tone: participant.adult? ? :neutral : :water
+                td.adm-grid-num.text-xs style="color: var(--text-muted);" = participant.external_reference || "—"
+                td.adm-grid-num.text-right style="color: var(--text-body);"
+                  - if participant.price_euros
+                    = number_to_currency(participant.price_euros, unit: "€", separator: ",", delimiter: "")
+                  - else
+                    | —
+
+- else
+  .adm-card.mt-4.overflow-hidden
+    .adm-cardhd.flex-wrap.gap-2
+      div
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Les inscriptions
+        span.adm-eyebrow
+          = "#{@active_orders.size} inscription#{'s' if @active_orders.size > 1}"
+      / Ajout à la main (#203) : des gens se rajoutent sur place ou en appelant.
+      / Interdit sur un import agrégé, dont les comptes vivent sur l'événement.
+      - unless @event.historical?
+        = link_to "Ajouter une inscription", new_admin_party_event_party_registration_path(@event), class: adm_btn_class(:primary)
+
+    - if @orders.empty?
+      p.p-4.text-sm.sm:p-6 style="color: var(--text-muted);"
+        | Personne ne s'est encore inscrit à cette party.
+    - else
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Client
+              th Contact
+              th.text-right Adultes
+              th.text-right Enfants
+              th.text-right Montant
+              th Statut
+              th Inscrit le
+              th
+          tbody
+            - @orders.each do |order|
+              - seats = party_seat_counts(order)
+              - cust = order.customer
+              tr
+                td
+                  .flex.flex-wrap.items-center.gap-2
+                    - if cust
+                      = link_to cust.full_name, admin_customer_path(cust), class: "adm-link"
+                    - else
+                      span style="color: var(--text-faint);" —
+                    / Une inscription manuelle se distingue d'une inscription
+                    / faite en ligne : elle se règle souvent sur place (#203).
+                    - if order.manually_added?
+                      = adm_chip "Manuelle", tone: :accent
+                  / Le nom saisi n'est repris que s'il diffère de celui du
+                  / client rattaché — sinon on l'afficherait deux fois.
+                  - if order.manually_added? && order.group_name.present? && order.group_name != cust&.full_name
+                    p.text-xs style="color: var(--text-muted);" = order.group_name
+                td.text-xs
+                  - if cust&.email.present?
+                    div style="color: var(--text-strong);" = cust.email
+                  - if cust&.phone_e164.present?
+                    div.adm-grid-num style="color: var(--text-muted);" = cust.phone_e164
+                  - else
+                    div style="color: var(--text-muted);" Aucun numéro
+                td.adm-grid-num.text-right = seats[:adults]
+                td.adm-grid-num.text-right = seats[:children]
+                td.adm-grid-num.text-right.font-medium style="color: var(--text-strong);"
+                  = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "")
+                td = adm_order_status_chip(order.status)
+                td.adm-grid-num.whitespace-nowrap = order.created_at.strftime("%d/%m/%Y")
+                td.whitespace-nowrap.text-right
+                  / `button_to` rend un `form` : sans conteneur flex, les
+                  / actions se collent les unes aux autres.
+                  .flex.flex-wrap.items-center.justify-end.gap-x-3.gap-y-1
+                    = link_to "Voir", admin_order_path(order), class: "adm-rowaction"
+                    - if order.manually_added?
+                      = link_to "Modifier", edit_admin_party_event_party_registration_path(@event, order), class: "adm-rowaction"
+                      = button_to (order.paid? ? "Marquer non payée" : "Marquer payée"), toggle_paid_admin_party_event_party_registration_path(@event, order), method: :patch, class: "adm-rowaction"
+                      = button_to "Supprimer", admin_party_event_party_registration_path(@event, order), method: :delete, form: { data: { turbo_confirm: "Supprimer cette inscription ? Les totaux et les revenus seront recalculés." } }, class: "adm-rowaction"
+          tfoot
+            tr.adm-grid-total
+              td Total (hors annulées)
+              td
+              td.adm-grid-num.text-right = @active_orders.sum { |o| party_seat_counts(o)[:adults] }
+              td.adm-grid-num.text-right = @active_orders.sum { |o| party_seat_counts(o)[:children] }
+              td.adm-grid-num.text-right = number_to_currency(total_cents / 100.0, unit: "€", separator: ",", delimiter: "")
+              td
+              td
+              td

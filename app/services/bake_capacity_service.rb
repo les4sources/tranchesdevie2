@@ -84,6 +84,29 @@ class BakeCapacityService
       .to_a
   end
 
+  # Pâtons des Pizza parties PRIVÉES que cette fournée prépare (#170). Ils sont
+  # pétris ici — donc ils pèsent sur le pétrin et sur la farine — mais ils ne
+  # cuisent PAS dans le four à pain de la fournée, et n'occupent aucun moule.
+  # D'où leur absence délibérée de `mold_usage` et d'`oven_usage`.
+  def party_dough_order_items
+    return @party_dough_order_items if defined?(@party_dough_order_items)
+
+    event_ids = PartyEvent.prepared_by(bake_day).pluck(:id)
+
+    @party_dough_order_items =
+      if event_ids.empty?
+        []
+      else
+        OrderItem
+          .joins(:order, product_variant: :product)
+          .where(orders: { source: Order.sources[:party], party_event_id: event_ids })
+          .where.not(orders: { status: :cancelled })
+          .where(products: { category: Product.categories[:dough_balls] })
+          .includes(product_variant: { product: { product_flours: :flour } })
+          .to_a
+      end
+  end
+
   def mold_usage
     @mold_usage ||= begin
       # Count units per mold_type_id
@@ -122,7 +145,7 @@ class BakeCapacityService
       # Compute dough grams per flour
       flour_grams = Hash.new(0.0)
 
-      breads_order_items.each do |item|
+      (breads_order_items + party_dough_order_items).each do |item|
         variant = item.product_variant
         dough_grams = item.qty * (variant.flour_quantity || 0)
         next if dough_grams.zero?

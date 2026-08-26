@@ -17,7 +17,7 @@
 
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
   <div class="adm-card p-4 sm:p-6">
-    <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Informations</h2>
+    <h2 class="mb-4 text-xl font-semibold" style="color: var(--text-strong);">Informations</h2>
 
     <dl class="space-y-3">
       <div>
@@ -82,7 +82,7 @@
   </div>
 
   <div class="adm-card p-4 sm:p-6">
-    <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Statistiques</h2>
+    <h2 class="mb-4 text-xl font-semibold" style="color: var(--text-strong);">Statistiques</h2>
 
     <dl class="space-y-3">
       <div>
@@ -103,7 +103,7 @@
   <% if @wallet %>
     <%# Portefeuille (#138) — lecture seule : solde, solde disponible, alerte solde bas. %>
     <div class="adm-card p-4 sm:p-6">
-      <h2 class="mb-4 text-sm font-semibold" style="color: var(--text-strong);">Portefeuille</h2>
+      <h2 class="mb-4 text-xl font-semibold" style="color: var(--text-strong);">Portefeuille</h2>
 
       <dl class="space-y-3">
         <div>
@@ -138,7 +138,7 @@
 
 <div class="adm-card mt-4 overflow-hidden">
   <div class="adm-cardhd">
-    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Commandes</h2>
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Commandes</h2>
     <span class="adm-eyebrow"><%= compte_commandes(@orders.size) %></span>
   </div>
 
@@ -189,7 +189,7 @@
 
 <div class="adm-card mt-4 overflow-hidden">
   <div class="adm-cardhd">
-    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">SMS envoyés</h2>
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">SMS envoyés</h2>
     <span class="adm-eyebrow"><%= @sms_messages.size %> message<%= "s" if @sms_messages.size > 1 %></span>
   </div>
 
@@ -227,7 +227,7 @@
 
 <div class="adm-card mt-4 overflow-hidden">
   <div class="adm-cardhd">
-    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">E-mails envoyés</h2>
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">E-mails envoyés</h2>
     <span class="adm-eyebrow"><%= @email_messages.size %> e-mail<%= "s" if @email_messages.size > 1 %></span>
   </div>
 
@@ -273,7 +273,7 @@
   <%# Mouvements du portefeuille (#138) — lecture seule, du plus récent au plus ancien. %>
   <div class="adm-card mt-4 overflow-hidden">
     <div class="adm-cardhd">
-      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Mouvements du portefeuille</h2>
+      <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Mouvements du portefeuille</h2>
       <span class="adm-eyebrow"><%= @wallet_transactions.size %> mouvement<%= "s" if @wallet_transactions.size > 1 %></span>
     </div>
 

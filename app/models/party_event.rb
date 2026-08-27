@@ -190,6 +190,25 @@ class PartyEvent < ApplicationRecord
     evening.or(between).order(:held_on, :slot)
   }
 
+  # Parties PUBLIQUES qu'une fournée prépare : de son jour (inclus) jusqu'à la
+  # fournée suivante (exclue) — sans fournée suivante, tout ce qui vient après
+  # lui revient. Une party publique se tient toujours en soirée, la règle est
+  # donc celle des parties privées du soir : la fournée du jour même si elle
+  # existe, sinon la dernière qui précède.
+  #
+  # L'intervalle est semi-ouvert : chaque party publique n'a qu'UNE fournée, et
+  # aucune ne peut être comptée deux fois. Une party antérieure à toute fournée
+  # n'est rattachée à aucune — comme une party privée orpheline.
+  scope :public_prepared_by, lambda { |bake_day|
+    next none if bake_day&.baked_on.blank?
+
+    date = bake_day.baked_on
+    next_date = BakeDay.where("baked_on > ?", date).order(:baked_on).limit(1).pick(:baked_on)
+
+    scope = public_events.not_deleted
+    next_date ? scope.where(held_on: date...next_date) : scope.where(held_on: date..)
+  }
+
   def slot_label
     SLOT_LABELS[slot] || "—"
   end

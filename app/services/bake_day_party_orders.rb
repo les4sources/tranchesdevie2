@@ -67,22 +67,13 @@ class BakeDayPartyOrders
 
   private
 
-  # Parties PUBLIQUES que cette fournée prépare : celles tenues du jour de la
-  # fournée (inclus) jusqu'à la fournée suivante (exclue) — sans fournée
-  # suivante, tout ce qui vient après lui revient.
+  # Parties PUBLIQUES que cette fournée prépare — la règle vit dans
+  # `PartyEvent.public_prepared_by`, partagée avec le calcul des revenus.
   #
-  # Une party publique se tient toujours en soirée : la règle est donc celle des
-  # parties privées du soir (`PartyEvent#preparation_bake_day`), la fournée du
-  # jour même si elle existe, sinon la dernière qui précède. L'intervalle est
-  # semi-ouvert, donc chaque party publique n'a qu'UNE fournée : la plus grande
-  # `baked_on` inférieure ou égale à sa date. Une party antérieure à toute
-  # fournée n'est rattachée à aucune — comme une party privée orpheline.
+  # Les événements HISTORIQUES (BilletWeb) en sont exclus : leur compta vient
+  # d'un agrégat porté par l'événement, pas de commandes. S'ils en portaient
+  # malgré tout, elles seraient comptées deux fois.
   def public_event_ids
-    date = @bake_day.baked_on
-    next_date = BakeDay.where("baked_on > ?", date).order(:baked_on).limit(1).pick(:baked_on)
-
-    scope = PartyEvent.public_events.not_deleted
-    scope = next_date ? scope.where(held_on: date...next_date) : scope.where(held_on: date..)
-    scope.pluck(:id)
+    PartyEvent.public_prepared_by(@bake_day).where(historical_source: nil).pluck(:id)
   end
 end

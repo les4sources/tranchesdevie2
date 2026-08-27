@@ -18,6 +18,18 @@ export default class extends Controller {
     this.update()
   }
 
+  revealTab(tab) {
+    const strip = tab.closest(".adm-tabstrip")
+    if (!strip || strip.scrollWidth <= strip.clientWidth) return
+
+    // Mesures relatives plutôt que `offsetLeft` : le parent positionné le plus
+    // proche n'est pas le bandeau, un décalage absolu viserait à côté.
+    const stripRect = strip.getBoundingClientRect()
+    const tabRect = tab.getBoundingClientRect()
+    const delta = tabRect.left - stripRect.left - (strip.clientWidth - tabRect.width) / 2
+    strip.scrollTo({ left: Math.max(0, strip.scrollLeft + delta), behavior: "smooth" })
+  }
+
   update() {
     this.tabTargets.forEach((tab) => {
       const isActive = tab.dataset.tab === this.activeValue
@@ -25,6 +37,9 @@ export default class extends Controller {
       // ne bascule qu'un état, jamais une couleur.
       tab.classList.toggle("adm-tab-active", isActive)
       tab.setAttribute("aria-selected", isActive)
+      // Sur téléphone le bandeau déborde : l'onglet qu'on vient de choisir doit
+      // revenir sous le pouce, sinon on tape un onglet à demi coupé au bord.
+      if (isActive) this.revealTab(tab)
     })
 
     this.panelTargets.forEach((panel) => {

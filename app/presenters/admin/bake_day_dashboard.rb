@@ -126,10 +126,6 @@ module Admin
       end
     end
 
-    def status_distribution
-      orders.group_by(&:status).transform_values(&:count)
-    end
-
     def unpaid_orders?
       orders.any?(&:unpaid?)
     end

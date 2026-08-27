@@ -49,23 +49,23 @@ export default class extends Controller {
       .map(f => `<option value="${f.id}">${f.name}</option>`)
       .join("")
 
-    const inputClass = "block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-
+    // Le balisage injecté doit être celui du formulaire rendu par Rails
+    // (primitives `.adm-*`), sinon la ligne ajoutée détonne dans la page.
     return `
-      <div class="product-flour-item border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4" data-product-flours-target="item">
+      <div class="product-flour-item adm-panel flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4" data-product-flours-target="item">
         <div class="flex-1 min-w-0">
-          <select name="product[product_flours_attributes][${index}][flour_id]" class="${inputClass}">
+          <select name="product[product_flours_attributes][${index}][flour_id]" class="adm-field">
             <option value="">Sélectionner une farine</option>
             ${optionsHtml}
           </select>
         </div>
         <div class="flex items-center gap-2 sm:min-w-[8rem]">
-          <input type="number" step="1" min="1" max="100" name="product[product_flours_attributes][${index}][percentage]" class="${inputClass} w-20" placeholder="%">
-          <span class="text-sm text-gray-500 whitespace-nowrap">%</span>
+          <input type="number" step="1" min="1" max="100" name="product[product_flours_attributes][${index}][percentage]" class="adm-field w-20" placeholder="%">
+          <span class="text-sm whitespace-nowrap" style="color: var(--text-muted);">%</span>
         </div>
         <div class="flex-shrink-0">
           <input type="hidden" name="product[product_flours_attributes][${index}][_destroy]" value="false" class="destroy-field">
-          <button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="product-flours#remove">Supprimer</button>
+          <button type="button" class="adm-btn adm-btn-danger w-full sm:w-auto" data-action="product-flours#remove">Supprimer</button>
         </div>
       </div>
     `

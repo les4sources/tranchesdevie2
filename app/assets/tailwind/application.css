@@ -275,6 +275,30 @@
                      box-shadow: 0 0 0 3px var(--focus-ring); }
   .adm-field::placeholder { color: var(--text-faint); }
 
+  /* ── Panneau encastré ─────────────────────────────────────────────────────
+     Le sous-bloc d'un formulaire : un groupe de cases à cocher, une liste de
+     lignes répétables (farines d'un produit, ingrédients d'une variante). Assez
+     marqué pour se lire comme un groupe, assez discret pour ne pas concurrencer
+     la carte qui le contient. */
+  .adm-panel { background: var(--surface-inset); border: 1px solid var(--border-subtle);
+               border-radius: var(--radius-md); padding: 1rem; }
+
+  /* ── Champ fichier ────────────────────────────────────────────────────────
+     Le bouton natif du navigateur repeint aux tokens. Sans cette règle, chaque
+     champ d'image traînait sa propre pile d'utilitaires `file:*` en bleu. */
+  .adm-file { display: block; width: 100%; font-size: .8125rem; color: var(--text-body); }
+  .adm-file::file-selector-button {
+    margin-right: 1rem; border: 0; border-radius: var(--radius-sm);
+    padding: .5rem 1rem; font-size: .8125rem; font-weight: 600;
+    background: var(--brand-tint); color: var(--brand-press); cursor: pointer;
+    transition: background-color .12s var(--ease-soft); }
+  .adm-file::file-selector-button:hover { background: var(--sage-200); }
+
+  /* Cible de dépôt d'un glisser-déposer (réordonnancement des images d'une
+     variante). Basculée par `product_images.js`, d'où la classe plutôt qu'un
+     style en ligne. */
+  .adm-dropzone-active { border-color: var(--brand) !important; background: var(--brand-tint) !important; }
+
   /* ── Options d'autocomplétion (contrôleur customer-filter) ────────────── */
   .adm-option        { transition: background-color .1s var(--ease-soft); }
   .adm-option:hover  { background: var(--surface-inset); }

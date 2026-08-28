@@ -1,103 +1,116 @@
 <% content_for :title, "Produits" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6 flex justify-between items-center">
-  <h1 class="text-2xl font-bold text-gray-900">Produits</h1>
-  <%= link_to "Nouveau produit", new_admin_product_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
-</div>
+<%= adm_page_header "Produits" do %>
+  <%= link_to new_admin_product_path, class: adm_btn_class(:primary) do %>
+    <%= lucide "plus", size: 15 %> Nouveau produit
+  <% end %>
+<% end %>
 
-<div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variantes</th>
-        <th class="hidden px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase md:table-cell">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      <% @products.each do |product| %>
-        <tr class="<%= 'opacity-50' unless product.active? %>">
-          <td class="px-6 py-4 text-sm font-medium text-gray-900">
-            <div class="inline-flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full shrink-0 <%= product.active? ? 'bg-green-500' : 'bg-red-500' %>" title="<%= product.active? ? 'Actif' : 'Inactif' %>" aria-hidden="true"></span>
-              <div class="min-w-0">
-                <%= link_to product.name, admin_product_path(product), class: "text-gray-900 hover:text-blue-600 hover:underline" %>
-                <p class="text-xs text-gray-500 font-normal mt-0.5 truncate"><%= product_category_heading(product.category) %></p>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 text-sm">
-            <div class="flex flex-wrap gap-1.5">
-              <% product.product_variants.sort_by { |v| -(v.price_cents || 0) }.each do |variant| %>
-                <% variant_badge_class = if variant.active? && variant.channel == 'store'
-                  'bg-green-100 text-green-800'
-                elsif variant.active? && variant.channel == 'admin'
-                  'bg-orange-100 text-orange-800'
-                else
-                  'bg-gray-100 text-gray-600'
-                end %>
-                <% if product.active? %>
-                  <div class="relative inline-block" data-controller="variant-tooltip">
-                    <span class="inline-flex flex-col items-start px-2.5 py-1 rounded-lg text-xs cursor-default <%= variant_badge_class %>">
-                      <span class="font-medium leading-tight"><%= variant.name %></span>
-                      <% if variant.active? && variant.price_euros.present? %>
-                        <span class="text-[0.65rem] opacity-80 font-normal mt-0.5 leading-none"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u") %></span>
-                      <% end %>
-                    </span>
-                    <div data-variant-tooltip-target="popover" class="absolute left-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-gray-200 bg-white py-2 px-3 shadow-lg invisible opacity-0 transition-opacity duration-100 pointer-events-none" role="tooltip">
-                      <div>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ingrédients</p>
-                        <% if variant.variant_ingredients.any? %>
-                          <ul class="text-xs text-gray-700 space-y-0.5 mb-2">
-                            <% variant.variant_ingredients.each do |vi| %>
-                              <li><%= vi.ingredient.name %> : <%= vi.quantity.to_f == vi.quantity.to_f.floor ? vi.quantity.to_i : vi.quantity %> <%= vi.unit_label %></li>
-                            <% end %>
-                          </ul>
-                        <% else %>
-                          <p class="text-xs text-gray-500 mb-2">Aucun ingrédient</p>
-                        <% end %>
-                        <% if variant.mold_type.present? %>
-                          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Type de moule</p>
-                          <p class="text-xs text-gray-700 mb-2"><%= variant.mold_type.name %></p>
-                        <% end %>
-                        <% if variant.flour_quantity.present? %>
-                          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Quantité de pâte requise</p>
-                          <p class="text-xs text-gray-700 mb-2"><%= variant.flour_quantity %> g</p>
-                        <% end %>
-                        <% if variant.restricted_groups.any? %>
-                          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">N'est en vente que pour les groupes suivants</p>
-                          <ul class="text-xs text-gray-700 space-y-0.5 mb-2">
-                            <% variant.restricted_groups.each do |group| %>
-                              <li><%= group.name %></li>
-                            <% end %>
-                          </ul>
-                        <% end %>
-                        <%= link_to "Modifier la variante", edit_variant_admin_product_path(product, variant), class: "text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline" %>
-                      </div>
-                    </div>
-                  </div>
-                <% else %>
-                  <span class="inline-flex flex-col items-start px-2.5 py-1 rounded-lg text-xs cursor-default <%= variant_badge_class %>">
-                    <span class="font-medium leading-tight"><%= variant.name %></span>
-                    <% if variant.active? && variant.price_euros.present? %>
-                      <span class="text-[0.65rem] opacity-80 font-normal mt-0.5 leading-none"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u") %></span>
-                    <% end %>
-                  </span>
-                <% end %>
-              <% end %>
-              <% if product.product_variants.empty? %>
-                <span class="text-gray-400 text-xs">Aucune variante</span>
-              <% end %>
-            </div>
-          </td>
-          <td class="hidden px-6 py-4 whitespace-nowrap text-sm md:table-cell">
-            <%= link_to "Voir", admin_product_path(product), class: "text-blue-600 hover:text-blue-800 mr-3" %>
-            <%= link_to "Modifier", edit_admin_product_path(product), class: "text-blue-600 hover:text-blue-800" %>
-          </td>
+<div class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Catalogue</h2>
+    <span class="adm-eyebrow"><%= @products.size %> produit<%= "s" if @products.size > 1 %></span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Variantes</th>
+          <th class="hidden md:table-cell">Actions</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        <% if @products.any? %>
+          <% @products.each do |product| %>
+            <tr class="<%= "opacity-60" unless product.active? %>">
+              <td class="font-medium">
+                <div class="inline-flex items-center gap-2">
+                  <span title="<%= product.active? ? "Actif" : "Inactif" %>">
+                    <%= adm_dot tone: product.active? ? :success : :danger %>
+                  </span>
+                  <div class="min-w-0">
+                    <%= link_to product.name, admin_product_path(product), class: "adm-link" %>
+                    <p class="mt-0.5 truncate text-xs font-normal" style="color: var(--text-muted);"><%= product_category_heading(product.category) %></p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="flex flex-wrap gap-1.5">
+                  <% product.product_variants.sort_by { |v| -(v.price_cents || 0) }.each do |variant| %>
+                    <%# La tonalité dit le canal de vente : boutique, boulangers, ou hors ligne. %>
+                    <% variant_tone = if variant.active? && variant.channel == "store"
+                         :success
+                       elsif variant.active? && variant.channel == "admin"
+                         :accent
+                       else
+                         :neutral
+                       end %>
+                    <% badge = capture do %>
+                      <span class="adm-chip adm-chip-<%= variant_tone %> flex-col items-start px-2 py-1">
+                        <span class="leading-tight"><%= variant.name %></span>
+                        <% if variant.active? && variant.price_euros.present? %>
+                          <span class="adm-grid-num mt-0.5 text-[0.65rem] font-normal leading-none opacity-80"><%= number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u") %></span>
+                        <% end %>
+                      </span>
+                    <% end %>
 
+                    <% if product.active? %>
+                      <div class="relative inline-block" data-controller="variant-tooltip">
+                        <%= badge %>
+                        <div data-variant-tooltip-target="popover" class="adm-popover invisible pointer-events-none absolute left-0 top-full z-50 mt-1 min-w-[12rem] px-3 py-2 opacity-0 transition-opacity duration-100" role="tooltip">
+                          <p class="adm-eyebrow mb-1.5">Ingrédients</p>
+                          <% if variant.variant_ingredients.any? %>
+                            <ul class="mb-2 space-y-0.5 text-xs" style="color: var(--text-body);">
+                              <% variant.variant_ingredients.each do |vi| %>
+                                <li><%= vi.ingredient.name %> : <%= vi.quantity.to_f == vi.quantity.to_f.floor ? vi.quantity.to_i : vi.quantity %> <%= vi.unit_label %></li>
+                              <% end %>
+                            </ul>
+                          <% else %>
+                            <p class="mb-2 text-xs" style="color: var(--text-muted);">Aucun ingrédient</p>
+                          <% end %>
+                          <% if variant.mold_type.present? %>
+                            <p class="adm-eyebrow mb-1">Type de moule</p>
+                            <p class="mb-2 text-xs" style="color: var(--text-body);"><%= variant.mold_type.name %></p>
+                          <% end %>
+                          <% if variant.flour_quantity.present? %>
+                            <p class="adm-eyebrow mb-1">Quantité de pâte requise</p>
+                            <p class="adm-grid-num mb-2 text-xs" style="color: var(--text-body);"><%= variant.flour_quantity %> g</p>
+                          <% end %>
+                          <% if variant.restricted_groups.any? %>
+                            <p class="adm-eyebrow mb-1">N'est en vente que pour les groupes suivants</p>
+                            <ul class="mb-2 space-y-0.5 text-xs" style="color: var(--text-body);">
+                              <% variant.restricted_groups.each do |group| %>
+                                <li><%= group.name %></li>
+                              <% end %>
+                            </ul>
+                          <% end %>
+                          <%= link_to "Modifier la variante", edit_variant_admin_product_path(product, variant), class: "adm-link text-xs" %>
+                        </div>
+                      </div>
+                    <% else %>
+                      <%= badge %>
+                    <% end %>
+                  <% end %>
+                  <% if product.product_variants.empty? %>
+                    <span class="text-xs" style="color: var(--text-faint);">Aucune variante</span>
+                  <% end %>
+                </div>
+              </td>
+              <td class="hidden whitespace-nowrap md:table-cell">
+                <%= link_to "Voir", admin_product_path(product), class: "adm-rowaction mr-3" %>
+                <%= link_to "Modifier", edit_admin_product_path(product), class: "adm-rowaction" %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <%= adm_empty_row colspan: 3, title: "Aucun produit", hint: "Créez un premier produit pour démarrer le catalogue." do %>
+            <%= link_to "Nouveau produit", new_admin_product_path, class: adm_btn_class(:primary) %>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

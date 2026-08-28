@@ -48,25 +48,23 @@ export function initProductImages() {
     const fieldPrefix = isVariantForm ? 'product_variant[product_images_attributes]' : 'product[product_images_attributes]';
     
     const dragHandle = isVariantForm ? `
-      <div class="flex-shrink-0 flex items-center justify-center w-8 h-8 text-gray-400">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
-        </svg>
+      <div class="flex-shrink-0 flex items-center justify-center w-8 h-8" style="color: var(--text-faint);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-flex align-middle" style="width:18px;height:18px;flex-shrink:0;" aria-hidden="true"><circle cx="12" cy="9" r="1"/><circle cx="19" cy="9" r="1"/><circle cx="5" cy="9" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="19" cy="15" r="1"/><circle cx="5" cy="15" r="1"/></svg>
       </div>
     ` : '';
     
-    const draggableClass = isVariantForm ? 'draggable-item cursor-move hover:border-blue-400 transition-colors' : '';
+    const draggableClass = isVariantForm ? 'draggable-item cursor-move transition-colors' : '';
     
     const newImageHtml = `
-      <div class="product-image-item border border-gray-200 rounded-lg p-4 bg-gray-50 ${draggableClass}">
+      <div class="product-image-item adm-panel ${draggableClass}">
         <div class="flex items-start space-x-4">
           ${dragHandle}
           <div class="flex-1 space-y-3">
-            <input type="file" name="${fieldPrefix}[${imageIndex}][image]" accept="image/*" data-direct-upload="true" class="block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100">
+            <input type="file" name="${fieldPrefix}[${imageIndex}][image]" accept="image/*" data-direct-upload="true" class="adm-file">
             <input type="hidden" name="${fieldPrefix}[${imageIndex}][_destroy]" value="false" class="destroy-field">
           </div>
           <div class="flex-shrink-0">
-            <button type="button" class="remove-image-btn px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">Supprimer</button>
+            <button type="button" class="remove-image-btn adm-btn adm-btn-danger">Supprimer</button>
           </div>
         </div>
       </div>
@@ -76,7 +74,7 @@ export function initProductImages() {
   }
 
   addImageBtn.addEventListener('click', function() {
-    const emptyMessage = productImagesContainer.querySelector('.text-gray-500.text-center');
+    const emptyMessage = productImagesContainer.querySelector('.js-images-empty');
     if (emptyMessage) {
       emptyMessage.remove();
     }
@@ -102,7 +100,8 @@ export function initProductImages() {
       }
       if (productImagesContainer.querySelectorAll('.product-image-item:not([style*="display: none"])').length === 0) {
         const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'text-sm text-gray-500 text-center py-4';
+        emptyMessage.className = 'js-images-empty text-sm text-center py-4';
+        emptyMessage.style.color = 'var(--text-muted)';
         const isVariantForm = productImagesContainer.id === 'variant-images';
         emptyMessage.textContent = isVariantForm ? 'Aucune image pour cette variante' : 'Aucune image pour ce produit';
         productImagesContainer.appendChild(emptyMessage);
@@ -146,10 +145,10 @@ function initDragAndDrop(container) {
 
     item.addEventListener('dragend', function(e) {
       this.style.opacity = '';
-      this.classList.remove('border-blue-500');
+      this.classList.remove('adm-dropzone-active');
       // Remove drag-over class from all items
       container.querySelectorAll('.product-image-item').forEach(item => {
-        item.classList.remove('border-blue-500', 'bg-blue-50');
+        item.classList.remove('adm-dropzone-active');
       });
     });
 
@@ -165,14 +164,14 @@ function initDragAndDrop(container) {
       
       // Highlight drop target
       if (this !== draggedElement) {
-        this.classList.add('border-blue-500', 'bg-blue-50');
+        this.classList.add('adm-dropzone-active');
       }
       
       return false;
     });
 
     item.addEventListener('dragleave', function(e) {
-      this.classList.remove('border-blue-500', 'bg-blue-50');
+      this.classList.remove('adm-dropzone-active');
     });
 
     item.addEventListener('drop', function(e) {
@@ -197,7 +196,7 @@ function initDragAndDrop(container) {
         saveImageOrder(container, reorderUrl);
       }
 
-      this.classList.remove('border-blue-500', 'bg-blue-50');
+      this.classList.remove('adm-dropzone-active');
       return false;
     });
   });
@@ -215,7 +214,7 @@ function saveImageOrder(container, reorderUrl) {
 
   // Show saving indicator
   const savingIndicator = document.createElement('div');
-  savingIndicator.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg z-50';
+  savingIndicator.className = 'adm-chip adm-chip-water fixed top-4 right-4 px-4 py-2 z-50';
   savingIndicator.textContent = 'Sauvegarde de l\'ordre...';
   document.body.appendChild(savingIndicator);
 
@@ -232,7 +231,7 @@ function saveImageOrder(container, reorderUrl) {
   .then(response => {
     if (response.ok) {
       savingIndicator.textContent = 'Ordre sauvegardé ✓';
-      savingIndicator.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50';
+      savingIndicator.className = 'adm-chip adm-chip-success fixed top-4 right-4 px-4 py-2 z-50';
       setTimeout(() => {
         savingIndicator.remove();
       }, 2000);
@@ -243,7 +242,7 @@ function saveImageOrder(container, reorderUrl) {
   .catch(error => {
     console.error('Error saving image order:', error);
     savingIndicator.textContent = 'Erreur lors de la sauvegarde';
-    savingIndicator.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-md shadow-lg z-50';
+    savingIndicator.className = 'adm-chip adm-chip-danger fixed top-4 right-4 px-4 py-2 z-50';
     setTimeout(() => {
       savingIndicator.remove();
     }, 3000);

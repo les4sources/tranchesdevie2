@@ -1,89 +1,12 @@
 - content_for :title, "Modifier le produit"
 - content_for :layout, "admin"
 
-- category_options = Product.categories.keys.map { |key| [product_category_heading(key), key] }
-- internal_category_options = Product.internal_categories.keys.map { |key| [product_internal_category_heading(key), key] }
+= adm_page_header "Modifier le produit" do
+  = link_to "Retour au produit", admin_product_path(@product), class: adm_btn_class(:ghost)
 
-.mb-6.flex.justify-between.items-center
-  h1.text-2xl.font-bold.text-gray-900 Modifier le produit
-  = link_to "Retour au produit", admin_product_path(@product), class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+= form_with model: [:admin, @product], local: true, class: "adm-card p-4 sm:p-6" do |f|
+  = render "form_fields", f: f, product: @product, new_record: false
 
-= form_with model: [:admin, @product], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
-  - if @product.errors.any?
-    .rounded-md.bg-red-50.p-4
-      h2.text-sm.font-semibold.text-red-800 Correction requise
-      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
-        - @product.errors.full_messages.each do |message|
-          li= message
-
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
-    .space-y-2
-      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      p.text-xs.text-gray-500 Nom affiché aux clients
-      = f.text_field :name, class: admin_input_class
-    .space-y-2
-      = f.label :short_name, "Nom court", class: "block text-sm font-medium text-gray-700"
-      p.text-xs.text-gray-500 Nom interne
-      = f.text_field :short_name, class: admin_input_class
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
-    .space-y-2
-      = f.label :category, "Catégorie", class: "block text-sm font-medium text-gray-700"
-      = f.select :category, options_for_select(category_options, @product.category), {}, class: admin_input_class
-    .space-y-2
-      .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
-        span.block.text-sm.font-medium.text-gray-700 Composition en farines
-        p.text-xs.text-gray-500.sm:order-last La somme des pourcentages doit être égale à 100 %. Laissez vide pour « Aucune ».
-      .space-y-3.mt-2 data-controller="product-flours"
-        button type="button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap w-fit" data-action="product-flours#add" Ajouter une farine
-        #product-flours.space-y-3 data-product-flours-target="container"
-          = f.fields_for :product_flours do |pf_form|
-            - product_flour = pf_form.object
-            .product-flour-item.border.border-gray-200.rounded-lg.p-4.bg-gray-50.flex.flex-col.gap-4.sm:flex-row.sm:items-center.sm:gap-4 data-product-flours-target="item"
-              = pf_form.hidden_field :id if product_flour.persisted?
-              .flex-1.min-w-0
-                = pf_form.collection_select :flour_id, Flour.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner une farine" }, class: admin_input_class
-              .flex.items-center.gap-2 class="sm:min-w-[8rem]"
-                = pf_form.number_field :percentage, step: 1, min: 1, max: 100, class: "#{admin_input_class} w-20", placeholder: "%"
-                span.text-sm.text-gray-500.whitespace-nowrap %
-              .flex-shrink-0
-                = pf_form.hidden_field :_destroy, value: false, class: "destroy-field"
-                button type="button" class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 w-full sm:w-auto" data-action="product-flours#remove" Supprimer
-          - if @product.product_flours.empty?
-            .text-sm.text-gray-500.text-center.py-4 data-product-flours-target="empty" Aucune farine
-        script type="application/json" data-product-flours-target="floursData"
-          = raw Flour.not_deleted.ordered.map { |f| { id: f.id, name: f.name } }.to_json
-
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
-    .space-y-2
-      = f.label :internal_category, "Catégorie interne", class: "block text-sm font-medium text-gray-700"
-      p.text-xs.text-gray-500 Usage interne (comptabilité, reporting). Distingue la production maison des reventes.
-      = f.select :internal_category, options_for_select(internal_category_options, @product.internal_category), {}, class: admin_input_class
-
-  .space-y-2
-    = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
-    = f.text_area :description, rows: 4, class: admin_input_class
-
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
-    .space-y-2
-      = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :position, class: admin_input_class
-    .space-y-3
-      span.block.text-sm.font-medium.text-gray-700 Statut du produit
-      .flex.items-center.space-x-3
-        = f.check_box :active, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-        = f.label :active, "Actif", class: "text-sm font-medium text-gray-700"
-  .space-y-2
-    span.block.text-sm.font-medium.text-gray-700 Canal de vente
-    .space-y-2.mt-2
-      .flex.items-center
-        = f.radio_button :channel, "store", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Vente en ligne", value: "store", class: "ml-2 text-sm font-medium text-gray-700"
-      .flex.items-center
-        = f.radio_button :channel, "admin", class: "h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-        = f.label :channel, "Boulangers uniquement", value: "admin", class: "ml-2 text-sm font-medium text-gray-700"
-
-  = render "admin/products/pickup_exclusions", f: f, product: @product
-
-  .flex.justify-end.space-x-3
-    = link_to "Annuler", admin_product_path(@product), class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+  .mt-6.flex.flex-wrap.items-center.justify-end.gap-3
+    = link_to "Annuler", admin_product_path(@product), class: adm_btn_class(:ghost)
+    = f.submit "Enregistrer", class: adm_btn_class(:primary)

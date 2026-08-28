@@ -1,0 +1,20 @@
+/ Restriction de la variante par groupe client. Partial partagé par
+/ `new_variant` et `edit_variant` : sur une variante neuve, `restricted_groups`
+/ est vide, donc aucune case n'est cochée — le comportement des deux écrans.
+.space-y-2
+  span.adm-eyebrow.block Restrictions par groupe
+  p.text-sm style="color: var(--text-muted);" Laissez vide pour rendre cette variante visible à tous. Sélectionnez un ou plusieurs groupes pour restreindre l'accès.
+  .adm-panel
+    - groups = Group.order(:name)
+    - if groups.any?
+      - groups.each do |group|
+        .mb-2.flex.items-center
+          = check_box_tag "product_variant[group_ids][]", group.id, variant.restricted_groups.include?(group), id: "group_#{group.id}", style: "accent-color: var(--brand);"
+          = label_tag "group_#{group.id}", class: "ml-2 text-sm font-medium", style: "color: var(--text-body);" do
+            = group.name
+            span.ml-1.text-xs style="color: var(--text-muted);" = "(#{group.discount_percent}% de remise)"
+      = hidden_field_tag "product_variant[group_ids][]", ""
+    - else
+      p.text-sm.italic style="color: var(--text-muted);"
+        | Aucun groupe créé.
+        = link_to "Créer un groupe", new_admin_group_path, class: "adm-link ml-1"

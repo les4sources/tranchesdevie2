@@ -19,7 +19,9 @@ RSpec.describe 'Catalog', type: :request do
     end
 
     it "n'annonce pas une fournée réservée aux boulangers, même plus proche" do
-      marche = create(:bake_day, baked_on: Date.current.next_occurring(:saturday), cut_off_at: 6.hours.from_now)
+      # La veille du mardi (un lundi, hors cuisson) est toujours avant lui — un
+      # « samedi prochain » ne l'est pas du samedi au lundi.
+      marche = create(:bake_day, baked_on: Date.current.next_occurring(:tuesday).prev_day, cut_off_at: 6.hours.from_now)
       tuesday = create(:bake_day, :tuesday, cut_off_at: 2.days.from_now)
       expect(marche.baked_on).to be < tuesday.baked_on
 

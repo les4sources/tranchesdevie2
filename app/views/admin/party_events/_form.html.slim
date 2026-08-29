@@ -1,61 +1,61 @@
-= form_with model: [ :admin, @event ], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-5" do |f|
+= form_with model: [ :admin, @event ], local: true, class: "adm-card space-y-5 p-4 sm:p-6" do |f|
   - if @event.errors.any?
-    .rounded-md.bg-red-50.p-4
-      ul.list-disc.list-inside.text-sm.text-red-700
+    .rounded-md.p-4 style="border: 1px solid var(--danger-200); background: var(--danger-100);"
+      ul.list-inside.list-disc.text-sm style="color: var(--danger-700);"
         - @event.errors.full_messages.each do |message|
           li= message
 
   .space-y-2
-    = f.label :title, "Titre", class: "block text-sm font-medium text-gray-700"
-    = f.text_field :title, required: true, class: admin_input_class
+    = f.label :title, "Titre", class: "adm-eyebrow block"
+    = f.text_field :title, required: true, class: adm_field_class
 
-  .grid.grid-cols-1.sm:grid-cols-2.gap-4
+  .grid.grid-cols-1.gap-4.sm:grid-cols-2
     .space-y-2
-      = f.label :held_on, "Date (en soirée)", class: "block text-sm font-medium text-gray-700"
-      = f.date_field :held_on, required: true, class: admin_input_class
-      p.text-xs.text-gray-500 Les parties publiques se déroulent toujours en soirée — ce soir-là devient indisponible aux réservations privées.
+      = f.label :held_on, "Date (en soirée)", class: "adm-eyebrow block"
+      = f.date_field :held_on, required: true, class: adm_field_class
+      p.text-xs style="color: var(--text-muted);" Les parties publiques se déroulent toujours en soirée — ce soir-là devient indisponible aux réservations privées.
     .space-y-2
-      = f.label :capacity, "Capacité (personnes)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :capacity, min: 1, required: true, class: admin_input_class
+      = f.label :capacity, "Capacité (personnes)", class: "adm-eyebrow block"
+      = f.number_field :capacity, min: 1, required: true, class: adm_field_class
 
   .space-y-2
-    = f.label :registration_closes_at, "Clôture des inscriptions", class: "block text-sm font-medium text-gray-700"
-    = f.datetime_local_field :registration_closes_at, required: true, class: admin_input_class
+    = f.label :registration_closes_at, "Clôture des inscriptions", class: "adm-eyebrow block"
+    = f.datetime_local_field :registration_closes_at, required: true, class: adm_field_class
 
   - desc_input_id = dom_id(@event, :description)
   .space-y-2
-    = f.label :description, "Description", class: "block text-sm font-medium text-gray-700"
+    = f.label :description, "Description", class: "adm-eyebrow block"
     = f.hidden_field :description, id: desc_input_id
-    trix-editor class="trix-content min-h-32 rounded-lg border border-gray-200 bg-white" input=desc_input_id
+    trix-editor class="trix-content adm-trix min-h-32" input=desc_input_id
 
-  label.flex.items-center.gap-2.cursor-pointer
-    = f.check_box :active, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-    span.text-sm.font-medium.text-gray-700 Actif (visible et inscriptible)
+  label.flex.cursor-pointer.items-center.gap-2
+    = f.check_box :active, style: "accent-color: var(--brand);"
+    span.text-sm.font-medium style="color: var(--text-body);" Actif (visible et inscriptible)
 
-  details.rounded-lg.border.border-gray-200.bg-gray-50.p-4 open=(@event.historical?)
-    summary.cursor-pointer.text-sm.font-semibold.text-gray-700 Historique BilletWeb (import agrégé)
+  details.adm-panel.p-4 open=(@event.historical?)
+    summary.cursor-pointer.text-sm.font-semibold style="color: var(--text-strong);" Historique BilletWeb (import agrégé)
     .mt-4.space-y-4
-      p.text-xs.text-gray-500
+      p.text-xs style="color: var(--text-muted);"
         | Pour les parties passées vendues via BilletWeb (argent encaissé par la fondation 4S).
         |  Renseigne les totaux ; le reporting applique le barème boulangers rétroactivement. Capacité et clôture ne sont alors pas requises.
       .space-y-2
-        = f.label :historical_source, "Source", class: "block text-sm font-medium text-gray-700"
-        = f.select :historical_source, [ [ "— (aucun)", "" ], [ "BilletWeb", "billetweb" ] ], {}, class: admin_input_class
-      .grid.grid-cols-2.sm:grid-cols-4.gap-4
+        = f.label :historical_source, "Source", class: "adm-eyebrow block"
+        = f.select :historical_source, [ [ "— (aucun)", "" ], [ "BilletWeb", "billetweb" ] ], {}, class: adm_field_class
+      .grid.grid-cols-2.gap-4.sm:grid-cols-4
         .space-y-2
-          = f.label :historical_adults, "Adultes", class: "block text-sm font-medium text-gray-700"
-          = f.number_field :historical_adults, min: 0, class: admin_input_class
+          = f.label :historical_adults, "Adultes", class: "adm-eyebrow block"
+          = f.number_field :historical_adults, min: 0, class: adm_field_class
         .space-y-2
-          = f.label :historical_children, "Enfants", class: "block text-sm font-medium text-gray-700"
-          = f.number_field :historical_children, min: 0, class: admin_input_class
+          = f.label :historical_children, "Enfants", class: "adm-eyebrow block"
+          = f.number_field :historical_children, min: 0, class: adm_field_class
         .space-y-2
-          = f.label :historical_sourciers, "Boules sourciers", class: "block text-sm font-medium text-gray-700"
-          = f.number_field :historical_sourciers, min: 0, class: admin_input_class
+          = f.label :historical_sourciers, "Boules sourciers", class: "adm-eyebrow block"
+          = f.number_field :historical_sourciers, min: 0, class: adm_field_class
         .space-y-2
-          = f.label :historical_fees_euros, "Frais BilletWeb (€)", class: "block text-sm font-medium text-gray-700"
-          = f.number_field :historical_fees_euros, step: "0.01", min: 0, class: admin_input_class
-      p.text-xs.text-gray-500 Sourciers : boules non payantes produites pour les sourciers → 2 €/boule, intégralement aux boulangers.
+          = f.label :historical_fees_euros, "Frais BilletWeb (€)", class: "adm-eyebrow block"
+          = f.number_field :historical_fees_euros, step: "0.01", min: 0, class: adm_field_class
+      p.text-xs style="color: var(--text-muted);" Sourciers : boules non payantes produites pour les sourciers → 2 €/boule, intégralement aux boulangers.
 
-  .flex.gap-3
-    = f.submit "Enregistrer", class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-    = link_to "Annuler", admin_party_events_path, class: "inline-block text-gray-600 hover:underline py-2 px-4"
+  .flex.flex-wrap.items-center.gap-3
+    = f.submit "Enregistrer", class: adm_btn_class(:primary)
+    = link_to "Annuler", admin_party_events_path, class: adm_btn_class(:ghost)

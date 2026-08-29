@@ -46,30 +46,32 @@
           <% is_full = cap[:fully_booked] %>
           <% fill_pct = [ cap[:fill_percentage].to_i, 100 ].min %>
           <% bar_color = fill_pct >= 90 ? "bg-danger-600" : fill_pct >= 70 ? "bg-warning-600" : "bg-sage-600" %>
-          <label class="flex items-center gap-3.5 rounded-md border px-4 py-3.5 transition <%= is_full ? "cursor-not-allowed border-flour-300 bg-flour-200 opacity-70" : "cursor-pointer border-flour-300 bg-warm-white hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100 has-[:checked]:shadow-[0_0_0_3px_var(--focus-ring)]" %>">
+          <label class="flex items-start gap-3.5 rounded-md border px-4 py-3.5 transition sm:items-center <%= is_full ? "cursor-not-allowed border-flour-300 bg-flour-200 opacity-70" : "cursor-pointer border-flour-300 bg-warm-white hover:border-sage-300 has-[:checked]:border-sage-600 has-[:checked]:bg-sage-100 has-[:checked]:shadow-[0_0_0_3px_var(--focus-ring)]" %>">
             <input type="radio" name="bake_day_id" value="<%= bake_day.id %>"
-                   class="h-[18px] w-[18px] flex-shrink-0 accent-sage-600"
+                   class="mt-0.5 h-[18px] w-[18px] flex-shrink-0 accent-sage-600 sm:mt-0"
                    <%= "checked" if @bake_day&.id == bake_day.id %>
                    <%= "disabled" if is_full %>
                    data-bake-day-id="<%= bake_day.id %>">
-            <span class="flex-1 text-ink-900">
-              <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %-d %B") } %></b>
-              <span class="text-ink-500">(commandes jusqu'au <%= I18n.with_locale(:fr) { I18n.l(bake_day.cut_off_at, format: "%A à %-Hh%M") } %>)</span>
-            </span>
-            <span class="flex w-52 flex-col gap-1.5">
-              <span class="flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide">
-                <span class="text-ink-500">Capacité de production</span>
-                <% if is_full %>
-                  <span class="inline-flex flex-shrink-0 items-center gap-1 font-bold tracking-normal text-danger-700"><%= lucide "ban", size: 12, color: "var(--danger-600)" %> Complet</span>
-                <% else %>
-                  <span class="flex-shrink-0 font-semibold normal-case tracking-normal text-sage-700">Il reste de la place</span>
-                <% end %>
+            <span class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3.5">
+              <span class="flex-1 text-ink-900">
+                <b class="font-semibold"><%= I18n.with_locale(:fr) { I18n.l(bake_day.baked_on, format: "%A %-d %B") } %></b>
+                <span class="block text-[13px] text-ink-500 sm:inline sm:text-[inherit]">(commandes jusqu'au <%= I18n.with_locale(:fr) { I18n.l(bake_day.cut_off_at, format: "%A à %-Hh%M") } %>)</span>
               </span>
-              <span class="flex items-center gap-2">
-                <span class="h-2 flex-1 overflow-hidden rounded-full bg-flour-300">
-                  <span class="block h-full rounded-full <%= bar_color %>" style="width: <%= fill_pct %>%"></span>
+              <span class="flex w-full flex-col gap-1.5 sm:w-52">
+                <span class="flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide">
+                  <span class="text-ink-500">Capacité de production</span>
+                  <% if is_full %>
+                    <span class="inline-flex flex-shrink-0 items-center gap-1 font-bold tracking-normal text-danger-700"><%= lucide "ban", size: 12, color: "var(--danger-600)" %> Complet</span>
+                  <% else %>
+                    <span class="flex-shrink-0 font-semibold normal-case tracking-normal text-sage-700">Il reste de la place</span>
+                  <% end %>
                 </span>
-                <span class="min-w-8 text-right text-[13px] font-semibold text-ink-700"><%= fill_pct %>%</span>
+                <span class="flex items-center gap-2">
+                  <span class="h-2 flex-1 overflow-hidden rounded-full bg-flour-300">
+                    <span class="block h-full rounded-full <%= bar_color %>" style="width: <%= fill_pct %>%"></span>
+                  </span>
+                  <span class="min-w-8 text-right text-[13px] font-semibold text-ink-700"><%= fill_pct %>%</span>
+                </span>
               </span>
             </span>
           </label>

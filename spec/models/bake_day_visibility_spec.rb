@@ -7,12 +7,14 @@ require 'rails_helper'
 RSpec.describe BakeDay, "visibilité côté boutique" do
   before { PickupLocation.default_location || create(:pickup_location, :default) }
 
-  # Un samedi (wday 6) n'est pas un jour de cuisson ordinaire, et il tombe avant
-  # le prochain mardi : c'est le cas de Romane, une fournée marché plus proche
+  # La veille du prochain mardi — un lundi, jamais un jour de cuisson ordinaire —
+  # tombe TOUJOURS avant lui, quel que soit le jour où la suite tourne. Ancrer
+  # sur « samedi prochain » cassait du samedi au lundi : ce samedi-là passe
+  # derrière le mardi. C'est le cas de Romane, une fournée marché plus proche
   # que la fournée suivante.
   let(:marche) do
     create(:bake_day,
-           baked_on: Date.current.next_occurring(:saturday),
+           baked_on: Date.current.next_occurring(:tuesday).prev_day,
            cut_off_at: 6.hours.from_now)
   end
 

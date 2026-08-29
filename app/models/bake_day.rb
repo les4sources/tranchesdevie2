@@ -15,6 +15,9 @@ class BakeDay < ApplicationRecord
   }.freeze
 
   has_many :orders, dependent: :restrict_with_error
+  # Fournées de répartition (#194) : découpe manuelle du jour en 1 à N
+  # enfournements. Purement organisationnel — sans effet sur la compta.
+  has_many :batches, dependent: :destroy
   has_many :bake_day_artisans, dependent: :destroy
   has_many :baking_artisans, through: :bake_day_artisans, source: :artisan
   has_many :bake_day_pickup_locations, dependent: :destroy

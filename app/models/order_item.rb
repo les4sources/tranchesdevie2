@@ -1,6 +1,9 @@
 class OrderItem < ApplicationRecord
   belongs_to :order
   belongs_to :product_variant
+  # Fournée d'enfournement (#194). Optionnelle : « non affectée » est un
+  # état normal, et c'est celui qu'on rend visible aux boulangers.
+  belongs_to :batch, optional: true
 
   validates :qty, presence: true, numericality: { greater_than: 0, only_integer: true }
   validates :unit_price_cents, presence: true, numericality: { greater_than: 0 }

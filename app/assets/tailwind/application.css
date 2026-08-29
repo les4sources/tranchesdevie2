@@ -497,4 +497,42 @@
   /* Les pastilles internes d'une carte drapeau restent neutres pour que la
      teinte de la carte reste le seul signal de regroupement. */
   .adm-flag-inner { background: var(--surface-card); }
+
+  /* ── Calculateur de fournées (#194) ───────────────────────────────────────
+     L'écran s'ouvre à 5 h du matin, debout, les mains dans la farine : les
+     cibles de clic sont larges, le contraste fort, et la fournée active se
+     reconnaît à sa teinte (`adm-flag-N`) avant même de lire son numéro. */
+  .adm-batchbtn { display: inline-flex; align-items: center; justify-content: center;
+                  min-width: 2rem; height: 2rem; padding: 0 .5rem; flex: none;
+                  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+                  background: var(--surface-card); color: var(--text-muted);
+                  font-size: .8125rem; font-weight: 700; line-height: 1; cursor: pointer;
+                  transition: background-color .1s var(--ease-soft), border-color .1s var(--ease-soft),
+                              color .1s var(--ease-soft), transform .08s var(--ease-out); }
+  .adm-batchbtn:hover  { border-color: var(--brand); color: var(--brand-press); }
+  .adm-batchbtn:active { transform: scale(.94); }
+  .adm-batchbtn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+  .adm-batchbtn-on { background: var(--flag-bg, var(--brand-tint)); color: var(--flag-ink, var(--brand-press));
+                     border-color: var(--flag-border, var(--brand)); box-shadow: var(--shadow-xs); }
+
+  /* Une action est en vol : on gèle le groupe plutôt que d'accepter un second
+     clic qui écraserait le premier dans un ordre imprévisible. */
+  .adm-batchpick { display: inline-flex; flex-wrap: wrap; gap: .25rem; }
+  [data-batch-planner-busy="true"] { opacity: .55; pointer-events: none; }
+
+  /* Le grand chiffre d'une fournée : lisible d'un mètre, à travers la buée. */
+  .adm-batchweight { font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -.02em;
+                     line-height: 1; color: var(--text-strong); }
+
+  .adm-confetti { position: fixed; top: 0; left: 0; width: .5rem; height: .75rem; z-index: 60;
+                  pointer-events: none; border-radius: 1px;
+                  animation: adm-confetti-fall .9s var(--ease-out) forwards; }
+  @keyframes adm-confetti-fall {
+    from { opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 240px), 0) rotate(var(--rot, 360deg)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .adm-confetti { display: none; }
+    .adm-batchbtn:active { transform: none; }
+  }
 }

@@ -1,0 +1,15 @@
+/ Groupe de boutons « vers la fournée N ». Un clic = une affectation immédiate,
+/ pas de bouton « Enregistrer ». Le dernier bouton retire de toute fournée.
+/ `current_batch_id` vaut :mixed quand le groupe est panaché — aucun bouton ne
+/ s'allume alors, parce qu'aucune réponse ne serait vraie.
+/ Locals : stats, current_batch_id, scope, scope_id, label.
+- mixed = current_batch_id == :mixed
+.adm-batchpick role="group" aria-label=label
+  - if mixed
+    span.text-xs.self-center.mr-1 style="color: var(--text-muted);" panaché
+  - stats.each_with_index do |entry, index|
+    - active = !mixed && current_batch_id.present? && current_batch_id == entry[:batch].id
+    button.adm-batchbtn class="#{adm_flag_class(index)}#{' adm-batchbtn-on' if active}" type="button" title="#{label} → #{entry[:batch].name}" aria-pressed=(active ? "true" : "false") data-action="batch-planner#assign" data-batch-id=entry[:batch].id data-scope=scope data-scope-id=scope_id
+      = index + 1
+  button.adm-batchbtn class=("adm-batchbtn-on" if !mixed && current_batch_id.nil?) type="button" title="#{label} → aucune fournée" aria-pressed=((!mixed && current_batch_id.nil?) ? "true" : "false") data-action="batch-planner#assign" data-batch-id="" data-scope=scope data-scope-id=scope_id
+    | —

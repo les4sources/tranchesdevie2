@@ -1,0 +1,81 @@
+/ Carte d'une fournée : son poids de pâte en gros, sa panification et ses
+/ moules. Mêmes colonnes et même calcul que le tableau global du jour — c'est
+/ la même classe `Admin::DoughCalculator` des deux côtés.
+- batch = entry[:batch]
+- dough = entry[:dough]
+- flag = adm_flag_class(index)
+
+.adm-card.overflow-hidden id=dom_id(batch) class=flag style="border-width: 1px;"
+  .adm-cardhd.flex-wrap.gap-2 style="background: var(--flag-bg);"
+    .flex.min-w-0.items-center.gap-2
+      span.adm-dot.adm-flag-dot
+      = form_with model: batch, url: admin_bake_day_batch_path(bake_day, batch), method: :patch, data: { turbo_stream: true }, class: "flex items-center gap-2 min-w-0" do |form|
+        = form.text_field :name, class: "#{adm_field_class} font-semibold", style: "max-width: 12rem;", "aria-label": "Nom de la fournée"
+        button class=adm_btn_class(:ghost) type="submit" Renommer
+    .flex.items-center.gap-2
+      span.adm-chip.adm-chip-neutral = "#{entry[:units_count]} unité#{'s' if entry[:units_count] > 1}"
+      = button_to "Supprimer", admin_bake_day_batch_path(bake_day, batch), method: :delete, form: { data: { turbo_stream: true, turbo_confirm: "Supprimer #{batch.name} ? Ses lignes redeviennent non affectées — aucune commande n'est perdue." } }, class: adm_btn_class(:ghost)
+
+  .p-4.sm:p-5.space-y-4
+    .flex.flex-wrap.items-end.gap-x-6.gap-y-3
+      div
+        p.adm-eyebrow Poids de pâte
+        p.adm-batchweight.mt-1 data-role="batch-dough" data-grams=entry[:total_dough_grams] style="font-size: 2.25rem;"
+          = number_with_precision(entry[:total_dough_grams] / 1000.0, precision: 2, strip_insignificant_zeros: true)
+          span.ml-1.text-lg.font-semibold style="color: var(--text-muted);" kg
+      - if dough[:per_flour].any?
+        .flex.flex-wrap.gap-x-5.gap-y-2
+          - [ [ "Farine", dough[:totals][:farine_kg], "kg", 2 ], [ "Eau", dough[:totals][:eau_l], "l", 2 ], [ "Sel", dough[:totals][:sel_kg], "kg", 3 ], [ "Levain", dough[:totals][:levain_kg], "kg", 3 ] ].each do |label, value, unit, precision|
+            div
+              p.adm-eyebrow = label
+              p.adm-batchweight.mt-1 style="font-size: 1.25rem;"
+                = number_with_precision(value, precision: precision, strip_insignificant_zeros: true)
+                span.ml-1.text-xs.font-semibold style="color: var(--text-muted);" = unit
+
+    - if dough[:per_flour].any?
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th
+              - dough[:per_flour].each do |col|
+                th.text-right
+                  = col[:flour].name
+                  span.block.font-normal.normal-case style="color: var(--text-faint); font-size: 10px;" = "levain #{col[:levain_type]}"
+              th.text-right TOTAL
+          tbody
+            - [ [ "Quantité pâte (kg)", :pate_kg, 2 ], [ "Farine (kg)", :farine_kg, 2 ], [ "Sel (kg)", :sel_kg, 3 ], [ "Eau (l)", :eau_l, 2 ], [ "Levain (kg)", :levain_kg, 3 ] ].each_with_index do |(label, key, precision), row_index|
+              tr style=(row_index.odd? ? "background: var(--surface-inset);" : nil)
+                td.font-semibold style="color: var(--text-strong);" = label
+                - dough[:per_flour].each do |col|
+                  td.adm-grid-num.text-right style="color: var(--text-body);"
+                    = number_with_precision(col[key], precision: precision, strip_insignificant_zeros: true)
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  = number_with_precision(dough[:totals][key], precision: precision, strip_insignificant_zeros: true)
+      - if dough[:levain_by_type].present?
+        .flex.flex-wrap.items-center.gap-x-4.gap-y-1.text-xs style="color: var(--text-muted);"
+          span.adm-eyebrow Type de levain
+          - dough[:levain_by_type].each do |levain_type, kg|
+            span
+              | Levain #{levain_type} :
+              span.adm-grid-num.ml-1.font-semibold style="color: var(--text-body);" = "#{number_with_precision(kg, precision: 3, strip_insignificant_zeros: true)} kg"
+    - else
+      p.text-sm style="color: var(--text-muted);"
+        | Aucune pâte dans cette fournée pour l'instant — affectez-lui des lignes ci-dessous.
+
+    div
+      p.adm-eyebrow Moules
+      - if entry[:molds].any?
+        .mt-2.space-y-2
+          - entry[:molds].each do |mold|
+            .rounded-md.p-3 style="background: var(--surface-inset); border: 1px solid var(--border-subtle);"
+              .flex.flex-wrap.items-baseline.justify-between.gap-2
+                p.text-sm.font-semibold style="color: var(--text-strong);"
+                  = mold[:mold_type]&.name || "Sans moule attribué"
+                p.adm-batchweight style="font-size: 1.5rem;"
+                  = mold[:units_count]
+                  span.ml-1.text-xs.font-semibold style="color: var(--text-muted);" = "moule#{'s' if mold[:units_count] > 1}"
+              p.mt-1.text-xs style="color: var(--text-body);"
+                = mold[:details].map { |detail| "#{detail[:qty]} × #{detail[:variant].name}" }.join(", ")
+      - else
+        p.mt-1.text-sm style="color: var(--text-muted);" Aucun pain en moule dans cette fournée.

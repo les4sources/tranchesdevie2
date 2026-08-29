@@ -39,6 +39,10 @@ class Admin::BakeDaysController < Admin::BaseController
 
   def show
     @dashboard = Admin::BakeDayDashboard.new(@bake_day)
+    # Calculateur de fournées (#194) : la découpe manuelle du jour en 1 à N
+    # enfournements. Purement organisationnel — il ne touche ni la compta, ni
+    # les revenus boulangers, ni la feuille compta.
+    @planner = Admin::BatchPlanner.new(@bake_day, @dashboard)
   end
 
   # Feuille compta (#feuille-compta) : reporting tableur par jour de cuisson —

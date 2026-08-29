@@ -1,0 +1,47 @@
+/ Atelier (#208) : « une date, un descriptif, vous pouvez y mettre des notes,
+/ combien ça coûte » — plus les animateurs, dont dépend la répartition.
+= form_with model: [ :admin, workshop ], local: true, class: "adm-card p-4 sm:p-6 space-y-5" do |f|
+  - if workshop.errors.any?
+    .rounded-md.p-4 style="background: var(--danger-100); border: 1px solid var(--danger-200);"
+      h2.text-sm.font-semibold style="color: var(--danger-700);" Correction requise
+      ul.mt-2.list-disc.space-y-1.pl-5.text-sm style="color: var(--danger-700);"
+        - workshop.errors.full_messages.each do |message|
+          li = message
+
+  .grid.grid-cols-1.gap-4 class="md:grid-cols-3"
+    div
+      = f.label :held_on, "Date", class: "adm-eyebrow mb-1 block"
+      = f.date_field :held_on, class: adm_field_class, required: true
+    div class="md:col-span-2"
+      = f.label :title, "Intitulé", class: "adm-eyebrow mb-1 block"
+      = f.text_field :title, class: adm_field_class, required: true, placeholder: "Ex. Atelier pain au levain"
+
+  div
+    = f.label :description, "Descriptif", class: "adm-eyebrow mb-1 block"
+    = f.text_area :description, rows: 3, class: adm_field_class
+
+  div
+    = f.label :notes, "Notes internes", class: "adm-eyebrow mb-1 block"
+    = f.text_area :notes, rows: 3, class: adm_field_class
+    p.mt-1.text-xs style="color: var(--text-muted);" Pour l'équipe : matériel, contraintes, participants attendus…
+
+  div
+    = f.label :revenue_euros, "Recette (€)", class: "adm-eyebrow mb-1 block"
+    = f.text_field :revenue_euros, value: workshop.revenue_euros, class: adm_field_class, placeholder: "0,00"
+
+  .rounded-md.p-4 style="background: var(--surface-inset); border: 1px solid var(--border-subtle);"
+    span.adm-eyebrow.mb-2.block Qui anime cet atelier ?
+    p.mb-3.text-xs style="color: var(--text-muted);"
+      | La répartition suit exactement les mêmes règles que la production : part de chaque animateur selon son pourcentage configuré, puis mise en commun par partenariat. Un atelier sans animateur est enregistré mais signalé comme non réparti.
+    - if artisans.any?
+      .grid.grid-cols-1.gap-2 class="sm:grid-cols-2 lg:grid-cols-3"
+        = f.collection_check_boxes :artisan_ids, artisans, :id, :name do |b|
+          label.adm-option.flex.cursor-pointer.items-center.gap-2.rounded-md.px-3.py-2 style="border: 1px solid var(--border-subtle);"
+            = b.check_box style: "accent-color: var(--brand);"
+            span.text-sm.font-medium style="color: var(--text-body);" = b.text
+    - else
+      p.text-sm style="color: var(--text-muted);" Aucun artisan actif.
+
+  .flex.flex-wrap.justify-end.gap-3
+    = link_to "Annuler", admin_workshops_path, class: adm_btn_class(:default)
+    = f.submit submit_label, class: adm_btn_class(:primary)

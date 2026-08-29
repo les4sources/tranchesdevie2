@@ -1,0 +1,83 @@
+/ Champs communs à `new` et `edit`. Les deux formulaires ne différaient que par
+/ le libellé du bouton et par les valeurs cochées d'office à la création
+/ (produit actif, canal « Vente en ligne ») — d'où le local `new_record`.
+- category_options = Product.categories.keys.map { |key| [product_category_heading(key), key] }
+- internal_category_options = Product.internal_categories.keys.map { |key| [product_internal_category_heading(key), key] }
+- default_checked = new_record ? { checked: true } : {}
+
+- if product.errors.any?
+  .adm-card.mb-6.p-4 style="border-color: var(--danger-200); background: var(--danger-100);"
+    h2.text-sm.font-semibold style="color: var(--danger-700);" Correction requise
+    ul.mt-2.list-inside.list-disc.text-sm style="color: var(--danger-700);"
+      - product.errors.full_messages.each do |message|
+        li = message
+
+.grid.grid-cols-1.gap-6.md:grid-cols-2
+  div
+    = f.label :name, "Nom", class: "adm-eyebrow mb-1 block"
+    p.mb-1.text-xs style="color: var(--text-muted);" Nom affiché aux clients
+    = f.text_field :name, class: adm_field_class
+  div
+    = f.label :short_name, "Nom court", class: "adm-eyebrow mb-1 block"
+    p.mb-1.text-xs style="color: var(--text-muted);" Nom interne
+    = f.text_field :short_name, class: adm_field_class
+
+.mt-6.grid.grid-cols-1.gap-6.md:grid-cols-2
+  div
+    = f.label :category, "Catégorie", class: "adm-eyebrow mb-1 block"
+    = f.select :category, options_for_select(category_options, product.category), {}, class: adm_field_class
+  div
+    span.adm-eyebrow.mb-1.block Composition en farines
+    p.mb-2.text-xs style="color: var(--text-muted);" La somme des pourcentages doit être égale à 100 %. Laissez vide pour « Aucune ».
+    .space-y-3 data-controller="product-flours"
+      button.w-fit type="button" class=(adm_btn_class(:default)) data-action="product-flours#add" Ajouter une farine
+      #product-flours.space-y-3 data-product-flours-target="container"
+        = f.fields_for :product_flours do |pf_form|
+          - product_flour = pf_form.object
+          .product-flour-item.adm-panel.flex.flex-col.gap-4.sm:flex-row.sm:items-center.sm:gap-4 data-product-flours-target="item"
+            = pf_form.hidden_field :id if product_flour.persisted?
+            .flex-1.min-w-0
+              = pf_form.collection_select :flour_id, Flour.not_deleted.ordered, :id, :name, { include_blank: "Sélectionner une farine" }, class: adm_field_class
+            .flex.items-center.gap-2 class="sm:min-w-[8rem]"
+              = pf_form.number_field :percentage, step: 1, min: 1, max: 100, class: adm_field_class("w-20"), placeholder: "%"
+              span.whitespace-nowrap.text-sm style="color: var(--text-muted);" %
+            .flex-shrink-0
+              = pf_form.hidden_field :_destroy, value: false, class: "destroy-field"
+              button.w-full.sm:w-auto type="button" class=(adm_btn_class(:danger)) data-action="product-flours#remove" Supprimer
+        - if product.product_flours.empty?
+          .py-4.text-center.text-sm style="color: var(--text-muted);" data-product-flours-target="empty" Aucune farine
+      script type="application/json" data-product-flours-target="floursData"
+        = raw Flour.not_deleted.ordered.map { |f| { id: f.id, name: f.name } }.to_json
+
+.mt-6.grid.grid-cols-1.gap-6.md:grid-cols-2
+  div
+    = f.label :internal_category, "Catégorie interne", class: "adm-eyebrow mb-1 block"
+    p.mb-1.text-xs style="color: var(--text-muted);" Usage interne (comptabilité, reporting). Distingue la production maison des reventes.
+    = f.select :internal_category, options_for_select(internal_category_options, product.internal_category), {}, class: adm_field_class
+
+.mt-6
+  = f.label :description, "Description", class: "adm-eyebrow mb-1 block"
+  = f.text_area :description, rows: 4, class: adm_field_class
+
+.mt-6.grid.grid-cols-1.gap-6.md:grid-cols-2
+  div
+    = f.label :position, "Position", class: "adm-eyebrow mb-1 block"
+    = f.number_field :position, class: adm_field_class
+  div
+    span.adm-eyebrow.mb-1.block Statut du produit
+    label.flex.cursor-pointer.items-center.gap-2
+      = f.check_box :active, { style: "accent-color: var(--brand);" }.merge(default_checked)
+      span.text-sm.font-medium style="color: var(--text-body);" Actif
+
+.mt-6
+  span.adm-eyebrow.mb-1.block Canal de vente
+  .mt-2.space-y-2
+    label.flex.cursor-pointer.items-center.gap-2
+      = f.radio_button :channel, "store", { style: "accent-color: var(--brand);" }.merge(default_checked)
+      span.text-sm.font-medium style="color: var(--text-body);" Vente en ligne
+    label.flex.cursor-pointer.items-center.gap-2
+      = f.radio_button :channel, "admin", style: "accent-color: var(--brand);"
+      span.text-sm.font-medium style="color: var(--text-body);" Boulangers uniquement
+
+.mt-6
+  = render "admin/products/pickup_exclusions", f: f, product: product

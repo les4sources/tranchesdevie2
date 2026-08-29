@@ -18,13 +18,42 @@ class InvoicePresenter
   )
 
   # Un groupe « jour de cuisson » (facture de période).
+  #
+  # `gross_cents` est le montant AU PRIX STANDARD (Σ qté × prix unitaire de la
+  # variante), `total_cents` le montant réellement dû. L'écart entre les deux
+  # est la remise client effectivement appliquée le jour de la commande.
   BakeDayGroup = Struct.new(
     :baked_on,
     :order_numbers,
     :lines,
+    :gross_cents,
     :total_cents,
     keyword_init: true
-  )
+  ) do
+    def discount_cents = InvoicePresenter.discount_cents(gross_cents, total_cents)
+    def discount_percent = InvoicePresenter.discount_percent(gross_cents, total_cents)
+    def discount_applied? = discount_cents.positive?
+  end
+
+  # Remise = montant au prix standard - montant dû, jamais négative.
+  #
+  # Elle est DÉDUITE des montants figés (les lignes portent le prix standard,
+  # `orders.total_cents` porte le net — cf. OrderCreationService), et non
+  # recalculée depuis les groupes actuels du client : un relevé réédité un an
+  # plus tard doit montrer la remise du jour de la commande, pas celle
+  # d'aujourd'hui.
+  def self.discount_cents(gross_cents, net_cents)
+    [ gross_cents.to_i - net_cents.to_i, 0 ].max
+  end
+
+  # Taux effectif de la remise, en pourcent (une décimale). « Effectif » parce
+  # qu'il peut mêler la remise globale du groupe et des remises ciblées par
+  # produit ou variante (#87) : on affiche ce qui a réellement été appliqué.
+  def self.discount_percent(gross_cents, net_cents)
+    return 0.0 if gross_cents.to_i.zero?
+
+    (discount_cents(gross_cents, net_cents) * 100.0 / gross_cents).round(1)
+  end
 
   def initialize(invoice)
     @invoice = invoice
@@ -88,6 +117,7 @@ class InvoicePresenter
           baked_on: baked_on,
           order_numbers: orders.map(&:order_number),
           lines: group_lines,
+          gross_cents: group_lines.sum(&:total_cents),
           total_cents: orders.sum(&:total_cents)
         )
       end
@@ -111,6 +141,25 @@ class InvoicePresenter
 
   def total_cents
     invoice.total_cents
+  end
+
+  # Montant du relevé AU PRIX STANDARD, remise non déduite : Σ des lignes, qui
+  # portent toutes le prix catalogue de la variante.
+  def gross_cents
+    lines.sum(&:total_cents)
+  end
+
+  # Remise client effectivement appliquée sur l'ensemble du relevé.
+  def discount_cents
+    self.class.discount_cents(gross_cents, total_cents)
+  end
+
+  def discount_percent
+    self.class.discount_percent(gross_cents, total_cents)
+  end
+
+  def discount_applied?
+    discount_cents.positive?
   end
 
   private

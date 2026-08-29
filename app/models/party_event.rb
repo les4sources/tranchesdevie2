@@ -28,6 +28,10 @@ class PartyEvent < ApplicationRecord
   scope :private_events, -> { kind_private_party }
   scope :upcoming, -> { not_deleted.where(held_on: Date.current..).order(:held_on, :slot) }
   scope :past, -> { not_deleted.where(held_on: ...Date.current).order(held_on: :desc) }
+
+  # Liste nominative importée d'une billetterie externe (#206). Purement
+  # documentaire : la compta de ces événements vient de l'agrégat `historical_*`.
+  has_many :party_participants, dependent: :destroy
   # Événements dont les ventes ont été importées en agrégé (ex. BilletWeb).
   scope :historical, -> { not_deleted.where.not(historical_source: nil) }
 
@@ -41,9 +45,45 @@ class PartyEvent < ApplicationRecord
 
   SLOT_LABELS = { "midi" => "Midi", "soir" => "Soir" }.freeze
 
-  # Une party PRIVÉE se réserve au minimum une semaine à l'avance (préparation
-  # des pâtons, organisation des boulangères).
-  PRIVATE_MIN_LEAD_DAYS = 7
+  # Jours et créneau ouverts aux parties PRIVÉES (#201, réunion du 25/08/2026).
+  #
+  # Mardi et vendredi parce que ce sont les jours de boulangerie : le four est
+  # déjà chaud, et un groupe qui le chauffe lui-même l'abîme (« on va péter le
+  # four, en deux ans il sera foutu »). Le SOIR seulement, parce qu'à midi les
+  # boulangers sont encore sur leur fournée — pains en train de lever,
+  # températures incompatibles, et personne pour accueillir le groupe.
+  #
+  # Volontairement une constante littérale et non `BakeDay::COOKING_WDAYS` :
+  # les deux valent [2, 5] aujourd'hui pour la même raison, mais ajouter un jour
+  # de cuisson ne doit pas ouvrir des pizza parties dans le dos de l'équipe.
+  PRIVATE_WDAYS = [ 2, 5 ].freeze
+  PRIVATE_SLOT = "soir"
+
+  # Réservation possible jusqu'à la VEILLE 16 h 00, heure de Bruxelles. Le
+  # fuseau est explicite (et non `Time.zone`) : la règle est celle de la
+  # boulangerie, pas celle du serveur, et elle doit suivre l'heure d'été.
+  PRIVATE_BOOKING_ZONE = "Europe/Brussels"
+  PRIVATE_BOOKING_CUT_OFF_HOUR = 16
+
+  # Instant limite pour réserver le créneau du `date` donné.
+  def self.private_booking_deadline(date)
+    day = date.to_date.prev_day
+    ActiveSupport::TimeZone[PRIVATE_BOOKING_ZONE].local(day.year, day.month, day.day, PRIVATE_BOOKING_CUT_OFF_HOUR, 0, 0)
+  end
+
+  # Encore dans les temps ? Strict : à 16 h 00 pile, c'est fermé.
+  def self.private_booking_open?(date)
+    Time.current < private_booking_deadline(date)
+  end
+
+  # Jour ET créneau ouverts à la réservation privée, indépendamment de
+  # l'occupation. Séparé de `private_slot_available?` pour que le service de
+  # réservation puisse distinguer « jour interdit » de « déjà complet ».
+  def self.private_bookable_slot?(date, slot)
+    return false if date.blank? || slot.blank?
+
+    PRIVATE_WDAYS.include?(date.to_date.wday) && slot.to_s == PRIVATE_SLOT
+  end
 
   # Capacité par créneau des parties PRIVÉES (réglage singleton).
   def self.private_slot_capacity
@@ -56,7 +96,8 @@ class PartyEvent < ApplicationRecord
   # privées déjà sur ce créneau) est atteinte.
   def self.private_slot_available?(date, slot)
     return false if date.blank? || slot.blank?
-    return false if date.to_date < Date.current + PRIVATE_MIN_LEAD_DAYS
+    return false unless private_bookable_slot?(date, slot)
+    return false unless private_booking_open?(date)
     return false if PartySlotBlock.blocked?(date, slot)
     return false if slot.to_s == "soir" && public_party_scheduled?(date)
 
@@ -83,7 +124,8 @@ class PartyEvent < ApplicationRecord
 
     range.each_with_object({}) do |date, map|
       map[date] = SLOT_LABELS.keys.index_with do |slot|
-        next false if date < Date.current + PRIVATE_MIN_LEAD_DAYS
+        next false unless private_bookable_slot?(date, slot)
+        next false unless private_booking_open?(date)
         next false if blocked.include?([ date, slot ]) || blocked.include?([ date, nil ])
         next false if slot == "soir" && public_dates.include?(date)
 
@@ -146,6 +188,25 @@ class PartyEvent < ApplicationRecord
       end
 
     evening.or(between).order(:held_on, :slot)
+  }
+
+  # Parties PUBLIQUES qu'une fournée prépare : de son jour (inclus) jusqu'à la
+  # fournée suivante (exclue) — sans fournée suivante, tout ce qui vient après
+  # lui revient. Une party publique se tient toujours en soirée, la règle est
+  # donc celle des parties privées du soir : la fournée du jour même si elle
+  # existe, sinon la dernière qui précède.
+  #
+  # L'intervalle est semi-ouvert : chaque party publique n'a qu'UNE fournée, et
+  # aucune ne peut être comptée deux fois. Une party antérieure à toute fournée
+  # n'est rattachée à aucune — comme une party privée orpheline.
+  scope :public_prepared_by, lambda { |bake_day|
+    next none if bake_day&.baked_on.blank?
+
+    date = bake_day.baked_on
+    next_date = BakeDay.where("baked_on > ?", date).order(:baked_on).limit(1).pick(:baked_on)
+
+    scope = public_events.not_deleted
+    next_date ? scope.where(held_on: date...next_date) : scope.where(held_on: date..)
   }
 
   def slot_label

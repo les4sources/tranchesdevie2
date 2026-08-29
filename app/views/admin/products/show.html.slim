@@ -1,87 +1,87 @@
 - content_for :title, "Produit: #{@product.name}"
 - content_for :layout, "admin"
 
-.mb-6.flex.flex-col.gap-4.md:flex-row.md:justify-between.md:items-center
-  h1.text-2xl.font-bold.text-gray-900.break-words = @product.name
-  .flex.flex-wrap.gap-2
-    = link_to "Modifier", edit_admin_product_path(@product), class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium whitespace-nowrap"
-    = form_with url: admin_product_path(@product), method: :delete, local: true, data: { controller: "confirmation", action: "submit->confirmation#confirm", confirmation_message_value: "Etes-vous certain·e de vouloir supprimer ce produit ?" } do |f|
-      = f.submit "Supprimer", class: "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium whitespace-nowrap"
-    = link_to "Retour à la liste", admin_products_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium whitespace-nowrap"
+= adm_page_header @product.name do
+  = link_to "Modifier", edit_admin_product_path(@product), class: adm_btn_class(:primary)
+  = form_with url: admin_product_path(@product), method: :delete, local: true, data: { controller: "confirmation", action: "submit->confirmation#confirm", confirmation_message_value: "Etes-vous certain·e de vouloir supprimer ce produit ?" } do |f|
+    = f.submit "Supprimer", class: adm_btn_class(:danger)
+  = link_to "Retour à la liste", admin_products_path, class: adm_btn_class(:ghost)
 
-.bg-white.shadow-sm.rounded-lg.border.border-gray-200.p-4.space-y-6.md:p-6
-  .grid.grid-cols-1.md:grid-cols-2.gap-6
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Nom
-      p.text-sm.text-gray-900 = @product.name
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Catégorie
-      p.text-sm.text-gray-900 = product_category_heading(@product.category)
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Catégorie interne
-      p.text-sm.text-gray-900 = product_internal_category_heading(@product.internal_category)
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Position
-      p.text-sm.text-gray-900 = @product.position
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Farines
-      p.text-sm.text-gray-900 = @product.flour_composition_label
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Statut
-      - if @product.active?
-        span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-green-100.text-green-800 Actif
-      - else
-        span.inline-flex.items-center.px-2.5.py-0.5.rounded-full.text-xs.font-medium.bg-red-100.text-red-800 Inactif
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Canal de vente
-      p.text-sm.text-gray-900 = ProductDecorator.decorate(@product).channel_label
+.adm-card.mb-4
+  .adm-cardhd
+    h2.text-sm.font-semibold style="color: var(--text-strong);" Informations
 
-  - if @product.description.present?
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Description
-      p.text-sm.text-gray-900 = simple_format(@product.description)
+  .space-y-6.p-4
+    dl.grid.grid-cols-1.gap-6.md:grid-cols-2
+      div
+        dt.adm-eyebrow Nom
+        dd.mt-1.text-sm style="color: var(--text-strong);" = @product.name
+      div
+        dt.adm-eyebrow Catégorie
+        dd.mt-1.text-sm style="color: var(--text-strong);" = product_category_heading(@product.category)
+      div
+        dt.adm-eyebrow Catégorie interne
+        dd.mt-1.text-sm style="color: var(--text-strong);" = product_internal_category_heading(@product.internal_category)
+      div
+        dt.adm-eyebrow Position
+        dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);" = @product.position
+      div
+        dt.adm-eyebrow Farines
+        dd.mt-1.text-sm style="color: var(--text-strong);" = @product.flour_composition_label
+      div
+        dt.adm-eyebrow Statut
+        dd.mt-1 = adm_chip(@product.active? ? "Actif" : "Inactif", tone: @product.active? ? :success : :danger)
+      div
+        dt.adm-eyebrow Canal de vente
+        dd.mt-1.text-sm style="color: var(--text-strong);" = ProductDecorator.decorate(@product).channel_label
 
-  - if @product_images.any?
-    .space-y-2
-      label.block.text-sm.font-medium.text-gray-700 Images
-      .grid.grid-cols-2.md:grid-cols-4.gap-4.mt-2
-        - @product_images.each do |product_image|
-          - if product_image.image.attached?
-            .relative.group
-              - if product_image.image.variable?
-                = image_tag product_image.image.variant(resize_to_limit: [200, 200]), class: "rounded-md border border-gray-200 w-full"
-              - else
-                = link_to product_image.image.filename.to_s, rails_blob_path(product_image.image, disposition: "attachment"), class: "text-blue-600 hover:text-blue-800"
-              - if product_image.product_variant.present?
-                .absolute.bottom-0.left-0.right-0.bg-black.bg-opacity-75.text-white.text-xs.px-2.py-1.rounded-b-md
-                  = product_image.product_variant.name
+    - if @product.description.present?
+      div
+        span.adm-eyebrow Description
+        .mt-1.text-sm style="color: var(--text-strong);" = simple_format(@product.description)
 
-  .space-y-4
-    .flex.flex-col.gap-3.sm:flex-row.sm:justify-between.sm:items-center
-      h2.text-xl.font-semibold.text-gray-900 Variantes
-      = link_to "Ajouter une variante", new_admin_product_variants_path(@product), class: "px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
-    
-    - if @variants.any?
-      .overflow-x-auto
-        table.min-w-full.divide-y.divide-gray-200
-          thead.bg-gray-100
+    - if @product_images.any?
+      div
+        span.adm-eyebrow Images
+        .mt-2.grid.grid-cols-2.gap-4.md:grid-cols-4
+          - @product_images.each do |product_image|
+            - if product_image.image.attached?
+              .relative.group
+                - if product_image.image.variable?
+                  = image_tag product_image.image.variant(resize_to_limit: [200, 200]), class: "w-full rounded-md", style: "border: 1px solid var(--border-subtle);"
+                - else
+                  = link_to product_image.image.filename.to_s, rails_blob_path(product_image.image, disposition: "attachment"), class: "adm-link"
+                - if product_image.product_variant.present?
+                  .absolute.bottom-0.left-0.right-0.rounded-b-md.px-2.py-1.text-xs style="background: color-mix(in srgb, var(--ink-900) 78%, transparent); color: var(--flour-100);"
+                    = product_image.product_variant.name
+
+.adm-card.overflow-hidden
+  .adm-cardhd
+    h2.text-sm.font-semibold style="color: var(--text-strong);" Variantes
+    = link_to "Ajouter une variante", new_admin_product_variants_path(@product), class: adm_btn_class(:default)
+
+  .overflow-x-auto
+    table.adm-grid
+      thead
+        tr
+          th Nom
+          th Prix
+          th Canal de vente
+          th Actions
+      tbody
+        - if @variants.any?
+          - @variants.each do |variant|
             tr
-              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
-              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Prix
-              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Canal de vente
-              th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
-          tbody.divide-y.divide-gray-200
-            - @variants.each do |variant|
-              tr
-                td.px-4.py-3.text-sm.text-gray-900
-                  span.inline-flex.items-center.gap-2
-                    span.h-2.w-2.rounded-full.shrink-0 class=(variant.active? ? "bg-green-500" : "bg-red-500") title=(variant.active? ? "Actif" : "Inactif") aria-hidden="true"
-                    = variant.name
-                td.px-4.py-3.text-sm.text-gray-600 = number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ")
-                td.px-4.py-3.text-sm = ProductVariantDecorator.decorate(variant).channel_label
-                td.px-4.py-3.text-sm
-                  = link_to "Modifier", edit_variant_admin_product_path(@product, variant), class: "text-blue-600 hover:text-blue-800 mr-3"
-                  = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { turbo_confirm: "Supprimer ce format ? Cette action est définitive." }, class: "text-red-600 hover:text-red-800 inline", form: { class: "inline" }
-    - else
-      p.text-sm.text-gray-500 Aucune variante pour ce produit
-
+              td.font-medium
+                span.inline-flex.items-center.gap-2
+                  span title=(variant.active? ? "Actif" : "Inactif")
+                    = adm_dot tone: (variant.active? ? :success : :danger)
+                  = variant.name
+              td.adm-grid-num = number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ")
+              td = ProductVariantDecorator.decorate(variant).channel_label
+              td.whitespace-nowrap
+                = link_to "Modifier", edit_variant_admin_product_path(@product, variant), class: "adm-rowaction mr-3"
+                = button_to "Supprimer", variant_admin_product_path(@product, variant), method: :delete, data: { turbo_confirm: "Supprimer ce format ? Cette action est définitive." }, class: "adm-rowaction inline", form: { class: "inline" }
+        - else
+          = adm_empty_row colspan: 4, title: "Aucune variante pour ce produit", hint: "Une variante porte le format, le prix et la quantité de pâte." do
+            = link_to "Ajouter une variante", new_admin_product_variants_path(@product), class: adm_btn_class(:primary)

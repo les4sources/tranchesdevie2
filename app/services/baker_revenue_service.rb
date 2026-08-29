@@ -36,11 +36,21 @@
 #   report.artisan_totals       # => [ ArtisanTotal, ... ] (cumul par artisan)
 #   report.warnings             # => [ "…", … ] (sommes de parts > 100 %)
 class BakerRevenueService
+  # Les quatre postes de revenu d'un boulanger, dans l'ordre d'affichage. Leur
+  # somme fait toujours son total : c'est l'invariant que tient tout le service.
+  BUCKETS = %i[bread_cents private_party_cents public_party_cents workshop_cents].freeze
+
   # Part attribuée à un artisan présent sur un jour de production donné.
+  # Les quatre postes sont calculés séparément puis additionnés, jamais l'inverse :
+  # ventiler un total a posteriori réintroduirait un arrondi par poste, et la
+  # somme des colonnes ne retomberait plus sur le total affiché.
   ArtisanShare = Struct.new(
     :artisan,
-    :percent,        # part littérale configurée (BigDecimal), ou nil si non saisie
-    :amount_cents,   # pool × percent / 100
+    :percent,               # part littérale configurée (BigDecimal), ou nil si non saisie
+    :bread_cents,           # pool pain × percent / 100
+    :private_party_cents,   # pool party privée × percent / 100
+    :public_party_cents,    # pool party publique (live + historique) × percent / 100
+    :amount_cents,          # somme des trois
     keyword_init: true
   )
 
@@ -70,6 +80,17 @@ class BakerRevenueService
     :public_party_revenue_cents,
     :public_party_four_sources_cents,
     :public_party_bakers_cents,
+    # Parties publiques HISTORIQUES (BilletWeb). Leur recette n'a jamais transité
+    # par l'app : elle est absente de `revenue_cents`, mais la part boulangers due
+    # par la fondation entre bien dans `baker_pool_cents` et dans la marge brute.
+    :historical_party_persons,
+    :historical_party_revenue_cents,
+    :historical_party_four_sources_cents,
+    :historical_party_bakers_cents,
+    # Le pool est ventilé en trois postes pour la répartition par boulanger.
+    :bread_pool_cents,
+    :private_party_pool_cents,
+    :public_party_pool_cents,
     :artisan_shares,        # [ ArtisanShare, ... ]
     :percent_sum,           # somme des parts des artisans présents (BigDecimal)
     :percent_overflow,      # true si percent_sum > 100
@@ -82,6 +103,13 @@ class BakerRevenueService
   ArtisanTotal = Struct.new(
     :artisan,
     :amount_cents,
+    # Ventilation du brut. Les ateliers sont un quatrième poste, pas un
+    # sous-ensemble du pain : sans eux, la somme des colonnes ne ferait pas
+    # le total.
+    :bread_cents,
+    :private_party_cents,
+    :public_party_cents,
+    :workshop_cents,
     :days_count,
     keyword_init: true
   )
@@ -97,6 +125,13 @@ class BakerRevenueService
     :partnership,     # RevenuePartnership, ou nil si l'artisan est solo
     :raw_cents,       # brut de ses propres jours (avant mise en commun)
     :settled_cents,   # revenu final après mise en commun/répartition
+    # Ventilation du revenu FINAL, poste par poste. Chaque poste est mis en
+    # commun et réparti séparément, si bien que leur somme retombe exactement
+    # sur `settled_cents`, partenariat ou pas.
+    :bread_cents,
+    :private_party_cents,
+    :public_party_cents,
+    :workshop_cents,
     :days_count,      # nombre de ses jours de production sur la période
     keyword_init: true
   )
@@ -123,6 +158,20 @@ class BakerRevenueService
     :total_public_party_revenue_cents,
     :total_public_party_four_sources_cents,
     :total_public_party_bakers_cents,
+    # Parties publiques historiques (BilletWeb) : ce que la fondation doit aux
+    # boulangers, appliqué rétroactivement au barème public.
+    :total_historical_party_persons,
+    :total_historical_party_revenue_cents,
+    :total_historical_party_four_sources_cents,
+    :total_historical_party_bakers_cents,
+    # Ateliers (#208) : revenu COMPLÉMENTAIRE, identifiable séparément de la
+    # production. Inclus dans four_sources_cents / baker_pool_cents seulement
+    # quand ils sont effectivement répartis (taux tranché ET animateur désigné).
+    :workshops,
+    :total_workshop_revenue_cents,
+    :total_workshop_four_sources_cents,
+    :total_workshop_bakers_cents,
+    :workshops_undistributed_count,
     :artisan_totals,       # cumul BRUT par artisan (avant partenariats)
     :artisan_settlements,  # revenu FINAL par artisan (après mise en commun)
     :warnings,
@@ -139,7 +188,11 @@ class BakerRevenueService
 
   def call
     days = bake_days.map { |bake_day| build_day(bake_day) }
-    artisan_totals = consolidate_artisans(days)
+    # Les ateliers s'ajoutent COMME les parties : un bloc à part, qui ne touche
+    # à aucun calcul de la production. Leurs parts d'artisans rejoignent en
+    # revanche le même cumul, donc les mêmes partenariats.
+    workshops = WorkshopRevenueService.call(period_workshops)
+    artisan_totals = consolidate_artisans(days, workshops)
 
     Report.new(
       start_date: @start_date,
@@ -151,9 +204,9 @@ class BakerRevenueService
       total_transport_cents: sum(days, :transport_cents),
       total_commission_cents: sum(days, :commission_cents),
       total_sales_locations_cents: sum(days, :sales_locations_cents),
-      gross_margin_cents: sum(days, :gross_margin_cents),
-      four_sources_cents: sum(days, :four_sources_cents),
-      baker_pool_cents: sum(days, :baker_pool_cents),
+      gross_margin_cents: sum(days, :gross_margin_cents) + workshops.total_four_sources_cents + workshops.total_bakers_cents,
+      four_sources_cents: sum(days, :four_sources_cents) + workshops.total_four_sources_cents,
+      baker_pool_cents: sum(days, :baker_pool_cents) + workshops.total_bakers_cents,
       total_party_persons: sum(days, :party_persons),
       total_party_revenue_cents: sum(days, :party_revenue_cents),
       total_party_four_sources_cents: sum(days, :party_four_sources_cents),
@@ -162,16 +215,31 @@ class BakerRevenueService
       total_public_party_revenue_cents: sum(days, :public_party_revenue_cents),
       total_public_party_four_sources_cents: sum(days, :public_party_four_sources_cents),
       total_public_party_bakers_cents: sum(days, :public_party_bakers_cents),
+      total_historical_party_persons: sum(days, :historical_party_persons),
+      total_historical_party_revenue_cents: sum(days, :historical_party_revenue_cents),
+      total_historical_party_four_sources_cents: sum(days, :historical_party_four_sources_cents),
+      total_historical_party_bakers_cents: sum(days, :historical_party_bakers_cents),
+      workshops: workshops.workshops,
+      total_workshop_revenue_cents: workshops.total_revenue_cents,
+      total_workshop_four_sources_cents: workshops.total_four_sources_cents,
+      total_workshop_bakers_cents: workshops.total_bakers_cents,
+      workshops_undistributed_count: workshops.undistributed_count,
       artisan_totals: artisan_totals,
       artisan_settlements: build_settlements(artisan_totals),
-      warnings: build_warnings(days)
+      warnings: build_warnings(days) + orphan_party_warnings
     )
   end
 
   private
 
+  # Ateliers de la période (#208), avec leurs animateurs préchargés.
+  def period_workshops
+    Workshop.between(@start_date, @end_date).includes(artisans: :artisan_revenue_shares).order(:held_on)
+  end
+
   def bake_days
     BakeDay
+      .accounted
       .where(baked_on: @start_date..@end_date)
       .ordered
       .includes(:baking_artisans, sales_locations: :sales_location_costs)
@@ -185,7 +253,12 @@ class BakerRevenueService
     bread_bags_cents = day_bread_bags_cents(bake_day)
     # Pas de vente ce jour-là (CA = 0) → aucun transport facturé : pas de
     # fournée, donc pas de tournée. La marge brute (et le revenu net) reste à 0.
-    transport_cents = revenue_cents.zero? ? 0 : RevenueParameter.transport_cents_on(date)
+    #
+    # Le déclencheur reste le CA PROPRE de la fournée (#207) et non l'assiette
+    # élargie aux parties : une pizza party se tient sur place, elle ne
+    # déclenche aucune tournée. Sans cette distinction, une journée sans pain
+    # mais avec une party facturerait un transport qui n'a pas eu lieu.
+    transport_cents = day_own_revenue_cents(bake_day).zero? ? 0 : RevenueParameter.transport_cents_on(date)
     # Commissions Stripe des commandes EN LIGNE du jour (CA = 0 → aucune commande
     # → commission naturellement 0 : pas de paiement Stripe à déduire).
     commission_cents = day_commission_cents(date)
@@ -201,22 +274,37 @@ class BakerRevenueService
     private_party = PizzaPartyRevenueService.call(party_orders)
     public_party = PublicPartyRevenueService.call(party_orders)
     party_sale_cents = private_party.sale_cents + public_party.sale_cents
-    party_four_sources_cents = private_party.four_sources_cents + public_party.four_sources_cents
-    party_bakers_cents = private_party.bakers_cents + public_party.bakers_cents
+
+    # Parties publiques HISTORIQUES (BilletWeb) : la recette est partie sur le
+    # compte de la fondation sans passer par l'app, donc elle n'est PAS dans
+    # `revenue_cents` et ne doit surtout pas être retranchée de la marge pain.
+    # Seule la part boulangers, due rétroactivement, rejoint le pool.
+    historical = day_historical_parties(bake_day)
 
     non_party_margin_cents =
       revenue_cents - party_sale_cents - cost_price_cents - bread_bags_cents -
       transport_cents - commission_cents - sales_locations_cents
     non_party_four_sources_cents = four_sources_cut(non_party_margin_cents, date)
-    non_party_pool_cents = non_party_margin_cents - non_party_four_sources_cents
+    bread_pool_cents = non_party_margin_cents - non_party_four_sources_cents
 
-    four_sources_cents = non_party_four_sources_cents + party_four_sources_cents
-    baker_pool_cents = non_party_pool_cents + party_bakers_cents
+    # Le poste « party publique » du boulanger réunit le live et l'historique :
+    # pour lui, c'est la même soirée pizza, quel que soit le canal de vente.
+    public_party_pool_cents = public_party.bakers_cents + historical[:bakers_cents]
+
+    four_sources_cents = non_party_four_sources_cents + private_party.four_sources_cents +
+                         public_party.four_sources_cents + historical[:four_sources_cents]
+    baker_pool_cents = bread_pool_cents + private_party.bakers_cents + public_party_pool_cents
     # Marge brute totale (pain + parties) = ce qui est effectivement réparti.
     gross_margin_cents = four_sources_cents + baker_pool_cents
 
     artisans = bake_day.baking_artisans.to_a
-    shares = artisan_shares(artisans, baker_pool_cents, date)
+    shares = artisan_shares(
+      artisans,
+      bread_cents: bread_pool_cents,
+      private_party_cents: private_party.bakers_cents,
+      public_party_cents: public_party_pool_cents,
+      date: date
+    )
     percent_sum = shares.sum { |share| share.percent || 0 }
 
     DayBreakdown.new(
@@ -239,22 +327,57 @@ class BakerRevenueService
       public_party_revenue_cents: public_party.sale_cents,
       public_party_four_sources_cents: public_party.four_sources_cents,
       public_party_bakers_cents: public_party.bakers_cents,
+      historical_party_persons: historical[:persons],
+      historical_party_revenue_cents: historical[:sale_cents],
+      historical_party_four_sources_cents: historical[:four_sources_cents],
+      historical_party_bakers_cents: historical[:bakers_cents],
+      bread_pool_cents: bread_pool_cents,
+      private_party_pool_cents: private_party.bakers_cents,
+      public_party_pool_cents: public_party_pool_cents,
       artisan_shares: shares,
       percent_sum: percent_sum,
       percent_overflow: percent_sum > 100
     )
   end
 
+  # Assiette comptable du jour (#207) : les commandes finalisées RATTACHÉES à la
+  # fournée, PLUS les commandes party que cette fournée prépare et qui, elles,
+  # n'ont pas de fournée (`bake_day: nil` par design).
+  #
+  # Les deux ensembles sont fusionnés puis dédupliqués par id : une commande qui
+  # porterait à la fois une fournée et un événement n'est comptée qu'une fois.
+  # `PartyEvent.prepared_by` garantit par ailleurs qu'une party n'est rattachée
+  # qu'à UNE fournée, donc aucun double comptage entre deux jours.
+  def day_accounted_orders(bake_day)
+    @day_accounted_orders ||= {}
+    @day_accounted_orders[bake_day.id] ||= begin
+      direct = bake_day.orders.completed
+                       .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+                       .to_a
+      via_event = BakeDayPartyOrders.completed(bake_day)
+
+      (direct + via_event).uniq(&:id)
+    end
+  end
+
   # Commandes finalisées du jour, préchargées pour le barème party
   # (PizzaPartyRevenueService itère les articles + le coûtant historisé).
   def day_party_orders(bake_day)
-    bake_day.orders.completed
-            .includes(:bake_day, order_items: { product_variant: [ :variant_cost_prices, :product ] })
+    day_accounted_orders(bake_day)
   end
 
-  # CA du jour : somme des commandes finalisées rattachées au jour de cuisson.
-  def day_revenue_cents(bake_day)
+  # CA des commandes RATTACHÉES à la fournée, hors parties venues par
+  # l'événement. Sert uniquement au déclenchement du transport (cf. build_day).
+  def day_own_revenue_cents(bake_day)
     bake_day.orders.completed.sum(:total_cents)
+  end
+
+  # CA du jour. Il DOIT porter sur la même assiette que `day_party_orders` :
+  # le CA party en est retranché pour isoler la marge « pain » (cf. build_day).
+  # Compter une party dans le split sans la compter dans le CA creuserait un
+  # trou du même montant dans la marge non-party.
+  def day_revenue_cents(bake_day)
+    day_accounted_orders(bake_day).sum(&:total_cents)
   end
 
   # Coûtant matières premières du jour : Σ (coûtant variante à la date × qty) sur
@@ -309,27 +432,77 @@ class BakerRevenueService
     (gross_margin_cents * basis_points / 10_000.0).round
   end
 
+  # Parties publiques HISTORIQUES (BilletWeb) que cette fournée prépare, agrégées.
+  # Même règle de rattachement que les parties publiques vendues sur le site :
+  # les boulangers de la fournée qui a pétri les pâtons touchent la part due.
+  def day_historical_parties(bake_day)
+    events = PartyEvent.public_prepared_by(bake_day).historical.to_a
+    blank = { persons: 0, sale_cents: 0, four_sources_cents: 0, bakers_cents: 0, events: [] }
+    return blank if events.empty?
+
+    events.each_with_object(blank.dup) do |event, acc|
+      result = HistoricalPartyRevenueService.call(event)
+      acc[:persons] += result.persons
+      acc[:sale_cents] += result.sale_cents
+      acc[:four_sources_cents] += result.four_sources_cents
+      acc[:bakers_cents] += result.bakers_cents
+      acc[:events] = acc[:events] + [ event ]
+    end
+  end
+
   # Répartition du pool entre les artisans présents, au % littéral configuré.
-  def artisan_shares(artisans, baker_pool_cents, date)
+  # Chaque poste est réparti pour lui-même : additionner ensuite est exact,
+  # alors que ventiler un total arrondi ne l'aurait pas été.
+  def artisan_shares(artisans, bread_cents:, private_party_cents:, public_party_cents:, date:)
     artisans.map do |artisan|
       percent = artisan.revenue_share_percent(on: date)
-      amount = percent.nil? ? 0 : (baker_pool_cents * percent / 100.0).round
+      cut = ->(pool) { percent.nil? ? 0 : (pool * percent / 100.0).round }
 
-      ArtisanShare.new(artisan: artisan, percent: percent, amount_cents: amount)
+      bread = cut.call(bread_cents)
+      private_party = cut.call(private_party_cents)
+      public_party = cut.call(public_party_cents)
+
+      ArtisanShare.new(
+        artisan: artisan,
+        percent: percent,
+        bread_cents: bread,
+        private_party_cents: private_party,
+        public_party_cents: public_party,
+        amount_cents: bread + private_party + public_party
+      )
     end
   end
 
   # Cumul par artisan sur l'ensemble des jours (additionnable par mois côté
   # appelant en filtrant la période). Trié par nom pour un affichage stable.
-  def consolidate_artisans(days)
-    grouped = Hash.new { |hash, key| hash[key] = { artisan: nil, amount_cents: 0, days_count: 0 } }
+  def consolidate_artisans(days, workshops = nil)
+    grouped = Hash.new do |hash, key|
+      hash[key] = { artisan: nil, amount_cents: 0, bread_cents: 0, private_party_cents: 0,
+                    public_party_cents: 0, workshop_cents: 0, days_count: 0 }
+    end
 
     days.each do |day|
       day.artisan_shares.each do |share|
         bucket = grouped[share.artisan.id]
         bucket[:artisan] = share.artisan
         bucket[:amount_cents] += share.amount_cents
+        bucket[:bread_cents] += share.bread_cents
+        bucket[:private_party_cents] += share.private_party_cents
+        bucket[:public_party_cents] += share.public_party_cents
         bucket[:days_count] += 1
+      end
+    end
+
+    # Les parts d'atelier (#208) rejoignent le MÊME cumul : c'est ce qui leur
+    # fait traverser la couche partenariat sans une ligne de code de plus.
+    # `days_count` compte les jours de production : un atelier n'en est pas un,
+    # il ne l'incrémente pas.
+    workshops&.workshops&.each do |workshop|
+      workshop.artisan_shares.each do |share|
+        bucket = grouped[share.artisan.id]
+        bucket[:artisan] = share.artisan
+        bucket[:amount_cents] += share.amount_cents
+        bucket[:workshop_cents] += share.amount_cents
       end
     end
 
@@ -361,17 +534,25 @@ class BakerRevenueService
       # boulangé).
       next unless memberships.any? { |ms| raw_by_id.key?(ms.artisan_id) }
 
-      pooled_cents = memberships.sum { |ms| raw_by_id[ms.artisan_id]&.amount_cents || 0 }
-      shares = distribute(pooled_cents, memberships.map(&:weight))
+      weights = memberships.map(&:weight)
+      # Poste par poste : mettre en commun le total puis le ventiler au prorata
+      # ferait dériver les colonnes de quelques centimes par rapport au total.
+      shares_by_bucket = BUCKETS.index_with do |bucket|
+        pooled = memberships.sum { |ms| raw_by_id[ms.artisan_id]&.public_send(bucket) || 0 }
+        distribute(pooled, weights)
+      end
 
       memberships.each_with_index do |ms, index|
         raw = raw_by_id[ms.artisan_id]
+        buckets = BUCKETS.index_with { |bucket| shares_by_bucket[bucket][index] }
+
         settlements << ArtisanSettlement.new(
           artisan: ms.artisan,
           partnership: partnership,
           raw_cents: raw&.amount_cents || 0,
-          settled_cents: shares[index],
-          days_count: raw&.days_count || 0
+          settled_cents: buckets.values.sum,
+          days_count: raw&.days_count || 0,
+          **buckets
         )
         covered_ids << ms.artisan_id
       end
@@ -386,7 +567,8 @@ class BakerRevenueService
         partnership: nil,
         raw_cents: total.amount_cents,
         settled_cents: total.amount_cents,
-        days_count: total.days_count
+        days_count: total.days_count,
+        **BUCKETS.index_with { |bucket| total.public_send(bucket) }
       )
     end
 
@@ -421,6 +603,49 @@ class BakerRevenueService
       "Le #{I18n.l(day.date)}, la somme des parts des boulangers présents " \
         "atteint #{format_percent(day.percent_sum)} % (> 100 %). " \
         "Les parts sont appliquées telles quelles, sans correction automatique."
+    end + undistributed_warnings(days)
+  end
+
+  # L'inverse de l'excès : du pool qui ne trouve personne. Aucun boulanger affecté
+  # à la fournée, ou des parts qui ne font pas 100 % — dans les deux cas l'argent
+  # reste dans le total du pool mais n'est versé à personne, et rien ne le disait.
+  def undistributed_warnings(days)
+    days.filter_map do |day|
+      next if day.baker_pool_cents <= 0
+
+      distributed = day.artisan_shares.sum(&:amount_cents)
+      leftover = day.baker_pool_cents - distributed
+      next if leftover <= 0
+
+      reason =
+        if day.artisan_shares.empty?
+          "aucun boulanger n'est affecté à cette fournée"
+        else
+          "la somme des parts des boulangers présents n'atteint que #{format_percent(day.percent_sum)} %"
+        end
+
+      "Le #{I18n.l(day.date)}, #{format_currency(leftover)} du pool ne sont versés à personne : #{reason}."
+    end
+  end
+
+  def format_currency(cents)
+    format("%.2f €", cents / 100.0).tr(".", ",")
+  end
+
+  # Une party publique tenue avant toute fournée n'est rattachée à aucune : son
+  # argent sortirait du rapport sans un mot. On le dit plutôt que de le perdre.
+  def orphan_party_warnings
+    first_bake_day = BakeDay.accounted.minimum(:baked_on)
+    return [] if first_bake_day.blank?
+
+    PartyEvent.public_events.not_deleted
+              .where(held_on: @start_date..@end_date)
+              .where(held_on: ...first_bake_day)
+              .order(:held_on)
+              .map do |event|
+      "La pizza party publique du #{I18n.l(event.held_on)} précède toute fournée " \
+        "comptabilisée : elle n'est rattachée à aucun jour de production, et son " \
+        "revenu n'entre pas dans le pool des boulangers."
     end
   end
 

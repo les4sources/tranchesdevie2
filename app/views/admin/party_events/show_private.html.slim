@@ -7,6 +7,12 @@
 = adm_page_header "Pizza party privée" do
   - if @reservation
     = link_to "Voir la commande", admin_order_path(@reservation), class: adm_btn_class(:primary)
+  / Une party créée à la main (#204) se modifie, se bascule payée et se
+  / supprime d'ici — pas une réservation venue du site, payée en ligne.
+  - if @reservation&.manually_added?
+    = link_to "Modifier", edit_admin_private_party_path(@event), class: adm_btn_class(:default)
+    = button_to (@reservation.paid? ? "Marquer non payée" : "Marquer payée"), toggle_paid_admin_private_party_path(@event), method: :patch, class: adm_btn_class(:default)
+    = button_to "Supprimer la party", admin_private_party_path(@event), method: :delete, form: { data: { turbo_confirm: "Supprimer cette party et sa commande ? Les revenus seront recalculés." } }, class: adm_btn_class(:danger)
   = link_to "Retour aux parties", admin_party_events_path, class: adm_btn_class(:default)
 
 .mb-4.flex.flex-wrap.items-center.gap-2
@@ -15,6 +21,8 @@
   = adm_chip @event.slot_label, tone: :accent
   - if @reservation
     = adm_order_status_chip(@reservation.status)
+    - if @reservation.manually_added?
+      = adm_chip "Ajoutée à la main", tone: :accent
 
 .grid.grid-cols-1.gap-4.lg:grid-cols-2
   .adm-card.p-4.sm:p-6

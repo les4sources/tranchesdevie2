@@ -1,0 +1,49 @@
+/ Une section de parties privées (à venir ou passées). Chaque ligne vient d'une
+/ COMMANDE ; l'événement n'est affiché que s'il existe (#205).
+section.mb-8
+  h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" = title
+  - if parties.any?
+    .adm-card.overflow-hidden
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Date
+              th Créneau
+              th.text-right Pâtons
+              th Client
+              th.text-right Montant
+              th Forfait
+              th Mot du client
+              th.text-right Actions
+          tbody
+            - parties.each do |party|
+              tr
+                td.whitespace-nowrap
+                  - if party.held_on
+                    span.adm-grid-num style="color: var(--text-strong);" = l(party.held_on)
+                  - else
+                    span style="color: var(--text-faint);" Sans date
+                  / Une commande sans événement n'est pas une anomalie : c'est le
+                  / cas de la plupart des parties encodées à la main.
+                  - unless party.event?
+                    span.ml-2 = adm_chip("Sans événement", tone: :warning)
+                td style="color: var(--text-muted);" = party.slot_label || "—"
+                td.adm-grid-num.text-right style="color: var(--text-strong);" = party.paton_count
+                td style="color: var(--text-strong);" = party.customer&.full_name || "—"
+                td.adm-grid-num.text-right style="color: var(--text-strong);"
+                  = number_to_currency(party.total_euros, unit: "€", separator: ",", delimiter: " ")
+                td style="color: var(--text-muted);" = party.forfait? ? "Oui" : "Non"
+                / Tronqué pour tenir dans la ligne ; le texte entier reste lisible
+                / en survol, et sur la fiche de commande (#169).
+                - if party.note.present?
+                  td title=party.note style="color: var(--text-muted);" = truncate(party.note, length: 80)
+                - else
+                  td style="color: var(--text-faint);" —
+                td.whitespace-nowrap.text-right
+                  - if party.event?
+                    = link_to "Voir le détail", admin_party_event_path(party.party_event), class: "adm-rowaction"
+                  - else
+                    = link_to "Voir la commande", admin_order_path(party.order), class: "adm-rowaction"
+  - else
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);" = empty

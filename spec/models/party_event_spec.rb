@@ -2,7 +2,10 @@ require "rails_helper"
 
 RSpec.describe PartyEvent do
   describe ".private_slot_available?" do
-    let(:date) { Date.current + 7 }
+    # Depuis #201, seuls le mardi et le vendredi SOIR sont réservables. On vise
+    # le mardi de la semaine suivante : toujours au-delà de la limite « veille
+    # 16 h », quelle que soit l'heure d'exécution de la suite.
+    let(:date) { Date.current.next_occurring(:tuesday) + 7 }
 
     before { ProductionSetting.current.update!(private_party_slot_capacity: 2) }
 
@@ -17,14 +20,14 @@ RSpec.describe PartyEvent do
 
     it "est indisponible si toute la journée est bloquée (slot nil)" do
       create(:party_slot_block, blocked_on: date, slot: nil)
-      expect(described_class.private_slot_available?(date, "midi")).to be false
       expect(described_class.private_slot_available?(date, "soir")).to be false
     end
 
     it "devient indisponible quand la capacité du créneau est atteinte" do
       2.times { create(:party_event, :private_party, held_on: date, slot: :soir) }
       expect(described_class.private_slot_available?(date, "soir")).to be false
-      expect(described_class.private_slot_available?(date, "midi")).to be true # autre créneau libre
+      # Le midi n'est plus une porte de sortie depuis #201 : il est fermé partout.
+      expect(described_class.private_slot_available?(date, "midi")).to be false
     end
 
     it "est indisponible pour une date passée" do
@@ -34,7 +37,6 @@ RSpec.describe PartyEvent do
     it "est indisponible en soirée si une party publique est programmée ce jour" do
       create(:party_event, :public_party, held_on: date)
       expect(described_class.private_slot_available?(date, "soir")).to be false
-      expect(described_class.private_slot_available?(date, "midi")).to be true # midi reste libre
     end
 
     it "ignore une party publique supprimée pour le blocage du soir" do

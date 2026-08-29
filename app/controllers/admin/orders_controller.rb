@@ -214,12 +214,11 @@ class Admin::OrdersController < Admin::BaseController
 
   def load_form_dependencies
     @customers = Customer.includes(groups: :group_product_discounts).order(:last_name, :first_name)
-    # Pour l'édition, permettre tous les jours de cuisson, pas seulement les futurs
-    @bake_days = if action_name == "edit" || action_name == "update"
-                   BakeDay.ordered
-    else
-                   BakeDay.future.ordered
-    end
+    # Les jours proposés (à venir + régularisation) sont construits par
+    # `Admin::OrdersHelper#admin_bake_day_options` (#198) : c'est la même liste
+    # à la création et à l'édition, parce qu'encoder après coup une vente de
+    # marché est exactement aussi légitime que corriger la commande qui en est
+    # née. Rien ici ne filtre sur `cut_off_at` : l'admin régularise.
     @products = Product.not_deleted.active.includes(:product_variants).ordered
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
     @variant_lookup = @products.each_with_object({}) do |product, hash|

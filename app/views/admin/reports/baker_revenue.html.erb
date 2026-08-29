@@ -74,13 +74,156 @@
   </div>
 </div>
 
+<%# Pizza parties : leur part boulangers est déjà dans le pool ci-dessus, mais
+    elle n'apparaissait nulle part — on ne savait pas d'où venait l'argent. Les
+    trois lignes ont chacune leur barème, aucune ne passe par le 70/30 du pain. %>
+<% party_rows = [
+     [ "Parties privées", @report.total_party_persons, @report.total_party_revenue_cents,
+       @report.total_party_four_sources_cents, @report.total_party_bakers_cents,
+       "Barème privé, au nombre de pâtons." ],
+     [ "Parties publiques (site)", @report.total_public_party_persons, @report.total_public_party_revenue_cents,
+       @report.total_public_party_four_sources_cents, @report.total_public_party_bakers_cents,
+       "Barème public, places adulte/enfant vendues sur le site." ],
+     [ "Parties publiques (BilletWeb)", @report.total_historical_party_persons, @report.total_historical_party_revenue_cents,
+       @report.total_historical_party_four_sources_cents, @report.total_historical_party_bakers_cents,
+       "Recette encaissée par la fondation ; barème public appliqué rétroactivement." ]
+   ].reject { |row| row[1].zero? && row[4].zero? } %>
+<% if party_rows.any? %>
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-xl font-medium text-gray-900 mb-1">Pizza parties</h2>
+    <p class="text-sm text-gray-500 mb-4">
+      Une pizza party n'a ni sacs, ni transport, ni tournée : le partage 70/30 des pains ne
+      s'y applique pas, chaque type a son propre barème. La part boulangers rejoint ensuite
+      le même pool que la production, donc les mêmes artisans et les mêmes partenariats.
+      Les parties BilletWeb, elles, sont de l'argent que la fondation doit aux boulangers :
+      leur recette n'a jamais transité par l'app et n'entre donc pas dans le chiffre d'affaires.
+    </p>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left">Type</th>
+            <th class="px-4 py-3 text-right">Personnes</th>
+            <th class="px-4 py-3 text-right">Recette</th>
+            <th class="px-4 py-3 text-right">Les 4 Sources</th>
+            <th class="px-4 py-3 text-right">Boulangers</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 bg-white">
+          <% party_rows.each do |label, persons, revenue_cents, four_sources_cents, bakers_cents, hint| %>
+            <tr>
+              <td class="px-4 py-3 text-gray-900">
+                <div class="font-medium"><%= label %></div>
+                <div class="text-xs text-gray-500"><%= hint %></div>
+              </td>
+              <td class="px-4 py-3 text-right text-gray-600"><%= persons %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(revenue_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(four_sources_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(bakers_cents) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-gray-50">
+          <tr>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900">Total pizza parties</td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= party_rows.sum { |row| row[1] } %></td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[2] }) %></td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[3] }) %></td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[4] }) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+<% end %>
+
+<%# Ateliers (#208) : revenu COMPLÉMENTAIRE, identifiable séparément de la
+    production. Leur part boulangers est incluse dans le pool ci-dessus, mais
+    on la montre à part pour qu'on sache toujours d'où vient l'argent. %>
+<% if @report.workshops.any? %>
+  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-xl font-medium text-gray-900 mb-1">Ateliers (revenu complémentaire)</h2>
+    <p class="text-sm text-gray-500 mb-4">
+      Un atelier n'a ni coûtant matière, ni sacs, ni transport : le partage 70/30 des pains
+      ne s'y applique pas. Sa recette est partagée selon le taux « ateliers » configuré,
+      puis la part boulangers suit les mêmes règles d'artisans et de partenariats que la production.
+    </p>
+
+    <% if @report.workshops_undistributed_count.positive? %>
+      <div class="mb-4 rounded-md bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+        <strong><%= @report.workshops_undistributed_count %></strong>
+        atelier<%= "s" if @report.workshops_undistributed_count > 1 %>
+        de cette période <strong>ne sont répartis à personne</strong> : le taux des ateliers n'est
+        pas défini à leur date, ou aucun animateur n'a été sélectionné. Leur recette est comptée
+        dans le total ci-dessous mais ne verse rien.
+      </div>
+    <% end %>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left">Date</th>
+            <th class="px-4 py-3 text-left">Atelier</th>
+            <th class="px-4 py-3 text-left">Animateurs</th>
+            <th class="px-4 py-3 text-right">Recette</th>
+            <th class="px-4 py-3 text-right">Les 4 Sources</th>
+            <th class="px-4 py-3 text-right">Boulangers</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 bg-white">
+          <% @report.workshops.each do |entry| %>
+            <tr class="<%= "bg-amber-50" unless entry.distributed? %>">
+              <td class="px-4 py-3 text-gray-900 whitespace-nowrap"><%= l(entry.date) %></td>
+              <td class="px-4 py-3 text-gray-900"><%= entry.workshop.title %></td>
+              <td class="px-4 py-3 text-gray-600">
+                <% if entry.unassigned %>
+                  <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Aucun animateur</span>
+                <% else %>
+                  <%= entry.workshop.artisans.map(&:name).join(", ") %>
+                <% end %>
+              </td>
+              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(entry.revenue_cents) %></td>
+              <td class="px-4 py-3 text-right text-gray-900">
+                <% if entry.rate_undefined? %>
+                  <span class="text-xs text-amber-700">taux non défini</span>
+                <% else %>
+                  <%= reports_currency(entry.four_sources_cents) %>
+                <% end %>
+              </td>
+              <td class="px-4 py-3 text-right text-gray-900">
+                <% if entry.distributed? %>
+                  <%= reports_currency(entry.bakers_cents) %>
+                <% else %>
+                  <span class="text-xs text-amber-700">non réparti</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-gray-50">
+          <tr>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900" colspan="3">Total ateliers</td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_revenue_cents) %></td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_four_sources_cents) %></td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_bakers_cents) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+<% end %>
+
 <%# Revenu final par artisan (après mise en commun des partenariats) %>
 <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
   <h2 class="text-xl font-medium text-gray-900 mb-1">Revenu par boulanger (à verser sur la période)</h2>
   <p class="text-sm text-gray-500 mb-4">
-    « Part finale » = ce qui est dû à chaque boulanger. Pour les membres d'un partenariat,
-    leurs parts brutes sont mises en commun puis réparties à parts égales — c'est la
-    colonne à reporter en comptabilité.
+    « Part finale » = ce qui est dû à chaque boulanger, tous postes confondus — c'est la
+    colonne à reporter en comptabilité. Les quatre colonnes qui la précèdent disent d'où
+    vient l'argent : le pain, les pizza parties privées, les pizza parties publiques
+    (site et BilletWeb), les ateliers. Leur somme fait toujours la part finale. Pour les
+    membres d'un partenariat, chaque poste est mis en commun puis réparti à parts égales.
   </p>
   <% if @report.artisan_settlements.any? %>
     <div class="overflow-x-auto">
@@ -90,6 +233,10 @@
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Boulanger</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Partenariat</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Jours</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Pain</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Party privée</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Party publique</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Ateliers</th>
             <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part brute (ses jours)</th>
             <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part finale</th>
           </tr>
@@ -106,6 +253,14 @@
                 <% end %>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600"><%= settlement.days_count %></td>
+              <%# Un zéro à toutes les lignes d'une colonne est du bruit : on le
+                  grise pour que l'oeil n'aille qu'aux postes qui versent. %>
+              <% BakerRevenueService::BUCKETS.each do |bucket| %>
+                <% cents = settlement.public_send(bucket) %>
+                <td class="px-4 py-3 text-sm text-right <%= cents.zero? ? "text-gray-300" : "text-gray-600" %>">
+                  <%= reports_currency(cents) %>
+                </td>
+              <% end %>
               <td class="px-4 py-3 text-sm text-gray-600 text-right"><%= reports_currency(settlement.raw_cents) %></td>
               <td class="px-4 py-3 text-sm text-gray-900 text-right font-semibold"><%= reports_currency(settlement.settled_cents) %></td>
             </tr>
@@ -114,6 +269,11 @@
         <tfoot class="bg-gray-50 font-semibold">
           <tr>
             <td class="px-4 py-3 text-sm text-gray-900" colspan="3">Total pool boulangers</td>
+            <% BakerRevenueService::BUCKETS.each do |bucket| %>
+              <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                <%= reports_currency(@report.artisan_settlements.sum { |s| s.public_send(bucket) }) %>
+              </td>
+            <% end %>
             <td class="px-4 py-3 text-sm text-gray-600 text-right"><%= reports_currency(@report.artisan_settlements.sum(&:raw_cents)) %></td>
             <td class="px-4 py-3 text-sm text-gray-900 text-right"><%= reports_currency(@report.artisan_settlements.sum(&:settled_cents)) %></td>
           </tr>

@@ -5,7 +5,6 @@
 - mold_requirements = @dashboard.breads_mold_requirements
 - capacity = @dashboard.capacity_service
 - capacity_usage = capacity.usage
-- status_distribution = @dashboard.status_distribution
 - note_input_id = dom_id(@bake_day, :internal_note)
 
 .space-y-4.sm:space-y-6
@@ -18,8 +17,13 @@
         = adm_chip(@bake_day.cut_off_passed? ? "Commandes closes" : "Commandes ouvertes", tone: @bake_day.cut_off_passed? ? :danger : :success)
         - if @bake_day.market_day?
           = adm_chip "Jour de marché", tone: :accent
+        - if @bake_day.draft?
+          = adm_chip "Brouillon — hors comptabilité", tone: :warning
       p.mt-1.text-sm style="color: var(--text-muted);"
         | Clôture le #{@bake_day.cut_off_at.strftime("%d/%m/%Y à %H:%M")}
+      - if @bake_day.draft?
+        p.mt-1.text-sm style="color: var(--warning-700);"
+          | Jour de travail : les calculs fonctionnent normalement, mais il n'est proposé à aucun client et n'entre ni dans les revenus boulangers, ni dans le reporting.
     .flex.flex-wrap.gap-2.shrink-0 data-controller="dashboard-export" data-export-payload="#{kpis[:orders_count]} orders / #{kpis[:items_count]} items"
       = link_to "Modifier", edit_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = link_to "Feuille compta", sheet_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
@@ -28,74 +32,98 @@
       = link_to "Annuler la fournée", confirm_cancel_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, form: { data: { turbo_confirm: "Supprimer ce jour de cuisson ? Cette action est définitive." } }, class: adm_btn_class(:danger)
 
-  .grid.gap-4.lg:grid-cols-3
-    .lg:col-span-2.adm-card.p-4.sm:p-6
-      .flex.items-center.justify-between.gap-3
-        h2.text-xl.font-semibold style="color: var(--text-strong);" Consignes du jour
+  / Consignes du jour (#195) : un bandeau d'une ligne, et l'éditeur dans une
+  / modale. Le point dur n'est pas la modale, c'est qu'une consigne saisie ne
+  / disparaisse pas de la vue — d'où la pastille ET l'aperçu, lisibles sans clic.
+  - note_text = strip_tags(@bake_day.internal_note.to_s).squish
+  - note_present = note_text.present?
+
+  .adm-card.p-4 data-controller="bake-day-note" data-bake-day-note-url-value=admin_bake_day_path(@bake_day)
+    .flex.flex-col.gap-3.lg:flex-row.lg:items-center.lg:justify-between
+      .flex.min-w-0.flex-wrap.items-center.gap-x-3.gap-y-1
+        h2.text-sm.font-semibold.shrink-0 style="color: var(--text-strong);" Consignes du jour
+        span.adm-chip class=(note_present ? "adm-chip-accent" : "adm-chip-neutral") data-bake-day-note-target="chip"
+          = note_present ? "Consigne active" : "Aucune consigne"
+        p.min-w-0.truncate.text-sm data-bake-day-note-target="preview" style="color: var(--text-body);"
+          = note_text
+        / Toujours rendu, masqué quand une consigne existe : c'est le contrôleur
+        / qui le rebascule si l'on vide la consigne, sans recharger la page.
+        p.text-sm class=("hidden" if note_present) data-bake-day-note-target="placeholder" style="color: var(--text-muted);"
+          | Rien de particulier aujourd'hui.
+      .flex.shrink-0.items-center.gap-3
         p.adm-tonetext.text-xs.font-medium data-bake-day-note-target="status"
           | Dernière mise à jour #{l(@bake_day.updated_at, format: :short)}
-      .mt-4
-        = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, html: { class: "space-y-4", data: { controller: "bake-day-note", turbo: false, "bake-day-note-url-value": admin_bake_day_path(@bake_day), "bake-day-note-target": "form" } } do |form|
-          = form.hidden_field :internal_note, id: note_input_id
-          trix-editor class="trix-content adm-trix" input=note_input_id data-action="trix-change->bake-day-note#queueSave"
-          .mt-2.flex.items-center.justify-between.gap-3.text-xs style="color: var(--text-muted);"
-            span Partagez les consignes d'approvisionnement, allergies, retards, etc.
-            button class=adm_btn_class(:default) type="button" data-action="bake-day-note#save"
-              | Enregistrer maintenant
+        button class=adm_btn_class(:default) type="button" data-action="bake-day-note#open"
+          = note_present ? "Modifier" : "Ajouter"
 
-    .lg:col-span-1.min-w-0.adm-card.p-4.sm:p-6
-      h2.text-xl.font-semibold style="color: var(--text-strong);" Statut des commandes
-      dl.mt-4.space-y-4
-        .flex.items-center.justify-between
-          dt.text-sm style="color: var(--text-muted);" Commandes en attente
-          dd.adm-grid-num.text-base.font-semibold style="color: var(--warning-700);" = kpis[:open_orders]
-        .flex.items-center.justify-between
-          dt.text-sm style="color: var(--text-muted);" Commandes prêtes / récupérées
-          dd.adm-grid-num.text-base.font-semibold style="color: var(--success-700);" = kpis[:ready_orders]
-        div
-          dt.text-sm style="color: var(--text-muted);" Répartition des statuts
-          dd.mt-2.space-y-1
-            - status_distribution.each do |status, count|
-              .flex.items-center.justify-between.text-sm
-                span = adm_order_status_chip(status)
-                span.adm-grid-num.font-semibold style="color: var(--text-strong);" = count
+    / La modale est seulement masquée, jamais vidée : fermer puis rouvrir
+    / retrouve la saisie en cours, et `close` force l'enregistrement en attente.
+    .hidden.fixed.inset-0.z-50.overflow-y-auto data-bake-day-note-target="modal" data-action="keydown@window->bake-day-note#closeWithEscape"
+      .fixed.inset-0 style="background: rgba(43, 38, 32, .45);" data-bake-day-note-target="overlay" data-action="click->bake-day-note#closeBackground"
+      .relative.flex.min-h-full.items-start.justify-center.p-4
+        .adm-card.w-full.p-4.sm:p-6 class="sm:my-8 sm:max-w-3xl" style="box-shadow: var(--shadow-lg);"
+          .flex.items-start.justify-between.gap-3
+            div
+              h3.text-xl.font-semibold style="color: var(--text-strong);" Consignes du jour
+              p.mt-1.text-xs style="color: var(--text-muted);"
+                | Partagez les consignes d'approvisionnement, allergies, retards, etc.
+            button class=adm_btn_class(:ghost) type="button" data-action="bake-day-note#close" aria-label="Fermer"
+              | Fermer
+          .mt-4
+            = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, html: { class: "space-y-4", data: { turbo: false, "bake-day-note-target": "form" } } do |form|
+              = form.hidden_field :internal_note, id: note_input_id
+              trix-editor class="trix-content adm-trix" input=note_input_id data-action="trix-change->bake-day-note#queueSave"
+              .mt-2.flex.flex-wrap.items-center.justify-end.gap-3.text-xs
+                button class=adm_btn_class(:default) type="button" data-action="bake-day-note#save"
+                  | Enregistrer maintenant
+                button class=adm_btn_class(:primary) type="button" data-action="bake-day-note#close"
+                  | Terminé
 
-  / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170). Ce
-  / n'est pas toujours le jour même : une party de midi, ou un jour sans
+  / Pizza parties dont les pâtons se pétrissent sur CETTE fournée (#170, #202).
+  / Ce n'est pas toujours le jour même : une party de midi, ou un jour sans
   / fournée, se prépare la fournée d'avant.
+  /
+  / L'encart est délibérément gros (#202) : « quand on voit les journées, on a
+  / notre topo, on sait ce qui arrive ». Les pâtons et le créneau se lisent de
+  / loin, pas en petits caractères au fond d'un tableau.
   - parties = @dashboard.parties_to_prepare
   - if parties.any?
-    .adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
+    - total_patons = parties.sum { |party| party[:paton_count] }
+    #parties-a-preparer.adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
       .flex.flex-wrap.items-center.gap-3
-        h2.text-sm.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
+        = lucide "party-popper", size: 20, color: "var(--accent)"
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
         = adm_chip(pluralize(parties.size, "party", "parties"), tone: :accent)
+        = adm_chip("#{total_patons} pâton#{'s' if total_patons > 1} au total", tone: :accent)
       p.mt-1.text-sm style="color: var(--text-muted);"
-        | Ces pâtons se pétrissent aujourd'hui. Ils comptent dans le pétrin et la farine, pas dans le four.
+        | Ces pâtons se pétrissent aujourd'hui, en plus des pains. Ils comptent dans le pétrin et la farine, pas dans le four.
 
-      .mt-4.overflow-x-auto
-        table.adm-grid
-          thead
-            tr
-              th Quand
-              th Créneau
-              th.text-right Personnes
-              th Client
-              th
-          tbody
-            - parties.each do |party|
-              tr
-                td.whitespace-nowrap
-                  - if party[:same_day]
-                    = adm_chip "Aujourd'hui", tone: :success
-                  - else
-                    span style="color: var(--text-strong);"
-                      | à préparer pour le #{l(party[:held_on], format: :long_with_day)}
-                td.whitespace-nowrap = party[:slot_label]
-                td.adm-grid-num.whitespace-nowrap.text-right.font-semibold style="color: var(--text-strong);"
+      .mt-4.grid.gap-3 class="sm:grid-cols-2 xl:grid-cols-3"
+        - parties.each do |party|
+          .adm-card.p-4 style="background: var(--surface-card);"
+            .flex.flex-wrap.items-center.gap-2
+              = link_to admin_party_event_path(party[:party_event]), class: "shrink-0"
+                = adm_chip(party[:kind_label], tone: party[:private] ? :accent : :brand)
+              - if party[:same_day]
+                = adm_chip "Aujourd'hui", tone: :success
+              - else
+                = adm_chip "pour le #{l(party[:held_on], format: :long_with_day)}", tone: :warning
+
+            .mt-3.flex.items-end.gap-4
+              div
+                p.adm-eyebrow Pâtons
+                p.adm-grid-num.mt-1.font-bold style="color: var(--text-strong); font-size: 2rem; line-height: 1;"
                   = party[:paton_count]
-                td = party[:customer_name] || "—"
-                td.whitespace-nowrap.text-right
-                  = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
+              div
+                p.adm-eyebrow Créneau
+                p.mt-1.text-xl.font-bold style="color: var(--accent);"
+                  = party[:slot_label]
+
+            p.mt-3.text-base.font-semibold style="color: var(--text-strong);"
+              = party[:customer_name] || "Sans client"
+            .mt-2.flex.flex-wrap.gap-3
+              = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
+              = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
 
   .adm-card.p-4.sm:p-6
     h2.text-xl.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
@@ -107,20 +135,6 @@
             span.text-sm.font-medium style="color: var(--text-body);" = b.text
       button class=adm_btn_class(:default) type="submit"
         | Enregistrer
-
-  - kpi_cards = [ \
-      { label: "Commandes confirmées", value: kpis[:orders_count], meta: "#{pluralize(kpis[:open_orders], 'commande')} en attente" },
-      { label: "Articles à produire", value: kpis[:items_count], meta: "Total des unités à préparer" },
-      { label: "Chiffre d'affaires", value: number_to_currency(kpis[:revenue_cents] / 100.0, unit: '€', separator: ',', delimiter: ' '), meta: "Montant TTC" },
-      { label: "Variantes concernées", value: kpis[:variants_count], meta: "Produits à vérifier en stock" } \
-    ]
-
-  .grid.gap-4.grid-cols-1.sm:grid-cols-2.xl:grid-cols-4
-    - kpi_cards.each do |card|
-      .adm-card.p-4
-        p.adm-eyebrow = card[:label]
-        p.adm-grid-num.mt-2.text-2xl.font-semibold style="color: var(--text-strong);" = card[:value]
-        p.mt-1.text-xs style="color: var(--text-muted);" = card[:meta]
 
   - fill_pct = capacity.fill_percentage
   - fill_tone = adm_usage_tone(fill_pct)
@@ -186,7 +200,7 @@
     .adm-cardhd
       div
         h2.text-xl.font-semibold style="color: var(--text-strong);" Quantités de pâte requises par type de farine
-        p.text-xs style="color: var(--text-muted);" Survolez une quantité pour voir le détail du calcul
+        p.text-xs style="color: var(--text-muted);" Touchez ou survolez une quantité pour voir le détail du calcul
     .overflow-x-auto
       table.adm-grid
         thead
@@ -257,52 +271,42 @@
         div
           h2.text-xl.font-semibold style="color: var(--text-strong);" Panification
           p.text-xs style="color: var(--text-muted);" Farine, sel, eau et levain calculés à partir des ratios de panification — chacun en fraction de la pâte
+      .px-4.pb-1.pt-2.sm:hidden
+        .adm-scrollhint
+          span Faites glisser pour voir toutes les farines
+          = lucide "move-horizontal", size: 14
+      / Le libellé de ligne (« Sel (kg) », « Eau (l) ») reste figé à gauche :
+      / sans lui, une colonne de nombres qui défile ne dit plus ce qu'elle pèse.
       .overflow-x-auto
         table.adm-grid
           thead
             tr
-              th
+              th.adm-pin-left.sticky.left-0.z-30 style="position: sticky; left: 0; min-width: 7.5rem;"
               - dough_data[:per_flour].each do |col|
                 th.text-right
                   = col[:flour].name
                   span.block.font-normal.normal-case style="color: var(--text-faint); font-size: 10px;" = "levain #{col[:levain_type]}"
               th.text-right TOTAL
           tbody
-            tr style="background: var(--surface-sunk);"
-              td.font-semibold style="color: var(--text-strong);" Quantité pâte (kg)
-              - dough_data[:per_flour].each do |col|
-                td.adm-grid-num.text-right style="color: var(--text-body);"
-                  = number_with_precision(col[:pate_kg], precision: 2, strip_insignificant_zeros: true)
-              td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
-                = number_with_precision(dough_data[:totals][:pate_kg], precision: 2, strip_insignificant_zeros: true)
-            tr style="background: var(--surface-inset);"
-              td.font-semibold style="color: var(--text-strong);" Farine (kg)
-              - dough_data[:per_flour].each do |col|
-                td.adm-grid-num.text-right style="color: var(--text-body);"
-                  = number_with_precision(col[:farine_kg], precision: 2, strip_insignificant_zeros: true)
-              td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
-                = number_with_precision(dough_data[:totals][:farine_kg], precision: 2, strip_insignificant_zeros: true)
-            tr
-              td.font-semibold style="color: var(--text-strong);" Sel (kg)
-              - dough_data[:per_flour].each do |col|
-                td.adm-grid-num.text-right style="color: var(--text-body);"
-                  = number_with_precision(col[:sel_kg], precision: 3, strip_insignificant_zeros: true)
-              td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
-                = number_with_precision(dough_data[:totals][:sel_kg], precision: 3, strip_insignificant_zeros: true)
-            tr style="background: var(--surface-inset);"
-              td.font-semibold style="color: var(--text-strong);" Eau (l)
-              - dough_data[:per_flour].each do |col|
-                td.adm-grid-num.text-right style="color: var(--text-body);"
-                  = number_with_precision(col[:eau_l], precision: 2, strip_insignificant_zeros: true)
-              td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
-                = number_with_precision(dough_data[:totals][:eau_l], precision: 2, strip_insignificant_zeros: true)
-            tr
-              td.font-semibold style="color: var(--text-strong);" Levain (kg)
-              - dough_data[:per_flour].each do |col|
-                td.adm-grid-num.text-right style="color: var(--text-body);"
-                  = number_with_precision(col[:levain_kg], precision: 3, strip_insignificant_zeros: true)
-              td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
-                = number_with_precision(dough_data[:totals][:levain_kg], precision: 3, strip_insignificant_zeros: true)
+            / Une ligne par composant de la panification. Le libellé figé porte le
+            / fond de sa propre ligne : une colonne collante au fond fixe casserait
+            / le zébrage dès qu'on fait défiler.
+            - panification_rows = [ \
+                { label: "Quantité pâte (kg)", key: :pate_kg,   precision: 2, bg: "var(--surface-sunk)" },
+                { label: "Farine (kg)",        key: :farine_kg, precision: 2, bg: "var(--surface-inset)" },
+                { label: "Sel (kg)",           key: :sel_kg,    precision: 3, bg: nil },
+                { label: "Eau (l)",            key: :eau_l,     precision: 2, bg: "var(--surface-inset)" },
+                { label: "Levain (kg)",        key: :levain_kg, precision: 3, bg: nil } \
+              ]
+            - panification_rows.each do |row|
+              tr style=(row[:bg] ? "background: #{row[:bg]};" : nil)
+                td.adm-pin-left.sticky.left-0.z-10.font-semibold style="position: sticky; left: 0; background: #{row[:bg] || 'var(--surface-card)'}; color: var(--text-strong);"
+                  = row[:label]
+                - dough_data[:per_flour].each do |col|
+                  td.adm-grid-num.text-right style="color: var(--text-body);"
+                    = number_with_precision(col[row[:key]], precision: row[:precision], strip_insignificant_zeros: true)
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  = number_with_precision(dough_data[:totals][row[:key]], precision: row[:precision], strip_insignificant_zeros: true)
       - if dough_data[:levain_by_type].present?
         .flex.flex-wrap.items-center.gap-x-4.gap-y-1.border-t.px-3.py-2.text-xs style="border-color: var(--border-subtle); color: var(--text-muted);"
           span.adm-eyebrow Type de levain
@@ -340,7 +344,7 @@
             = adm_empty_row(colspan: 2, title: "Aucun ingrédient requis pour l'instant.", hint: "Les ingrédients apparaissent dès qu'un produit commandé en déclare.")
 
   .adm-card.p-4.sm:p-6 data-controller="dashboard-tabs" data-dashboard-tabs-active-value="clients"
-    .overflow-x-auto
+    .adm-tabstrip.-mx-4.px-4 class="sm:mx-0 sm:px-0"
       .flex.flex-nowrap.items-center.gap-2.border-b.pb-4.sm:flex-wrap.min-w-max.sm:min-w-0 style="border-color: var(--border-subtle);"
         button.adm-tab type="button" data-dashboard-tabs-target="tab" data-tab="clients" data-action="dashboard-tabs#show"
           | Commandes par client
@@ -375,6 +379,10 @@
                     = location.name
                     - if location.deleted_at.present?
                       span.ml-2 = adm_chip "Lieu supprimé", tone: :warning
+                    / Inactif (#199) : plus proposé aux clients, mais ses
+                    / commandes et sa feuille de retrait restent là.
+                    - elsif !location.active?
+                      span.ml-2 = adm_chip "Lieu inactif", tone: :warning
                   - if location.description.present?
                     p.text-xs style="color: var(--text-muted);" = location.description
                   / `pluralize` n'accorde pas en locale fr (aucune règle d'inflexion
@@ -434,7 +442,7 @@
           button.adm-filter type="button" data-filter="dough_balls" data-action="dashboard-filter#change"
             | Autres catégories
         p.text-xs style="color: var(--text-muted);"
-          | #{pluralize(kpis[:variants_count], "variante")} présentes dans les commandes.
+          | #{kpis[:variants_count]} variante#{'s' if kpis[:variants_count] > 1} présente#{'s' if kpis[:variants_count] > 1} dans les commandes.
         .w-full.overflow-x-auto.overflow-hidden style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);" data-dashboard-filter-target="container"
           table.adm-grid
             thead
@@ -498,32 +506,51 @@
           - customer_variant_quantities[customer.id] = quantities
         / #71 : conteneur scrollable sur les 2 axes (max-h + overflow-auto) pour
         / que l'en-tête produits (thead.sticky.top-0) reste figé au défilement vertical.
-        .overflow-auto class="max-h-[75vh]" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
+        / Le tableau est plus large que le téléphone : on le dit, et on lui rend
+        / les 16 px de gouttière de la carte pour deux variantes de plus.
+        .mb-2.sm:hidden
+          .adm-scrollhint
+            span Faites glisser pour voir toutes les variantes
+            = lucide "move-horizontal", size: 14
+        .overflow-auto.-mx-4 class="max-h-[75vh] sm:mx-0" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
           table.adm-grid.adm-grid-matrix
+            / Les largeurs vivent ici, pas sur les cellules : en `table-layout:
+            / fixed`, seul le premier rang compte, et son en-tête produit porte
+            / un `colspan` qui écraserait les largeurs de variantes (#196).
+            / Les valeurs elles-mêmes sont des variables CSS, pour que le
+            / téléphone resserre sans dupliquer le tableau.
+            colgroup
+              col style="width: var(--mx-name);"
+              - all_variants.each do
+                col style="width: var(--mx-col);"
+              col style="width: var(--mx-total);"
             thead
               tr
-                th.sticky.left-0.z-30 rowspan=2 style="position: sticky; left: 0;"
+                th.adm-pin-left.sticky.left-0.z-30 rowspan=2 style="position: sticky; left: 0;" Client
                 - variants_by_product.each do |product, stats|
                   th.align-bottom colspan=stats.size title=product.name style="border-left: 1px solid var(--border-strong);"
-                    div
+                    / Le nom du produit glisse avec le défilement à l'intérieur de
+                    / son propre bloc de variantes : sans ça, arrivé à la 4e
+                    / variante du froment, on ne sait plus de quel pain il s'agit.
+                    div.adm-mx-product
                       p.text-xs.font-semibold.normal-case.leading-snug style="color: var(--text-strong);" = product.short_name
-                th.sticky.right-0.z-30.text-right rowspan=2 style="position: sticky; right: 0;" Total
+                th.adm-pin-right.sticky.right-0.z-30.text-right rowspan=2 style="position: sticky; right: 0;" Total
               tr
                 - variants_by_product.each do |product, stats|
                   - stats.each do |stat|
-                    th.align-bottom title=stat[:variant].name style="width: 100px; border-left: 1px solid var(--border-strong);"
+                    th.align-bottom title=stat[:variant].name style="border-left: 1px solid var(--border-strong);"
                       div
                         p.text-xs.normal-case.leading-snug style="color: var(--text-body);" = stat[:variant].name
                         p.adm-grid-num.font-medium.normal-case.leading-snug style="color: var(--text-faint); font-size: 11px;" = number_to_currency(stat[:variant].price_euros, unit: "€", separator: ",", delimiter: " ")
               / #71/#compta : la ligne « Total » vit dans le thead sticky pour rester
               / figée au défilement vertical, sous les en-têtes produits/variantes.
               tr.adm-grid-total
-                td.sticky.left-0.z-30 style="position: sticky; left: 0;" Total
+                td.adm-pin-left.sticky.left-0.z-30 style="position: sticky; left: 0;" Total
                 - all_variants.each do |variant|
                   - column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 }
-                  td.adm-grid-num.text-center style="width: 50px;"
+                  td.adm-grid-num.text-center
                     = column_total
-                td.adm-grid-num.sticky.right-0.z-30.text-right style="position: sticky; right: 0;"
+                td.adm-grid-num.adm-pin-right.sticky.right-0.z-30.text-right style="position: sticky; right: 0;"
                   = customer_variant_quantities.values.sum { |q| q.values.sum }
             tbody
               - @dashboard.customer_breakdown.each do |entry|
@@ -531,22 +558,29 @@
                 - quantities = customer_variant_quantities[customer.id]
                 - row_total = quantities.values.sum
                 tr
-                  td.sticky.left-0.z-10.font-semibold style="position: sticky; left: 0; background: var(--surface-card); color: var(--text-strong);"
+                  td.adm-pin-left.sticky.left-0.z-10.font-semibold style="position: sticky; left: 0; background: var(--surface-card); color: var(--text-strong);"
                     = customer.full_name
                   - all_variants.each do |variant|
                     - qty = quantities[variant.id] || 0
-                    td.adm-grid-num.text-center style="width: 50px; border-left: 1px solid var(--border-strong); color: var(--text-strong);"
+                    td.adm-grid-num.text-center style="border-left: 1px solid var(--border-strong); color: var(--text-strong);"
                       - if qty > 0
                         span.font-semibold = qty
                       - else
                         span style="color: var(--text-faint);" —
-                  td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);"
+                  / La colonne Total était figée dans l'en-tête et dans la ligne
+                  / de total, mais pas dans le corps : au défilement horizontal,
+                  / les totaux par client glissaient sous leur propre en-tête.
+                  td.adm-grid-num.adm-pin-right.sticky.right-0.z-10.text-right.font-semibold style="position: sticky; right: 0; background: var(--surface-card); color: var(--text-strong);"
                     = row_total
       - else
         p.text-center.text-sm style="color: var(--text-muted);" Aucun client n'a encore passé commande.
 
+    / Flux du jour (#202) : les commandes de pain ET les commandes party que
+    / cette fournée prépare. Les party n'ont pas de `bake_day`, elles étaient
+    / donc absentes de la seule liste où l'on lit qui a commandé quoi — d'où
+    / « tu ne sais pas qui ».
     .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="timeline"
-      - if @dashboard.orders.any?
+      - if @dashboard.timeline_entries.any?
         .space-y-4 data-controller="dashboard-filter"
           .flex.flex-wrap.items-center.gap-2(data-filter-group)
             button.adm-filter.adm-filter-active type="button" data-filter="all" data-action="dashboard-filter#change"
@@ -555,18 +589,28 @@
               button.adm-filter type="button" data-filter=order_status data-action="dashboard-filter#change"
                 = order_status_label(order_status)
           .overflow-hidden style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md);"
-            - @dashboard.orders.each do |order|
-              .flex.flex-col.gap-4.border-b.px-4.py-4.last:border-b-0.sm:px-6.lg:flex-row.lg:items-center.lg:justify-between style="border-color: var(--border-subtle);" data-dashboard-filter-target="row" data-category="#{order.status}"
+            - @dashboard.timeline_entries.each do |entry|
+              - order = entry[:order]
+              - party = entry[:party]
+              .flex.flex-col.gap-2.border-b.px-4.py-3.last:border-b-0.sm:gap-4.sm:px-6.sm:py-4.lg:flex-row.lg:items-center.lg:justify-between style="border-color: var(--border-subtle);#{' background: var(--accent-tint);' if party}" data-dashboard-filter-target="row" data-category="#{order.status}"
                 div
-                  p.font-semibold style="color: var(--text-strong);" = order.customer.full_name
+                  .flex.flex-wrap.items-center.gap-2
+                    p.font-semibold style="color: var(--text-strong);" = order.customer&.full_name || "Sans client"
+                    / Badge party à côté du nom : « Fabienne, avec un petit pizza
+                    / party noté à côté, et tu cliques, tu vas de suite à son détail ».
+                    - if party
+                      = link_to admin_party_event_path(party[:party_event])
+                        = adm_chip("#{party[:kind_label]} · #{party[:paton_count]} pâton#{'s' if party[:paton_count] > 1} · #{party[:slot_label]}", tone: party[:private] ? :accent : :brand)
                   p.text-sm style="color: var(--text-muted);"
                     | #{order.created_at.strftime("%d/%m/%Y à %H:%M")}
+                    - if party && !party[:same_day]
+                      |  · party du #{l(party[:held_on], format: :long_with_day)}
                 .flex.-space-x-2
                   - order.order_items.each do |order_item|
                     - variant = order_item.product_variant
                     - product = variant.product
                     - attachment = variant_image_attachment(variant)
-                    .inline-flex.h-10.w-10.items-center.justify-center.rounded-full.text-xs.font-semibold style="background: var(--surface-sunk); color: var(--text-muted); box-shadow: 0 0 0 2px var(--surface-card);" title="#{variant.name} (×#{order_item.qty})"
+                    .inline-flex.h-8.w-8.items-center.justify-center.overflow-hidden.rounded-full.text-xs.font-semibold.sm:h-10.sm:w-10 style="background: var(--surface-sunk); color: var(--text-muted); box-shadow: 0 0 0 2px var(--surface-card);" title="#{variant.name} (×#{order_item.qty})"
                       - if attachment.present?
                         - if attachment.variable?
                           = image_tag attachment.variant(resize_to_limit: [40, 40]), class: "h-full w-full rounded-full object-cover", alt: variant.name
@@ -574,7 +618,9 @@
                           = image_tag attachment, class: "h-full w-full rounded-full object-cover", alt: variant.name
                       - else
                         span = product.name.first.upcase
-                .flex.flex-col.items-start.gap-2.text-sm.lg:flex-row.lg:items-center.lg:gap-6 style="color: var(--text-strong);"
+                / Pastille, montant et lien sur une seule ligne : trois étages
+                / empilés faisaient une carte de 300 px par commande.
+                .flex.flex-wrap.items-center.gap-x-4.gap-y-2.text-sm.lg:gap-x-6 style="color: var(--text-strong);"
                   = adm_order_status_chip(order.status)
                   p.adm-grid-num.font-semibold
                     = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: " ")
@@ -586,14 +632,16 @@
       - if @dashboard.customer_breakdown.any?
         - total_flags = @dashboard.customer_breakdown.sum { |e| e[:orders].flat_map { |o| o[:items] }.sum { |i| i[:qty] } }
 
-        .mb-5.flex.flex-wrap.items-center.gap-4
+        / Deux compteurs et leur séparateur : au téléphone ils passent à la ligne
+        / et le filet vertical restait pendu en bout de première ligne.
+        .mb-5.flex.flex-wrap.items-center.gap-x-4.gap-y-2
           .flex.items-center.gap-2
             .flex.h-8.w-8.items-center.justify-center.rounded-full style="background: var(--surface-sunk); color: var(--text-muted);"
               = lucide "users", size: 16
             p.text-sm style="color: var(--text-muted);"
               span.font-bold style="color: var(--text-strong);" = @dashboard.customer_breakdown.size
               |  clients
-          .h-4.w-px style="background: var(--border-strong);"
+          .hidden.h-4.w-px.sm:block style="background: var(--border-strong);"
           .flex.items-center.gap-2
             .flex.h-8.w-8.items-center.justify-center.rounded-full style="background: var(--surface-sunk); color: var(--text-muted);"
               = lucide "tag", size: 16

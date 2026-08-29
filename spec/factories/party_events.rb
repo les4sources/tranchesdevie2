@@ -14,6 +14,19 @@ FactoryBot.define do
       registration_closes_at { 5.days.from_now }
     end
 
+    # Ventes agrégées importées d'une billetterie externe (BilletWeb) : pas de
+    # commandes, la compta vient des compteurs portés par l'événement.
+    trait :historical do
+      kind { :public_party }
+      historical_source { "billetweb" }
+      historical_adults { 30 }
+      historical_children { 10 }
+      historical_sourciers { 0 }
+      historical_fees_cents { 0 }
+      capacity { nil }
+      registration_closes_at { nil }
+    end
+
     trait :private_party do
       kind { :private_party }
       title { nil }

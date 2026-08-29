@@ -1,0 +1,10 @@
+- content_for :title, "Modifier une inscription"
+- content_for :layout, "admin"
+
+= adm_page_header "Modifier une inscription" do
+  = link_to "Retour à la party", admin_party_event_path(@event), class: adm_btn_class(:default)
+
+p.mb-4.text-sm style="color: var(--text-muted);"
+  | #{@event.title.presence || 'Party publique'} — #{l(@event.held_on, format: :long_with_day)}
+
+= render "form", registration: @registration, event: @event, url: admin_party_event_party_registration_path(@event, params[:id]), method: :patch, submit_label: "Enregistrer", errors: @errors

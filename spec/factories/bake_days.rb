@@ -34,5 +34,10 @@ FactoryBot.define do
     trait :can_order do
       cut_off_at { 2.days.from_now }
     end
+
+    # Jour « calculatrice » des boulangers (#197) : hors boutique, hors compta.
+    trait :draft do
+      draft { true }
+    end
   end
 end

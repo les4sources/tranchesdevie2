@@ -257,6 +257,11 @@
              border: 1px solid transparent; white-space: nowrap;
              transition: background-color .12s var(--ease-soft), border-color .12s var(--ease-soft); }
   .adm-btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+  /* Au doigt, 34 px de haut se ratent. Sous 640 px les boutons montent à 40 px
+     — le plancher confortable sur mobile — sans toucher à la densité du bureau. */
+  @media (max-width: 639px) {
+    .adm-btn { min-height: 2.5rem; padding-inline: .875rem; }
+  }
   .adm-btn-primary  { background: var(--brand); color: var(--text-on-brand); }
   .adm-btn-primary:hover  { background: var(--brand-press); }
   .adm-btn-default  { background: var(--surface-card); color: var(--text-body); border-color: var(--border-strong); }
@@ -275,8 +280,36 @@
                      box-shadow: 0 0 0 3px var(--focus-ring); }
   .adm-field::placeholder { color: var(--text-faint); }
 
+  /* ── Panneau encastré ─────────────────────────────────────────────────────
+     Le sous-bloc d'un formulaire : un groupe de cases à cocher, une liste de
+     lignes répétables (farines d'un produit, ingrédients d'une variante). Assez
+     marqué pour se lire comme un groupe, assez discret pour ne pas concurrencer
+     la carte qui le contient. */
+  .adm-panel { background: var(--surface-inset); border: 1px solid var(--border-subtle);
+               border-radius: var(--radius-md); padding: 1rem; }
+
+  /* ── Champ fichier ────────────────────────────────────────────────────────
+     Le bouton natif du navigateur repeint aux tokens. Sans cette règle, chaque
+     champ d'image traînait sa propre pile d'utilitaires `file:*` en bleu. */
+  .adm-file { display: block; width: 100%; font-size: .8125rem; color: var(--text-body); }
+  .adm-file::file-selector-button {
+    margin-right: 1rem; border: 0; border-radius: var(--radius-sm);
+    padding: .5rem 1rem; font-size: .8125rem; font-weight: 600;
+    background: var(--brand-tint); color: var(--brand-press); cursor: pointer;
+    transition: background-color .12s var(--ease-soft); }
+  .adm-file::file-selector-button:hover { background: var(--sage-200); }
+
+  /* Cible de dépôt d'un glisser-déposer (réordonnancement des images d'une
+     variante). Basculée par `product_images.js`, d'où la classe plutôt qu'un
+     style en ligne. */
+  .adm-dropzone-active { border-color: var(--brand) !important; background: var(--brand-tint) !important; }
+
   /* ── Options d'autocomplétion (contrôleur customer-filter) ────────────── */
   .adm-option        { transition: background-color .1s var(--ease-soft); }
+  /* Même plancher de cible que les boutons : une case à cocher se rate autant. */
+  @media (max-width: 639px) {
+    .adm-option { min-height: 2.5rem; }
+  }
   .adm-option:hover  { background: var(--surface-inset); }
   .adm-option-active { background: var(--brand-tint); border-left-color: var(--brand); }
   .adm-mark          { background: var(--sage-200); color: inherit; border-radius: var(--radius-xs); padding: 0 .125rem; }
@@ -293,6 +326,11 @@
   .adm-rowaction        { color: var(--text-faint); font-weight: 500; }
   tr:hover .adm-rowaction { color: var(--link); }
   .adm-rowaction:hover  { color: var(--link); text-decoration: underline; }
+  /* « Discret jusqu'au survol » suppose un survol. Au doigt, il n'y en a jamais :
+     le lien restait gris pâle en permanence, donc invisible. */
+  @media (hover: none) {
+    .adm-rowaction { color: var(--link); }
+  }
 
   /* ── Tonalités ────────────────────────────────────────────────────────────
      Une seule table ton → couleurs, posée en variables sur l'élément. La jauge,
@@ -324,6 +362,14 @@
   /* ── Onglets & filtres ────────────────────────────────────────────────────
      L'état actif est porté par une classe sémantique (`-active`) et non par une
      couleur, parce que ce sont les contrôleurs Stimulus qui la basculent. */
+  /* Bandeau d'onglets : sur téléphone il déborde et se fait glisser. La barre
+     de défilement native, visible en permanence, mangeait 8 px et faisait
+     « bug » ; l'onglet coupé au bord suffit à dire qu'il y a la suite. */
+  .adm-tabstrip { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+                  overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+  .adm-tabstrip::-webkit-scrollbar { display: none; }
+  .adm-tabstrip > * { scroll-snap-align: start; }
+
   .adm-tab { display: inline-flex; align-items: center; gap: .375rem; white-space: nowrap;
              border: 1px solid transparent; border-radius: var(--radius-pill);
              padding: .375rem .875rem; font-size: .8125rem; font-weight: 600;
@@ -359,10 +405,71 @@
   .adm-grid-matrix thead th { position: static; }
   .adm-grid-matrix thead .adm-grid-total > td { background: var(--surface-sunk); }
 
+  /* Largeurs de colonnes imposées (#196, #217). Sans `table-layout: fixed`, un
+     `width` sur une cellule n'est qu'une suggestion : le moteur l'ignore dès
+     que le contenu est plus large, et une variante au nom long (« Classique
+     800 gr rond cuit sur pierre ») étirait sa colonne à elle seule. En layout
+     fixe, ce sont les `<col>` qui décident, et le nom passe à la ligne.
+
+     Le piège, corrigé ici : `width: auto` sur une table en layout fixe la
+     laisse rétrécir jusqu'à la largeur de son conteneur — les `<col>` sont
+     alors ramenés au prorata, et sur un téléphone chaque en-tête tombait à une
+     lettre par ligne. `width: max-content` fait exactement l'inverse : la table
+     vaut la SOMME de ses colonnes, déborde, et défile. `min-width: 100%` la
+     garde pleine largeur quand il y a peu de variantes. */
+  .adm-grid-matrix { table-layout: fixed; width: max-content; min-width: 100%;
+                     --mx-name: 8.5rem; --mx-col: 4.5rem; --mx-total: 3.75rem; }
+  @media (min-width: 640px) {
+    .adm-grid-matrix { --mx-name: 15rem; --mx-col: 5.5rem; --mx-total: 6rem; }
+  }
+  /* Le `nowrap` global des en-têtes est ce qui empêchait le nom de se replier :
+     dans la matrice, et là seulement, on autorise le retour à la ligne. On
+     coupe au mot (`break-word`) et non n'importe où (`anywhere`) : « anywhere »
+     autorisait la césure lettre par lettre même quand le mot tenait. */
+  .adm-grid-matrix thead th { white-space: normal; overflow-wrap: break-word; }
+  /* Sur téléphone la matrice se lit au doigt : gouttières resserrées pour que
+     deux variantes de plus tiennent à l'écran, et défilement inertiel. */
+  .adm-grid-matrix th, .adm-grid-matrix td { padding-left: .4375rem; padding-right: .4375rem; }
+  @media (min-width: 640px) {
+    .adm-grid-matrix th, .adm-grid-matrix td { padding-left: .75rem; padding-right: .75rem; }
+  }
+  /* Les colonnes figées portent une ombre portée vers l'intérieur : c'est le
+     seul signal qui dit « ça défile sous moi » quand on fait glisser au doigt.
+     `clip-path` n'est pas nécessaire, l'ombre est directionnelle. */
+  /* Le libellé produit reste accroché juste après la colonne des noms tant que
+     ses variantes sont à l'écran — `sticky` dans un `th` est borné par ce `th`,
+     donc il repart dès que le produit suivant arrive. */
+  .adm-mx-product { position: sticky; left: calc(var(--mx-name) + .875rem); display: inline-block; }
+  @media (min-width: 640px) {
+    .adm-mx-product { left: calc(var(--mx-name) + 1.5rem); }
+  }
+
+  .adm-pin-left  { box-shadow: 6px 0 6px -6px rgba(43, 38, 32, .28); }
+  .adm-pin-right { box-shadow: -6px 0 6px -6px rgba(43, 38, 32, .28); }
+
+  /* Indice de défilement : une ligne discrète au-dessus d'un tableau plus large
+     que l'écran. Un tableau qui déborde sans le dire passe pour un tableau
+     tronqué — c'est exactement ce qu'on nous a rapporté. */
+  .adm-scrollhint { display: flex; align-items: center; gap: .375rem;
+                    font-size: .6875rem; font-weight: 600; letter-spacing: .04em;
+                    text-transform: uppercase; color: var(--text-faint); }
+  .adm-scrollhint svg { animation: adm-nudge 1.8s var(--ease-soft) infinite; }
+  @keyframes adm-nudge {
+    0%, 60%, 100% { transform: translateX(0); }
+    30%           { transform: translateX(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .adm-scrollhint svg { animation: none; }
+  }
+
   /* ── Bulle d'explication (survol d'une quantité de pâte) ──────────────── */
   .adm-popover { background: var(--surface-card); border: 1px solid var(--border-subtle);
-                 border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); text-align: left; }
-  .adm-popover-trigger { cursor: help; border-bottom: 1px dashed var(--border-strong); }
+                 border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); text-align: left;
+                 /* La bulle est placée en `fixed` : sans plafond, une largeur
+                    en rem la faisait dépasser de l'écran d'un téléphone. */
+                 max-width: calc(100vw - 1rem); }
+  .adm-popover-trigger { cursor: help; border-bottom: 1px dashed var(--border-strong);
+                         touch-action: manipulation; }
   .adm-popover-trigger:hover { border-bottom-color: var(--brand); }
 
   /* Éditeur de note : le chrome de Trix aligné sur les champs de l'admin. */

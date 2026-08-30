@@ -1,39 +1,35 @@
 <% content_for :title, "Revenus des boulangers" %>
 <% content_for :layout, "admin" %>
 
-<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 space-y-4 md:space-y-0">
-  <div>
-    <div class="flex items-center gap-3">
-      <%= link_to "← Reporting", admin_reports_path(start_date: @start_date, end_date: @end_date),
-                  class: "text-sm font-medium text-blue-600 hover:text-blue-800" %>
+<%= adm_page_header "Revenus des boulangers" do %>
+  <%= link_to "← Reporting",
+              admin_reports_path(start_date: @start_date, end_date: @end_date),
+              class: adm_btn_class(:default) %>
+<% end %>
+
+<p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">
+  Période du <%= l(@start_date) %> au <%= l(@end_date) %>
+</p>
+
+<div class="adm-card mb-4 p-3 sm:p-4">
+  <%= form_with url: baker_revenue_admin_reports_path, method: :get, local: true,
+                class: "flex flex-wrap items-end gap-3" do |f| %>
+    <div>
+      <%= f.label :start_date, "Date de début", class: "adm-eyebrow mb-1 block" %>
+      <%= f.date_field :start_date, value: @start_date, class: adm_field_class("!w-auto") %>
     </div>
-    <h1 class="text-2xl font-bold text-gray-900">Revenus des boulangers</h1>
-    <p class="text-sm text-gray-600">
-      Période du <%= l(@start_date) %> au <%= l(@end_date) %>
-    </p>
-  </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-    <%= form_with url: baker_revenue_admin_reports_path, method: :get, local: true,
-                  class: "flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0" do |f| %>
-      <div>
-        <%= f.label :start_date, "Date de début", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.date_field :start_date, value: @start_date, class: "mt-1 #{admin_input_class}" %>
-      </div>
-      <div>
-        <%= f.label :end_date, "Date de fin", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.date_field :end_date, value: @end_date, class: "mt-1 #{admin_input_class}" %>
-      </div>
-      <div>
-        <%= f.submit "Actualiser", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
-      </div>
-    <% end %>
-  </div>
+    <div>
+      <%= f.label :end_date, "Date de fin", class: "adm-eyebrow mb-1 block" %>
+      <%= f.date_field :end_date, value: @end_date, class: adm_field_class("!w-auto") %>
+    </div>
+    <%= f.submit "Actualiser", class: adm_btn_class(:primary) %>
+  <% end %>
 </div>
 
 <% if @report.warnings.any? %>
-  <div class="mb-6 rounded-md bg-amber-50 border border-amber-200 p-4">
-    <h2 class="text-xl font-semibold text-amber-800">Avertissements</h2>
-    <ul class="mt-2 list-disc list-inside text-sm text-amber-700 space-y-1">
+  <div class="adm-card mb-4 p-4" style="border-color: var(--warning-200); background: var(--warning-100);">
+    <h2 class="text-sm font-semibold" style="color: var(--warning-700);">Avertissements</h2>
+    <ul class="mt-2 list-inside list-disc space-y-1 text-sm" style="color: var(--warning-700);">
       <% @report.warnings.each do |warning| %>
         <li><%= warning %></li>
       <% end %>
@@ -42,35 +38,35 @@
 <% end %>
 
 <%# Synthèse de période %>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Chiffre d'affaires</h2>
-    <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.total_revenue_cents) %></p>
+<div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Chiffre d'affaires</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= reports_currency(@report.total_revenue_cents) %></p>
   </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Commissions Stripe</h2>
-    <p class="mt-2 text-2xl font-bold text-gray-900">- <%= reports_currency(@report.total_commission_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">Commandes en ligne uniquement</p>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Commissions Stripe</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);">- <%= reports_currency(@report.total_commission_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">Commandes en ligne uniquement</p>
   </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Lieux de vente</h2>
-    <p class="mt-2 text-2xl font-bold text-gray-900">- <%= reports_currency(@report.total_sales_locations_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">Coût des emplacements liés aux fournées</p>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Lieux de vente</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);">- <%= reports_currency(@report.total_sales_locations_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">Coût des emplacements liés aux fournées</p>
   </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Marge brute</h2>
-    <p class="mt-2 text-2xl font-bold text-gray-900"><%= reports_currency(@report.gross_margin_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">CA − coûtant − sacs − transport − commissions − lieux de vente</p>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Marge brute</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= reports_currency(@report.gross_margin_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">CA − coûtant − sacs − transport − commissions − lieux de vente</p>
   </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Part Les 4 Sources</h2>
-    <p class="mt-2 text-2xl font-bold text-emerald-700"><%= reports_currency(@report.four_sources_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">30 % de la marge brute</p>
+  <div class="adm-card p-4" style="border-color: var(--success-200);">
+    <p class="adm-eyebrow" style="color: var(--success-700);">Part Les 4 Sources</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--success-700);"><%= reports_currency(@report.four_sources_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">30 % de la marge brute</p>
   </div>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-sm font-medium text-gray-500 tracking-wide">Pool boulangers</h2>
-    <p class="mt-2 text-2xl font-bold text-blue-700"><%= reports_currency(@report.baker_pool_cents) %></p>
-    <p class="mt-1 text-xs text-gray-500">70 % de la marge brute</p>
+  <div class="adm-card p-4" style="border-color: var(--water-200);">
+    <p class="adm-eyebrow" style="color: var(--water-700);">Pool boulangers</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--water-700);"><%= reports_currency(@report.baker_pool_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">70 % de la marge brute</p>
   </div>
 </div>
 
@@ -89,9 +85,12 @@
        "Recette encaissée par la fondation ; barème public appliqué rétroactivement." ]
    ].reject { |row| row[1].zero? && row[4].zero? } %>
 <% if party_rows.any? %>
-  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-    <h2 class="text-xl font-medium text-gray-900 mb-1">Pizza parties</h2>
-    <p class="text-sm text-gray-500 mb-4">
+  <section class="adm-card mb-4 overflow-hidden">
+    <div class="adm-cardhd">
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Pizza parties</h2>
+    </div>
+
+    <p class="px-4 pt-4 text-sm" style="color: var(--text-muted);">
       Une pizza party n'a ni sacs, ni transport, ni tournée : le partage 70/30 des pains ne
       s'y applique pas, chaque type a son propre barème. La part boulangers rejoint ensuite
       le même pool que la production, donc les mêmes artisans et les mêmes partenariats.
@@ -99,38 +98,38 @@
       leur recette n'a jamais transité par l'app et n'entre donc pas dans le chiffre d'affaires.
     </p>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-100 text-sm">
-        <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+    <div class="mt-4 overflow-x-auto">
+      <table class="adm-grid">
+        <thead>
           <tr>
-            <th class="px-4 py-3 text-left">Type</th>
-            <th class="px-4 py-3 text-right">Personnes</th>
-            <th class="px-4 py-3 text-right">Recette</th>
-            <th class="px-4 py-3 text-right">Les 4 Sources</th>
-            <th class="px-4 py-3 text-right">Boulangers</th>
+            <th>Type</th>
+            <th class="text-right">Personnes</th>
+            <th class="text-right">Recette</th>
+            <th class="text-right">Les 4 Sources</th>
+            <th class="text-right">Boulangers</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50 bg-white">
+        <tbody>
           <% party_rows.each do |label, persons, revenue_cents, four_sources_cents, bakers_cents, hint| %>
             <tr>
-              <td class="px-4 py-3 text-gray-900">
-                <div class="font-medium"><%= label %></div>
-                <div class="text-xs text-gray-500"><%= hint %></div>
+              <td>
+                <div class="font-medium" style="color: var(--text-strong);"><%= label %></div>
+                <div class="text-xs" style="color: var(--text-muted);"><%= hint %></div>
               </td>
-              <td class="px-4 py-3 text-right text-gray-600"><%= persons %></td>
-              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(revenue_cents) %></td>
-              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(four_sources_cents) %></td>
-              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(bakers_cents) %></td>
+              <td class="adm-grid-num text-right"><%= persons %></td>
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);"><%= reports_currency(revenue_cents) %></td>
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);"><%= reports_currency(four_sources_cents) %></td>
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);"><%= reports_currency(bakers_cents) %></td>
             </tr>
           <% end %>
         </tbody>
-        <tfoot class="bg-gray-50">
-          <tr>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900">Total pizza parties</td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= party_rows.sum { |row| row[1] } %></td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[2] }) %></td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[3] }) %></td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(party_rows.sum { |row| row[4] }) %></td>
+        <tfoot>
+          <tr class="adm-grid-total">
+            <td>Total pizza parties</td>
+            <td class="adm-grid-num text-right"><%= party_rows.sum { |row| row[1] } %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(party_rows.sum { |row| row[2] }) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(party_rows.sum { |row| row[3] }) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(party_rows.sum { |row| row[4] }) %></td>
           </tr>
         </tfoot>
       </table>
@@ -142,72 +141,80 @@
     production. Leur part boulangers est incluse dans le pool ci-dessus, mais
     on la montre à part pour qu'on sache toujours d'où vient l'argent. %>
 <% if @report.workshops.any? %>
-  <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-    <h2 class="text-xl font-medium text-gray-900 mb-1">Ateliers (revenu complémentaire)</h2>
-    <p class="text-sm text-gray-500 mb-4">
-      Un atelier n'a ni coûtant matière, ni sacs, ni transport : le partage 70/30 des pains
-      ne s'y applique pas. Sa recette est partagée selon le taux « ateliers » configuré,
-      puis la part boulangers suit les mêmes règles d'artisans et de partenariats que la production.
-    </p>
+  <section class="adm-card mb-4 overflow-hidden">
+    <div class="adm-cardhd">
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Ateliers (revenu complémentaire)</h2>
+    </div>
 
-    <% if @report.workshops_undistributed_count.positive? %>
-      <div class="mb-4 rounded-md bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-        <strong><%= @report.workshops_undistributed_count %></strong>
-        atelier<%= "s" if @report.workshops_undistributed_count > 1 %>
-        de cette période <strong>ne sont répartis à personne</strong> : le taux des ateliers n'est
-        pas défini à leur date, ou aucun animateur n'a été sélectionné. Leur recette est comptée
-        dans le total ci-dessous mais ne verse rien.
-      </div>
-    <% end %>
+    <div class="p-4">
+      <p class="text-sm" style="color: var(--text-muted);">
+        Un atelier n'a ni coûtant matière, ni sacs, ni transport : le partage 70/30 des pains
+        ne s'y applique pas. Sa recette est partagée selon le taux « ateliers » configuré,
+        puis la part boulangers suit les mêmes règles d'artisans et de partenariats que la production.
+      </p>
+
+      <% if @report.workshops_undistributed_count.positive? %>
+        <div class="adm-card mt-4 p-4 text-sm"
+             style="border-color: var(--warning-200); background: var(--warning-100); color: var(--warning-700);">
+          <strong><%= @report.workshops_undistributed_count %></strong>
+          atelier<%= "s" if @report.workshops_undistributed_count > 1 %>
+          de cette période <strong>ne sont répartis à personne</strong> : le taux des ateliers n'est
+          pas défini à leur date, ou aucun animateur n'a été sélectionné. Leur recette est comptée
+          dans le total ci-dessous mais ne verse rien.
+        </div>
+      <% end %>
+    </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-100 text-sm">
-        <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+      <table class="adm-grid">
+        <thead>
           <tr>
-            <th class="px-4 py-3 text-left">Date</th>
-            <th class="px-4 py-3 text-left">Atelier</th>
-            <th class="px-4 py-3 text-left">Animateurs</th>
-            <th class="px-4 py-3 text-right">Recette</th>
-            <th class="px-4 py-3 text-right">Les 4 Sources</th>
-            <th class="px-4 py-3 text-right">Boulangers</th>
+            <th>Date</th>
+            <th>Atelier</th>
+            <th>Animateurs</th>
+            <th class="text-right">Recette</th>
+            <th class="text-right">Les 4 Sources</th>
+            <th class="text-right">Boulangers</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50 bg-white">
+        <tbody>
           <% @report.workshops.each do |entry| %>
-            <tr class="<%= "bg-amber-50" unless entry.distributed? %>">
-              <td class="px-4 py-3 text-gray-900 whitespace-nowrap"><%= l(entry.date) %></td>
-              <td class="px-4 py-3 text-gray-900"><%= entry.workshop.title %></td>
-              <td class="px-4 py-3 text-gray-600">
+            <%# Un atelier non réparti est teinté : sa recette compte dans le
+                total mais ne verse rien à personne. %>
+            <tr style="<%= "background: var(--warning-100);" unless entry.distributed? %>">
+              <td class="adm-grid-num whitespace-nowrap" style="color: var(--text-strong);"><%= l(entry.date) %></td>
+              <td style="color: var(--text-strong);"><%= entry.workshop.title %></td>
+              <td>
                 <% if entry.unassigned %>
-                  <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Aucun animateur</span>
+                  <%= adm_chip "Aucun animateur", tone: :warning %>
                 <% else %>
                   <%= entry.workshop.artisans.map(&:name).join(", ") %>
                 <% end %>
               </td>
-              <td class="px-4 py-3 text-right text-gray-900"><%= reports_currency(entry.revenue_cents) %></td>
-              <td class="px-4 py-3 text-right text-gray-900">
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);"><%= reports_currency(entry.revenue_cents) %></td>
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);">
                 <% if entry.rate_undefined? %>
-                  <span class="text-xs text-amber-700">taux non défini</span>
+                  <%= adm_chip "taux non défini", tone: :warning %>
                 <% else %>
                   <%= reports_currency(entry.four_sources_cents) %>
                 <% end %>
               </td>
-              <td class="px-4 py-3 text-right text-gray-900">
+              <td class="adm-grid-num text-right" style="color: var(--text-strong);">
                 <% if entry.distributed? %>
                   <%= reports_currency(entry.bakers_cents) %>
                 <% else %>
-                  <span class="text-xs text-amber-700">non réparti</span>
+                  <%= adm_chip "non réparti", tone: :warning %>
                 <% end %>
               </td>
             </tr>
           <% end %>
         </tbody>
-        <tfoot class="bg-gray-50">
-          <tr>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900" colspan="3">Total ateliers</td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_revenue_cents) %></td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_four_sources_cents) %></td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right"><%= reports_currency(@report.total_workshop_bakers_cents) %></td>
+        <tfoot>
+          <tr class="adm-grid-total">
+            <td colspan="3">Total ateliers</td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.total_workshop_revenue_cents) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.total_workshop_four_sources_cents) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.total_workshop_bakers_cents) %></td>
           </tr>
         </tfoot>
       </table>
@@ -216,152 +223,173 @@
 <% end %>
 
 <%# Revenu final par artisan (après mise en commun des partenariats) %>
-<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-xl font-medium text-gray-900 mb-1">Revenu par boulanger (à verser sur la période)</h2>
-  <p class="text-sm text-gray-500 mb-4">
+<section class="adm-card mb-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Revenu par boulanger (à verser sur la période)</h2>
+    <span class="adm-eyebrow"><%= @report.artisan_settlements.size %> boulanger<%= "s" if @report.artisan_settlements.size > 1 %></span>
+  </div>
+
+  <p class="px-4 pt-4 text-sm" style="color: var(--text-muted);">
     « Part finale » = ce qui est dû à chaque boulanger, tous postes confondus — c'est la
     colonne à reporter en comptabilité. Les quatre colonnes qui la précèdent disent d'où
     vient l'argent : le pain, les pizza parties privées, les pizza parties publiques
     (site et BilletWeb), les ateliers. Leur somme fait toujours la part finale. Pour les
     membres d'un partenariat, chaque poste est mis en commun puis réparti à parts égales.
   </p>
-  <% if @report.artisan_settlements.any? %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-100">
+
+  <div class="mt-4 overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Boulanger</th>
+          <th>Partenariat</th>
+          <th>Jours</th>
+          <th class="text-right">Pain</th>
+          <th class="text-right">Party privée</th>
+          <th class="text-right">Party publique</th>
+          <th class="text-right">Ateliers</th>
+          <th class="text-right">Part brute (ses jours)</th>
+          <th class="text-right">Part finale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @report.artisan_settlements.empty? %>
+          <%= adm_empty_row(colspan: 9,
+                            title: "Aucun boulanger affecté à un jour de production sur la période.",
+                            hint: "Affectez des artisans aux jours de cuisson pour voir leur revenu ici.") %>
+        <% end %>
+
+        <% @report.artisan_settlements.each do |settlement| %>
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Boulanger</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Partenariat</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Jours</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Pain</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Party privée</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Party publique</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Ateliers</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part brute (ses jours)</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part finale</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <% @report.artisan_settlements.each do |settlement| %>
-            <tr>
-              <td class="px-4 py-3 text-sm text-gray-900 font-medium"><%= settlement.artisan.name %></td>
-              <td class="px-4 py-3 text-sm text-gray-600">
-                <% if settlement.partnership %>
-                  <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"><%= settlement.partnership.name %></span>
-                <% else %>
-                  <span class="text-gray-400">—</span>
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600"><%= settlement.days_count %></td>
-              <%# Un zéro à toutes les lignes d'une colonne est du bruit : on le
-                  grise pour que l'oeil n'aille qu'aux postes qui versent. %>
-              <% BakerRevenueService::BUCKETS.each do |bucket| %>
-                <% cents = settlement.public_send(bucket) %>
-                <td class="px-4 py-3 text-sm text-right <%= cents.zero? ? "text-gray-300" : "text-gray-600" %>">
-                  <%= reports_currency(cents) %>
-                </td>
+            <td class="font-medium" style="color: var(--text-strong);"><%= settlement.artisan.name %></td>
+            <td>
+              <% if settlement.partnership %>
+                <%= adm_chip settlement.partnership.name, tone: :water %>
+              <% else %>
+                <span style="color: var(--text-faint);">—</span>
               <% end %>
-              <td class="px-4 py-3 text-sm text-gray-600 text-right"><%= reports_currency(settlement.raw_cents) %></td>
-              <td class="px-4 py-3 text-sm text-gray-900 text-right font-semibold"><%= reports_currency(settlement.settled_cents) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-        <tfoot class="bg-gray-50 font-semibold">
-          <tr>
-            <td class="px-4 py-3 text-sm text-gray-900" colspan="3">Total pool boulangers</td>
+            </td>
+            <td class="adm-grid-num"><%= settlement.days_count %></td>
+            <%# Un zéro à toutes les lignes d'une colonne est du bruit : on le
+                grise pour que l'oeil n'aille qu'aux postes qui versent. %>
             <% BakerRevenueService::BUCKETS.each do |bucket| %>
-              <td class="px-4 py-3 text-sm text-gray-900 text-right">
+              <% cents = settlement.public_send(bucket) %>
+              <td class="adm-grid-num text-right" style="color: <%= cents.zero? ? "var(--text-faint)" : "var(--text-body)" %>;">
+                <%= reports_currency(cents) %>
+              </td>
+            <% end %>
+            <td class="adm-grid-num text-right"><%= reports_currency(settlement.raw_cents) %></td>
+            <td class="adm-grid-num text-right font-semibold" style="color: var(--text-strong);"><%= reports_currency(settlement.settled_cents) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+
+      <% if @report.artisan_settlements.any? %>
+        <tfoot>
+          <tr class="adm-grid-total">
+            <td colspan="3">Total pool boulangers</td>
+            <% BakerRevenueService::BUCKETS.each do |bucket| %>
+              <td class="adm-grid-num text-right">
                 <%= reports_currency(@report.artisan_settlements.sum { |s| s.public_send(bucket) }) %>
               </td>
             <% end %>
-            <td class="px-4 py-3 text-sm text-gray-600 text-right"><%= reports_currency(@report.artisan_settlements.sum(&:raw_cents)) %></td>
-            <td class="px-4 py-3 text-sm text-gray-900 text-right"><%= reports_currency(@report.artisan_settlements.sum(&:settled_cents)) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.artisan_settlements.sum(&:raw_cents)) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.artisan_settlements.sum(&:settled_cents)) %></td>
           </tr>
         </tfoot>
-      </table>
-    </div>
-  <% else %>
-    <p class="text-sm text-gray-500">Aucun boulanger affecté à un jour de production sur la période.</p>
-  <% end %>
+      <% end %>
+    </table>
+  </div>
 </section>
 
 <%# Détail par jour de production %>
-<section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-xl font-medium text-gray-900 mb-4">Détail par jour de production</h2>
-  <% if @report.days.any? %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase">Jour</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">CA</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Coûtant</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Sacs</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Transport</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Commissions</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Lieux de vente</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Marge brute</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Part 4S</th>
-            <th class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase">Pool</th>
-            <th class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase">Revenu par boulanger</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <% @report.days.each do |day| %>
-            <tr class="<%= 'bg-amber-50' if day.percent_overflow %>">
-              <td class="px-3 py-3 text-gray-900 font-medium whitespace-nowrap"><%= l(day.date) %></td>
-              <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(day.revenue_cents) %></td>
-              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.cost_price_cents) %></td>
-              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.bread_bags_cents) %></td>
-              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.transport_cents) %></td>
-              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.commission_cents) %></td>
-              <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(day.sales_locations_cents) %></td>
-              <td class="px-3 py-3 text-gray-900 text-right font-semibold"><%= reports_currency(day.gross_margin_cents) %></td>
-              <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(day.four_sources_cents) %></td>
-              <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(day.baker_pool_cents) %></td>
-              <td class="px-3 py-3 text-gray-700">
-                <% if day.artisan_shares.any? %>
-                  <ul class="space-y-0.5">
-                    <% day.artisan_shares.each do |share| %>
-                      <li>
-                        <%= share.artisan.name %> —
-                        <% if share.percent.nil? %>
-                          <span class="text-amber-600">part non configurée</span>
-                        <% else %>
-                          <%= reports_currency(share.amount_cents) %>
-                          <span class="text-gray-400">(<%= number_with_precision(share.percent, strip_insignificant_zeros: true) %> %)</span>
-                        <% end %>
-                      </li>
-                    <% end %>
-                  </ul>
-                  <% if day.percent_overflow %>
-                    <p class="mt-1 text-xs text-amber-700">⚠ Somme des parts &gt; 100 %</p>
+<section class="adm-card mb-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Détail par jour de production</h2>
+    <span class="adm-eyebrow"><%= @report.days.size %> jour<%= "s" if @report.days.size > 1 %></span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Jour</th>
+          <th class="text-right">CA</th>
+          <th class="text-right">Coûtant</th>
+          <th class="text-right">Sacs</th>
+          <th class="text-right">Transport</th>
+          <th class="text-right">Commissions</th>
+          <th class="text-right">Lieux de vente</th>
+          <th class="text-right">Marge brute</th>
+          <th class="text-right">Part 4S</th>
+          <th class="text-right">Pool</th>
+          <th>Revenu par boulanger</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @report.days.empty? %>
+          <%= adm_empty_row(colspan: 11,
+                            title: "Aucun jour de production sur la période sélectionnée.",
+                            hint: "Élargissez la période pour retrouver des fournées.") %>
+        <% end %>
+
+        <% @report.days.each do |day| %>
+          <%# Un jour dont les parts dépassent 100 % est teinté : son pool est
+              sur-réparti, le total ne veut plus rien dire tel quel. %>
+          <tr style="<%= "background: var(--warning-100);" if day.percent_overflow %>">
+            <td class="adm-grid-num whitespace-nowrap font-medium" style="color: var(--text-strong);"><%= l(day.date) %></td>
+            <td class="adm-grid-num text-right" style="color: var(--text-strong);"><%= reports_currency(day.revenue_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(day.cost_price_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(day.bread_bags_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(day.transport_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(day.commission_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(day.sales_locations_cents) %></td>
+            <td class="adm-grid-num text-right font-semibold" style="color: var(--text-strong);"><%= reports_currency(day.gross_margin_cents) %></td>
+            <td class="adm-grid-num text-right" style="color: var(--success-700);"><%= reports_currency(day.four_sources_cents) %></td>
+            <td class="adm-grid-num text-right" style="color: var(--water-700);"><%= reports_currency(day.baker_pool_cents) %></td>
+            <td>
+              <% if day.artisan_shares.any? %>
+                <ul class="space-y-0.5">
+                  <% day.artisan_shares.each do |share| %>
+                    <li>
+                      <%= share.artisan.name %> —
+                      <% if share.percent.nil? %>
+                        <span style="color: var(--warning-700);">part non configurée</span>
+                      <% else %>
+                        <%= reports_currency(share.amount_cents) %>
+                        <span style="color: var(--text-faint);">(<%= number_with_precision(share.percent, strip_insignificant_zeros: true) %> %)</span>
+                      <% end %>
+                    </li>
                   <% end %>
-                <% else %>
-                  <span class="text-gray-400">Aucun boulanger affecté</span>
+                </ul>
+                <% if day.percent_overflow %>
+                  <p class="mt-1 text-xs" style="color: var(--warning-700);">⚠ Somme des parts &gt; 100 %</p>
                 <% end %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-        <tfoot class="bg-gray-50 font-semibold">
-          <tr>
-            <td class="px-3 py-3 text-gray-900">Total</td>
-            <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(@report.total_revenue_cents) %></td>
-            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_cost_price_cents) %></td>
-            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_bread_bags_cents) %></td>
-            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_transport_cents) %></td>
-            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_commission_cents) %></td>
-            <td class="px-3 py-3 text-gray-600 text-right">- <%= reports_currency(@report.total_sales_locations_cents) %></td>
-            <td class="px-3 py-3 text-gray-900 text-right"><%= reports_currency(@report.gross_margin_cents) %></td>
-            <td class="px-3 py-3 text-emerald-700 text-right"><%= reports_currency(@report.four_sources_cents) %></td>
-            <td class="px-3 py-3 text-blue-700 text-right"><%= reports_currency(@report.baker_pool_cents) %></td>
-            <td class="px-3 py-3"></td>
+              <% else %>
+                <span style="color: var(--text-faint);">Aucun boulanger affecté</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+
+      <% if @report.days.any? %>
+        <tfoot>
+          <tr class="adm-grid-total">
+            <td>Total</td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.total_revenue_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(@report.total_cost_price_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(@report.total_bread_bags_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(@report.total_transport_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(@report.total_commission_cents) %></td>
+            <td class="adm-grid-num text-right">- <%= reports_currency(@report.total_sales_locations_cents) %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(@report.gross_margin_cents) %></td>
+            <td class="adm-grid-num text-right" style="color: var(--success-700);"><%= reports_currency(@report.four_sources_cents) %></td>
+            <td class="adm-grid-num text-right" style="color: var(--water-700);"><%= reports_currency(@report.baker_pool_cents) %></td>
+            <td></td>
           </tr>
         </tfoot>
-      </table>
-    </div>
-  <% else %>
-    <p class="text-sm text-gray-500">Aucun jour de production sur la période sélectionnée.</p>
-  <% end %>
+      <% end %>
+    </table>
+  </div>
 </section>

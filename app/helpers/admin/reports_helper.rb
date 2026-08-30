@@ -9,6 +9,14 @@ module Admin::ReportsHelper
     ((total_cents.to_f / overall_cents.to_f) * 100).round(1)
   end
 
+  # Chart.js ne sait pas lire une variable CSS : les couleurs des graphiques
+  # sont donc les seules valeurs littérales de l'admin. Elles reprennent les
+  # tokens de la charte — sage pour le chiffre d'affaires, eau pour les volumes.
+  CHART_REVENUE = "#82966A".freeze        # --sage-500
+  CHART_REVENUE_LINE = "#6B7E52".freeze   # --sage-600
+  CHART_REVENUE_FILL = "rgba(130, 150, 106, 0.2)".freeze
+  CHART_VOLUME = "rgba(92, 122, 140, 0.5)".freeze # --water-600
+
   def weekday_sales_chart_config(weekday_data)
     labels = weekday_data.map { |entry| weekday_label(entry[:weekday]) }
     revenue_values = weekday_data.map { |entry| (entry[:total_cents].to_f / 100).round(2) }
@@ -21,7 +29,7 @@ module Admin::ReportsHelper
           {
             label: "Chiffre d'affaires (€)",
             data: revenue_values,
-            backgroundColor: "#3b82f6"
+            backgroundColor: CHART_REVENUE
           }
         ]
       },
@@ -53,8 +61,8 @@ module Admin::ReportsHelper
             type: "line",
             label: "Chiffre d'affaires (€)",
             data: revenue_values,
-            borderColor: "#2563eb",
-            backgroundColor: "rgba(37, 99, 235, 0.2)",
+            borderColor: CHART_REVENUE_LINE,
+            backgroundColor: CHART_REVENUE_FILL,
             tension: 0.3,
             yAxisID: "y"
           },
@@ -62,7 +70,7 @@ module Admin::ReportsHelper
             type: "bar",
             label: "Commandes",
             data: order_counts,
-            backgroundColor: "rgba(59, 130, 246, 0.5)",
+            backgroundColor: CHART_VOLUME,
             yAxisID: "y1"
           }
         ]

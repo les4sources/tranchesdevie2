@@ -28,6 +28,17 @@ module Admin::UiHelper
 
   TONES = %i[neutral brand accent success warning danger water].freeze
 
+  # Statut d'un versement Stripe. Le libellé reste celui de Stripe (`paid`,
+  # `in_transit`…) : c'est ce mot-là qu'on relit dans le tableau de bord Stripe,
+  # le traduire ferait perdre le lien entre les deux écrans.
+  PAYOUT_STATUS_TONES = {
+    "paid" => :success,
+    "in_transit" => :water,
+    "pending" => :warning,
+    "canceled" => :neutral,
+    "failed" => :danger
+  }.freeze
+
   # Nature d'un message (SMS ou e-mail). Les deux modèles partagent le même
   # vocabulaire de `kind` : une seule table, pour qu'une confirmation ait la
   # même couleur qu'elle soit partie par SMS ou par e-mail.
@@ -73,6 +84,10 @@ module Admin::UiHelper
 
   def adm_payment_status_chip(payment_status)
     adm_chip(payment_status_label(payment_status), tone: PAYMENT_STATUS_TONES.fetch(payment_status.to_s, :neutral))
+  end
+
+  def adm_payout_status_chip(status)
+    adm_chip(status.to_s, tone: PAYOUT_STATUS_TONES.fetch(status.to_s, :neutral))
   end
 
   # Pastille de nature d'un message, commune aux SMS et aux e-mails.

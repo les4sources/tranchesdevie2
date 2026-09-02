@@ -1,0 +1,21 @@
+<%# Champs communs à `new` et `edit` : les deux formulaires ne diffèrent que par
+    l'URL de soumission et le libellé du bouton. %>
+<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+  <div>
+    <%= f.label :name, "Nom", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :name, required: true, class: adm_field_class %>
+  </div>
+
+  <div>
+    <%= f.label :discount_percent, "Remise (%)", class: "adm-eyebrow mb-1 block" %>
+    <%= f.number_field :discount_percent,
+                       required: true,
+                       min: 0,
+                       max: 100,
+                       step: 1,
+                       class: adm_field_class %>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Valeur entre 0 et 100</p>
+  </div>
+</div>
+
+<%= render "admin/groups/discounts_section", f: f %>

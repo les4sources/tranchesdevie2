@@ -1,0 +1,11 @@
+<%# Bloc d'erreurs partagé par `new` et `edit` : même formulaire, mêmes messages. %>
+<% if group.errors.any? %>
+  <div class="adm-card mb-6 p-4" style="border-color: var(--danger-200); background: var(--danger-100);">
+    <h2 class="text-sm font-semibold" style="color: var(--danger-700);">Veuillez corriger les erreurs suivantes :</h2>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm" style="color: var(--danger-700);">
+      <% group.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

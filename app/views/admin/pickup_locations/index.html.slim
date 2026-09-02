@@ -1,47 +1,53 @@
 - content_for :title, "Points de retrait"
 - content_for :layout, "admin"
 
-.mb-6.flex.justify-between.items-center
-  .flex.items-center.gap-3
-    = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-    h1.text-2xl.font-bold.text-gray-900 Points de retrait
-  = link_to "Nouveau point de retrait", new_admin_pickup_location_path, class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+= adm_page_header "Points de retrait" do
+  = link_to "Paramètres", admin_settings_path, class: adm_btn_class(:ghost)
+  = link_to new_admin_pickup_location_path, class: adm_btn_class(:primary) do
+    = lucide "plus", size: 15
+    |  Nouveau point de retrait
 
-.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-  - if @pickup_locations.any?
-    .overflow-x-auto
-      table.min-w-full.divide-y.divide-gray-200
-        thead.bg-gray-100
-          tr
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Ordre
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Nom
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Description
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase État
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Par défaut
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Fournées à venir
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
-        tbody.divide-y.divide-gray-200
+.adm-card.overflow-hidden
+  .adm-cardhd
+    h2.text-sm.font-semibold style="color: var(--text-strong);" Tous les points de retrait
+    span.adm-eyebrow = "#{@pickup_locations.size} lieu#{'x' if @pickup_locations.size > 1}"
+
+  .overflow-x-auto
+    table.adm-grid
+      thead
+        tr
+          th.text-right Ordre
+          th Nom
+          th Description
+          th État
+          th Par défaut
+          th.text-right Fournées à venir
+          th Actions
+      tbody
+        - if @pickup_locations.any?
           - @pickup_locations.each do |pickup_location|
-            tr class=("bg-gray-50" unless pickup_location.active?)
-              td.px-4.py-3.text-sm.text-gray-600 = pickup_location.position
-              td.px-4.py-3.text-sm.text-gray-900.font-medium = pickup_location.name
-              td.px-4.py-3.text-sm.text-gray-600 = pickup_location.description.presence || "—"
-              td.px-4.py-3.text-sm
+            / Un lieu inactif reste listé — il n'est simplement plus proposé au
+            / client : on l'estompe plutôt que de le cacher.
+            tr class=("opacity-60" unless pickup_location.active?)
+              td.adm-grid-num.text-right = pickup_location.position
+              td.font-medium style="color: var(--text-strong);" = pickup_location.name
+              td = pickup_location.description.presence || "—"
+              td
                 - if pickup_location.active?
-                  span.inline-flex.items-center.rounded-full.bg-green-100.px-2.py-1.text-xs.font-semibold.text-green-800 Actif
+                  = adm_chip "Actif", tone: :success
                 - else
-                  span.inline-flex.items-center.rounded-full.bg-amber-100.px-2.py-1.text-xs.font-semibold.text-amber-800 Inactif
-              td.px-4.py-3.text-sm
+                  = adm_chip "Inactif", tone: :warning
+              td
                 - if pickup_location.default?
-                  span.inline-flex.items-center.rounded-full.bg-green-100.px-2.py-1.text-xs.font-semibold.text-green-800 Par défaut
+                  = adm_chip "Par défaut", tone: :brand
                 - else
-                  span.text-gray-400 —
-              td.px-4.py-3.text-sm.text-gray-600
+                  span style="color: var(--text-faint);" —
+              td.adm-grid-num.text-right
                 = pickup_location.bake_days.merge(BakeDay.future).count
-              td.px-4.py-3.text-sm
-                = link_to "Modifier", edit_admin_pickup_location_path(pickup_location), class: "text-blue-600 hover:text-blue-800 mr-3"
+              td.whitespace-nowrap
+                = link_to "Modifier", edit_admin_pickup_location_path(pickup_location), class: "adm-rowaction mr-3"
                 - unless pickup_location.default?
-                  = button_to "Supprimer", admin_pickup_location_path(pickup_location), method: :delete, data: { turbo_confirm: "Supprimer ce point de retrait ? Les commandes passées continueront de l'afficher." }, class: "text-red-600 hover:text-red-800", form: { class: "inline" }
-  - else
-    .px-4.py-8.text-center.text-sm.text-gray-500
-      | Aucun point de retrait défini
+                  = button_to "Supprimer", admin_pickup_location_path(pickup_location), method: :delete, data: { turbo_confirm: "Supprimer ce point de retrait ? Les commandes passées continueront de l'afficher." }, class: "adm-rowaction", form: { class: "inline" }
+        - else
+          = adm_empty_row colspan: 7, title: "Aucun point de retrait défini", hint: "Un point de retrait est le lieu où le mangeur vient chercher sa commande." do
+            = link_to "Nouveau point de retrait", new_admin_pickup_location_path, class: adm_btn_class(:primary)

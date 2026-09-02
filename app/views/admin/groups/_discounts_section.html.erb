@@ -1,6 +1,6 @@
 <div class="mt-8" data-controller="nested-form">
-  <h2 class="text-xl font-medium text-gray-900">Remises ciblées (produit / variante)</h2>
-  <p class="mt-1 text-sm text-gray-600">
+  <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Remises ciblées (produit / variante)</h2>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">
     Une remise ciblée remplace la remise globale du groupe pour le produit ou la variante concerné(e).
     La valeur est une <strong>réduction</strong> sur le prix public (en % ou en €).
   </p>
@@ -17,8 +17,7 @@
     <% end %>
   </template>
 
-  <button type="button" data-action="nested-form#add"
-          class="mt-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+  <button type="button" data-action="nested-form#add" class="<%= adm_btn_class(:default, "mt-3") %>">
     + Ajouter une remise ciblée
   </button>
 </div>

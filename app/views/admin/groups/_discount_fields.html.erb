@@ -1,28 +1,28 @@
-<div class="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:grid-cols-12 sm:items-end" data-nested-form-target="row">
+<div class="adm-panel grid grid-cols-1 gap-3 p-3 sm:grid-cols-12 sm:items-end" data-nested-form-target="row">
   <div class="sm:col-span-6">
-    <%= f.label :target, "Produit / variante", class: "block text-xs font-medium text-gray-600" %>
+    <%= f.label :target, "Produit / variante", class: "adm-eyebrow mb-1 block" %>
     <%= f.select :target,
                  group_discount_target_options(@products, f.object.target),
                  { include_blank: "Sélectionner…" },
-                 class: admin_input_class %>
+                 class: adm_field_class %>
   </div>
 
   <div class="sm:col-span-3">
-    <%= f.label :discount_kind, "Type", class: "block text-xs font-medium text-gray-600" %>
+    <%= f.label :discount_kind, "Type", class: "adm-eyebrow mb-1 block" %>
     <%= f.select :discount_kind,
                  [ [ "Pourcentage (%)", "percent" ], [ "Montant (€)", "fixed" ] ],
                  {},
-                 class: admin_input_class %>
+                 class: adm_field_class %>
   </div>
 
   <div class="sm:col-span-2">
-    <%= f.label :discount_value_raw, "Valeur", class: "block text-xs font-medium text-gray-600" %>
-    <%= f.text_field :discount_value_raw, class: admin_input_class, placeholder: "50 ou 2,00" %>
+    <%= f.label :discount_value_raw, "Valeur", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :discount_value_raw, class: adm_field_class, placeholder: "50 ou 2,00" %>
   </div>
 
   <div class="flex sm:col-span-1 sm:justify-end">
     <%= f.hidden_field :_destroy %>
-    <button type="button" data-action="nested-form#remove" class="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800">
+    <button type="button" data-action="nested-form#remove" class="<%= adm_btn_class(:danger) %>">
       Retirer
     </button>
   </div>

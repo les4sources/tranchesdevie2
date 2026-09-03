@@ -222,6 +222,13 @@
                 background: var(--surface-inset);
                 border-radius: var(--radius-md) var(--radius-md) 0 0; }
 
+  /* Carte cliquable — la navigation « chapitre précédent / suivant » du centre
+     d'aide. Une `.adm-card` seule n'a aucun état de survol : posée sur un lien,
+     rien ne disait qu'elle réagissait au clic. */
+  .adm-cardlink { display: block;
+                  transition: background-color .12s var(--ease-soft), border-color .12s var(--ease-soft); }
+  .adm-cardlink:hover { background: var(--surface-inset); border-color: var(--border-strong); }
+
   /* ── Grille de données — le coeur du parti pris ───────────────────────── */
   .adm-grid              { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .8125rem; }
   .adm-grid thead th     { position: sticky; top: 0; z-index: 10;

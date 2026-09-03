@@ -47,22 +47,20 @@ module Admin
     def help_screenshot_figure(slug, caption)
       caption = caption.to_s.strip
 
+      # Le cadre, la légende et le placeholder sont habillés par la feuille de
+      # style de la prose (`admin/help/_styles`) : ce balisage ne porte donc
+      # aucune couleur, juste les crochets de style.
       if help_screenshot_exists?(slug)
         image = image_tag(
           "aide/#{slug}.png",
           alt: caption.presence || slug,
-          loading: "lazy",
-          class: "w-full rounded-lg border border-gray-200 shadow-sm"
+          loading: "lazy"
         )
       else
-        image = content_tag(
-          :div,
-          "📷 Capture à générer : #{slug}",
-          class: "flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-sm text-gray-400"
-        )
+        image = content_tag(:div, "📷 Capture à générer : #{slug}", class: "aide-shot-missing")
       end
 
-      figcaption = caption.present? ? content_tag(:figcaption, caption, class: "mt-2 text-center text-sm text-gray-500") : "".html_safe
+      figcaption = caption.present? ? content_tag(:figcaption, caption) : "".html_safe
       content_tag(:figure, image + figcaption, class: "aide-shot my-6")
     end
   end

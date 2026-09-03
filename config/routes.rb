@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       post :verify_phone
       post :verify_otp
       post :create_payment_intent
+      post :update_pickup_location
       post :create_cash_order
       post :create_wallet_order
       get :success

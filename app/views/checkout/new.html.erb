@@ -464,6 +464,56 @@
     return checked ? checked.value : '';
   }
 
+  // Rejoue le point de retrait sur la commande déjà créée (#213).
+  //
+  // Sur le chemin en ligne, la commande naît avec le PaymentIntent, au
+  // chargement de la page — avant que le client ait coché quoi que ce soit. Et
+  // `stripe.confirmPayment` ne repasse plus par notre serveur : sans ce rappel,
+  // cocher « Marché » après coup ne changeait rien, la commande restait au lieu
+  // par défaut. On le rejoue donc à chaque changement ET juste avant de payer.
+  //
+  // Résout toujours ({ ok: ... }) : un incident réseau ici ne doit pas empêcher
+  // de payer, seul un refus explicite du serveur bloque.
+  function syncPickupLocation() {
+    const value = pickupLocationValue();
+    if (!value) return Promise.resolve({ ok: true });
+
+    return fetch('<%= update_pickup_location_checkout_index_path %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': '<%= form_authenticity_token %>'
+      },
+      body: JSON.stringify({ pickup_location_id: value })
+    })
+      .then(response => response.json().catch(() => ({})).then(data => ({ status: response.status, data })))
+      .then(({ status, data }) => {
+        if (status === 422 && data && data.error) return { ok: false, error: data.error };
+        return { ok: true };
+      })
+      .catch(error => {
+        if (window.Sentry) {
+          window.Sentry.captureMessage('[checkout] sync_pickup_location_failed', {
+            level: 'warning',
+            extra: { step: 'syncPickupLocation', message: error.message }
+          });
+        }
+        return { ok: true };
+      });
+  }
+
+  // Le choix part dès le clic sur le radio : si le client ferme l'onglet entre
+  // le choix et le paiement, la commande `pending` porte déjà le bon lieu.
+  function setupPickupLocationSync() {
+    document.querySelectorAll('input[name="pickup_location_id"]').forEach(function (radio) {
+      // `turbo:load` peut repasser ici sans que le body ait été remplacé : sans
+      // ce drapeau, on empilerait un listener (et donc un POST) par navigation.
+      if (radio.dataset.pickupSyncBound === 'true') return;
+      radio.dataset.pickupSyncBound = 'true';
+      radio.addEventListener('change', syncPickupLocation);
+    });
+  }
+
   // Commentaire de la Pizza party privée (#169) : renvoyé tel que corrigé ici.
   // Absent du DOM hors party privée → undefined, et le serveur garde la session.
   function customerNoteValue() {
@@ -502,6 +552,7 @@
       handlePaymentMethodChange();
       setupGroupPurchaseToggle();
       setupNameGuard();
+      setupPickupLocationSync();
       initStripe();
     });
   } else {
@@ -509,6 +560,7 @@
     handlePaymentMethodChange();
     setupGroupPurchaseToggle();
     setupNameGuard();
+    setupPickupLocationSync();
     initStripe();
   }
 
@@ -524,6 +576,7 @@
         initializePaymentMethodState();
         handlePaymentMethodChange();
         setupNameGuard();
+        setupPickupLocationSync();
         initStripe();
       }
     });
@@ -704,6 +757,21 @@
 
         newSubmitButton.disabled = true;
         newSubmitButton.textContent = 'Traitement...';
+
+        // Dernier mot du client sur le point de retrait (#213) : la commande a
+        // été créée avec le PaymentIntent, avant qu'il ne coche quoi que ce
+        // soit. On l'aligne AVANT de confirmer — après, Bancontact nous a déjà
+        // emmenés hors de la page et il n'y a plus de rattrapage.
+        const pickupSync = await syncPickupLocation();
+        if (!pickupSync.ok) {
+          if (paymentMessage) {
+            paymentMessage.textContent = pickupSync.error;
+            paymentMessage.classList.remove('hidden');
+          }
+          newSubmitButton.disabled = false;
+          newSubmitButton.textContent = payLabel;
+          return;
+        }
 
         const returnUrl = paymentIntentId
           ? `${successUrl}?payment_intent=${encodeURIComponent(paymentIntentId)}`

@@ -80,6 +80,72 @@ RSpec.describe 'Checkout — point de retrait', type: :request do
     end
   end
 
+  # Le bug rapporté par les boulangères : sur le chemin en ligne, la commande
+  # naît AVEC le PaymentIntent, au chargement de la page — avant que le client
+  # ait coché son lieu. `stripe.confirmPayment` ne repassant plus par le serveur,
+  # cocher « Marché » ensuite ne changeait rien : la commande restait,
+  # silencieusement, au lieu par défaut. Le client rejoue donc son choix ici.
+  describe 'changement de lieu après création du PaymentIntent (update_pickup_location)' do
+    before do
+      stub_stripe_payment_intent_create(amount: 550)
+      post_json '/checkout/create_payment_intent', { first_name: 'Léa' }
+    end
+
+    it 'déplace la commande pending vers le lieu choisi après coup' do
+      order = Order.order(:created_at).last
+      expect(order.pickup_location).to eq(default_location) # état du bug
+
+      post_json '/checkout/update_pickup_location', { pickup_location_id: anhee.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)).to include('success' => true, 'updated' => true)
+      expect(order.reload.pickup_location).to eq(anhee)
+    end
+
+    it 'ne crée pas de commande supplémentaire' do
+      expect {
+        post_json '/checkout/update_pickup_location', { pickup_location_id: anhee.id }
+      }.not_to change(Order, :count)
+    end
+
+    it 'rejette un lieu non ouvert sur la fournée' do
+      order = Order.order(:created_at).last
+
+      post_json '/checkout/update_pickup_location', { pickup_location_id: dinant.id }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(order.reload.pickup_location).to eq(default_location)
+    end
+
+    it 'rejette un lieu inconnu' do
+      post_json '/checkout/update_pickup_location', { pickup_location_id: 999_999 }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'rejette un lieu qui exclut un produit du panier' do
+      product.excluded_pickup_locations << anhee
+      order = Order.order(:created_at).last
+
+      post_json '/checkout/update_pickup_location', { pickup_location_id: anhee.id }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)['error']).to include(product.name)
+      expect(order.reload.pickup_location).to eq(default_location)
+    end
+
+    it "ne déplace pas une commande déjà payée, sans bloquer le client pour autant" do
+      order = Order.order(:created_at).last
+      order.update!(status: :paid)
+
+      post_json '/checkout/update_pickup_location', { pickup_location_id: anhee.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)).to include('success' => true, 'updated' => false)
+      expect(order.reload.pickup_location).to eq(default_location)
+    end
+  end
+
   describe 'chemin espèces (create_cash_order)' do
     before { customer.update!(cash_payment_allowed: true) }
 

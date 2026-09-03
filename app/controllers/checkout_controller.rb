@@ -311,6 +311,70 @@ class CheckoutController < ApplicationController
     render json: { error: "Une erreur est survenue. Merci de réessayer." }, status: :internal_server_error
   end
 
+  # Le point de retrait choisi APRÈS l'affichage du formulaire de paiement (#213).
+  #
+  # Sur le chemin en ligne, la commande naît en même temps que le PaymentIntent,
+  # dans `create_payment_intent`, déclenché au chargement de la page — donc AVANT
+  # que le client ait touché aux boutons radio. `stripe.confirmPayment` ne
+  # repasse ensuite jamais par le serveur : cocher « Marché » après coup n'avait
+  # aucun effet et la commande restait, silencieusement, au lieu par défaut.
+  # Le client rejoue donc son choix ici, à chaque changement et juste avant de
+  # confirmer le paiement.
+  #
+  # La commande visée est celle du PaymentIntent EN SESSION — jamais un id fourni
+  # par le client — et elle doit être encore `pending` : une commande déjà payée
+  # ne se déplace pas d'un lieu à l'autre depuis le navigateur.
+  def update_pickup_location
+    unless phone_verified? || customer_signed_in?
+      render json: { success: false, error: "Phone verification required" }, status: :unauthorized
+      return
+    end
+
+    begin
+      request.body.rewind
+      json_params = JSON.parse(request.body.read)
+    rescue JSON::ParserError
+      json_params = {}
+    end
+
+    location = requested_pickup_location(json_params)
+    if location.nil?
+      render json: { success: false, error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
+      return
+    end
+
+    order = find_order_by_payment_intent(session[:payment_intent_id])
+    unless order&.pending?
+      # Pas encore de commande à corriger (PaymentIntent pas créé) ou commande
+      # déjà finalisée : rien à faire, et surtout pas une erreur bloquante — le
+      # client doit pouvoir payer. `create_payment_intent` reprendra le lieu
+      # courant si le PaymentIntent est (re)créé ensuite.
+      render json: { success: true, updated: false }
+      return
+    end
+
+    unless order.bake_day&.pickup_location_ids&.include?(location.id)
+      render json: { success: false, error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
+      return
+    end
+
+    excluded = excluded_products_for_order(order, location)
+    if excluded.any?
+      render json: {
+        success: false,
+        error: "« #{excluded.first.name} » n'est pas disponible au point de retrait " \
+               "« #{location.name} ». Retirez ce produit du panier ou " \
+               "choisissez un autre point de retrait."
+      }, status: :unprocessable_entity
+      return
+    end
+
+    order.update!(pickup_location: location)
+    render json: { success: true, updated: true }
+  rescue UnknownPickupLocationError
+    render json: { success: false, error: PICKUP_LOCATION_ERROR }, status: :unprocessable_entity
+  end
+
   def create_cash_order
     unless phone_verified? || customer_signed_in?
       render json: { success: false, error: "Phone verification required" }, status: :unauthorized
@@ -793,6 +857,19 @@ class CheckoutController < ApplicationController
       names = products.reject { |product| product.orderable_at?(location) }.map(&:name).uniq
       map[location.id] = names if names.any?
     end
+  end
+
+  # Produits d'une commande DÉJÀ créée qui seraient exclus au lieu visé (#152).
+  # Pendant de `excluded_products_for_pickup` d'OrderCreationService, qui lui
+  # raisonne sur le panier en session — ici la commande fait foi, puisque c'est
+  # elle qu'on déplace.
+  def excluded_products_for_order(order, location)
+    products = order.order_items
+                    .includes(product_variant: { product: :excluded_pickup_locations })
+                    .map { |item| item.product_variant.product }
+                    .uniq
+
+    products.reject { |product| product.orderable_at?(location) }
   end
 
   def ensure_cart_not_empty

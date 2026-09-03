@@ -3,38 +3,39 @@
 <%= render "admin/help/styles" %>
 
 <div class="mb-6">
-  <div class="flex items-center gap-2 text-sm text-gray-500">
+  <div class="flex items-center gap-2">
     <span aria-hidden="true">📖</span>
-    <span>Centre d'aide des boulangers</span>
+    <span class="adm-eyebrow">Centre d'aide des boulangers</span>
   </div>
-  <p class="mt-1 text-sm text-gray-500">Un guide pas à pas pour tout piloter depuis l'admin.</p>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">Un guide pas à pas pour tout piloter depuis l'admin.</p>
 </div>
 
 <div class="lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
   <%# ── Sommaire (sidebar GitBook) ─────────────────────────────────────── %>
   <aside class="mb-6 lg:mb-0">
     <%# Mobile : sommaire repliable %>
-    <details class="lg:hidden bg-white rounded-lg border border-gray-200 shadow-sm">
-      <summary class="cursor-pointer px-4 py-3 font-semibold text-gray-900 select-none">
+    <details class="adm-card lg:hidden">
+      <summary class="cursor-pointer select-none px-4 py-3 font-semibold" style="color: var(--text-strong);">
         Sommaire
       </summary>
-      <nav class="border-t border-gray-100 p-2">
+      <nav class="border-t p-2" style="border-color: var(--border-subtle);">
         <%= render "admin/help/chapters", articles: @articles, current: @article %>
       </nav>
     </details>
 
     <%# Desktop : sommaire collant %>
-    <nav class="hidden lg:block lg:sticky lg:top-6 bg-white rounded-lg border border-gray-200 shadow-sm p-2">
-      <p class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Sommaire</p>
+    <nav class="adm-card hidden p-2 lg:sticky lg:top-6 lg:block">
+      <p class="adm-eyebrow px-3 pt-2 pb-1">Sommaire</p>
       <%= render "admin/help/chapters", articles: @articles, current: @article %>
     </nav>
   </aside>
 
   <%# ── Contenu de l'article ───────────────────────────────────────────── %>
   <article class="min-w-0">
-    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-8">
+    <div class="adm-card p-6 sm:p-8">
       <% if @article.summary.present? %>
-        <p class="mb-6 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <p class="adm-card mb-6 p-4 text-sm"
+           style="border-color: var(--water-200); background: var(--water-100); color: var(--water-700);">
           <%= @article.summary %>
         </p>
       <% end %>
@@ -50,19 +51,19 @@
       prev_article = index && index.positive? ? @articles[index - 1] : nil
       next_article = index && index < @articles.length - 1 ? @articles[index + 1] : nil
     %>
-    <nav class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-between">
+    <nav class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
       <% if prev_article %>
-        <%= link_to admin_help_article_path(prev_article), class: "flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm hover:border-gray-300 hover:bg-gray-50" do %>
-          <span class="text-gray-400">← Précédent</span>
-          <span class="block font-medium text-gray-900"><%= prev_article.title %></span>
+        <%= link_to admin_help_article_path(prev_article), class: "adm-card adm-cardlink flex-1 px-4 py-3 text-sm" do %>
+          <span style="color: var(--text-faint);">← Précédent</span>
+          <span class="block font-medium" style="color: var(--text-strong);"><%= prev_article.title %></span>
         <% end %>
       <% else %>
         <span class="flex-1"></span>
       <% end %>
       <% if next_article %>
-        <%= link_to admin_help_article_path(next_article), class: "flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm hover:border-gray-300 hover:bg-gray-50 sm:text-right" do %>
-          <span class="text-gray-400">Suivant →</span>
-          <span class="block font-medium text-gray-900"><%= next_article.title %></span>
+        <%= link_to admin_help_article_path(next_article), class: "adm-card adm-cardlink flex-1 px-4 py-3 text-sm sm:text-right" do %>
+          <span style="color: var(--text-faint);">Suivant →</span>
+          <span class="block font-medium" style="color: var(--text-strong);"><%= next_article.title %></span>
         <% end %>
       <% end %>
     </nav>

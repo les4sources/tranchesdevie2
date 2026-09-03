@@ -37,7 +37,7 @@ RSpec.describe Admin::HelpHelper, type: :helper do
       figure = fragment.at_css("figure.aide-shot")
 
       expect(figure).to be_present
-      expect(figure.at_css("div")["class"]).to include("border-dashed")
+      expect(figure.at_css("div")["class"]).to include("aide-shot-missing")
       expect(figure.at_css("div").text).to include("📷 Capture à générer : missing-slug")
       expect(figure.at_css("figcaption").text).to eq("légende")
       expect(figure.at_css("img")).to be_nil

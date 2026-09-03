@@ -3,9 +3,9 @@
     <% active = current && article.slug == current.slug %>
     <li>
       <%= link_to admin_help_article_path(article),
-            class: "flex items-center gap-2 rounded-md px-3 py-2 text-sm #{active ? 'bg-blue-50 font-semibold text-blue-800' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" do %>
+            class: active ? "adm-navlink adm-navlink-active" : "adm-navlink" do %>
         <% if article.icon.present? %>
-          <span class="w-5 text-center" aria-hidden="true"><%= article.icon %></span>
+          <span class="w-5 flex-none text-center" aria-hidden="true"><%= article.icon %></span>
         <% end %>
         <span class="min-w-0 truncate"><%= article.title %></span>
       <% end %>

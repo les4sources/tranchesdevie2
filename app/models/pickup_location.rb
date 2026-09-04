@@ -4,6 +4,13 @@
 # de lieux : « Les 4 Sources » (le lieu par défaut) est ouvert partout, tandis
 # que « Marché d'Anhée » n'existe que les jours de marché.
 #
+# Deux textes, deux questions distinctes (#252) : `description` répond à
+# « c'est où ? » et s'affiche au moment du choix (checkout, calendrier) ;
+# `pickup_instructions` répond à « quand est-ce que je viens ? » et s'affiche
+# une fois la commande passée (confirmation, e-mail, page commande). Les
+# horaires dépendent du lieu — 18h aux 4 Sources, les heures du marché à
+# Anhée — donc c'est un texte libre saisi par les boulangers, jamais calculé.
+#
 # Suppression = soft delete (comme MoldType) : un lieu retiré disparaît des
 # sélecteurs client mais reste lisible sur les commandes passées qui le
 # référencent. Aucun `default_scope` n'est posé, c'est ce qui rend cette lecture

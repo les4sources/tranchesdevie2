@@ -17,8 +17,12 @@ Articles :
 <% end -%>
 Total : <%= format_eur.call(@order.total_euros) %>
 
-Retrait : Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir.
+Retrait : <%= @pickup_location.name %>
+<% if @pickup_location.pickup_instructions.present? -%>
+<%= @pickup_location.pickup_instructions %>
+<% else -%>
 Ta commande t'attendra le jour de cuisson indiqué ci-dessus.
+<% end -%>
 
 Voir ma commande : <%= @order_url %>
 

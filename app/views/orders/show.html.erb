@@ -48,6 +48,10 @@
           <% if @order.pickup_location.description.present? %>
             <p class="text-sm text-ink-500"><%= @order.pickup_location.description %></p>
           <% end %>
+          <%# Quand venir (#252) — facultatif : vide, rien ne s'affiche. %>
+          <% if @order.pickup_location.pickup_instructions.present? %>
+            <p class="mt-2 whitespace-pre-wrap text-sm text-ink-700"><%= @order.pickup_location.pickup_instructions %></p>
+          <% end %>
         </div>
       <% end %>
 

@@ -68,12 +68,19 @@
 </table>
 
 <!-- Pickup info -->
+<%# Le lieu choisi par le client, pas une adresse en dur (#252) : celui qui a
+    pris le marché ne doit pas lire l'adresse de l'épicerie. Les instructions
+    sont facultatives — vides, on n'écrit pas de ligne orpheline. %>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px; background-color:#fdf6ef; border-radius:12px;">
   <tr>
     <td style="padding:18px 20px; font-size:14px; line-height:1.6; color:#5c544b;">
       <strong style="color:#2d2a26;">📍 Retrait</strong><br>
-      Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir.<br>
-      Ta commande t'attendra le jour de cuisson indiqué ci-dessus.
+      <strong style="color:#2d2a26;"><%= @pickup_location.name %></strong><br>
+      <% if @pickup_location.pickup_instructions.present? %>
+        <span style="white-space:pre-wrap;"><%= @pickup_location.pickup_instructions %></span>
+      <% else %>
+        Ta commande t'attendra le jour de cuisson indiqué ci-dessus.
+      <% end %>
     </td>
   </tr>
 </table>

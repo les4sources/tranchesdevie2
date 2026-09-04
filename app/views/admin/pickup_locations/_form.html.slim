@@ -17,7 +17,14 @@
   .space-y-2
     = f.label :description, "Description affichée au client", class: "adm-eyebrow block"
     = f.text_area :description, rows: 3, class: adm_field_class
-    p.text-xs style="color: var(--text-muted);" Courte phrase affichée sous le nom du lieu, au checkout et dans le calendrier.
+    p.text-xs style="color: var(--text-muted);" Courte phrase affichée sous le nom du lieu, au checkout et dans le calendrier. Elle répond à « c'est où ? », au moment du choix.
+
+  / Distinct de la description (#252) : celle-ci dit où c'est au moment du
+  / choix, celle-là dit quand venir, une fois la commande passée.
+  .space-y-2
+    = f.label :pickup_instructions, "Quand venir chercher sa commande", class: "adm-eyebrow block"
+    = f.text_area :pickup_instructions, rows: 3, class: adm_field_class, placeholder: "Le jour de la cuisson, à partir de 18h."
+    p.text-xs style="color: var(--text-muted);" Affiché au client sur la confirmation de commande, dans l'email de confirmation et sur sa page commande. Laissez vide si ce lieu n'a rien de particulier à dire — aucun bloc ne s'affichera.
 
   .space-y-2
     label.flex.items-center.gap-2.cursor-pointer

@@ -668,6 +668,25 @@
                   h3.adm-flag-ink.truncate.text-sm.font-bold = customer.full_name
                 .adm-flag-inner.adm-flag-ink.shrink-0.rounded-full.px-2.5.py-0.5.text-xs.font-bold
                   = "#{total_items} #{total_items > 1 ? 'pains' : 'pain'}"
+
+              / Point de retrait (#253). Sur sa propre ligne, sous le nom : le
+              / badge ne peut donc ni déborder ni manger le `truncate` du nom.
+              / Le lieu par défaut reste discret, les autres sautent aux yeux —
+              / c'est l'exception qu'on risque d'oublier dans la pile.
+              - pickups = entry[:pickup_locations]
+              - exceptions = pickups.reject(&:default?)
+              - defaults = pickups.select(&:default?)
+              - if pickups.any?
+                .mb-3.flex.flex-wrap.items-center.gap-1.5
+                  - exceptions.each do |location|
+                    span.adm-flag-pickup.inline-flex.max-w-full.items-center.gap-1.rounded-full.px-2.py-0.5.font-bold class="text-[11px]"
+                      = lucide "map-pin", size: 11
+                      span.truncate = location.name
+                  - defaults.each do |location|
+                    span.adm-flag-ink.inline-flex.max-w-full.items-center.gap-1.opacity-70 class="text-[11px]"
+                      = lucide "map-pin", size: 11
+                      span.truncate = location.name
+
               .space-y-2
                 - grouped.each do |item|
                   .adm-flag-inner.flex.items-center.gap-3.rounded-md.px-3.py-2

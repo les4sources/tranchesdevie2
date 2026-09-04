@@ -505,6 +505,14 @@
      teinte de la carte reste le seul signal de regroupement. */
   .adm-flag-inner { background: var(--surface-card); }
 
+  /* Le point de retrait sur un drapeau (#253). Les drapeaux se trient à la main,
+     en pile : c'est l'EXCEPTION — le marché, la ferme — qu'il faut repérer sans
+     lire. Contraste inversé, donc, pour que le badge ressorte quelle que soit la
+     teinte tirée par la carte ; le lieu par défaut, lui, ne le porte pas et
+     s'écrit en petit, en retrait. */
+  .adm-flag-pickup { background: var(--ink-900); color: var(--flour-50);
+                     text-transform: uppercase; letter-spacing: .04em; }
+
   /* ── Calculateur de fournées (#194) ───────────────────────────────────────
      L'écran s'ouvre à 5 h du matin, debout, les mains dans la farine : les
      cibles de clic sont larges, le contraste fort, et la fournée active se

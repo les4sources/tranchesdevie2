@@ -94,7 +94,15 @@ module Admin
             }
           end,
           total_cents: customer_orders.sum(&:total_cents),
-          statuses: customer_orders.group_by(&:status).transform_values(&:count)
+          statuses: customer_orders.group_by(&:status).transform_values(&:count),
+          # Les lieux de retrait du client sur CETTE fournée (#253). Un client
+          # peut avoir deux commandes partant à deux endroits : on liste alors
+          # les deux sur la même carte plutôt que de scinder le drapeau — un
+          # drapeau, c'est un client, et le scinder ferait deux piles pour la
+          # même personne. `pickup_location` est préchargé (cf. `orders`), et
+          # `compact` couvre la donnée historique sans lieu.
+          pickup_locations: customer_orders.map(&:pickup_location).compact.uniq
+                                           .sort_by { |location| [ location.position || 0, location.name.to_s.downcase ] }
         }
       end.sort_by { |entry| [ entry[:customer].last_name.to_s.downcase, entry[:customer].first_name.to_s.downcase ] }
     end

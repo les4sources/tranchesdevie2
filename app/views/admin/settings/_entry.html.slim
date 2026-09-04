@@ -1,0 +1,11 @@
+/ Une entrée du sommaire des paramètres. L'intitulé dit où l'on va, la phrase
+/ dit à quoi sert le réglage — c'est ce qui évite d'ouvrir trois écrans pour
+/ retrouver le bon.
+= link_to path, class: "adm-card adm-cardlink flex items-start gap-3 p-4"
+  span.mt-0.5.flex.h-8.w-8.flex-none.items-center.justify-center.rounded-md style="background: var(--brand-tint); color: var(--brand-press);"
+    = lucide icon, size: 16
+  span.min-w-0.flex-1
+    span.block.text-sm.font-semibold style="color: var(--text-strong);" = label
+    span.mt-0.5.block.text-xs style="color: var(--text-muted);" = hint
+  span.mt-1.flex-none style="color: var(--text-faint);"
+    = lucide "chevron-right", size: 16

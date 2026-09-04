@@ -1,68 +1,16 @@
 - content_for :title, "Paramètres"
 - content_for :layout, "admin"
 
-.mb-6
-  h1.text-2xl.font-bold.text-gray-900 Paramètres
+= adm_page_header "Paramètres"
 
-.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-  ul.divide-y.divide-gray-200
-    li
-      = link_to admin_settings_flours_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Farines
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_artisans_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Artisans
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_revenue_partnerships_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Partenariats de revenu (mise en commun 50/50)
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_ingredients_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Ingrédients
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_mold_types_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Types de moules
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_pickup_locations_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Points de retrait
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to edit_admin_settings_production_setting_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Capacités de production
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to edit_admin_settings_notification_setting_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Notifications (message « commande prête »)
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_revenue_parameters_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Revenus des boulangers (transport, taux 4 Sources)
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-    li
-      = link_to admin_settings_sales_locations_path, class: "flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        span.text-sm.font-medium.text-gray-900 Lieux de vente (coût déduit du bénéfice)
-        span.text-gray-400
-          svg.w-5.h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
+.grid.grid-cols-1.gap-3.md:grid-cols-2
+  = render "entry", path: admin_settings_flours_path, icon: "wheat", label: "Farines", hint: "Ratios de panification, limite du pétrin, prix au kilo."
+  = render "entry", path: admin_settings_artisans_path, icon: "user-round", label: "Artisans", hint: "Les boulangers assignables à un jour de cuisson."
+  = render "entry", path: admin_settings_revenue_partnerships_path, icon: "users", label: "Partenariats de revenu", hint: "Mise en commun du revenu entre boulangers, à parts égales."
+  = render "entry", path: admin_settings_ingredients_path, icon: "salad", label: "Ingrédients", hint: "Garnitures et ingrédients, avec leur prix au kilo."
+  = render "entry", path: admin_settings_mold_types_path, icon: "grip-horizontal", label: "Types de moules", hint: "Nombre de moules disponibles par jour de cuisson."
+  = render "entry", path: admin_pickup_locations_path, icon: "map-pin", label: "Points de retrait", hint: "Les lieux où le mangeur vient chercher sa commande."
+  = render "entry", path: edit_admin_settings_production_setting_path, icon: "flame", label: "Capacités de production", hint: "Capacité du four et créneaux de parties privées."
+  = render "entry", path: edit_admin_settings_notification_setting_path, icon: "bell", label: "Notifications", hint: "Le message « commande prête », par SMS et par e-mail."
+  = render "entry", path: admin_settings_revenue_parameters_path, icon: "badge-euro", label: "Revenus des boulangers", hint: "Transport et taux Les 4 Sources, historisés par date."
+  = render "entry", path: admin_settings_sales_locations_path, icon: "shopping-basket", label: "Lieux de vente", hint: "Marchés et emplacements dont le coût est déduit du bénéfice."

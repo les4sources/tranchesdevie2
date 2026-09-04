@@ -1,8 +1,10 @@
 - content_for :title, "Corriger un prix — #{@owner.name}"
 - content_for :layout, "admin"
 
-h1.mb-2.text-2xl.font-bold.text-gray-900 = "Corriger un prix — #{@owner.name}"
-p.mb-6.text-sm.text-gray-600
+= adm_page_header "Corriger un prix — #{@owner.name}" do
+  = link_to "Retour", owner_prices_path, class: adm_btn_class(:ghost)
+
+p.-mt-2.mb-4.text-sm style="color: var(--text-muted);"
   | Corriger un palier existant modifie les calculs déjà faits sur sa période. Pour un simple changement de prix, ajoutez plutôt un nouveau palier.
 
 = render "form", price: @price, url: (@owner.is_a?(Ingredient) ? admin_settings_ingredient_kilo_price_path(@owner, @price) : admin_settings_flour_kilo_price_path(@owner, @price)), method: :patch, submit_label: "Enregistrer la correction"

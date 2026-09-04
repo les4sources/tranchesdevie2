@@ -25,6 +25,21 @@ rarement, mais ce sont eux qui font tourner le reste correctement.
 | **Artisans** | Les boulangers et leurs **parts de revenu**. |
 | **Partenariats** | Les regroupements de boulangers qui partagent leur revenu (voir [Revenus boulangers](revenus-boulangers)). |
 
+## Points de retrait : deux textes, deux questions
+
+Un point de retrait porte **deux champs de texte**, et ils ne racontent pas la même chose. C'est la confusion la plus facile à faire, alors autant la lever tout de suite.
+
+| Champ | Répond à | Vu par le client |
+| --- | --- | --- |
+| **Description affichée au client** | « C'est où ? » | Au moment du **choix** : sur le checkout et dans le calendrier, sous le nom du lieu. |
+| **Quand venir chercher sa commande** | « Quand est-ce que je viens ? » | **Après** la commande : sur l'écran de confirmation, dans l'email de confirmation et sur la page de sa commande. |
+
+Le second champ existe parce que les horaires dépendent du lieu : aux 4 Sources on retire le jour de la cuisson à partir de 18h, au Marché d'Anhée ce sont les heures du marché. Écris la phrase que **tu** veux voir — rien n'est calculé automatiquement.
+
+Laissé vide, il n'affiche rien du tout : ni bloc, ni titre orphelin. Le client voit alors seulement le nom du lieu et la phrase générique « Ta commande t'attendra le jour de cuisson indiqué ci-dessus ».
+
+> **À faire une fois :** ce champ est **vide partout** au départ. Tant qu'il n'est pas rempli pour « Les 4 Sources », l'email de confirmation ne rappelle plus l'adresse de l'épicerie — c'est là qu'il faut la remettre, avec l'heure. Par exemple : « Épicerie aux 4 Sources — Fonds d'Ahinvaux 1, 5530 Yvoir. Le jour de la cuisson, à partir de 18h. »
+
 ## Prudence
 
 Ces réglages impactent le calcul des capacités (four, pétrin, moules) et la

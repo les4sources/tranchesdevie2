@@ -25,6 +25,18 @@
         Tu recevras un SMS de confirmation lorsque ta commande est cuite.
       </p>
 
+      <%# Où et quand venir (#252). Les instructions sont propres au lieu et
+          facultatives : sans elles, on n'affiche que le nom, jamais un bloc vide. %>
+      <% if @order.pickup_location %>
+        <div class="mb-6 rounded-md border border-flour-300 bg-flour-100 p-4 text-left">
+          <h2 class="mb-1 font-sans text-sm font-semibold uppercase tracking-wide text-ink-500">Point de retrait</h2>
+          <p class="font-semibold text-ink-900"><%= @order.pickup_location.name %></p>
+          <% if @order.pickup_location.pickup_instructions.present? %>
+            <p class="mt-1 whitespace-pre-wrap text-sm text-ink-700"><%= @order.pickup_location.pickup_instructions %></p>
+          <% end %>
+        </div>
+      <% end %>
+
       <%= link_to "Voir ma commande", order_path(@order.public_token), class: "inline-flex items-center rounded-md bg-ember-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-ember-500" %>
     <% else %>
       <p class="mb-6 text-ink-700">

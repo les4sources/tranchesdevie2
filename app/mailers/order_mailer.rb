@@ -5,6 +5,9 @@ class OrderMailer < ApplicationMailer
     @order = order
     @customer = order.customer
     @items = order.order_items.includes(product_variant: :product)
+    # Où et quand venir (#252). Toujours présent : `pickup_location_id` est
+    # NOT NULL et l'association est requise — d'où l'absence de garde côté vue.
+    @pickup_location = order.pickup_location
     @order_url = order_url(@order.public_token)
     @unsubscribe_url = email_preferences_url(token: @customer.signed_id(purpose: :email_unsubscribe))
 

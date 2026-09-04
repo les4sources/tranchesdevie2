@@ -39,5 +39,50 @@ RSpec.describe OrderMailer, type: :mailer do
       expect { mail.deliver_now }.to change(EmailMessage, :count).by(1)
       expect(EmailMessage.last).to have_attributes(kind: "confirmation", order_id: order.id, customer_id: customer.id)
     end
+
+    # Où et quand venir (#252) — dans les DEUX parties, HTML et texte.
+    describe 'le bloc de retrait' do
+      let(:instructions) { "Le jour de la cuisson, à partir de 18h." }
+
+      # Le lieu doit être ouvert sur la fournée, sinon la commande est refusée.
+      def attach(location)
+        bake_day.pickup_location_ids = (bake_day.pickup_location_ids + [ location.id ]).uniq
+        bake_day.save!
+        order.update!(pickup_location: location)
+      end
+
+      it "nomme le lieu et reprend ses instructions" do
+        location = create(:pickup_location, name: "Marché d'Anhée", pickup_instructions: instructions)
+        attach(location)
+
+        expect(mail.html_part.body.decoded).to include("Marché d'Anhée").or include(CGI.escapeHTML("Marché d'Anhée"))
+        expect(mail.html_part.body.decoded).to include(instructions)
+        expect(mail.text_part.body.decoded).to include("Marché d'Anhée")
+        expect(mail.text_part.body.decoded).to include(instructions)
+      end
+
+      it "n'affiche aucune instruction quand le lieu n'en porte pas" do
+        location = create(:pickup_location, name: "Marché de Dinant", pickup_instructions: nil)
+        attach(location)
+
+        expect(mail.text_part.body.decoded).to include("Marché de Dinant")
+        expect(mail.text_part.body.decoded).not_to include(instructions)
+        expect(mail.html_part.body.decoded).not_to include(instructions)
+      end
+
+      it "n'annonce plus l'adresse de l'épicerie à qui a choisi le marché" do
+        location = create(:pickup_location, name: "Marché d'Anhée", pickup_instructions: instructions)
+        attach(location)
+
+        expect(mail.text_part.body.decoded).not_to include("Fonds d'Ahinvaux")
+      end
+
+      it "garde une phrase de repli quand le lieu n'a pas d'instructions" do
+        location = create(:pickup_location, name: "Marché de Namur", pickup_instructions: nil)
+        attach(location)
+
+        expect(mail.text_part.body.decoded).to include("Ta commande t'attendra le jour de cuisson")
+      end
+    end
   end
 end

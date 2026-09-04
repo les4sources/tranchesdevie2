@@ -1,6 +1,7 @@
 - content_for :title, "Nouveau prix — #{@owner.name}"
 - content_for :layout, "admin"
 
-h1.mb-6.text-2xl.font-bold.text-gray-900 = "Nouveau prix — #{@owner.name}"
+= adm_page_header "Nouveau prix — #{@owner.name}" do
+  = link_to "Retour", owner_prices_path, class: adm_btn_class(:ghost)
 
 = render "form", price: @price, url: owner_prices_path, method: :post, submit_label: "Enregistrer"

@@ -1,78 +1,78 @@
-= form_with model: [:admin, :settings, flour], local: true, class: "bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6" do |f|
+= form_with model: [:admin, :settings, flour], local: true, class: "adm-card space-y-6 p-4 sm:p-6" do |f|
   - if flour.errors.any?
-    .rounded-md.bg-red-50.p-4
-      h2.text-sm.font-semibold.text-red-800 Correction requise
-      ul.mt-2.list-disc.list-inside.text-sm.text-red-700
+    .adm-card.p-4 style="border-color: var(--danger-200); background: var(--danger-100);"
+      h2.text-sm.font-semibold style="color: var(--danger-700);" Correction requise
+      ul.mt-2.list-inside.list-disc.text-sm style="color: var(--danger-700);"
         - flour.errors.full_messages.each do |message|
           li= message
 
   .grid.grid-cols-1.md:grid-cols-3.gap-6
     .space-y-2
-      = f.label :name, "Nom", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :name, class: admin_input_class
+      = f.label :name, "Nom", class: "adm-eyebrow block"
+      = f.text_field :name, class: adm_field_class
     .space-y-2
-      = f.label :position, "Position", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :position, class: admin_input_class
+      = f.label :position, "Position", class: "adm-eyebrow block"
+      = f.number_field :position, class: adm_field_class
     .space-y-2
-      = f.label :kneader_limit_grams, "Limite pétrin (grammes)", class: "block text-sm font-medium text-gray-700"
-      = f.number_field :kneader_limit_grams, min: 0, class: admin_input_class, placeholder: "Vide = pas de limite"
+      = f.label :kneader_limit_grams, "Limite pétrin (grammes)", class: "adm-eyebrow block"
+      = f.number_field :kneader_limit_grams, min: 0, class: adm_field_class, placeholder: "Vide = pas de limite"
       - if flour.kneader_limit_grams.present?
-        p.text-xs.text-gray-500 = "#{(flour.kneader_limit_grams / 1000.0).round(1)} kg"
+        p.text-xs style="color: var(--text-muted);" = "#{(flour.kneader_limit_grams / 1000.0).round(1)} kg"
 
-  .space-y-4.border.border-gray-200.rounded-lg.p-4.bg-gray-50 data-controller="panification-ratios"
-    h3.text-sm.font-semibold.text-gray-700 Ratio de panification
-    p.text-xs.text-gray-500 Les quatre ingrédients sont des fractions de la pâte : pour 1 kg de pâte, un ratio de 0,532 donne 532 g de farine. Une recette qui boucle exactement totalise 100 %.
+  .adm-panel.space-y-4.p-4 data-controller="panification-ratios"
+    h3.text-sm.font-semibold style="color: var(--text-strong);" Ratio de panification
+    p.text-xs style="color: var(--text-muted);" Les quatre ingrédients sont des fractions de la pâte : pour 1 kg de pâte, un ratio de 0,532 donne 532 g de farine. Une recette qui boucle exactement totalise 100 %.
     .grid.grid-cols-1.md:grid-cols-4.gap-6
       .space-y-2
-        = f.label :flour_ratio, "Farine / pâte", class: "block text-sm font-medium text-gray-700"
-        = f.number_field :flour_ratio, step: "any", min: 0, class: admin_input_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
+        = f.label :flour_ratio, "Farine / pâte", class: "adm-eyebrow block"
+        = f.number_field :flour_ratio, step: "any", min: 0, class: adm_field_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
       .space-y-2
-        = f.label :water_ratio, "Eau / pâte", class: "block text-sm font-medium text-gray-700"
-        = f.number_field :water_ratio, step: "any", min: 0, class: admin_input_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
+        = f.label :water_ratio, "Eau / pâte", class: "adm-eyebrow block"
+        = f.number_field :water_ratio, step: "any", min: 0, class: adm_field_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
       .space-y-2
-        = f.label :salt_ratio, "Sel / pâte", class: "block text-sm font-medium text-gray-700"
-        = f.number_field :salt_ratio, step: "any", min: 0, class: admin_input_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
+        = f.label :salt_ratio, "Sel / pâte", class: "adm-eyebrow block"
+        = f.number_field :salt_ratio, step: "any", min: 0, class: adm_field_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
       .space-y-2
-        = f.label :levain_ratio, "Levain / pâte", class: "block text-sm font-medium text-gray-700"
-        = f.number_field :levain_ratio, step: "any", min: 0, class: admin_input_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
-    .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1.border-t.border-gray-200.pt-3
-      span.text-xs.font-semibold.uppercase.tracking-wide.text-gray-500 Somme des ratios
-      span.text-sm.font-bold data-panification-ratios-target="sum"
-      span.text-xs.text-gray-500 data-panification-ratios-target="hint"
+        = f.label :levain_ratio, "Levain / pâte", class: "adm-eyebrow block"
+        = f.number_field :levain_ratio, step: "any", min: 0, class: adm_field_class, data: { panification_ratios_target: "ratio", action: "input->panification-ratios#recompute" }
+    .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1.border-t.pt-3 style="border-color: var(--border-subtle);"
+      span.adm-eyebrow Somme des ratios
+      span.adm-grid-num.text-sm.font-bold data-panification-ratios-target="sum"
+      span.text-xs style="color: var(--text-muted);" data-panification-ratios-target="hint"
     .space-y-2.md:w-1/3
-      = f.label :levain_type, "Type de levain", class: "block text-sm font-medium text-gray-700"
-      = f.select :levain_type, Flour.levain_types.keys.map { |k| [ k.capitalize, k ] }, {}, class: admin_input_class
+      = f.label :levain_type, "Type de levain", class: "adm-eyebrow block"
+      = f.select :levain_type, Flour.levain_types.keys.map { |k| [ k.capitalize, k ] }, {}, class: adm_field_class
 
   .grid.grid-cols-1.md:grid-cols-3.gap-6
     .space-y-2
-      = f.label :origin, "Moulin d'origine", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :origin, class: admin_input_class, placeholder: "Moulin de la Grange, Tongrinne…"
+      = f.label :origin, "Moulin d'origine", class: "adm-eyebrow block"
+      = f.text_field :origin, class: adm_field_class, placeholder: "Moulin de la Grange, Tongrinne…"
     .space-y-2
-      = f.label :grade, "Type / raffinage", class: "block text-sm font-medium text-gray-700"
-      = f.text_field :grade, class: admin_input_class, placeholder: "T110, T170…"
+      = f.label :grade, "Type / raffinage", class: "adm-eyebrow block"
+      = f.text_field :grade, class: adm_field_class, placeholder: "T110, T170…"
     .space-y-2
       / Le prix au kilo est désormais historisé par date d'effet (#209) : il se
       / saisit dans son propre écran, pour qu'un changement n'altère jamais un
       / reporting passé.
-      span.block.text-sm.font-medium.text-gray-700 Prix au kg
+      span.adm-eyebrow.block Prix au kg
       - if flour.persisted?
-        p.mt-1.text-sm.text-gray-900
+        p.mt-1.text-sm style="color: var(--text-strong);"
           - current = flour.price_per_kg_euros_on
           - if current
             = number_to_currency(current, unit: "€", separator: ",", delimiter: " ")
-            span.text-xs.text-gray-500
+            span.text-xs style="color: var(--text-muted);"
               |  (en vigueur aujourd'hui)
           - else
-            span.text-xs.text-amber-700 aucun prix enregistré
+            span.adm-tonetext.adm-tone-warning.text-xs aucun prix enregistré
         p.mt-1
-          = link_to "Gérer l'historique des prix →", admin_settings_flour_kilo_prices_path(flour), class: "text-sm text-blue-600 hover:text-blue-800"
+          = link_to "Gérer l'historique des prix →", admin_settings_flour_kilo_prices_path(flour), class: "adm-link text-sm"
       - else
-        p.mt-1.text-xs.text-gray-500 Enregistrez la farine, puis saisissez ses prix avec leur date d'effet.
+        p.mt-1.text-xs style="color: var(--text-muted);" Enregistrez la farine, puis saisissez ses prix avec leur date d'effet.
 
   .space-y-2
-    = f.label :notes, "Notes (quantité de son, variété…)", class: "block text-sm font-medium text-gray-700"
-    = f.text_area :notes, rows: 3, class: admin_input_class
+    = f.label :notes, "Notes (quantité de son, variété…)", class: "adm-eyebrow block"
+    = f.text_area :notes, rows: 3, class: adm_field_class
 
-  .flex.justify-end.space-x-3
-    = link_to "Annuler", admin_settings_flours_path, class: "px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-    = f.submit "Enregistrer", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+  .flex.flex-wrap.items-center.justify-end.gap-3
+    = link_to "Annuler", admin_settings_flours_path, class: adm_btn_class(:ghost)
+    = f.submit "Enregistrer", class: adm_btn_class(:primary, "cursor-pointer")

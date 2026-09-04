@@ -1,33 +1,37 @@
 - content_for :title, "Parts de revenu — #{@artisan.name}"
 - content_for :layout, "admin"
 
-.mb-6.flex.justify-between.items-center
-  .flex.items-center.gap-3
-    = link_to "Paramètres", admin_settings_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-    = link_to "Artisans", admin_settings_artisans_path, class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-    h1.text-2xl.font-bold.text-gray-900 = "Parts de revenu : #{@artisan.name}"
-  = link_to "Ajouter un palier", new_admin_settings_artisan_revenue_share_path(@artisan), class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+= adm_page_header "Parts de revenu : #{@artisan.name}" do
+  = link_to "Paramètres", admin_settings_path, class: adm_btn_class(:ghost)
+  = link_to "Artisans", admin_settings_artisans_path, class: adm_btn_class(:ghost)
+  = link_to new_admin_settings_artisan_revenue_share_path(@artisan), class: adm_btn_class(:primary) do
+    = lucide "plus", size: 15
+    |  Ajouter un palier
 
-p.text-sm.text-gray-600.mb-6
+p.-mt-2.mb-4.text-sm style="color: var(--text-muted);"
   | Part du pool boulangers attribuée à cet artisan, historisée par date. La part applicable à un jour de production est le palier le plus récent à cette date. Pourcentage littéral : aucune normalisation.
 
-.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-  - if @revenue_shares.any?
-    .overflow-x-auto
-      table.min-w-full.divide-y.divide-gray-200
-        thead.bg-gray-100
-          tr
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Part
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase À partir du
-            th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase Actions
-        tbody.divide-y.divide-gray-200
+.adm-card.overflow-hidden
+  .adm-cardhd
+    h2.text-sm.font-semibold style="color: var(--text-strong);" Paliers
+    span.adm-eyebrow = "#{@revenue_shares.size} palier#{'s' if @revenue_shares.size > 1}"
+
+  .overflow-x-auto
+    table.adm-grid
+      thead
+        tr
+          th.text-right Part
+          th À partir du
+          th Actions
+      tbody
+        - if @revenue_shares.any?
           - @revenue_shares.each do |share|
             tr
-              td.px-4.py-3.text-sm.text-gray-900.font-medium = "#{number_with_precision(share.percent, strip_insignificant_zeros: true)} %"
-              td.px-4.py-3.text-sm.text-gray-600 = l(share.active_from)
-              td.px-4.py-3.text-sm
-                = link_to "Modifier", edit_admin_settings_artisan_revenue_share_path(@artisan, share), class: "text-blue-600 hover:text-blue-800 mr-3"
-                = link_to "Supprimer", admin_settings_artisan_revenue_share_path(@artisan, share), data: { turbo_method: :delete, turbo_confirm: "Supprimer ce palier ?" }, class: "text-red-600 hover:text-red-800"
-  - else
-    .px-4.py-8.text-center.text-sm.text-gray-500
-      | Aucune part saisie pour cet artisan. Sans part configurée, son revenu reste nul.
+              td.adm-grid-num.text-right.font-medium style="color: var(--text-strong);" = "#{number_with_precision(share.percent, strip_insignificant_zeros: true)} %"
+              td = l(share.active_from)
+              td.whitespace-nowrap
+                = link_to "Modifier", edit_admin_settings_artisan_revenue_share_path(@artisan, share), class: "adm-rowaction mr-3"
+                = link_to "Supprimer", admin_settings_artisan_revenue_share_path(@artisan, share), data: { turbo_method: :delete, turbo_confirm: "Supprimer ce palier ?" }, class: "adm-rowaction"
+        - else
+          = adm_empty_row colspan: 3, title: "Aucune part saisie pour cet artisan", hint: "Sans part configurée, son revenu reste nul." do
+            = link_to "Ajouter un palier", new_admin_settings_artisan_revenue_share_path(@artisan), class: adm_btn_class(:primary)

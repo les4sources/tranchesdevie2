@@ -1,43 +1,47 @@
 - content_for :title, "Prix au kilo — #{@owner.name}"
 - content_for :layout, "admin"
 
-.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
-  h1.text-2xl.font-bold.text-gray-900 = "Prix au kilo — #{@owner.name}"
-  .flex.gap-2
-    = link_to "Retour", (@owner.is_a?(Ingredient) ? admin_settings_ingredients_path : admin_settings_flours_path), class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-    = link_to "Nouveau prix", (@owner.is_a?(Ingredient) ? new_admin_settings_ingredient_kilo_price_path(@owner) : new_admin_settings_flour_kilo_price_path(@owner)), class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+= adm_page_header "Prix au kilo — #{@owner.name}" do
+  = link_to "Retour", (@owner.is_a?(Ingredient) ? admin_settings_ingredients_path : admin_settings_flours_path), class: adm_btn_class(:ghost)
+  = link_to (@owner.is_a?(Ingredient) ? new_admin_settings_ingredient_kilo_price_path(@owner) : new_admin_settings_flour_kilo_price_path(@owner)), class: adm_btn_class(:primary) do
+    = lucide "plus", size: 15
+    |  Nouveau prix
 
 / Historisation par date d'effet (#209) : on n'écrase jamais un prix, on ajoute
 / un palier. C'est ce qui fait qu'un reporting passé ne change jamais.
-p.mb-4.text-sm.text-gray-600
+p.-mt-2.mb-4.text-sm style="color: var(--text-muted);"
   | Chaque prix s'applique <b>à partir de sa date d'effet</b>. Un nouveau prix ne modifie jamais un calcul déjà fait sur une période antérieure : le reporting d'avant garde l'ancien prix.
 
-.bg-white.shadow-sm.rounded-lg.border.border-gray-200.overflow-hidden
-  - if @prices.any?
-    table.min-w-full.divide-y.divide-gray-200
-      thead.bg-gray-100
+.adm-card.overflow-hidden
+  .adm-cardhd
+    h2.text-sm.font-semibold style="color: var(--text-strong);" Paliers de prix
+    span.adm-eyebrow = "#{@prices.size} palier#{'s' if @prices.size > 1}"
+
+  .overflow-x-auto
+    table.adm-grid
+      thead
         tr
-          th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase À partir du
-          th.px-4.py-3.text-right.text-xs.font-medium.text-gray-700.uppercase Prix / kg
-          th.px-4.py-3.text-left.text-xs.font-medium.text-gray-700.uppercase État
-          th.px-4.py-3.text-right.text-xs.font-medium.text-gray-700.uppercase Actions
-      tbody.divide-y.divide-gray-200
-        - current_cents = @owner.price_per_kg_cents_on
-        - @prices.each do |price|
-          tr
-            td.px-4.py-3.text-sm.text-gray-900 = l(price.active_from)
-            td.px-4.py-3.text-sm.text-gray-900.text-right
-              = number_to_currency(price.amount_euros, unit: "€", separator: ",", delimiter: " ")
-            td.px-4.py-3.text-sm
-              - if price.active_from > Date.current
-                span.inline-flex.items-center.rounded-full.bg-blue-100.px-2.py-1.text-xs.font-semibold.text-blue-800 À venir
-              - elsif price.amount_cents == current_cents && price.active_from <= Date.current
-                span.inline-flex.items-center.rounded-full.bg-green-100.px-2.py-1.text-xs.font-semibold.text-green-800 En vigueur
-              - else
-                span.text-gray-400 Historique
-            td.px-4.py-3.text-sm.text-right.whitespace-nowrap
-              = link_to "Corriger", (@owner.is_a?(Ingredient) ? edit_admin_settings_ingredient_kilo_price_path(@owner, price) : edit_admin_settings_flour_kilo_price_path(@owner, price)), class: "text-blue-600 hover:text-blue-800 mr-3"
-              = button_to "Supprimer", (@owner.is_a?(Ingredient) ? admin_settings_ingredient_kilo_price_path(@owner, price) : admin_settings_flour_kilo_price_path(@owner, price)), method: :delete, data: { turbo_confirm: "Supprimer ce palier ? Les calculs de la période concernée retomberont sur le palier précédent." }, class: "text-red-600 hover:text-red-800", form: { class: "inline" }
-  - else
-    .px-4.py-8.text-center.text-sm.text-gray-500
-      | Aucun prix enregistré. Tant qu'aucun prix n'existe, le coût de cet élément est signalé comme inconnu — il n'est jamais compté pour zéro.
+          th À partir du
+          th.text-right Prix / kg
+          th État
+          th.text-right Actions
+      tbody
+        - if @prices.any?
+          - current_cents = @owner.price_per_kg_cents_on
+          - @prices.each do |price|
+            tr
+              td = l(price.active_from)
+              td.adm-grid-num.text-right = number_to_currency(price.amount_euros, unit: "€", separator: ",", delimiter: " ")
+              td
+                - if price.active_from > Date.current
+                  = adm_chip "À venir", tone: :water
+                - elsif price.amount_cents == current_cents && price.active_from <= Date.current
+                  = adm_chip "En vigueur", tone: :success
+                - else
+                  span style="color: var(--text-faint);" Historique
+              td.whitespace-nowrap.text-right
+                = link_to "Corriger", (@owner.is_a?(Ingredient) ? edit_admin_settings_ingredient_kilo_price_path(@owner, price) : edit_admin_settings_flour_kilo_price_path(@owner, price)), class: "adm-rowaction mr-3"
+                = button_to "Supprimer", (@owner.is_a?(Ingredient) ? admin_settings_ingredient_kilo_price_path(@owner, price) : admin_settings_flour_kilo_price_path(@owner, price)), method: :delete, data: { turbo_confirm: "Supprimer ce palier ? Les calculs de la période concernée retomberont sur le palier précédent." }, class: "adm-rowaction", form: { class: "inline" }
+        - else
+          = adm_empty_row colspan: 4, title: "Aucun prix enregistré", hint: "Tant qu'aucun prix n'existe, le coût de cet élément est signalé comme inconnu — il n'est jamais compté pour zéro." do
+            = link_to "Nouveau prix", (@owner.is_a?(Ingredient) ? new_admin_settings_ingredient_kilo_price_path(@owner) : new_admin_settings_flour_kilo_price_path(@owner)), class: adm_btn_class(:primary)

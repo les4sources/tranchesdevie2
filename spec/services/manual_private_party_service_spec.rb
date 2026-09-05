@@ -7,8 +7,13 @@ require "rails_helper"
 # forfait. Elle passe par le même `PartyOrderCreationService`, donc l'égalité
 # est structurelle.
 RSpec.describe ManualPrivatePartyService do
-  let(:date) { Date.new(2026, 9, 4) }         # un vendredi
-  let(:wednesday) { Date.new(2026, 9, 2) }    # un mercredi : interdit au client
+  # Dates calculées depuis aujourd'hui, jamais figées : la réservation EN LIGNE
+  # de référence passe par le service CLIENT, qui refuse un créneau dont le
+  # cut-off est dépassé. Une date en dur finit toujours par tomber dans le
+  # passé — et ce sont alors les specs de revenu qui cassent, un an plus tard,
+  # sans qu'une ligne de code ait bougé.
+  let(:date) { Date.current.next_occurring(:friday) + 1.week }        # un vendredi à venir
+  let(:wednesday) { Date.current.next_occurring(:wednesday) + 1.week } # un mercredi : interdit au client
 
   let!(:default_pickup) { create(:pickup_location, :default) }
   let!(:bake_day) { create(:bake_day, baked_on: date, cut_off_at: date - 2.days) }

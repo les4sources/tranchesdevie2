@@ -59,7 +59,7 @@
     / La modale est seulement masquée, jamais vidée : fermer puis rouvrir
     / retrouve la saisie en cours, et `close` force l'enregistrement en attente.
     .hidden.fixed.inset-0.z-50.overflow-y-auto data-bake-day-note-target="modal" data-action="keydown@window->bake-day-note#closeWithEscape"
-      .fixed.inset-0 style="background: rgba(43, 38, 32, .45);" data-bake-day-note-target="overlay" data-action="click->bake-day-note#closeBackground"
+      .fixed.inset-0 style="background: color-mix(in srgb, var(--ink-900) 55%, transparent);" data-bake-day-note-target="overlay" data-action="click->bake-day-note#closeBackground"
       .relative.flex.min-h-full.items-start.justify-center.p-4
         .adm-card.w-full.p-4.sm:p-6 class="sm:my-8 sm:max-w-3xl" style="box-shadow: var(--shadow-lg);"
           .flex.items-start.justify-between.gap-3

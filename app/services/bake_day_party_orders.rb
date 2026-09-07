@@ -55,7 +55,9 @@ class BakeDayPartyOrders
     Order.where(source: :party, status: @statuses)
          .joins(:party_event)
          .where(party_events: { id: event_ids })
-         .includes(order_items: {
+         .includes(:customer,
+                   :party_event,
+                   order_items: {
                      product_variant: [
                        :mold_type,
                        { variant_cost_prices: [] },

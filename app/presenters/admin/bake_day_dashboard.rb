@@ -107,6 +107,36 @@ module Admin
       end.sort_by { |entry| [ entry[:customer].last_name.to_s.downcase, entry[:customer].first_name.to_s.downcase ] }
     end
 
+    # Matrice « Commandes par client » : une ligne par client de PAIN, plus une
+    # ligne par pizza party que cette fournée prépare.
+    #
+    # `customer_breakdown` ne part que de `production_orders`, c'est-à-dire de
+    # `bake_day.orders` — or une commande party a `bake_day: nil` par design
+    # (elle se date par son événement, pas par une fournée). Les colonnes party
+    # existaient donc déjà dans la matrice, via `variant_stats`, mais AUCUNE
+    # ligne ne les remplissait : les pâtons restaient invisibles et la ligne de
+    # total ne retombait pas sur le tableau global.
+    #
+    # Deux traitements distincts, parce que les deux objets ne se ressemblent
+    # pas : une party PRIVÉE est la commande d'un client nommé, elle prend donc
+    # une ligne de plus à son nom (il peut aussi avoir commandé du pain) ; une
+    # party PUBLIQUE agrège les inscriptions de plusieurs personnes sur un même
+    # événement, elle prend UNE ligne pour l'événement entier.
+    def customer_matrix_rows
+      @customer_matrix_rows ||= customer_matrix_customer_rows + customer_matrix_party_rows
+    end
+
+    # Total par variante sur TOUTES les lignes de la matrice, parties comprises.
+    def customer_matrix_column_totals
+      @customer_matrix_column_totals ||= customer_matrix_rows.each_with_object(Hash.new(0)) do |row, totals|
+        row[:quantities].each { |variant_id, qty| totals[variant_id] += qty }
+      end
+    end
+
+    def customer_matrix_total_units
+      @customer_matrix_total_units ||= customer_matrix_rows.sum { |row| row[:total_units] }
+    end
+
     # Répartition par point de retrait (#148) : ce que les boulangers utilisent
     # pour ventiler les produits entre les lieux le jour de la fournée.
     #
@@ -250,6 +280,68 @@ module Admin
     end
 
     private
+
+    def customer_matrix_customer_rows
+      customer_breakdown.map do |entry|
+        quantities = Hash.new(0)
+        entry[:orders].each do |customer_order|
+          customer_order[:items].each { |item| quantities[item[:variant].id] += item[:qty] }
+        end
+
+        {
+          key: "customer-#{entry[:customer].id}",
+          kind: :customer,
+          label: entry[:customer].full_name,
+          party_event: nil,
+          quantities: quantities,
+          total_units: quantities.values.sum
+        }
+      end
+    end
+
+    def customer_matrix_party_rows
+      private_entries, public_entries = parties_to_prepare.partition { |entry| entry[:private] }
+
+      private_rows = private_entries.map do |entry|
+        quantities = variant_quantities(entry[:order].order_items)
+
+        {
+          key: "private-party-#{entry[:order].id}",
+          kind: :private_party,
+          label: entry[:customer_name].presence || "Sans client",
+          party_event: entry[:party_event],
+          held_on: entry[:held_on],
+          slot_label: entry[:slot_label],
+          quantities: quantities,
+          total_units: quantities.values.sum
+        }
+      end
+
+      # Une ligne par ÉVÉNEMENT public, pas par inscription : les convives d'une
+      # party publique ne sont pas des clients de la fournée, c'est l'événement
+      # qui l'est.
+      public_rows = public_entries.group_by { |entry| entry[:party_event] }.map do |event, entries|
+        quantities = variant_quantities(entries.flat_map { |entry| entry[:order].order_items })
+
+        {
+          key: "public-party-#{event.id}",
+          kind: :public_party,
+          label: event.title.presence || "Pizza party publique",
+          party_event: event,
+          held_on: event.held_on,
+          slot_label: event.slot_label,
+          orders_count: entries.size,
+          quantities: quantities,
+          total_units: quantities.values.sum
+        }
+      end
+
+      (private_rows + public_rows).sort_by { |row| [ row[:held_on], row[:label].to_s.downcase ] }
+    end
+
+    def variant_quantities(items)
+      items.each_with_object(Hash.new(0)) { |item, acc| acc[item.product_variant_id] += item.qty }
+    end
 
     # Récapitulatif agrégé des articles par variante, sur un sous-ensemble de
     # commandes (celles d'un point de retrait). Même forme que `variant_stats`.

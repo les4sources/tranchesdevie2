@@ -485,7 +485,7 @@
                 = adm_empty_row(colspan: 3, title: "Aucun article commandé pour l'instant.", hint: "Les articles apparaissent dès la première commande sur cette fournée.")
 
     .mt-4.sm:mt-6 data-dashboard-tabs-target="panel" data-panel="clients"
-      - if @dashboard.customer_breakdown.any?
+      - if @dashboard.customer_matrix_rows.any?
         - variants_by_product = @dashboard.variant_stats.sort_by do |stat| \
             [ \
               stat[:product].breads? ? 0 : 1,
@@ -494,16 +494,8 @@
             ] \
           end.group_by { |stat| stat[:product] }
         - all_variants = variants_by_product.flat_map { |product, stats| stats.map { |stat| stat[:variant] } }
-        - customer_variant_quantities = {}
-        - @dashboard.customer_breakdown.each do |entry|
-          - customer = entry[:customer]
-          - quantities = {}
-          - entry[:orders].each do |customer_order|
-            - customer_order[:items].each do |item|
-              - variant_id = item[:variant].id
-              - quantities[variant_id] ||= 0
-              - quantities[variant_id] += item[:qty]
-          - customer_variant_quantities[customer.id] = quantities
+        - matrix_rows = @dashboard.customer_matrix_rows
+        - column_totals = @dashboard.customer_matrix_column_totals
         / #71 : conteneur scrollable sur les 2 axes (max-h + overflow-auto) pour
         / que l'en-tête produits (thead.sticky.top-0) reste figé au défilement vertical.
         / Le tableau est plus large que le téléphone : on le dit, et on lui rend
@@ -532,8 +524,11 @@
                     / Le nom du produit glisse avec le défilement à l'intérieur de
                     / son propre bloc de variantes : sans ça, arrivé à la 4e
                     / variante du froment, on ne sait plus de quel pain il s'agit.
+                    / `short_name` est facultatif en base : sans repli, la colonne
+                    / d'un produit qui n'en a pas (les variantes party, par ex.)
+                    / s'affichait sans aucun nom au-dessus de ses quantités.
                     div.adm-mx-product
-                      p.text-xs.font-semibold.normal-case.leading-snug style="color: var(--text-strong);" = product.short_name
+                      p.text-xs.font-semibold.normal-case.leading-snug style="color: var(--text-strong);" = product.short_name.presence || product.name
                 th.adm-pin-right.sticky.right-0.z-30.text-right rowspan=2 style="position: sticky; right: 0;" Total
               tr
                 - variants_by_product.each do |product, stats|
@@ -547,19 +542,31 @@
               tr.adm-grid-total
                 td.adm-pin-left.sticky.left-0.z-30 style="position: sticky; left: 0;" Total
                 - all_variants.each do |variant|
-                  - column_total = customer_variant_quantities.values.sum { |q| q[variant.id] || 0 }
                   td.adm-grid-num.text-center
-                    = column_total
+                    = column_totals[variant.id]
                 td.adm-grid-num.adm-pin-right.sticky.right-0.z-30.text-right style="position: sticky; right: 0;"
-                  = customer_variant_quantities.values.sum { |q| q.values.sum }
+                  = @dashboard.customer_matrix_total_units
             tbody
-              - @dashboard.customer_breakdown.each do |entry|
-                - customer = entry[:customer]
-                - quantities = customer_variant_quantities[customer.id]
-                - row_total = quantities.values.sum
+              / Une ligne par client de pain, PUIS une ligne par pizza party que
+              / la fournée prépare — privée au nom de son client, publique au nom
+              / de l'événement. Les party n'ont pas de fournée : sans ces lignes,
+              / leurs pâtons manquaient au tableau et à ses totaux.
+              - matrix_rows.each do |row|
+                - party = row[:kind] != :customer
+                - quantities = row[:quantities]
+                - row_total = row[:total_units]
                 tr
-                  td.adm-pin-left.sticky.left-0.z-10.font-semibold style="position: sticky; left: 0; background: var(--surface-card); color: var(--text-strong);"
-                    = customer.full_name
+                  td.adm-pin-left.sticky.left-0.z-10.font-semibold style="position: sticky; left: 0; background: #{party ? 'var(--accent-tint)' : 'var(--surface-card)'}; color: var(--text-strong);"
+                    = row[:label]
+                    - if party
+                      = link_to admin_party_event_path(row[:party_event]), class: "ml-2 align-middle"
+                        = adm_chip(row[:kind] == :private_party ? "Party privée" : "Party publique", tone: row[:kind] == :private_party ? :accent : :brand)
+                      p.mt-1.text-xs.font-normal style="color: var(--text-muted);"
+                        = l(row[:held_on], format: :long_with_day)
+                        - if row[:kind] == :private_party
+                          |  · #{row[:slot_label]}
+                        - elsif row[:orders_count].to_i > 1
+                          |  · #{row[:orders_count]} inscriptions
                   - all_variants.each do |variant|
                     - qty = quantities[variant.id] || 0
                     td.adm-grid-num.text-center style="border-left: 1px solid var(--border-strong); color: var(--text-strong);"
@@ -570,7 +577,7 @@
                   / La colonne Total était figée dans l'en-tête et dans la ligne
                   / de total, mais pas dans le corps : au défilement horizontal,
                   / les totaux par client glissaient sous leur propre en-tête.
-                  td.adm-grid-num.adm-pin-right.sticky.right-0.z-10.text-right.font-semibold style="position: sticky; right: 0; background: var(--surface-card); color: var(--text-strong);"
+                  td.adm-grid-num.adm-pin-right.sticky.right-0.z-10.text-right.font-semibold style="position: sticky; right: 0; background: #{party ? 'var(--accent-tint)' : 'var(--surface-card)'}; color: var(--text-strong);"
                     = row_total
       - else
         p.text-center.text-sm style="color: var(--text-muted);" Aucun client n'a encore passé commande.

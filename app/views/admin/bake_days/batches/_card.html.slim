@@ -75,7 +75,16 @@
                 p.adm-batchweight style="font-size: 1.5rem;"
                   = mold[:units_count]
                   span.ml-1.text-xs.font-semibold style="color: var(--text-muted);" = "moule#{'s' if mold[:units_count] > 1}"
-              p.mt-1.text-xs style="color: var(--text-body);"
-                = mold[:details].map { |detail| "#{detail[:qty]} × #{detail[:variant].name}" }.join(", ")
+              / Une ligne par variante de pain, avec son PRODUIT : sans lui, un
+              / moule « Petit » n'annonçait que « 10 × 600 g » et le boulanger ne
+              / savait pas combien de graines et combien de noix-figues enfourner.
+              ul.mt-2.space-y-1
+                - mold[:details].each do |detail|
+                  li.flex.items-baseline.justify-between.gap-3.text-xs
+                    span.min-w-0
+                      span.font-semibold style="color: var(--text-strong);" = detail[:product].name
+                      span.ml-1 style="color: var(--text-muted);" = "(#{detail[:variant].name})"
+                    span.adm-grid-num.font-semibold.whitespace-nowrap style="color: var(--text-strong);"
+                      = "× #{detail[:qty]}"
       - else
         p.mt-1.text-sm style="color: var(--text-muted);" Aucun pain en moule dans cette fournée.

@@ -154,10 +154,14 @@ module Admin
       typed + [ { mold_type: nil, units_count: without_mold.sum(&:qty), details: details_for(without_mold) } ]
     end
 
+    # Détail de ce qui occupe les moules d'un type donné. Le PRODUIT y figure à
+    # côté de la variante : un moule « Petit » reçoit indifféremment du graines,
+    # du noix-figues ou du froment, et la variante seule (« 600 g ») ne le dit
+    # pas — les boulangers lisaient « 10 × 600 g » sans savoir quoi enfourner.
     def details_for(items)
       items.group_by(&:product_variant)
-           .map { |variant, variant_items| { variant: variant, qty: variant_items.sum(&:qty) } }
-           .sort_by { |detail| [ -detail[:qty], detail[:variant].name.downcase ] }
+           .map { |variant, variant_items| { product: variant.product, variant: variant, qty: variant_items.sum(&:qty) } }
+           .sort_by { |detail| [ -detail[:qty], detail[:product].name.downcase, detail[:variant].name.downcase ] }
     end
 
     def line_for(item)

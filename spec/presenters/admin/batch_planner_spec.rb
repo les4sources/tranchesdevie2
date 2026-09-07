@@ -94,9 +94,27 @@ RSpec.describe Admin::BatchPlanner do
       petit = molds.find { |m| m[:mold_type] == petit_moule }
 
       expect(grand[:units_count]).to eq(5)
-      expect(grand[:details]).to eq([ { variant: grand_froment, qty: 5 } ])
+      expect(grand[:details]).to eq([ { product: pain_froment, variant: grand_froment, qty: 5 } ])
       expect(petit[:units_count]).to eq(4)
-      expect(petit[:details]).to eq([ { variant: petit_froment, qty: 4 } ])
+      expect(petit[:details]).to eq([ { product: pain_froment, variant: petit_froment, qty: 4 } ])
+    end
+
+    # Retour boulangers : « Petit : 10 moules — 10 × 600 g » ne disait pas
+    # combien de graines et combien de noix-figues. Un même type de moule reçoit
+    # plusieurs produits : le détail doit les séparer NOMMÉMENT.
+    it "sépare les produits qui partagent un même type de moule" do
+      bob_seigle = create(:order_item, order: bob_order, product_variant: petit_seigle, qty: 6)
+      bob_seigle.update!(batch: first)
+
+      petit = described_class.new(bake_day.reload).batch_stats.first[:molds]
+                             .find { |m| m[:mold_type] == petit_moule }
+
+      expect(petit[:units_count]).to eq(10)
+      expect(petit[:details]).to contain_exactly(
+        { product: pain_seigle,  variant: petit_seigle,  qty: 6 },
+        { product: pain_froment, variant: petit_froment, qty: 4 }
+      )
+      expect(petit[:details].map { |d| d[:product].name }).to eq([ "Pain seigle", "Pain froment" ])
     end
 
     it "se recharge à l'identique" do

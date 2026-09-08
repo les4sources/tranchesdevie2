@@ -12,6 +12,18 @@
         dsn: "<%= ENV["SENTRY_DSN"] %>",
         environment: "<%= Rails.env %>",
         tracesSampleRate: 0,
+        // Bruit du navigateur intégré de Facebook/Instagram : Meta injecte ses
+        // propres scripts dans nos pages (WKWebView iOS, WebView Android) et leurs
+        // erreurs remontent chez nous sans rien casser pour la cliente. La liste
+        // ignorée par défaut du SDK 7.120.0 ne les couvre pas.
+        ignoreErrors: [
+          // iOS — "Can't find variable: _AutofillCallbackHandler" (TRANCHESDEVIE-18)
+          /_AutofillCallbackHandler/,
+          // Android — "Error invoking postMessage: Java object is gone" (TRANCHESDEVIE-11)
+          /Java object is gone/
+        ],
+        // Android — le script injecté par Meta est servi sous iabjs://
+        denyUrls: [/^iabjs:\/\//],
         beforeSend: function (event) {
           // Masquer les numéros de téléphone, comme côté serveur.
           if (event && event.message) {

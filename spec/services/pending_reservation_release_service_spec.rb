@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe PendingReservationReleaseService do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:bake_day) { create(:bake_day, :can_order) }
   let(:customer) { create(:customer) }
 
@@ -18,12 +20,26 @@ RSpec.describe PendingReservationReleaseService do
     expect(Stripe::PaymentIntent).to have_received(:cancel).with("pi_abandoned")
   end
 
-  it "destroys an orphan reservation without payment intent" do
+  it "destroys an orphan reservation without payment intent once it is old enough" do
     order = pending_order(nil)
     expect(Stripe::PaymentIntent).not_to receive(:retrieve)
 
-    expect { described_class.call(customer: customer, bake_day: bake_day) }
-      .to change { Order.exists?(order.id) }.from(true).to(false)
+    travel_to(described_class::ORPHAN_GRACE_PERIOD.from_now + 1.second) do
+      expect { described_class.call(customer: customer, bake_day: bake_day) }
+        .to change { Order.exists?(order.id) }.from(true).to(false)
+    end
+  end
+
+  # #261 : la commande d'une requête create_payment_intent concurrente, encore
+  # en attente de Stripe, n'a pas encore de payment_intent_id. La supprimer
+  # libérait son numéro et faisait échouer l'autre requête.
+  it "leaves a freshly created orphan reservation untouched (concurrent request)" do
+    order = pending_order(nil)
+    expect(Stripe::PaymentIntent).not_to receive(:retrieve)
+
+    described_class.call(customer: customer, bake_day: bake_day)
+
+    expect(Order.exists?(order.id)).to be(true)
   end
 
   it "leaves a succeeded payment untouched (webhook in flight)" do

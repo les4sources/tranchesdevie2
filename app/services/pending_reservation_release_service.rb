@@ -12,7 +12,19 @@
 #   - PI abandonné/échoué (ou absent) → on annule le PI et on supprime la
 #     commande, ce qui rend la capacité ;
 #   - PI en cours (processing) → on laisse (paiement Bancontact en vol).
+#
+# Exception (#261) : une commande :pending sans payment_intent_id créée il y a
+# moins de ORPHAN_GRACE_PERIOD n'est PAS supprimée. Elle appartient très
+# probablement à une requête create_payment_intent concurrente de la même
+# cliente, encore en attente de la réponse de Stripe : la supprimer libérait son
+# numéro de commande, que la commande suivante reprenait, et l'`update!` de la
+# requête concurrente levait alors RecordInvalid (« Order number est déjà
+# utilisé »). Passé ce délai, l'orpheline est bien une réservation morte.
 class PendingReservationReleaseService
+  # Durée pendant laquelle une réservation orpheline est présumée appartenir à
+  # une requête concurrente encore en vol.
+  ORPHAN_GRACE_PERIOD = 2.minutes
+
   def self.call(customer:, bake_day:)
     new(customer: customer, bake_day: bake_day).call
   end
@@ -34,8 +46,14 @@ class PendingReservationReleaseService
 
   def release(order)
     if order.payment_intent_id.blank?
-      # PI jamais créé (crash entre create! et update!) : réservation orpheline.
-      order.destroy
+      # PI jamais créé : soit une requête concurrente attend encore Stripe
+      # (on laisse, cf. #261), soit un crash entre create! et update! a laissé
+      # une réservation orpheline (on la supprime).
+      if order.created_at && order.created_at > ORPHAN_GRACE_PERIOD.ago
+        Rails.logger.info("PendingReservationRelease: commande #{order.id} laissée (orpheline récente, requête concurrente probable)")
+      else
+        order.destroy
+      end
       return
     end
 

@@ -428,6 +428,7 @@
           // Démonter l'élément Stripe si on quitte le paiement en ligne
           paymentElement.unmount();
           paymentElement = null;
+          window.__checkoutPaymentElementMounted = false;
         }
       });
     });
@@ -645,6 +646,20 @@
     });
   }
 
+  // Un Payment Element est monté quand une exécution du script l'a monté (drapeau
+  // sur window, partagé entre les exécutions successives du script inline) ET que
+  // le conteneur courant le porte encore.
+  //
+  // Les deux conditions sont nécessaires (#261) : le drapeau seul survivrait au
+  // remplacement du body par Turbo, qui rend pourtant un conteneur neuf et vide —
+  // la page ne s'initialiserait plus jamais ; le DOM seul se laisserait piéger par
+  // un résidu qu'`unmount()` laisserait derrière lui, ce qui bloquerait le retour
+  // au paiement en ligne après un passage par cash.
+  function isPaymentElementMounted() {
+    const container = document.getElementById('payment-element');
+    return window.__checkoutPaymentElementMounted === true && !!container && container.children.length > 0;
+  }
+
   function initializePayment() {
     if (!stripe) {
       console.error('Stripe non initialise');
@@ -666,6 +681,26 @@
       return;
     }
     clearNameErrors();
+
+    // #261 : une seule création de PaymentIntent à la fois.
+    //
+    // La page a deux points d'entrée d'initialisation (le bloc de chargement
+    // ci-dessous et le handler turbo:load) et, sur une visite Turbo, le script
+    // inline est ré-exécuté : deux closures distincts pouvaient donc lancer
+    // deux POST create_payment_intent dans la même seconde. Chacun créait une
+    // commande :pending, et la seconde requête supprimait la commande de la
+    // première via PendingReservationReleaseService — la première finissait en
+    // « Order number est déjà utilisé » (HTTP 422 côté cliente).
+    //
+    // Les gardes vivent sur `window` (et sur le DOM), pas dans le closure,
+    // justement pour être partagées entre ces exécutions successives du script.
+    if (window.__checkoutPaymentIntentInFlight) {
+      return;
+    }
+    if (isPaymentElementMounted()) {
+      return;
+    }
+    window.__checkoutPaymentIntentInFlight = true;
 
     fetch('<%= create_payment_intent_checkout_index_path %>', {
       method: 'POST',
@@ -714,6 +749,7 @@
       
       // Monter l'element de paiement (operation synchrone)
       paymentElement.mount('#payment-element');
+      window.__checkoutPaymentElementMounted = true;
 
       const submitButton = document.getElementById('submit-payment');
 
@@ -822,6 +858,12 @@
         paymentMessage.textContent = 'Erreur lors de l\'initialisation du paiement: ' + error.message;
         paymentMessage.classList.remove('hidden');
       }
+    })
+    .finally(() => {
+      // Garde ré-armée quoi qu'il arrive (#261) : un échec ne doit pas
+      // condamner la page, le blur des champs nom ou un changement de moyen de
+      // paiement doivent pouvoir relancer l'initialisation.
+      window.__checkoutPaymentIntentInFlight = false;
     });
   }
 

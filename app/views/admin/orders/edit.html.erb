@@ -99,12 +99,19 @@
       <div>
         <label for="order_final_total_euros" class="adm-eyebrow mb-1 block">Montant final de la commande *</label>
         <% final_total_value = params.dig(:order, :final_total_euros) || (@order.total_cents.present? ? (@order.total_cents / 100.0) : nil) %>
+        <%# Suit automatiquement les quantités tant qu'il n'est pas saisi à la
+            main ; tout écart avec le calcul est annoncé juste en dessous. %>
         <%= number_field_tag "order[final_total_euros]",
                              final_total_value,
                              min: 0,
                              step: 0.01,
                              required: true,
-                             class: adm_field_class %>
+                             class: adm_field_class,
+                             data: { order_calculator_target: "finalTotal", action: "input->order-calculator#onFinalTotalInput" } %>
+        <div class="mt-2 hidden rounded-md p-2" style="background: var(--warning-100); border: 1px solid var(--warning-200);"
+             data-order-calculator-target="mismatch">
+          <p class="text-xs font-semibold" style="color: var(--warning-700);" data-order-calculator-target="mismatchText"></p>
+        </div>
         <% if @order.errors[:total_cents].present? %>
           <p class="mt-1 text-sm" style="color: var(--danger-700);"><%= @order.errors[:total_cents].first %></p>
         <% end %>

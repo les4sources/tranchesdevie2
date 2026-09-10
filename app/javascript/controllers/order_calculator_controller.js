@@ -1,14 +1,31 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["quantity", "rowSubtotal", "totalAmount", "customerSelect", "discountInfo", "discountMessage", "discountText"]
+  static targets = [
+    "quantity", "rowSubtotal", "totalAmount", "customerSelect",
+    "discountInfo", "discountMessage", "discountText",
+    "finalTotal", "mismatch", "mismatchText"
+  ]
   static values = {
     customers: Array
   }
 
   connect() {
+    // Le montant final est-il déjà désaligné du calcul à l'ouverture ? Si oui,
+    // c'est une saisie manuelle (prix négocié) — ou la dérive qu'on veut rendre
+    // visible : on ne l'écrase pas, on l'annonce.
+    this.manualTotal = this.hasFinalTotalTarget &&
+      this.finalTotalTarget.value !== "" &&
+      this.centsFromInput() !== this.computeTotalCents()
+
     this.recalculate()
     this.updateDiscountInfo()
+  }
+
+  // L'admin a repris la main sur le montant final : on cesse de le synchroniser.
+  onFinalTotalInput() {
+    this.manualTotal = true
+    this.updateMismatch(this.computeTotalCents())
   }
 
   onCustomerChange() {
@@ -48,6 +65,64 @@ export default class extends Controller {
     if (this.hasTotalAmountTarget) {
       this.totalAmountTarget.textContent = this.formatCurrency(totalCents)
     }
+
+    this.syncFinalTotal(totalCents)
+  }
+
+  // Le montant final suit les quantités tant que l'admin ne l'a pas saisi à la
+  // main. C'est ce qui empêche une commande d'être enregistrée à 90 € alors que
+  // ses lignes en font 81 (#retour Manon) — le relevé PDF affichait alors un
+  // sous-total qui ne correspondait plus à son propre détail.
+  syncFinalTotal(totalCents) {
+    if (!this.hasFinalTotalTarget) return
+
+    if (!this.manualTotal) {
+      this.finalTotalTarget.value = (totalCents / 100).toFixed(2)
+    }
+
+    this.updateMismatch(totalCents)
+  }
+
+  // Écart entre le montant saisi et le montant calculé — jamais bloquant (un
+  // prix négocié est légitime), mais jamais silencieux non plus.
+  updateMismatch(totalCents) {
+    if (!this.hasMismatchTarget || !this.hasFinalTotalTarget) return
+
+    const enteredCents = this.centsFromInput()
+    const deltaCents = enteredCents === null ? 0 : enteredCents - totalCents
+
+    if (deltaCents === 0) {
+      this.mismatchTarget.classList.add("hidden")
+      return
+    }
+
+    const sign = deltaCents > 0 ? "+" : "-"
+    this.mismatchTarget.classList.remove("hidden")
+    this.mismatchTextTarget.textContent =
+      `Montant saisi à la main : écart de ${sign}${this.formatCurrency(Math.abs(deltaCents))} ` +
+      `par rapport au calcul (${this.formatCurrency(totalCents)}).`
+  }
+
+  // Montant du champ « Montant final », en cents. null si le champ est vide.
+  centsFromInput() {
+    if (!this.hasFinalTotalTarget) return null
+
+    const raw = this.finalTotalTarget.value
+    if (raw === "" || raw === null) return null
+
+    const value = parseFloat(String(raw).replace(",", "."))
+    return Number.isNaN(value) ? null : Math.round(value * 100)
+  }
+
+  // Total calculé depuis les quantités et la remise du client sélectionné.
+  computeTotalCents() {
+    const subtotalCents = this.quantityTargets.reduce((sum, input) => {
+      const qty = parseInt(input.value, 10) || 0
+      const priceCents = parseInt(input.dataset.priceCents, 10) || 0
+      return sum + qty * priceCents
+    }, 0)
+
+    return subtotalCents - this.computeDiscountCents(this.getSelectedCustomer())
   }
 
   // Réplique exacte de GroupDiscountService#total_discount_cents :

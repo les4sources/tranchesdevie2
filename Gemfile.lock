@@ -435,7 +435,7 @@ GEM
       tilt (>= 2.1.0)
     soft_deletion (1.14.0)
       activerecord (>= 5, < 8.2)
-    solid_cable (3.0.12)
+    solid_cable (4.0.2)
       actioncable (>= 7.2)
       activejob (>= 7.2)
       activerecord (>= 7.2)

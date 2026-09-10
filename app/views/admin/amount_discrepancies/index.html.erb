@@ -1,0 +1,58 @@
+<% content_for :title, "Écarts de montant" %>
+<% content_for :layout, "admin" %>
+
+<%= adm_page_header "Écarts de montant" do %>
+  <%= link_to "Télécharger le PDF",
+              admin_amount_discrepancies_path(format: :pdf),
+              class: adm_btn_class(:primary) %>
+<% end %>
+
+<p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">
+  Les commandes dont le montant enregistré ne se déduit pas de leur détail.
+</p>
+
+<div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Commandes analysées</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= @report.scanned_count %></p>
+  </div>
+  <div class="adm-card p-4" style="border-color: var(--danger-200);">
+    <p class="adm-eyebrow" style="color: var(--danger-700);">Écarts à relire</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--danger-700);"><%= @report.total_count %></p>
+  </div>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Couverts par une remise de groupe</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= @report.covered_by_group_count %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);">Non listés — voir la note de méthode.</p>
+  </div>
+</div>
+
+<% if @report.any? %>
+  <div class="space-y-4">
+    <%= render "section",
+          title: AmountDiscrepancyPdfService::ABOVE_TITLE,
+          hint: AmountDiscrepancyPdfService::ABOVE_HINT,
+          rows: @report.above %>
+
+    <%= render "section",
+          title: AmountDiscrepancyPdfService::BELOW_TITLE,
+          hint: AmountDiscrepancyPdfService::BELOW_HINT,
+          rows: @report.unexplained_below %>
+  </div>
+<% else %>
+  <div class="adm-card p-6">
+    <p class="text-sm" style="color: var(--text-muted);">
+      <%= AmountDiscrepancyPdfService::EMPTY_MESSAGE %>
+    </p>
+  </div>
+<% end %>
+
+<div class="adm-card mt-4 p-4">
+  <h2 class="adm-eyebrow">Comment cette liste est établie</h2>
+  <p class="mt-2 text-xs" style="color: var(--text-muted);">
+    Chaque commande est comparée à la somme de ses lignes, au prix figé le jour de la commande. Les commandes annulées, en attente de paiement, celles des Pizza parties (vendues au forfait) et celles des fournées brouillon sont hors périmètre.
+  </p>
+  <p class="mt-2 text-xs" style="color: var(--text-muted);">
+    Le taux de remise appliqué le jour de la commande n'est pas conservé, et l'appartenance d'un client à ses groupes évolue. Les commandes sous leur détail chez un client qui bénéficie d'une remise de groupe ne sont donc pas listées : les comparer au barème d'aujourd'hui produirait surtout de fausses alertes.
+  </p>
+</div>

@@ -1,0 +1,61 @@
+<section class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <div>
+      <h2 class="text-sm font-semibold" style="color: var(--text-strong);">
+        <%= title %> — <%= rows.size %>
+      </h2>
+      <p class="mt-0.5 max-w-3xl text-xs" style="color: var(--text-muted);"><%= hint %></p>
+    </div>
+  </div>
+
+  <% if rows.any? %>
+    <div class="overflow-x-auto">
+      <table class="adm-grid">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Commande</th>
+            <th>Client</th>
+            <th>Détail</th>
+            <th class="text-right">Somme des lignes</th>
+            <th class="text-right">Montant enregistré</th>
+            <th class="text-right">Écart</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.each do |row| %>
+            <tr>
+              <td class="whitespace-nowrap"><%= l(row.order_date) %></td>
+              <td class="whitespace-nowrap">
+                <%= link_to row.order.order_number, admin_order_path(row.order), class: "adm-link" %>
+                <%= link_to "Corriger le montant", edit_admin_order_path(row.order),
+                      class: "adm-rowaction mt-0.5 block text-xs" %>
+              </td>
+              <td>
+                <%= link_to row.customer.full_name, admin_customer_path(row.customer), class: "hover:underline" %>
+              </td>
+              <td style="color: var(--text-muted);">
+                <ul class="space-y-0.5">
+                  <% row.order.order_items.each do |item| %>
+                    <li><%= item.qty %> × <%= item.full_name %> à <%= reports_currency(item.unit_price_cents) %></li>
+                  <% end %>
+                </ul>
+              </td>
+              <td class="adm-grid-num whitespace-nowrap text-right"><%= reports_currency(row.gross_cents) %></td>
+              <td class="adm-grid-num whitespace-nowrap text-right" style="color: var(--text-strong);">
+                <%= reports_currency(row.total_cents) %>
+              </td>
+              <td class="adm-grid-num whitespace-nowrap text-right font-semibold" style="color: var(--danger-700);">
+                <%= row.delta_cents.positive? ? "+" : "-" %><%= reports_currency(row.delta_cents.abs) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="p-4">
+      <p class="text-sm italic" style="color: var(--text-muted);">Rien à signaler.</p>
+    </div>
+  <% end %>
+</section>

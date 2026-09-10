@@ -147,6 +147,9 @@ Rails.application.routes.draw do
     # Marquage groupé des commandes depuis l'écran Facturation (#retour Manon) :
     # « facturées » quand la facture part, « payées » quand l'argent arrive.
     patch "billing/commandes", to: "billing#bulk_update", as: :billing_bulk_update
+    # Écarts de montant : les commandes dont le total ne se déduit pas de leur
+    # détail. Écran de relecture compta + son PDF (#retour Manon).
+    get "billing/ecarts", to: "amount_discrepancies#index", as: :amount_discrepancies
 
     # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice

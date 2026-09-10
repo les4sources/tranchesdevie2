@@ -133,9 +133,14 @@ class Admin::OrdersController < Admin::BaseController
     @order.transition_to!(new_status)
 
     # Lors d'un passage à « payée » (typiquement un paiement hors-ligne d'un
-    # client pro), enregistrer la date de paiement saisie par l'admin
-    # (sinon la date du jour).
-    @order.update!(paid_at: paid_at_from_params) if new_status.to_s == "paid"
+    # client pro), enregistrer la date de paiement saisie par l'admin (sinon la
+    # date du jour) ET l'axe financier : « marquer comme payée » veut dire que
+    # l'argent est arrivé, pas seulement que la commande a avancé (#41 / #97).
+    # Sans cela, la fiche et l'écran Facturation continuaient d'afficher
+    # « Impayé » après le marquage (#retour Manon).
+    if new_status.to_s == "paid"
+      @order.update!(paid_at: paid_at_from_params, payment_status: :paid)
+    end
 
     # Notify the customer (SMS + email) only when marking ready on the day of the
     # bake. If the bake day is in the past, the admin simply forgot to mark it

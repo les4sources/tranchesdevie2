@@ -44,7 +44,14 @@
 </div>
 
 <% if @report.customers.any? %>
-  <div class="space-y-4">
+  <%# Marquage groupé (#retour Manon) : une seule form couvre tous les clients de
+      l'écran, le contrôleur Stimulus pilote la sélection et la barre d'actions. %>
+  <%= form_with url: admin_billing_bulk_update_path, method: :patch, local: true,
+        data: { controller: "billing-bulk" } do %>
+    <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+    <%= hidden_field_tag :customer_id, @customer&.id %>
+
+    <div class="space-y-4">
     <% @report.customers.each do |billing| %>
       <section class="adm-card overflow-hidden">
         <div class="adm-cardhd">
@@ -61,25 +68,45 @@
             </p>
           </div>
 
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 text-xs" style="color: var(--text-muted);">
+              <input type="checkbox" class="h-4 w-4" style="accent-color: var(--brand);"
+                     data-billing-bulk-target="selectAll"
+                     data-action="change->billing-bulk#toggleAll"
+                     data-group="<%= billing.customer.id %>" />
+              Tout sélectionner
+            </label>
+
           <%# Relevé mensuel groupé (par jour de cuisson) du client — #38. %>
           <%= link_to "Relevé de commandes (PDF) du mois",
                 admin_period_invoice_path(customer_id: billing.customer.id, month: @month.strftime("%Y-%m")),
                 class: adm_btn_class(:default) %>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
           <table class="adm-grid">
             <thead>
               <tr>
+                <th class="w-8"><span class="sr-only">Sélection</span></th>
                 <th>Date de cuisson</th>
                 <th>Articles</th>
                 <th class="text-right">Montant</th>
                 <th>Paiement</th>
+                <th>Facturation</th>
               </tr>
             </thead>
             <tbody>
               <% billing.orders.each do |order| %>
                 <tr>
+                  <td class="align-top">
+                    <input type="checkbox" name="order_ids[]" value="<%= order.id %>"
+                           class="h-4 w-4" style="accent-color: var(--brand);"
+                           aria-label="Sélectionner la commande <%= order.order_number %>"
+                           data-billing-bulk-target="checkbox"
+                           data-action="change->billing-bulk#refresh"
+                           data-group="<%= billing.customer.id %>" />
+                  </td>
                   <td class="whitespace-nowrap">
                     <%= link_to l(order.bake_day.baked_on), admin_order_path(order), class: "adm-link" %>
                     <%= link_to "Relevé de commandes (PDF)",
@@ -106,21 +133,62 @@
                       <%= adm_chip "Impayé", tone: :danger %>
                     <% end %>
                   </td>
+                  <td class="whitespace-nowrap">
+                    <% if order.invoice_status_invoiced? %>
+                      <%= adm_chip "Facturée", tone: :success %>
+                    <% else %>
+                      <%= adm_chip "Non facturée", tone: :neutral %>
+                    <% end %>
+                  </td>
                 </tr>
               <% end %>
             </tbody>
             <tfoot>
               <tr class="adm-grid-total">
-                <td colspan="2">Total du mois</td>
+                <td colspan="3">Total du mois</td>
                 <td class="adm-grid-num text-right"><%= reports_currency(billing.total_cents) %></td>
-                <td></td>
+                <td colspan="2"></td>
               </tr>
             </tfoot>
           </table>
         </div>
       </section>
     <% end %>
-  </div>
+    </div>
+
+    <%# Barre d'actions : collée en bas, active dès qu'une commande est cochée. %>
+    <div class="sticky bottom-0 z-10 mt-4 rounded-md p-3 sm:p-4"
+         style="background: var(--surface-card); border: 1px solid var(--border-subtle); box-shadow: 0 -2px 12px rgba(0,0,0,.06);">
+      <div class="flex flex-wrap items-end gap-3">
+        <p class="mr-auto text-sm" style="color: var(--text-muted);">
+          <span class="font-semibold" style="color: var(--text-strong);" data-billing-bulk-target="count">0</span>
+          commande(s) sélectionnée(s)
+        </p>
+
+        <div>
+          <label for="paid_at" class="adm-eyebrow mb-1 block">Date de paiement</label>
+          <input type="date" name="paid_at" id="paid_at" value="<%= Date.current.iso8601 %>" class="<%= adm_field_class("!w-auto") %>" />
+        </div>
+
+        <button type="submit" name="bulk_action" value="mark_invoiced"
+                class="<%= adm_btn_class(:primary) %>"
+                data-billing-bulk-target="action" disabled>
+          Marquer comme facturées
+        </button>
+        <button type="submit" name="bulk_action" value="mark_paid"
+                class="<%= adm_btn_class(:primary) %>"
+                data-billing-bulk-target="action" disabled>
+          Marquer comme payées
+        </button>
+        <button type="submit" name="bulk_action" value="mark_not_invoiced"
+                class="<%= adm_btn_class(:ghost) %>"
+                data-billing-bulk-target="action" disabled
+                data-turbo-confirm="Remettre ces commandes en « non facturée » ?">
+          Annuler la facturation
+        </button>
+      </div>
+    </div>
+  <% end %>
 <% else %>
   <div class="adm-card p-6">
     <p class="text-sm" style="color: var(--text-muted);">

@@ -25,6 +25,17 @@ RSpec.describe "Admin::Orders", type: :request do
       expect(order.reload.read_attribute(:paid_at)).to be_within(1.minute).of(Time.current)
     end
 
+    # #retour Manon : le bouton ne positionnait que le statut logistique, si bien
+    # que la fiche et l'écran Facturation affichaient encore « Impayé » après le
+    # marquage. « Marquer comme payée » veut dire que l'argent est arrivé.
+    it "records the payment on the financial axis too" do
+      patch update_status_admin_order_path(order), params: { status: 'paid' }
+
+      order.reload
+      expect(order.payment_status).to eq('paid')
+      expect(order.payment_received?).to be(true)
+    end
+
     it "does not set a payment date for other transitions" do
       paid_order = create(:order, :paid, :with_items)
 

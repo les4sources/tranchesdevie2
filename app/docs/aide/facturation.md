@@ -19,6 +19,18 @@ rapprocher de sa commande.
 Les commandes payées avec le **portefeuille** du client apparaissent aussi comme
 réglées, mais via le solde prépayé plutôt que Stripe.
 
+## Marquer les commandes facturées et payées
+
+L'écran **Facturation mensuelle** liste, mois par mois, les commandes des clients professionnels. Chaque ligne porte deux pastilles : où en est le **paiement**, et où en est la **facturation**.
+
+Coche les commandes concernées — la case « Tout sélectionner » d'un client coche toutes ses lignes — puis utilise la barre d'actions en bas de l'écran :
+
+- **Marquer comme facturées** — au moment où la facture part chez le client.
+- **Marquer comme payées** — quand l'argent arrive. Choisis la **date de paiement** avant de valider ; elle sert au rapprochement comptable. Une commande déjà payée en ligne garde sa date d'encaissement réelle.
+- **Annuler la facturation** — remet les commandes en « non facturée », en cas d'erreur.
+
+> Ces deux marquages sont indépendants du **statut de la commande** (prête, récupérée…) : facturer n'est pas cuire, encaisser n'est pas remettre le pain.
+
 ## Générer une facture PDF
 
 Un client a besoin d'une facture ? Deux cas :

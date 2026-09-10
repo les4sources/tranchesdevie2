@@ -144,6 +144,9 @@ Rails.application.routes.draw do
       end
     end
     get "billing", to: "billing#index", as: :billing
+    # Marquage groupé des commandes depuis l'écran Facturation (#retour Manon) :
+    # « facturées » quand la facture part, « payées » quand l'argent arrive.
+    patch "billing/commandes", to: "billing#bulk_update", as: :billing_bulk_update
 
     # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice

@@ -223,7 +223,26 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
       order.update!(total_cents: order.order_items.sum { |it| it.qty * it.unit_price_cents })
     end
 
+    build_amount_discrepancies(products, bake_days)
+
     pro
+  end
+
+  # Sans écart, la capture de /admin/billing/ecarts ne montrerait que l'état
+  # vide — inutile pour la doc. On sème donc une commande de chaque famille :
+  # montant au-dessus du détail, et montant sous le détail sans remise.
+  def build_amount_discrepancies(products, bake_days)
+    variant = products.first.product_variants.first
+
+    above = create(:customer, first_name: "Ferme", last_name: "des Tilleuls")
+    order = create(:order, customer: above, bake_day: bake_days[:past], status: :picked_up)
+    create(:order_item, order: order, product_variant: variant, qty: 18, unit_price_cents: variant.price_cents)
+    order.update!(total_cents: 20 * variant.price_cents) # resté au montant de 20 pains
+
+    below = create(:customer, first_name: "Camille", last_name: "Renard")
+    other = create(:order, customer: below, bake_day: bake_days[:past], status: :picked_up)
+    create(:order_item, order: other, product_variant: variant, qty: 4, unit_price_cents: variant.price_cents)
+    other.update!(total_cents: (4 * variant.price_cents) - 150)
   end
 
   def build_parties

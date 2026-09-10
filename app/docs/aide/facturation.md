@@ -31,6 +31,23 @@ Coche les commandes concernées — la case « Tout sélectionner » d'un client
 
 > Ces deux marquages sont indépendants du **statut de la commande** (prête, récupérée…) : facturer n'est pas cuire, encaisser n'est pas remettre le pain.
 
+## Repérer les montants qui ne collent pas
+
+Le montant d'une commande est un champ à part : il peut avoir été saisi à la main, et donc ne plus correspondre au détail des articles. Quand c'est le cas, le relevé du client affiche un sous-total qui ne se déduit pas de ses propres lignes.
+
+Le bouton **Écarts de montant**, en haut de l'écran Facturation, dresse la liste des commandes concernées.
+
+![Les écarts de montant à relire](shot:billing-discrepancies)
+
+Deux familles :
+
+- **Montant au-dessus du détail** — à corriger : aucune remise ne rend une commande plus chère que la somme de ses lignes. Sur le relevé du client, l'écart apparaît en « Ajustement ».
+- **Montant sous le détail, sans remise applicable** — à relire : le client n'appartient à aucun groupe de remise, donc rien dans le barème n'explique la réduction.
+
+Chaque ligne renvoie vers la commande et vers son formulaire de correction. Le bouton **Télécharger le PDF** produit la même liste sur papier, pour faire le point.
+
+> Les commandes sous leur détail chez un client qui bénéficie d'une remise de groupe ne sont pas listées : le taux appliqué le jour de la commande n'est pas conservé, les comparer au barème d'aujourd'hui ne donnerait que de fausses alertes. Leur nombre est affiché en haut de l'écran.
+
 ## Générer une facture PDF
 
 Un client a besoin d'une facture ? Deux cas :

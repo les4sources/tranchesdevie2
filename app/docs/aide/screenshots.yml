@@ -124,6 +124,9 @@
 - slug: billing-index
   path: /admin/billing
 
+- slug: billing-discrepancies
+  path: /admin/billing/ecarts
+
 - slug: reports-index
   path: /admin/reports
 

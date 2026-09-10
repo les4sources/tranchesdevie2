@@ -97,9 +97,16 @@ class PartyReservationService
   # Sérialise les réservations concurrentes sur le même (date, créneau).
   # Clé int4 : jour julien × 2 + index du créneau.
   def lock_slot!
-    key = @date.jd * 2 + PartyEvent.slots[@slot]
+    # Les deux arguments sont des entiers PAR CONSTRUCTION — mais l'analyse
+    # statique ne peut pas le prouver depuis `@date` et `@slot`, et une clé
+    # d'index absente rendait `nil` en silence. `fetch` refuse un créneau
+    # inconnu, `Integer()` refuse une date qui n'en est pas une, et les valeurs
+    # partent en paramètres liés plutôt qu'en interpolation.
+    key = Integer(@date.jd) * 2 + Integer(PartyEvent.slots.fetch(@slot))
     ActiveRecord::Base.connection.execute(
-      "SELECT pg_advisory_xact_lock(#{LOCK_NAMESPACE}, #{key})"
+      ActiveRecord::Base.sanitize_sql_array(
+        [ "SELECT pg_advisory_xact_lock(?, ?)", LOCK_NAMESPACE, key ]
+      )
     )
   end
 

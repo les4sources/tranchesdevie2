@@ -7,6 +7,11 @@ require "rails_helper"
 # forfait. Elle passe par le même `PartyOrderCreationService`, donc l'égalité
 # est structurelle.
 RSpec.describe ManualPrivatePartyService do
+  # Inclus localement, comme dans `party_event_private_rules_spec` : un SEUL
+  # exemple ci-dessous fige l'heure, les autres continuent de calculer leurs
+  # dates depuis aujourd'hui (voir la note ci-dessus).
+  include ActiveSupport::Testing::TimeHelpers
+
   # Dates calculées depuis aujourd'hui, jamais figées : la réservation EN LIGNE
   # de référence passe par le service CLIENT, qui refuse un créneau dont le
   # cut-off est dépassé. Une date en dur finit toujours par tomber dans le
@@ -100,12 +105,23 @@ RSpec.describe ManualPrivatePartyService do
     end
 
     it "accepte une date pour demain, hors de tout délai client" do
+      # L'heure est FIGÉE, sinon l'assertion dépend du jour où la suite tourne :
+      # « demain » n'est fermé au client que si c'est un jour privé DÉPASSÉ (la
+      # limite est la veille 16 h) ou un jour non privé. Un jeudi matin, demain
+      # est un vendredi soir encore ouvert — et l'attente `be false` tombait.
+      # Ici : jeudi 18 h, donc vendredi soir est un créneau privé dont la limite
+      # (jeudi 16 h) vient de passer. C'est bien le délai qu'on teste.
+      travel_to(ActiveSupport::TimeZone["Europe/Brussels"].local(2026, 9, 10, 18, 0))
+
       tomorrow = Date.current + 1
+      expect(tomorrow.wday).to eq(5)
       expect(PartyEvent.private_slot_available?(tomorrow, "soir")).to be false
 
       service = build(held_on: tomorrow, slot: "soir", persons: 6)
 
       expect(service.call).to be_a(PartyEvent)
+    ensure
+      travel_back
     end
 
     it "accepte un créneau déjà plein pour le client" do

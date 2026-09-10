@@ -35,6 +35,9 @@ class InvoicePdfService
 
   DOCUMENT_TITLE = "Relevé de commandes".freeze
   ONLINE_DETAILS_MENTION = "Tous les détails de vos commandes sont disponibles en ligne.".freeze
+  # Libellé de l'écart inverse de la remise : montant dû au-dessus du prix
+  # catalogue (supplément convenu, ou correction de montant).
+  SURCHARGE_LABEL = "Ajustement".freeze
   QR_SIZE = 96 # côté du QR en points PDF
 
   def initialize(invoice)
@@ -139,17 +142,20 @@ class InvoicePdfService
     end
   end
 
-  # Sous-total d'un jour de cuisson. Sans remise, une seule ligne comme avant.
-  # Avec remise, trois lignes : prix standard, ristourne, montant dû.
+  # Sous-total d'un jour de cuisson. Sans écart, une seule ligne comme avant.
+  # Avec remise, trois lignes : prix standard, ristourne, montant dû. Avec
+  # supplément, les mêmes trois lignes dans l'autre sens : le sous-total ne peut
+  # jamais différer de ses propres lignes sans que l'écart soit nommé.
   def render_group_totals(pdf, group)
-    unless group.discount_applied?
-      pdf.text "Sous-total cuisson : #{euros(group.total_cents)}", size: 9, style: :bold, align: :right
-      return
+    if group.discount_applied?
+      pdf.text "Sous-total au prix standard : #{euros(group.gross_cents)}", size: 9, align: :right
+      pdf.text "#{discount_label(group.discount_percent)} : -#{euros(group.discount_cents)}",
+        size: 9, align: :right
+    elsif group.surcharge_applied?
+      pdf.text "Sous-total au prix standard : #{euros(group.gross_cents)}", size: 9, align: :right
+      pdf.text "#{SURCHARGE_LABEL} : +#{euros(group.surcharge_cents)}", size: 9, align: :right
     end
 
-    pdf.text "Sous-total au prix standard : #{euros(group.gross_cents)}", size: 9, align: :right
-    pdf.text "#{discount_label(group.discount_percent)} : -#{euros(group.discount_cents)}",
-      size: 9, align: :right
     pdf.text "Sous-total cuisson : #{euros(group.total_cents)}", size: 9, style: :bold, align: :right
   end
 
@@ -188,6 +194,9 @@ class InvoicePdfService
     if @presenter.discount_applied?
       rows << [ "Total au prix standard", euros(@presenter.gross_cents) ]
       rows << [ discount_label(@presenter.discount_percent), "-#{euros(@presenter.discount_cents)}" ]
+    elsif @presenter.surcharge_applied?
+      rows << [ "Total au prix standard", euros(@presenter.gross_cents) ]
+      rows << [ SURCHARGE_LABEL, "+#{euros(@presenter.surcharge_cents)}" ]
     end
     rows << [ "Total", euros(@presenter.total_cents) ]
 
@@ -219,6 +228,12 @@ class InvoicePdfService
   # Bloc « accès en ligne » : mention, QR code vers l'espace client, et rappel
   # de l'identifiant de connexion (téléphone et/ou e-mail).
   def render_online_access(pdf)
+    # Le bloc est indivisible : QR code, texte et pied de page tiennent ensemble
+    # ou passent ensemble à la page suivante. Sans ce garde-fou, un relevé long
+    # dessinait le QR sous le bas de la feuille A4 et il ressortait tronqué
+    # (#retour Manon).
+    pdf.start_new_page if pdf.cursor < online_access_block_height(pdf)
+
     pdf.move_down 24
     pdf.stroke_color "EEEEEE"
     pdf.stroke_horizontal_rule
@@ -250,6 +265,16 @@ class InvoicePdfService
     lines << "Une connexion reste nécessaire. Identifiant à utiliser : " \
              "#{@presenter.login_identifiers.join(' ou ')}."
     lines.join("\n\n")
+  end
+
+  # Hauteur totale du bloc « accès en ligne », pied de page compris : espacement
+  # avant le filet (24) + filet et son espacement (14) + la plus haute des deux
+  # colonnes (QR ou texte) + 8, puis le pied de page (move_down 12 + trois lignes
+  # de ~12 pt). C'est cette hauteur qui décide du saut de page.
+  FOOTER_HEIGHT = 50
+
+  def online_access_block_height(pdf)
+    24 + 14 + [ QR_SIZE, online_access_lines_height(pdf) ].max + 8 + FOOTER_HEIGHT
   end
 
   # Hauteur approximative du bloc texte, pour réserver la place sous le QR.

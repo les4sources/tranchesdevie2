@@ -119,4 +119,26 @@ RSpec.describe InvoicePresenter do
       expect(groups.last.total_cents).to eq(550)
     end
   end
+
+  # Écart inverse de la remise (#retour Manon) : le montant dû dépasse la somme
+  # des lignes — montant final saisi à la main, ou resté en arrière après une
+  # correction de quantité. Le relevé doit le nommer plutôt que de l'écraser.
+  describe "supplément (montant dû au-dessus des lignes)" do
+    it "ne compte aucun supplément quand le montant dû égale les lignes" do
+      expect(described_class.surcharge_cents(9000, 9000)).to eq(0)
+    end
+
+    it "ne compte aucun supplément quand une remise s'applique" do
+      expect(described_class.surcharge_cents(9000, 8100)).to eq(0)
+    end
+
+    it "expose l'écart quand le montant dû dépasse les lignes" do
+      expect(described_class.surcharge_cents(8100, 9000)).to eq(900)
+    end
+
+    it "n'annonce jamais remise et supplément en même temps" do
+      expect(described_class.discount_cents(8100, 9000)).to eq(0)
+      expect(described_class.surcharge_cents(8100, 9000)).to eq(900)
+    end
+  end
 end

@@ -33,6 +33,8 @@ class InvoicePresenter
     def discount_cents = InvoicePresenter.discount_cents(gross_cents, total_cents)
     def discount_percent = InvoicePresenter.discount_percent(gross_cents, total_cents)
     def discount_applied? = discount_cents.positive?
+    def surcharge_cents = InvoicePresenter.surcharge_cents(gross_cents, total_cents)
+    def surcharge_applied? = surcharge_cents.positive?
   end
 
   # Remise = montant au prix standard - montant dû, jamais négative.
@@ -44,6 +46,17 @@ class InvoicePresenter
   # d'aujourd'hui.
   def self.discount_cents(gross_cents, net_cents)
     [ gross_cents.to_i - net_cents.to_i, 0 ].max
+  end
+
+  # Écart INVERSE de la remise : le montant dû dépasse la somme des lignes.
+  #
+  # C'est le cas d'un montant final saisi à la main au-dessus du prix catalogue
+  # (supplément négocié) — ou d'une commande dont le montant n'a pas suivi une
+  # correction de quantité. Dans les deux cas le relevé doit l'exposer : sans
+  # cette ligne, il affichait un sous-total qui ne correspondait pas à son
+  # propre détail (#retour Manon).
+  def self.surcharge_cents(gross_cents, net_cents)
+    [ net_cents.to_i - gross_cents.to_i, 0 ].max
   end
 
   # Taux effectif de la remise, en pourcent (une décimale). « Effectif » parce
@@ -160,6 +173,15 @@ class InvoicePresenter
 
   def discount_applied?
     discount_cents.positive?
+  end
+
+  # Supplément sur l'ensemble du relevé (montant dû au-dessus des lignes).
+  def surcharge_cents
+    self.class.surcharge_cents(gross_cents, total_cents)
+  end
+
+  def surcharge_applied?
+    surcharge_cents.positive?
   end
 
   private

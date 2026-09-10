@@ -183,5 +183,62 @@ RSpec.describe InvoicePdfService, type: :service do
       expect(text).to include("Sous-total cuisson : 5,50 €")
       expect(text.scan("Sous-total au prix standard").size).to eq(1)
     end
+
+    # #retour Manon : deux commandes de quantités différentes affichaient le
+    # MÊME sous-total cuisson, parce que `orders.total_cents` était resté en
+    # arrière après une correction de quantité et que l'écart était écrasé à
+    # zéro. Le sous-total doit désormais toujours se déduire de ses lignes.
+    it "nomme l'écart quand le montant dû dépasse les lignes du jour" do
+      order_tue.update!(total_cents: 1350) # 11,00 € de lignes, 13,50 € dus
+      text = pdf_text(described_class.new(invoice).render)
+
+      expect(text).to include("Sous-total au prix standard : 11,00 €")
+      expect(text).to include("Ajustement : +2,50 €")
+      expect(text).to include("Sous-total cuisson : 13,50 €")
+    end
+
+    it "n'affiche jamais deux sous-totaux cuisson identiques pour des lignes différentes" do
+      order_tue.update!(total_cents: 550) # même montant dû que le vendredi…
+      text = pdf_text(described_class.new(invoice).render)
+
+      # …mais 11,00 € de lignes le mardi : l'écart est explicité, pas masqué.
+      expect(text).to include("Remise 50 % : -5,50 €")
+    end
+
+    # Le QR code est dessiné en flottant : sans garde-fou il partait sous le bas
+    # de la feuille A4 dès que le relevé finissait de remplir une page. Aux
+    # longueurs 4/5, 13/14 et 22/23 jours de cuisson, son bord bas tombait à
+    # 51 pt, puis -35 pt — le QR ressortait tronqué (#retour Manon).
+    it "garde le QR code entier quelle que soit la longueur du relevé" do
+      created = 0
+
+      [ 4, 5, 13, 14, 22, 23 ].each do |days|
+        while created < days
+          day = create(:bake_day, baked_on: Date.new(2026, 6, 1) + created)
+          create(:order, customer: customer, bake_day: day, total_cents: 550).tap do |o|
+            create(:order_item, order: o, product_variant: variant, qty: 1, unit_price_cents: 550)
+          end
+          created += 1
+        end
+
+        long_invoice = InvoiceBuilderService.for_customer_month(
+          customer: customer, month: Date.new(2026, 6, 1)
+        )
+        binary = described_class.new(long_invoice).render
+        reader = PDF::Reader.new(StringIO.new(binary))
+
+        qr_page = reader.pages.detect { |page| page.xobjects.any? }
+        expect(qr_page).to be_present, "aucune page ne porte le QR (#{days} jours)"
+
+        # Prawn place l'image via une matrice « w 0 0 h tx ty cm » : `ty` est le
+        # bord BAS du QR en coordonnées page. Il doit rester au-dessus de la
+        # marge basse (40 pt), sinon le QR déborde de la feuille.
+        matrix = qr_page.raw_content.scan(/([\d.]+) 0(?:\.0)? 0(?:\.0)? ([\d.]+) (-?[\d.]+) (-?[\d.]+) cm/).last
+        expect(matrix).to be_present, "aucune image placée dans le flux (#{days} jours)"
+        expect(matrix[3].to_f).to be >= 40,
+          "QR tronqué à #{days} jours de cuisson : bord bas à #{matrix[3]} pt"
+        expect(pdf_text(binary)).to include(InvoicePdfService::ONLINE_DETAILS_MENTION)
+      end
+    end
   end
 end

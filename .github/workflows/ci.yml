@@ -53,3 +53,45 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+
+  # Les 1504 exemples RSpec du dépôt ne tournaient NULLE PART : la CI ne portait
+  # que des scanners. Un bump de dépendance arrivait donc dans `main` sans qu'une
+  # ligne de test l'ait vu — c'est ce que ce job ferme.
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Prepare the test database
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/tranchesdevie_test
+        run: bin/rails db:test:prepare
+
+      - name: Run the RSpec suite
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/tranchesdevie_test
+        run: bundle exec rspec

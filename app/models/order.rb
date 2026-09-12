@@ -61,7 +61,24 @@ class Order < ApplicationRecord
   validate :pickup_location_open_on_bake_day
   validate :bake_day_or_party_event
 
-  COMPLETED_STATUSES = %w[paid ready picked_up].freeze
+  # Assiette de « une vente » pour TOUT le reporting daté (#274). C'est un CA
+  # FACTURÉ : une commande livrée compte, qu'elle soit encaissée ou non.
+  #
+  # `unpaid` en fait partie parce que c'est le statut de naissance de toute
+  # commande payée en cash (OrderCreationService) et le défaut des commandes
+  # créées en admin — épiceries, Semisto, restaurants. Les exclure faisait
+  # disparaître jusqu'à 87 % du CA d'une journée jusqu'à ce que
+  # MarkOrdersReadyJob les bascule en `ready` le soir, et pour toujours quand ce
+  # rattrapage n'avait pas lieu.
+  #
+  # `no_show` en fait partie aussi : le pain a été produit et l'argent souvent
+  # encaissé — un client qui ne vient pas ne fait pas disparaître la vente.
+  #
+  # Restent dehors : `planned` (commande calendrier non encore confirmée),
+  # `pending` (réservation transitoire d'un paiement en ligne, supprimée si
+  # abandonnée) et `cancelled` (annulée / remboursée). Aucune des trois ne
+  # correspond à un pain livré.
+  COMPLETED_STATUSES = %w[unpaid paid ready picked_up no_show].freeze
 
   before_validation :generate_public_token, on: :create
   before_validation :generate_order_number, on: :create
@@ -477,6 +494,20 @@ class Order < ApplicationRecord
             total_cents: total_cents.to_i
           }
         end
+    end
+
+    # Net par ligne d'UNE commande : { order_item_id => net_cents }, dont la somme
+    # égale EXACTEMENT `order.total_cents`. Même répartition de la remise que
+    # `each_net_order_line`, mais sur une commande isolée — ce qui permet aux
+    # barèmes party (#274) de raisonner en NET comme le reste du reporting.
+    def net_cents_by_item(order)
+      items = order.order_items.to_a
+      return {} if items.empty?
+
+      gross = items.map { |item| item.qty * item.unit_price_cents }
+      net = distribute_net_cents(gross, order.total_cents)
+
+      items.each_with_index.to_h { |item, index| [ item.id, net[index] ] }
     end
 
     private

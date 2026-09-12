@@ -24,15 +24,22 @@ production:
     schedule: "*/10 * * * *"
     description: "Cancel abandoned online checkouts (pending > 30 min) to free bake capacity"
 
-  # Process planned orders after cut-offs (Sunday 18:05 for Tuesday, Wednesday 18:05 for Friday)
-  process_planned_orders_sunday:
+  # Traitement des commandes du calendrier, TOUS LES JOURS à 16h05 (#274).
+  #
+  # Le rythme est quotidien parce que le cut-off est fixé PAR FOURNÉE et non par
+  # jour de semaine : il vaut aujourd'hui jeudi 16h00 pour les fournées du
+  # vendredi et lundi 16h00 pour celles du mardi, et il peut changer. Un cron
+  # calé sur des jours fixes (dimanche/mercredi 18h05) passait systématiquement
+  # à côté : trop tôt pour le cut-off du jeudi, trop tard pour la fournée du
+  # vendredi. Les commandes restaient `planned` le jour de la cuisson — absentes
+  # de la feuille compta — et le client ne recevait jamais son SMS.
+  #
+  # Le job ne traite que les fournées dont le cut-off est passé : le passer tous
+  # les jours est sans effet les jours sans cut-off.
+  process_planned_orders:
     class: ProcessPlannedOrdersJob
-    schedule: every sunday at 6:05 pm Europe/Brussels
-    description: "Process planned orders and debit wallets after Sunday cut-off"
-  process_planned_orders_wednesday:
-    class: ProcessPlannedOrdersJob
-    schedule: every wednesday at 6:05 pm Europe/Brussels
-    description: "Process planned orders and debit wallets after Wednesday cut-off"
+    schedule: every day at 4:05 pm Europe/Brussels
+    description: "Process planned orders and debit wallets once a bake day cut-off has passed"
 
   # Rattrape les commissions Stripe manquantes (stripe_fee_cents NULL).
   # La BalanceTransaction Stripe n'est pas toujours disponible au moment du
@@ -44,12 +51,10 @@ production:
     schedule: "0 */3 * * *"
     description: "Backfill missing Stripe fees (stripe_fee_cents NULL) every 3 hours"
 
-  # Check insufficient balance warnings (6 hours before cut-off)
-  check_balance_sunday:
+  # Alerte « solde insuffisant », TOUS LES JOURS à 10h00 (#274) — soit six heures
+  # avant un cut-off à 16h00. Quotidien pour la même raison que le job
+  # ci-dessus : le cut-off est porté par la fournée, pas par le jour de semaine.
+  check_balance:
     class: CheckInsufficientBalanceJob
-    schedule: every sunday at 12:00 pm Europe/Brussels
-    description: "Warn customers with insufficient balance before Sunday cut-off"
-  check_balance_wednesday:
-    class: CheckInsufficientBalanceJob
-    schedule: every wednesday at 12:00 pm Europe/Brussels
-    description: "Warn customers with insufficient balance before Wednesday cut-off"
+    schedule: every day at 10:00 am Europe/Brussels
+    description: "Warn customers with insufficient balance six hours before a bake day cut-off"

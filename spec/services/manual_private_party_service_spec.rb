@@ -179,18 +179,23 @@ RSpec.describe ManualPrivatePartyService do
       expect(with_forfait.four_sources_cents - manual_result.four_sources_cents).to eq(1_000)
     end
 
-    it "une party NON payée ne rapporte rien" do
+    # Depuis #274, le CA est un CA FACTURÉ : une party saisie en admin et pas
+    # encore encaissée est une vente (c'est le cas courant — on encaisse le soir
+    # même, en liquide). Le drapeau « payée » ne pilote plus la comptabilisation.
+    it "une party NON payée compte quand même dans le CA facturé" do
       service = build(persons: 8, paid: false)
       service.call
 
       expect(service.order.status).to eq("unpaid")
-      expect(Order.completed).not_to include(service.order)
-      expect(PizzaPartyRevenueService.call(Order.completed.where(id: service.order.id)).sale_cents).to eq(0)
+      expect(Order.completed).to include(service.order)
+      expect(PizzaPartyRevenueService.call(Order.completed.where(id: service.order.id)).sale_cents)
+        .to eq(service.order.total_cents)
     end
 
-    it "bascule non payée → payée et se met à comptabiliser" do
+    it "bascule non payée → payée sans changer la comptabilisation" do
       service = build(persons: 8, paid: false)
       service.call
+      expect(PizzaPartyRevenueService.call(Order.completed.where(id: service.order.id)).persons).to eq(8)
 
       described_class.toggle_paid(service.order, paid: true)
 

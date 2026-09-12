@@ -151,10 +151,25 @@ RSpec.describe IngredientCostReportService do
       expect(report(august, august).ingredient_lines).to be_empty
     end
 
-    it "ignore les commandes non finalisées" do
+    # Depuis #274, « finalisée » veut dire facturée : une commande livrée mais pas
+    # encore encaissée (cash, admin, épicerie) consomme bien de la farine et des
+    # ingrédients. Seules les commandes qui ne correspondent à aucun pain produit
+    # restent dehors.
+    it "compte une commande livrée mais pas encore encaissée (unpaid)" do
       bake_day = create(:bake_day, baked_on: june, cut_off_at: june - 2.days)
       order = create(:order, :unpaid, customer: create(:customer), bake_day: bake_day, total_cents: 650)
       create(:order_item, order: order, product_variant: variant, qty: 1, unit_price_cents: 650)
+
+      expect(report(june, june).ingredient_lines).not_to be_empty
+    end
+
+    it "ignore les commandes qui ne correspondent à aucun pain produit" do
+      bake_day = create(:bake_day, baked_on: june, cut_off_at: june - 2.days)
+
+      %i[pending cancelled planned].each do |status|
+        order = create(:order, status, customer: create(:customer), bake_day: bake_day, total_cents: 650)
+        create(:order_item, order: order, product_variant: variant, qty: 1, unit_price_cents: 650)
+      end
 
       expect(report(june, june).ingredient_lines).to be_empty
     end

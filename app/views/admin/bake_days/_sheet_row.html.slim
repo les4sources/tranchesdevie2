@@ -1,0 +1,18 @@
+/ Une ligne de la feuille compta (format vendu). Partagée par le groupe « pains »
+/ et le groupe « pizza parties » du tableau (#274).
+tr
+  td.font-medium style="color: var(--text-strong);"
+    = row.label
+    - if row.party?
+      span.ml-2.text-xs.font-normal style="color: var(--text-muted);" Pizza party
+  td.adm-grid-num.text-right = euro.(row.unit_price_cents)
+  td.adm-grid-num.text-right style="color: var(--text-muted);" = euro.(row.unit_cost_cents)
+  td.adm-grid-num.text-right style="color: var(--text-strong);" = row.qty
+  td.adm-grid-num.text-right = euro.(row.gross_cents)
+  td.adm-grid-num.text-right
+    - if row.discount_cents.positive?
+      span style="color: var(--danger-700);" = "− #{euro.(row.discount_cents)}"
+      span.block.text-xs style="color: var(--text-faint);" = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
+    - else
+      span style="color: var(--text-faint);" —
+  td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(row.sale_cents)

@@ -42,21 +42,37 @@ p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app
               th.text-right Remise
               th.text-right CA net
           tbody
-            - @sheet.rows.each do |row|
+            - @sheet.bread_rows.each do |row|
+              == render "admin/bake_days/sheet_row", row: row, euro: euro
+            / Les pizza parties (pâtons, forfait, places publiques) sont des ventes du
+            / jour comme les autres : elles figuraient dans la carte « CA total »
+            / mais pas dans ce tableau, et rien n'expliquait l'écart (#274).
+            - if @sheet.party_rows.any?
               tr
-                td.font-medium style="color: var(--text-strong);" = row.label
-                td.adm-grid-num.text-right = euro.(row.unit_price_cents)
-                td.adm-grid-num.text-right style="color: var(--text-muted);" = euro.(row.unit_cost_cents)
-                td.adm-grid-num.text-right style="color: var(--text-strong);" = row.qty
-                td.adm-grid-num.text-right = euro.(row.gross_cents)
-                td.adm-grid-num.text-right
-                  - if row.discount_cents.positive?
-                    span style="color: var(--danger-700);" = "− #{euro.(row.discount_cents)}"
-                    span.block.text-xs style="color: var(--text-faint);" = "#{number_with_precision(row.discount_percent, precision: 1, strip_insignificant_zeros: true)} %"
-                  - else
-                    span style="color: var(--text-faint);" —
-                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(row.sale_cents)
+                td colspan="7" style="background: var(--surface-sunken); color: var(--text-muted);"
+                  span.text-xs.font-semibold.uppercase.tracking-wide Pizza parties
+              - @sheet.party_rows.each do |row|
+                == render "admin/bake_days/sheet_row", row: row, euro: euro
           tfoot
+            / Sous-totaux séparés : « Marge pains » plus bas part du CA pains, qui
+            / doit donc être lisible ici.
+            - if @sheet.party_rows.any?
+              tr
+                td style="color: var(--text-body);" Sous-total pains
+                td
+                td
+                td.adm-grid-num.text-right = @sheet.bread_rows.sum(&:qty)
+                td
+                td
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(@sheet.bread_sale_cents)
+              tr
+                td style="color: var(--text-body);" Sous-total pizza parties
+                td
+                td
+                td.adm-grid-num.text-right = @sheet.party_rows.sum(&:qty)
+                td
+                td
+                td.adm-grid-num.text-right.font-semibold style="color: var(--text-strong);" = euro.(@sheet.party_sale_cents)
             tr.adm-grid-total
               td Total CA
               td
@@ -65,6 +81,12 @@ p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app
               td.adm-grid-num.text-right = euro.(@sheet.total_gross_cents)
               td.adm-grid-num.text-right style="color: var(--danger-700);" = @sheet.total_discount_cents.positive? ? "− #{euro.(@sheet.total_discount_cents)}" : "—"
               td.adm-grid-num.text-right = euro.(@sheet.total_sale_cents)
+      / Garde-fou visible : ce total DOIT égaler la carte « CA total » plus bas.
+      / Si l'invariant casse un jour, la feuille le dit au lieu de laisser un
+      / écart muet à l'écran.
+      - unless @sheet.reconciled?
+        .p-3.text-sm style="background: var(--danger-100); color: var(--danger-700);"
+          | ⚠️ Le total du tableau (#{euro.(@sheet.total_sale_cents)}) ne correspond pas au CA total du jour (#{euro.(day.revenue_cents)}). Signalez-le — c'est un bug.
 
   / --- Répartition boulangers / 4 Sources (authoritative) ---
   - party_sale = day.party_revenue_cents + day.public_party_revenue_cents
@@ -139,6 +161,30 @@ p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app
                   td.adm-grid-num.text-right = euro.(day.public_party_revenue_cents)
                   td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_bakers_cents)
                   td.adm-grid-num.text-right.font-semibold = euro.(day.public_party_four_sources_cents)
+
+  / --- Encaissement (moyens de paiement réellement enregistrés) ---
+  - settlement = @sheet.settlement
+  section.mb-8
+    .adm-card.overflow-hidden
+      .adm-cardhd
+        h2.text-xl.font-semibold style="color: var(--text-strong);" Encaissement
+      table.adm-grid
+        tbody
+          tr
+            td style="color: var(--text-body);" Stripe (paiement en ligne)
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(settlement.stripe_cents)
+          tr
+            td style="color: var(--text-body);" Portefeuille
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(settlement.wallet_cents)
+          tr
+            td style="color: var(--text-body);"
+              | Aucun paiement enregistré
+              span.block.text-xs style="color: var(--text-muted);"
+                | L'application ne trace pas les encaissements en liquide : ce montant n'est pas un impayé, c'est simplement ce dont elle ne connaît pas le moyen de paiement.
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(settlement.untracked_cents)
+          tr.adm-grid-total
+            td Total
+            td.adm-grid-num.text-right = euro.(settlement.total_cents)
 
   / --- Totaux du jour ---
   section

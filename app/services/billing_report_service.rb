@@ -10,11 +10,11 @@
 #   report.customers      # => [ CustomerBilling, ... ]
 #   report.grand_total_cents
 class BillingReportService
-  # Statuts de commande pris en compte dans la facturation. On exclut les
-  # commandes annulées, planifiées (non confirmées) et en attente de paiement
-  # en ligne (pending). `unpaid` est inclus : ce sont précisément les commandes
-  # à facturer (impayées).
-  BILLABLE_STATUSES = %w[unpaid paid ready picked_up no_show].freeze
+  # Statuts de commande pris en compte dans la facturation. Depuis #274, c'est
+  # la MÊME assiette que tout le reporting daté : l'app n'a plus qu'une seule
+  # définition de « une vente ». Voir Order::COMPLETED_STATUSES pour le détail
+  # des statuts retenus et exclus.
+  BILLABLE_STATUSES = Order::COMPLETED_STATUSES
 
   CustomerBilling = Struct.new(
     :customer,

@@ -7,8 +7,9 @@ class CheckInsufficientBalanceJob < ApplicationJob
     @checked_count = 0
     @warned_count = 0
 
-    # Find BakeDays with upcoming cut-offs (within the next 6 hours)
-    # This job is scheduled to run at noon on Sundays and Wednesdays
+    # Fournées dont le cut-off tombe dans les 6 heures. Le job passe tous les
+    # jours à 10h00 (#274) — six heures avant un cut-off à 16h00 — et cette
+    # fenêtre le rend sans effet les jours sans cut-off.
     upcoming_cutoffs = BakeDay.where(cut_off_at: Time.current..6.hours.from_now)
 
     upcoming_cutoffs.find_each do |bake_day|

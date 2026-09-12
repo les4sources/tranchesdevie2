@@ -121,33 +121,37 @@ RSpec.describe ManualPartyRegistrationService do
       expect(manual_result.four_sources_cents).to eq(2 * 502 + 312)
     end
 
-    it "une inscription manuelle NON payée ne rapporte rien" do
+    # Depuis #274, le CA est un CA FACTURÉ : une inscription saisie en admin et
+    # pas encore encaissée est une vente. Le drapeau « payée » ne pilote plus la
+    # comptabilisation, il ne renseigne que l'encaissement.
+    it "une inscription manuelle NON payée compte quand même dans le CA facturé" do
       manual = add(adults: 2, children: 1, paid: false)
 
       expect(manual.status).to eq("unpaid")
-      expect(Order.completed).not_to include(manual)
-      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).sale_cents).to eq(0)
+      expect(Order.completed).to include(manual)
+      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).sale_cents).to eq(manual.total_cents)
     end
 
-    it "bascule non payée → payée et se met à comptabiliser" do
+    it "bascule non payée → payée sans changer la comptabilisation" do
       manual = add(adults: 2, paid: false)
-
-      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents).to eq(0)
+      before_toggle = PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents
+      expect(before_toggle).to eq(2 * 472)
 
       described_class.toggle_paid(manual, paid: true)
 
       expect(manual.reload.paid?).to be true
       expect(manual.paid_at).to be_present
-      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents).to eq(2 * 472)
+      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents).to eq(before_toggle)
     end
 
-    it "bascule payée → non payée et cesse de comptabiliser" do
+    it "bascule payée → non payée sans faire disparaître la vente" do
       manual = add(adults: 2, paid: true)
       described_class.toggle_paid(manual, paid: false)
 
       expect(manual.reload.paid?).to be false
       expect(manual.paid_at).to be_nil
-      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents).to eq(0)
+      expect(Order.completed).to include(manual)
+      expect(PublicPartyRevenueService.call(Order.completed.where(id: manual.id)).bakers_cents).to eq(2 * 472)
     end
   end
 

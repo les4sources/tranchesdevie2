@@ -162,20 +162,27 @@ RSpec.describe "Rattachement comptable des pizza parties" do
       expect(day.party_four_sources_cents).to eq(0)
     end
 
-    it "une réservation NON payée ne contribue à rien" do
-      online_party(persons: 11, status: :unpaid)
+    # Depuis #274, le CA est un CA FACTURÉ : une réservation livrée mais pas
+    # encore encaissée contribue. Seules `pending`, `planned` et `cancelled`
+    # restent dehors — voir le test suivant.
+    it "une réservation NON encaissée (unpaid) contribue quand même" do
+      _event, order = online_party(persons: 11, status: :unpaid)
 
       day = report.days.first
 
-      expect(day.party_persons).to eq(0)
-      expect(day.party_revenue_cents).to eq(0)
-      expect(day.revenue_cents).to eq(0)
+      expect(day.party_persons).to eq(11)
+      expect(day.party_revenue_cents).to eq(order.total_cents)
+      expect(day.revenue_cents).to eq(order.total_cents)
     end
 
-    it "une réservation annulée ne contribue à rien" do
-      online_party(persons: 11, status: :cancelled)
+    it "une réservation annulée, en attente ou planifiée ne contribue à rien" do
+      %i[cancelled pending planned].each do |status|
+        online_party(persons: 11, status: status)
+      end
 
-      expect(report.days.first.party_persons).to eq(0)
+      day = report.days.first
+      expect(day.party_persons).to eq(0)
+      expect(day.revenue_cents).to eq(0)
     end
   end
 

@@ -172,6 +172,11 @@ class StripePayoutReportService
     Order
       .from_checkout
       .completed
+      # Garde-fou explicite (#274) : depuis que `completed` inclut `unpaid`, un
+      # checkout réglé en cash (client autorisé, donc sans Payment Stripe) y
+      # entrerait. Ce rapport rapproche des versements Stripe : il ne doit voir
+      # que les commandes qui ont RÉELLEMENT un paiement Stripe.
+      .joins(:payment)
       .in_bake_day_range(start_date, end_date)
       .preload(:customer, :payment, :bake_day)
       .map { |order| online_order_row(order) }

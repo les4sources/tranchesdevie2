@@ -540,4 +540,68 @@ RSpec.describe Order, type: :model do
       expect(clone.order_number).to match(/\ATV-\d{8}-\d{4}\z/)
     end
   end
+
+  # Pointage de l'encaissement hors-ligne (#275) : l'app ne peut pas deviner un
+  # paiement en liquide, ce champ est la seule trace qu'elle en aura.
+  describe "encaissement hors-ligne" do
+    let(:order) { create(:order, :ready) }
+
+    describe "#payment_method" do
+      it "renvoie le moyen hors-ligne quand il est pointé" do
+        order.update!(offline_payment_method: :cash)
+        expect(order.payment_method).to eq(:cash)
+
+        order.update!(offline_payment_method: :transfer)
+        expect(order.payment_method).to eq(:transfer)
+      end
+
+      it "donne la priorité à Stripe sur un pointage hors-ligne" do
+        order.update!(offline_payment_method: :cash)
+        create(:payment, order: order, status: :succeeded)
+
+        expect(order.reload.payment_method).to eq(:stripe)
+      end
+
+      it "donne la priorité au portefeuille sur un pointage hors-ligne" do
+        order.update!(offline_payment_method: :cash)
+        wallet = create(:wallet, customer: order.customer, balance_cents: 10_000)
+        WalletService.debit_for_order(wallet: wallet, order: order)
+
+        expect(order.reload.payment_method).to eq(:wallet)
+      end
+
+      it "renvoie nil quand rien n'est tracé ni pointé" do
+        expect(order.payment_method).to be_nil
+      end
+    end
+
+    describe "#settlement_pending?" do
+      it "est vrai tant que rien n'est tracé ni pointé" do
+        expect(order).to be_settlement_pending
+      end
+
+      it "devient faux dès qu'un moyen hors-ligne est pointé" do
+        order.update!(offline_payment_method: :cash)
+        expect(order).not_to be_settlement_pending
+      end
+
+      it "est faux pour une commande payée en ligne" do
+        create(:payment, order: order, status: :succeeded)
+        expect(order.reload).not_to be_settlement_pending
+      end
+    end
+
+    # C'est le test qui protège le travail des boulangers : un recalcul
+    # automatique ne doit JAMAIS effacer un pointage manuel.
+    describe "non-régression de sync_payment_status!" do
+      it "laisse une commande pointée en cash au statut payé" do
+        order.update!(offline_payment_method: :cash, payment_status: :paid)
+
+        order.sync_payment_status!
+
+        expect(order.reload.payment_status_paid?).to be true
+        expect(order.offline_payment_cash?).to be true
+      end
+    end
+  end
 end

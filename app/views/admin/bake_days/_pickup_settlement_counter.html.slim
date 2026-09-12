@@ -1,0 +1,5 @@
+/ Avancement de l'encaissement d'un point de retrait (#275). Remplacé par Turbo
+/ Stream à chaque pointage.
+- counter = pickup_settlement_counter(bake_day, pickup_location)
+= tag.p id: dom_id(pickup_location, :settlement_counter), class: "mt-1 text-xs font-semibold", style: "color: var(--text-muted);"
+  = "Encaissé #{number_to_currency(counter[:settled_cents] / 100.0, unit: '€', format: '%n %u')} / #{number_to_currency(counter[:total_cents] / 100.0, unit: '€', format: '%n %u')}"

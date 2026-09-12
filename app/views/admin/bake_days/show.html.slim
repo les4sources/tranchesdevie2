@@ -369,6 +369,7 @@
     / des articles pour chaque lieu, et la feuille d'émargement PDF à imprimer.
     .mt-6.hidden data-dashboard-tabs-target="panel" data-panel="pickup"
       - if @dashboard.pickup_location_breakdown.any?
+        == render "admin/bake_days/settlement_banner", bake_day: @bake_day
         .space-y-6
           - @dashboard.pickup_location_breakdown.each do |entry|
             - location = entry[:pickup_location]
@@ -389,6 +390,7 @@
                   / française) : on passe le pluriel explicitement.
                   p.mt-1.text-xs style="color: var(--text-muted);"
                     = "#{pluralize(entry[:orders_count], 'commande', 'commandes')} · #{number_to_currency(entry[:total_cents] / 100.0, unit: '€', format: '%n %u')}"
+                  == render "admin/bake_days/pickup_settlement_counter", bake_day: @bake_day, pickup_location: location
                 = link_to pickup_sheet_admin_bake_day_path(@bake_day, pickup_location_id: location.id), class: adm_btn_class(:primary)
                   | Feuille de retrait (PDF)
 
@@ -415,17 +417,7 @@
                     p.adm-eyebrow.mb-2 Commandes
                     .space-y-2
                       - entry[:orders].each do |order|
-                        .rounded-md.p-3 style="border: 1px solid var(--border-subtle);"
-                          .flex.items-start.justify-between.gap-3
-                            div
-                              p.text-sm.font-semibold style="color: var(--text-strong);" = order.customer.full_name
-                              p.adm-grid-num.text-xs style="color: var(--text-muted);" = order.order_number
-                            p.adm-grid-num.text-sm.font-semibold.whitespace-nowrap style="color: var(--text-strong);"
-                              = number_to_currency(order.total_cents / 100.0, unit: "€", format: "%n %u")
-                          ul.mt-2.space-y-0.5
-                            - order.order_items.each do |item|
-                              li.text-xs style="color: var(--text-muted);"
-                                | #{item.qty} × #{item.product_variant.product&.name || 'Produit supprimé'} (#{item.product_variant.name})
+                        == render "admin/bake_days/pickup_order_card", order: order
               - else
                 p.px-4.py-6.text-center.text-sm style="color: var(--text-muted);"
                   | Aucune commande sur ce point de retrait pour cette fournée.

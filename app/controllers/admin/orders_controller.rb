@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [ :show, :edit, :update, :update_status, :refund, :destroy ]
+  before_action :set_order, only: [ :show, :edit, :update, :update_status, :encaissement, :refund, :destroy ]
   before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
@@ -154,6 +154,32 @@ class Admin::OrdersController < Admin::BaseController
     redirect_to admin_order_path(@order), notice: "Statut mis à jour"
   end
 
+  # Pointage de l'encaissement HORS-LIGNE au moment de la remise (#275).
+  #
+  # Agit UNIQUEMENT sur l'axe financier : `status` n'est jamais touché. C'est
+  # tout l'intérêt d'une action dédiée — au moment de la remise la commande est
+  # déjà `ready`, et `ready → paid` n'est pas une transition autorisée.
+  #
+  # Idempotente : repointer « cash » laisse exactement le même état, `paid_at`
+  # compris (on ne redate pas un pointage déjà fait).
+  def encaissement
+    # Une commande déjà payée pour de vrai (Stripe / portefeuille) ne se pointe
+    # pas à la main : l'app a vu l'argent passer, elle a raison. Garde-fou
+    # serveur — le contrôle n'est pas rendu pour ces commandes.
+    if @order.tracked_payment?
+      return respond_to_encaissement("Cette commande est déjà payée en ligne : rien à pointer.")
+    end
+
+    case params[:method].to_s
+    when "cash", "transfer" then mark_offline_payment(params[:method])
+    when "none" then clear_offline_payment
+    else
+      return respond_to_encaissement("Moyen d'encaissement inconnu.")
+    end
+
+    respond_to_encaissement
+  end
+
   def refund
     service = RefundService.new(@order)
 
@@ -208,6 +234,37 @@ class Admin::OrdersController < Admin::BaseController
 
   # Date de paiement saisie via l'input date (format YYYY-MM-DD), interprétée
   # dans le fuseau horaire de l'application. À défaut, la date/heure courante.
+  # Pointe l'encaissement. `paid_at` n'est posé que s'il est vide : repointer ne
+  # doit pas décaler la date du premier pointage.
+  def mark_offline_payment(method)
+    attributes = { payment_status: :paid, offline_payment_method: method }
+    attributes[:paid_at] = Time.current if @order.read_attribute(:paid_at).blank?
+
+    @order.update!(attributes)
+  end
+
+  # Annule le pointage (le boulanger s'est trompé de bouton). `paid_at` n'est
+  # remis à nil que s'il n'existe aucune trace de paiement réelle — sinon on
+  # effacerait une date qui ne vient pas du pointage.
+  def clear_offline_payment
+    attributes = { payment_status: :unpaid, offline_payment_method: nil }
+    attributes[:paid_at] = nil unless @order.tracked_payment?
+
+    @order.update!(attributes)
+  end
+
+  # La page du jour de cuisson enchaîne les remises : on répond en Turbo Stream
+  # pour ne remplacer que la carte de la commande, sans rechargement.
+  def respond_to_encaissement(alert = nil)
+    respond_to do |format|
+      format.turbo_stream do
+        @encaissement_alert = alert
+        render :encaissement
+      end
+      format.html { redirect_back fallback_location: admin_order_path(@order), alert: alert }
+    end
+  end
+
   def paid_at_from_params
     raw = params[:paid_at]
     return Time.current if raw.blank?

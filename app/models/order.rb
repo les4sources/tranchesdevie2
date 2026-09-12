@@ -20,6 +20,15 @@ class Order < ApplicationRecord
     refunded: 3
   }, prefix: :payment_status
 
+  # Moyen d'encaissement HORS-LIGNE, pointé à la main par le boulanger au moment
+  # de la remise (#275). L'app ne peut pas deviner un paiement en liquide : ce
+  # champ est la seule trace qu'elle en aura jamais. Nul tant que personne n'a
+  # pointé — « non pointé » n'est PAS « impayé ».
+  enum :offline_payment_method, {
+    cash: 0,
+    transfer: 1
+  }, prefix: :offline_payment
+
   # Statut de facturation (axe comptable) — a-t-on émis la facture ?
   enum :invoice_status, {
     not_invoiced: 0,
@@ -163,11 +172,29 @@ class Order < ApplicationRecord
   end
 
   # Méthode d'encaissement réellement enregistrée, indépendamment du statut.
+  #
+  # Priorité aux traces AUTOMATIQUES (Stripe, portefeuille) sur le pointage
+  # manuel (#275) : si l'app a vu l'argent passer, c'est elle qui a raison.
   def payment_method
     return :stripe if payment.present?
     return :wallet if wallet_order_debit.present?
+    return offline_payment_method.to_sym if offline_payment_method.present?
 
     nil
+  end
+
+  # Un encaissement AUTOMATIQUE a-t-il été tracé ? Une telle commande est déjà
+  # payée pour de vrai : la pointer à la main n'aurait aucun sens, et l'écraser
+  # serait une perte d'information (#275).
+  def tracked_payment?
+    payment.present? || wallet_order_debit.present?
+  end
+
+  # Commande remise mais dont l'encaissement n'a pas été pointé (#275).
+  # Volontairement distinct de « impayé » : l'app ne trace pas le liquide, donc
+  # elle ne PEUT PAS savoir si le client a payé.
+  def settlement_pending?
+    !tracked_payment? && offline_payment_method.blank?
   end
 
   def payment_refunded?

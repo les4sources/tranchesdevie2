@@ -119,13 +119,18 @@ class Order < ApplicationRecord
     party_event&.kind_private_party? || false
   end
 
-  # Nombre de pâtons d'une commande party — soit, une boule par personne. La
-  # ligne « forfait » (une par commande, quel que soit le nombre de convives)
-  # n'en fait pas partie : seules comptent les variantes du produit party.
+  # Nombre de pâtons d'une commande party — soit, une boule par personne, que la
+  # party soit privée ou publique (cf. `Product#paton_line?`). SOURCE UNIQUE :
+  # l'admin lisait le même nombre à trois endroits, chacun avec sa propre boucle,
+  # et celle du tableau de bord oubliait les parties publiques — leurs cartes
+  # annonçaient « 0 pâton » quand le tableau, lui, affichait les quantités.
+  #
+  # `includes` seulement si la collection n'est pas déjà chargée : les écrans qui
+  # précèdent leurs commandes (tableau de bord d'une fournée, index des parties)
+  # rappelleraient sinon la base une fois par commande.
   def party_paton_count
-    order_items.includes(product_variant: :product).sum do |item|
-      item.product_variant.product.pizza_party_role_party? ? item.qty : 0
-    end
+    items = order_items.loaded? ? order_items : order_items.includes(product_variant: :product)
+    items.sum { |item| item.product_variant.product.paton_line? ? item.qty : 0 }
   end
 
   def can_be_cancelled_by_customer?

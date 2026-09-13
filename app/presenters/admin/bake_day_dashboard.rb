@@ -395,12 +395,10 @@ module Admin
       }
     end
 
-    # Une boule par personne. La ligne « forfait » — unique par commande, quel
-    # que soit le nombre de convives — n'est pas un pâton.
+    # Une boule par personne, parties publiques comprises — le compte vit sur
+    # `Order#party_paton_count`.
     def paton_count_for(order)
-      order.order_items.sum do |item|
-        item.product_variant.product.pizza_party_role_party? ? item.qty : 0
-      end
+      order.party_paton_count
     end
 
     def production_order_items

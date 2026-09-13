@@ -62,6 +62,15 @@ class Product < ApplicationRecord
     product_flours.includes(:flour).map { |pf| "#{pf.flour.name} #{pf.percentage} %" }.join(", ")
   end
 
+  # Une ligne de ce produit est-elle un PÂTON, soit une boule par personne ?
+  # Vrai pour les deux formes de party — la privée (« Nombre de personnes ») et
+  # la publique (inscriptions adulte/enfant, un convive = une boule, cf.
+  # PublicPartyRevenueService qui compte une personne par unité) — jamais pour le
+  # forfait, unique par commande quel que soit le nombre de convives.
+  def paton_line?
+    pizza_party_role_party? || pizza_party_role_public_party?
+  end
+
   # Un sac à pain est compté d'office pour chaque unité de PAIN PRODUIT (#52) :
   # catégorie « breads » et production maison (internal_category « boulangerie »).
   # Les pâtons (pâte à pizza, catégorie dough_balls) et les reventes (épicerie,

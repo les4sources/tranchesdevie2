@@ -138,5 +138,36 @@ RSpec.describe Admin::BakeDayDashboard, "parties à préparer" do
       expect(friday_entries.first[:kind_label]).to eq("Party publique")
       expect(dashboard_for(tuesday_bake).parties_to_prepare).to be_empty
     end
+
+    # Le bloc annonçait « 0 pâton » pour toute inscription publique — le compte
+    # ne regardait que le produit de la party PRIVÉE — alors que le tableau des
+    # clients, lui, affichait bien les quantités. Un convive = une boule, quelle
+    # que soit la variante (adulte, enfant).
+    it "compte une boule par convive, adultes et enfants confondus" do
+      enfant = create(:product_variant, product: public_product, name: "enfant",
+                                        price_cents: 600, flour_quantity: 200)
+      event = create(:party_event, :public_party, held_on: friday)
+      PartyOrderCreationService.new(
+        customer: customer, party_event: event,
+        cart_items: [
+          { "product_variant_id" => adulte.id.to_s, "qty" => "5" },
+          { "product_variant_id" => enfant.id.to_s, "qty" => "3" }
+        ]
+      ).call.update!(status: :paid)
+
+      expect(dashboard_for(friday_bake).parties_to_prepare.first[:paton_count]).to eq(8)
+    end
+
+    # Le forfait n'existe que sur les parties privées, et n'est jamais un pâton.
+    it "ne compte pas la ligne forfait d'une party privée" do
+      order = book_party(held_on: friday, slot: :soir, qty: 11)
+      forfait_product = create(:product, :pizza_party_forfait, category: :dough_balls)
+      forfait_variant = create(:product_variant, product: forfait_product, name: "forfait",
+                                                 price_cents: 4_000, flour_quantity: 0)
+      order.order_items.create!(product_variant: forfait_variant, qty: 1,
+                                unit_price_cents: forfait_variant.price_cents)
+
+      expect(dashboard_for(friday_bake).parties_to_prepare.first[:paton_count]).to eq(11)
+    end
   end
 end

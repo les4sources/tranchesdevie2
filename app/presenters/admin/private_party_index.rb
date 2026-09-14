@@ -72,7 +72,7 @@ module Admin
     end
 
     def paton_count(order)
-      order.order_items.sum { |item| item.product_variant.product.pizza_party_role_party? ? item.qty : 0 }
+      order.party_paton_count
     end
 
     def forfait?(order)

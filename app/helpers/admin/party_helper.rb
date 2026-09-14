@@ -5,15 +5,12 @@
 # On passe toujours par la VARIANTE de chaque ligne (son produit, son nom) et
 # jamais par une comparaison de prix : les tarifs bougent, la nomenclature non.
 module Admin::PartyHelper
-  # Nombre de pâtons d'une réservation privée — une boule par personne. La ligne
-  # « forfait », unique par commande quel que soit le nombre de convives, n'est
-  # pas un pâton.
+  # Nombre de pâtons d'une réservation — une boule par personne. Le compte vit
+  # sur `Order#party_paton_count`, source unique côté modèle.
   def party_paton_count(order)
     return 0 if order.nil?
 
-    order.order_items.sum do |item|
-      item.product_variant.product.pizza_party_role_party? ? item.qty : 0
-    end
+    order.party_paton_count
   end
 
   # Inscriptions d'une party publique ventilées adulte / enfant. Les variantes du

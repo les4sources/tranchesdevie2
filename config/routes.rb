@@ -158,6 +158,9 @@ Rails.application.routes.draw do
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do
         patch :update_status
+        # Pointage de l'encaissement hors-ligne à la remise (#275) : axe
+        # financier uniquement, ne touche pas au statut logistique.
+        patch :encaissement
         post :refund
       end
     end

@@ -64,7 +64,10 @@ module ApplicationHelper
   def order_payment_method_label(method)
     labels = {
       stripe: "Carte / Bancontact",
-      wallet: "Portefeuille"
+      wallet: "Portefeuille",
+      # Pointés à la main par le boulanger à la remise (#275).
+      cash: "Liquide",
+      transfer: "Virement"
     }
 
     labels[method&.to_sym]

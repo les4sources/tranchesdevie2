@@ -88,6 +88,18 @@ n'arrivera que plus tard.
 > **farine**, mais **pas dans le four** ni dans les **moules** : les pizzas
 > cuisent au four à bois, pas dans le four à pain de la fournée.
 
+## Pointer l'encaissement à la remise
+
+Quand tu remets une commande, **touche « Liquide » ou « Virement »** sur sa carte, dans l'onglet **Par point de retrait**. Un seul tap suffit : rien à confirmer, rien à valider. La carte passe au vert, et le compteur du lieu (« Encaissé 13,50 € / 27,00 € ») avance aussitôt.
+
+Tu t'es trompée de bouton ? **Retouche le bouton déjà actif** : ça annule le pointage, et la commande redevient non pointée. Un tap dans un sens, un tap dans l'autre.
+
+Les commandes déjà payées en ligne (carte, Bancontact) ou réglées depuis le portefeuille **n'ont pas ces boutons** : l'application a déjà vu l'argent passer, elle affiche simplement le moyen de paiement. Il n'y a rien à pointer.
+
+En haut de l'onglet, un bandeau annonce le montant du jour dont l'encaissement n'a pas encore été pointé. **Ce n'est pas un montant impayé** : l'application ne voit pas les paiements en liquide, donc tant que personne n'a pointé, elle ne sait tout simplement pas comment la commande a été réglée. Le bandeau disparaît quand tout le monde est pointé.
+
+> Ce pointage n'est utile que si on le fait **au moment de la remise**. Pointé le lendemain de mémoire, il ne vaut pas grand-chose pour recouper avec la banque.
+
 ## Les feuilles à imprimer
 
 Depuis une fournée, tu peux sortir :

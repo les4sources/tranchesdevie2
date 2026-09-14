@@ -1,0 +1,19 @@
+/ Réponse au pointage d'encaissement (#275) : on remplace la carte de la
+/ commande et le compteur de son lieu de retrait, rien d'autre — le boulanger
+/ enchaîne les remises sans rechargement.
+= turbo_stream.replace dom_id(@order, :pickup_card) do
+  == render "admin/bake_days/pickup_order_card", order: @order
+
+- if @order.bake_day && @order.pickup_location
+  = turbo_stream.replace dom_id(@order.pickup_location, :settlement_counter) do
+    == render "admin/bake_days/pickup_settlement_counter", bake_day: @order.bake_day, pickup_location: @order.pickup_location
+
+/ La bannière du jour aussi : laissée périmée, elle annoncerait un montant faux.
+- if @order.bake_day
+  = turbo_stream.replace dom_id(@order.bake_day, :settlement_banner) do
+    == render "admin/bake_days/settlement_banner", bake_day: @order.bake_day
+
+- if @encaissement_alert.present?
+  = turbo_stream.append "flash" do
+    .adm-card.p-3.text-sm style="border-color: var(--warning-200); background: var(--warning-100); color: var(--warning-700);"
+      = @encaissement_alert

@@ -23,6 +23,32 @@ module Admin
       admin_selectable_bake_days(order).reject { |day| day.baked_on >= Date.current }.map(&:id)
     end
 
+    # Compteur « encaissé X / Y » d'un point de retrait (#275). Recalculé à
+    # chaque pointage : c'est ce qui donne au boulanger l'avancement de sa
+    # remise sans quitter la page.
+    #
+    # Les commandes prises en compte sont celles que la page affiche déjà pour
+    # ce lieu — mêmes statuts de production, même fournée.
+    def pickup_settlement_counter(bake_day, pickup_location)
+      orders = Order.where(bake_day: bake_day, pickup_location: pickup_location)
+                    .where(status: Admin::BakeDayDashboard::PRODUCTION_STATUSES)
+                    .includes(:payment, :wallet_transactions)
+
+      settled = orders.reject(&:settlement_pending?)
+
+      { settled_cents: settled.sum(&:total_cents), total_cents: orders.sum(&:total_cents) }
+    end
+
+    # Montant du jour dont l'encaissement n'est pas pointé (#275), recalculé
+    # après chaque pointage pour que la bannière ne reste pas périmée à l'écran.
+    def bake_day_settlement_pending_cents(bake_day)
+      Order.where(bake_day: bake_day)
+           .where(status: Admin::BakeDayDashboard::PRODUCTION_STATUSES)
+           .includes(:payment, :wallet_transactions)
+           .select(&:settlement_pending?)
+           .sum(&:total_cents)
+    end
+
     private
 
     def admin_selectable_bake_days(order)

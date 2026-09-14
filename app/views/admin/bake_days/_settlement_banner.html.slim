@@ -1,0 +1,17 @@
+/ Avancement de l'encaissement sur la JOURNÉE (#275). Formulé pour ne PAS se
+/ lire comme un impayé : l'app ne trace pas le liquide, elle ne peut donc pas
+/ savoir si le client a payé.
+/
+/ Remplacé par Turbo Stream après chaque pointage — une bannière périmée
+/ annoncerait un montant faux au boulanger.
+- pending_cents = bake_day_settlement_pending_cents(bake_day)
+= tag.div id: dom_id(bake_day, :settlement_banner)
+  - if pending_cents.positive?
+    .adm-card.mb-4.p-3.text-sm style="border-color: var(--warning-200); background: var(--warning-100);"
+      p.font-semibold style="color: var(--warning-700);"
+        = "Encaissement non renseigné : #{number_to_currency(pending_cents / 100.0, unit: '€', format: '%n %u')}"
+      p.mt-1.text-xs style="color: var(--text-body);"
+        | Ce montant n'est pas un impayé : ce sont les commandes dont personne n'a encore pointé le moyen d'encaissement. Touchez « Liquide » ou « Virement » sur une commande au moment de la remise.
+  - else
+    .adm-card.mb-4.p-3.text-sm style="border-color: var(--success-200); background: var(--success-100);"
+      p.font-semibold style="color: var(--success-700);" Encaissement pointé sur toutes les commandes du jour.

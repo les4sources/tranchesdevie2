@@ -65,6 +65,8 @@ gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.1"
+# image_processing 2.x ne tire plus ruby-vips : il faut le déclarer (Active Storage utilise :vips par défaut)
+gem "ruby-vips", "~> 2.2"
 
 # Decorator pattern for Rails models
 gem "draper"

@@ -513,6 +513,8 @@ class CheckoutController < ApplicationController
     # Une commande cash naît `unpaid` et ne passe pas par OrderPaymentFinalizer :
     # la notification équipe d'une party privée se branche donc ici aussi (#168).
     OrderNotificationService.send_party_team_notification(order)
+    # …et pose le post-it correspondant sur le calendrier de claudy (#259).
+    OrderNotificationService.sync_party_calendar_note(order)
 
     # Clear cart and session data
     session[:cart] = []

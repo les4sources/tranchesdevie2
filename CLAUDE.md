@@ -177,6 +177,8 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `PARTY_NOTIFICATION_TO` (internal recipient of the new-private-party notification, defaults to `boulangerie@les4sources.be`)
 - `PARTY_NOTIFICATION_CC` (copied on that notification, defaults to `sejours@les4sources.be`)
 - `TRANCHESDEVIE_API_KEY` (Bearer token for the private read-only agent API — see Agent API below)
+- `CLAUDY_API_URL` (base URL of claudy, the Les 4 Sources app — defaults to `https://app.les4sources.be`)
+- `CLAUDY_API_TOKEN` (Bearer token for claudy's notes API — no default; when blank the calendar-note sync is a silent no-op, which is the state of dev and CI)
 
 ## Agent API (private, read-only)
 

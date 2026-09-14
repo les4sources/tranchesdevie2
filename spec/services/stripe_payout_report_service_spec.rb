@@ -134,13 +134,31 @@ RSpec.describe StripePayoutReportService do
       expect(report.period_orders).to be_empty
     end
 
-    it "exclut les commandes non finalisées (ex. unpaid)" do
+    # Depuis #274, l'assiette comptable inclut `unpaid` et `no_show` : un
+    # checkout réglé en cash (client autorisé, donc SANS Payment Stripe) y
+    # entrerait. Ce rapport rapproche des versements Stripe — il ne doit voir
+    # que les commandes qui ont réellement un paiement Stripe.
+    it "exclut un checkout réglé en cash (aucun Payment Stripe), quel que soit son statut" do
       bake_day = create(:bake_day, baked_on: Date.new(2026, 5, 12))
       create(:order, :unpaid, source: :checkout, bake_day: bake_day, total_cents: 7_000)
+      create(:order, :ready, source: :checkout, bake_day: bake_day, total_cents: 3_000)
+      create(:order, :picked_up, source: :checkout, bake_day: bake_day, total_cents: 2_000)
 
       report = described_class.new(start_date: start_date, end_date: end_date).call
 
       expect(report.period_orders).to be_empty
+      expect(report.period_gross_cents).to eq(0)
+    end
+
+    it "garde une commande qui a bien un Payment Stripe, même au statut ready" do
+      bake_day = create(:bake_day, baked_on: Date.new(2026, 5, 12))
+      order = create(:order, :ready, source: :checkout, bake_day: bake_day, total_cents: 6_000)
+      create(:payment, order: order, stripe_fee_cents: 150)
+
+      report = described_class.new(start_date: start_date, end_date: end_date).call
+
+      expect(report.period_orders.map(&:order_number)).to eq([ order.order_number ])
+      expect(report.period_gross_cents).to eq(6_000)
     end
   end
 

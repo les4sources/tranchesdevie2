@@ -77,14 +77,21 @@ class PizzaPartyRevenueService
 
       party_orders += 1
       date = order.bake_day&.baked_on || Date.current
+      # CA NET par ligne (#274) : le CA party doit se lire dans la même unité que
+      # `orders.total_cents`, sur lequel s'appuie le CA du jour. Compté au brut,
+      # toute remise consentie sur une party était retranchée de la marge PAIN —
+      # donc du 70/30 des boulangers.
+      net_by_item = Order.net_cents_by_item(order)
 
       party_items.each do |item|
         qty = item.qty
         unit_cost = item.product_variant.cost_price_cents(on: date) || 0
 
         persons += qty
-        sale += item.unit_price_cents * qty
+        sale += net_by_item.fetch(item.id, 0)
         dough_cost += unit_cost * qty
+        # Le barème par personne reste BRUT : il rémunère une prestation
+        # (pâtons pétris, four tenu), pas un encaissement. Seul `sale` change.
         four_sources += qty * (FOUR_SOURCES_PER_PERSON_CENTS + paton_bonus_cents)
         bakers += qty * (BAKERS_PER_PERSON_CENTS - unit_cost - paton_bonus_cents)
       end
@@ -92,7 +99,7 @@ class PizzaPartyRevenueService
       forfait_items = order.order_items.select { |item| forfait_item?(item) }
       next if forfait_items.empty?
 
-      sale += forfait_items.sum { |item| item.unit_price_cents * item.qty }
+      sale += forfait_items.sum { |item| net_by_item.fetch(item.id, 0) }
       four_sources += FORFAIT_FOUR_SOURCES_CENTS
       bakers += FORFAIT_BAKERS_CENTS
     end

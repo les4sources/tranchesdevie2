@@ -18,7 +18,13 @@ RSpec.describe BakeDay, "visibilité côté boutique" do
            cut_off_at: 6.hours.from_now)
   end
 
-  let(:mardi) { create(:bake_day, :tuesday) }
+  # Le mardi de la semaine PROCHAINE, pas le mardi imminent : le cut-off d'un
+  # mardi tombe le dimanche à 18:00, donc du dimanche soir au mardi la fournée
+  # « ordinaire encore ouverte » était en réalité déjà fermée, et la suite
+  # échouait deux jours et demi par semaine.
+  let(:mardi) do
+    create(:bake_day, :tuesday, baked_on: Date.current.next_occurring(:tuesday) + 7)
+  end
 
   describe "#open_to_customers?" do
     it "accepte une fournée ordinaire encore ouverte" do

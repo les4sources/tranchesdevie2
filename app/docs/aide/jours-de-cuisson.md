@@ -97,6 +97,20 @@ Depuis une fournée, tu peux sortir :
 - **La feuille compta** — le récap chiffré de la journée (validation des
   montants boulangers / Les 4 Sources, au format de la feuille de Stéphanie).
 
+## La feuille compta
+
+![La feuille compta d'un jour de cuisson](shot:bake-day-sheet)
+
+Le chiffre d'affaires affiché est un **CA facturé** : une commande compte dès qu'elle est livrée, qu'elle soit encaissée ou non. C'est ce qui fait entrer dans le total les commandes payées en liquide, celles des épiceries, de Semisto et des restaurants, et toutes celles que tu encodes toi-même depuis l'admin — elles naissent « non payées » et n'apparaissaient pas dans le CA avant. Les seules ventes qui restent dehors sont celles qui ne correspondent à aucun pain livré : les commandes annulées, les commandes du calendrier pas encore confirmées, et les paiements en ligne abandonnés en cours de route.
+
+Le tableau **Ventes par format** liste chaque format vendu, pains d'abord, puis les **Pizza parties** sur leurs propres lignes avec un sous-total séparé. Le total du tableau égale toujours, au centime, la carte **CA total** en bas de page — si jamais un écart apparaissait, la feuille te le signalerait en rouge : ce serait un bug à remonter.
+
+### Le bloc « Encaissement »
+
+Ce bloc répartit le CA du jour selon le moyen de paiement que l'application a **réellement enregistré** : Stripe (paiement en ligne), portefeuille, et « aucun paiement enregistré ».
+
+Cette dernière ligne demande une précision importante : **ce n'est pas un impayé.** L'application ne trace pas les encaissements en liquide — quand tu es payée en espèces au comptoir, rien ne vient le lui dire. Une commande réglée en liquide se retrouve donc forcément dans cette ligne. Elle répond à la question « par quel canal l'argent est-il passé, d'après ce que l'app sait ? », et surtout pas à « qui me doit encore de l'argent ? ». Pour cette seconde question, c'est la facturation des clients professionnels qui fait foi.
+
 ## Annuler une fournée
 
 Si on ne cuit pas un jour prévu : ouvre la fournée → **Annuler**. Une

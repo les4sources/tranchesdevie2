@@ -34,10 +34,11 @@ class BakeDayPartyOrders
     new(bake_day, statuses: PRODUCTION_STATUSES).call
   end
 
-  # Statuts « finalisés » : ce qui compte en comptabilité (mêmes que
-  # `Order.completed`).
+  # Statuts « finalisés » : ce qui compte en comptabilité. Référence la
+  # constante plutôt que de recopier la liste (#274) — l'app n'a qu'une seule
+  # définition de « une vente ».
   def self.completed(bake_day)
-    new(bake_day, statuses: %i[paid ready picked_up]).call
+    new(bake_day, statuses: Order::COMPLETED_STATUSES).call
   end
 
   def initialize(bake_day, statuses:)

@@ -8,16 +8,7 @@ class ProcessPlannedOrdersJob < ApplicationJob
     @cancelled_count = 0
     @debited_cents = 0
 
-    # Process every BakeDay whose cut-off has passed and that still has
-    # planned orders to handle. The underlying service is idempotent
-    # (it only touches Order.planned), so catching up on older cut-offs —
-    # after a delayed run, restart, or incident — is safe and required
-    # to avoid leaving orders stuck in the `planned` state.
-    bake_days = BakeDay
-                  .where("cut_off_at <= ?", Time.current)
-                  .where(id: Order.planned.select(:bake_day_id))
-
-    bake_days.find_each do |bake_day|
+    self.class.pending_bake_days.find_each do |bake_day|
       Rails.logger.info("Processing planned orders for bake day #{bake_day.baked_on}")
 
       order_ids = Order.planned.where(bake_day: bake_day).pluck(:id)
@@ -28,6 +19,20 @@ class ProcessPlannedOrdersJob < ApplicationJob
       @cancelled_count += processed.cancelled.count
       @debited_cents   += processed.paid.sum(:total_cents)
     end
+  end
+
+  # Fournées dont le cut-off est passé et qui portent encore des commandes
+  # `planned`. Le service sous-jacent est idempotent (il ne touche que
+  # Order.planned) : rattraper des cut-offs plus anciens — après un run retardé,
+  # un redémarrage ou un incident — est sûr, et nécessaire pour ne laisser
+  # aucune commande coincée en `planned`.
+  #
+  # Depuis #274, le job passe tous les jours à 16h05 : ce scope est ce qui rend
+  # le rythme quotidien sans effet les jours sans cut-off.
+  def self.pending_bake_days
+    BakeDay
+      .where(cut_off_at: ..Time.current)
+      .where(id: Order.planned.select(:bake_day_id))
   end
 
   private

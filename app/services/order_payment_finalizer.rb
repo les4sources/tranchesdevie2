@@ -26,6 +26,7 @@ class OrderPaymentFinalizer
     if payment.previously_new_record?
       OrderNotificationService.send_confirmation(@order)
       OrderNotificationService.send_party_team_notification(@order)
+      OrderNotificationService.sync_party_calendar_note(@order)
       FetchStripeFeeJob.perform_later(payment)
     end
 

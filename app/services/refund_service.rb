@@ -68,6 +68,12 @@ class RefundService
   def release_private_party_slot
     event = @order.party_event
     return unless event&.kind_private_party?
+
+    # Le post-it du calendrier de claudy suit CETTE commande (#259) : il part dès
+    # qu'elle est remboursée, avant même de décider du sort de l'événement — un
+    # post-it fantôme est pire que pas de post-it du tout.
+    OrderNotificationService.remove_party_calendar_note(@order)
+
     return if event.orders.where.not(id: @order.id).where.not(status: Order.statuses[:cancelled]).exists?
 
     event.soft_delete!

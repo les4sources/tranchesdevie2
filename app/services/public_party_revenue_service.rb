@@ -78,14 +78,20 @@ class PublicPartyRevenueService
       party_orders += 1
       date = order.bake_day&.baked_on || Date.current
       rate = four_sources_rate(date)
+      # CA NET par ligne (#274), pour la même raison que côté party privée : le
+      # CA party se retranche de la marge pain, il doit donc se lire dans la
+      # même unité que `orders.total_cents`.
+      net_by_item = Order.net_cents_by_item(order)
 
       items.each do |item|
         qty = item.qty
         price = item.unit_price_cents
+        # Le split reste calculé sur le prix unitaire BRUT : le barème rémunère
+        # une prestation, pas un encaissement. Seul `sale` passe au net.
         split = self.class.unit_split(price: price, variant: item.product_variant, date: date, rate: rate)
 
         persons += qty
-        sale += price * qty
+        sale += net_by_item.fetch(item.id, 0)
         dough_cost += split[:cost] * qty
         four_sources += split[:four_sources] * qty
         bakers += split[:bakers] * qty

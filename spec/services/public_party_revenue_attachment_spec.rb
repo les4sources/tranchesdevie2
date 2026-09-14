@@ -120,11 +120,28 @@ RSpec.describe "Rattachement comptable des pizza parties publiques" do
       expect(counted.map(&:date)).to eq([ tuesday ])
     end
 
-    it "une inscription non payée ne contribue à rien" do
+    # Depuis #274, le CA est un CA FACTURÉ : une inscription livrée mais pas
+    # encore encaissée contribue.
+    it "une inscription non encaissée (unpaid) contribue quand même" do
       event = create(:party_event, :public_party, held_on: saturday)
       order = create(:order, :unpaid, customer: customer, bake_day: nil, party_event: event,
                                       source: :party, total_cents: 5_000)
       create(:order_item, order: order, product_variant: adulte, qty: 5, unit_price_cents: 1_000)
+
+      result = report(friday, saturday)
+
+      expect(result.total_public_party_persons).to eq(5)
+      expect(result.total_public_party_revenue_cents).to eq(order.total_cents)
+    end
+
+    it "une inscription annulée, en attente ou planifiée ne contribue à rien" do
+      event = create(:party_event, :public_party, held_on: saturday)
+
+      %i[cancelled pending planned].each do |status|
+        order = create(:order, status, customer: customer, bake_day: nil, party_event: event,
+                                       source: :party, total_cents: 5_000)
+        create(:order_item, order: order, product_variant: adulte, qty: 5, unit_price_cents: 1_000)
+      end
 
       result = report(friday, saturday)
 

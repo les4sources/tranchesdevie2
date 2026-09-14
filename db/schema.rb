@@ -327,6 +327,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_12_020000) do
     t.text "customer_note"
     t.boolean "manually_added", default: false, null: false
     t.integer "offline_payment_method"
+    t.bigint "claudy_note_id"
     t.index ["bake_day_id"], name: "index_orders_on_bake_day_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["order_number"], name: "index_orders_on_order_number", unique: true

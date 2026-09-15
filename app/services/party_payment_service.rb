@@ -39,12 +39,43 @@ class PartyPaymentService
       return false
     end
 
+    capacity_errors = capacity_errors_for(persons)
+
+    if capacity_errors.any?
+      @errors.concat(capacity_errors)
+      return false
+    end
+
     ActiveRecord::Base.transaction do
       apply_headcount(request, persons)
       @order.reload
     end
 
     @order.total_cents
+  end
+
+  # La fournée qui pétrira ces pâtons supporte-t-elle le nombre confirmé ?
+  #
+  # La cible est la fournée DU JOUR MÊME (`baked_on == held_on`) et non
+  # `preparation_bake_day`, qui retombe sur la fournée précédente quand celle du
+  # jour n'existe pas encore : on contrôlerait alors la capacité d'un mardi déjà
+  # cuit pour une party du vendredi. Les fournées ne sont créées qu'à quelques
+  # jours d'avance : quand celle du jour n'existe pas, on ne bloque pas le
+  # paiement — on le trace.
+  def capacity_errors_for(persons)
+    bake_day = BakeDay.find_by(baked_on: @order.party_event&.held_on)
+
+    if bake_day.nil?
+      Rails.logger.info("PartyPayment: aucune fournée le #{@order.party_event&.held_on} — capacité non vérifiée (commande #{@order.id})")
+      return []
+    end
+
+    paton_variant = @order.order_items.includes(product_variant: :product)
+                          .find { |item| paton?(item) }&.product_variant
+    return [] if paton_variant.nil?
+
+    result = BakeCapacityService.new(bake_day).cart_fits?([ { "product_variant_id" => paton_variant.id, "qty" => persons } ])
+    result[:fits] ? [] : result[:errors]
   end
 
   # Client secret d'un PaymentIntent dont le montant correspond à la commande.

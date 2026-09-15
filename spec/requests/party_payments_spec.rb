@@ -102,6 +102,45 @@ RSpec.describe "Paiement d'une réservation de Pizza party", type: :request do
     end
   end
 
+  describe "contrôle de capacité à la confirmation" do
+    let(:flour) { create(:flour, kneader_limit_grams: 5_000) }
+
+    before do
+      create(:product_flour, product: party_product, flour: flour, percentage: 100)
+      party_variant.update!(flour_quantity: 250)
+      allow(Stripe::PaymentIntent).to receive(:create).and_return(stripe_intent)
+    end
+
+    it "refuse une hausse qui ferait sauter le pétrin, sans rien débiter" do
+      create(:bake_day, baked_on: order.party_event.held_on)
+
+      # 25 pâtons × 250 g = 6 250 g, au-delà des 5 kg du pétrin.
+      post party_payment_intent_path(token: order.public_token), params: { persons: 25 }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)["error"]).to match(/Pétrin/)
+      expect(Stripe::PaymentIntent).not_to have_received(:create)
+      expect(order.reload.party_paton_count).to eq(8)
+    end
+
+    it "laisse passer une hausse que la fournée supporte" do
+      create(:bake_day, baked_on: order.party_event.held_on)
+
+      post party_payment_intent_path(token: order.public_token), params: { persons: 12 }
+
+      expect(response).to have_http_status(:ok)
+      expect(order.reload.party_paton_count).to eq(12)
+    end
+
+    it "ne bloque pas le paiement quand la fournée du jour n'existe pas encore" do
+      expect(BakeDay.find_by(baked_on: order.party_event.held_on)).to be_nil
+
+      post party_payment_intent_path(token: order.public_token), params: { persons: 40 }
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "réutilisation du PaymentIntent" do
     it "réutilise le PI vivant et met son montant à jour au lieu d'en créer un second" do
       order.update!(payment_intent_id: "pi_live")

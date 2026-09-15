@@ -39,6 +39,52 @@ RSpec.describe 'Stripe webhook', type: :request do
     post '/webhooks/stripe', params: '{}', headers: { 'HTTP_STRIPE_SIGNATURE' => 't=1,v1=sig' }
   end
 
+  describe 'payment_intent.succeeded — réservation de Pizza party' do
+    # Le spec parent crée déjà une fournée (donc un point de retrait par
+    # défaut) : on réutilise celui qui existe plutôt que d'en poser un second,
+    # que le modèle refuse.
+    let!(:default_pickup) do
+      PickupLocation.default_location || create(:pickup_location, name: "Les 4 Sources", default: true)
+    end
+    let!(:party_product) { create(:product, :pizza_party) }
+    let!(:party_variant) { create(:product_variant, product: party_product, price_cents: 1200) }
+    let!(:forfait_product) { create(:product, :pizza_party_forfait) }
+    let!(:forfait_variant) { create(:product_variant, product: forfait_product, price_cents: 4000, channel: "admin") }
+
+    let(:party_order) do
+      request = create(:party_request, customer: create(:customer))
+      order = PartyDecisionService.new(request, decided_by: "Romane").accept
+      order.update!(payment_intent_id: party_pi_id)
+      order
+    end
+    let(:party_pi_id) { "pi_party_#{SecureRandom.hex(6)}" }
+
+    def party_event_payload(amount:)
+      pi = double('Stripe::PaymentIntent', id: party_pi_id, metadata: {}, amount: amount)
+      double('Stripe::Event', id: "evt_#{SecureRandom.hex(6)}", type: 'payment_intent.succeeded',
+                              data: double('event_data', object: pi))
+    end
+
+    it 'confirme la party même si le client a fermé son onglet' do
+      order = party_order
+
+      deliver(party_event_payload(amount: order.total_cents))
+
+      expect(order.reload).to be_paid
+      expect(order.payment).to be_present
+    end
+
+    it "signale un écart entre le montant encaissé et la commande, sans bloquer" do
+      order = party_order
+      allow(Rails.logger).to receive(:error)
+
+      deliver(party_event_payload(amount: 999))
+
+      expect(Rails.logger).to have_received(:error).with(/montant encaissé 999/)
+      expect(order.reload).to be_paid
+    end
+  end
+
   describe 'payment_intent.succeeded' do
     it 'marks the reserved order as paid' do
       event = fabricate_event(type: 'payment_intent.succeeded')

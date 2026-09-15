@@ -257,6 +257,7 @@ Rails.application.routes.draw do
         post :accept
         post :refuse
         post :retract
+        patch :update_headcount
       end
     end
     # Page de confirmation ouverte depuis un lien e-mail signé. GET = afficher un

@@ -107,6 +107,23 @@ class PartyPaymentService
     nil
   end
 
+  # Aligne le montant d'un PaymentIntent DÉJÀ existant sur la commande, sans
+  # jamais en créer un : c'est le chemin de la correction admin, où il n'y a
+  # aucune raison d'ouvrir un paiement que le client n'a pas demandé.
+  def sync_payment_intent_amount!
+    return false if @order.payment_intent_id.blank?
+
+    intent = reusable_intent
+    return false if intent.nil?
+    return true if intent.amount == @order.total_cents
+
+    Stripe::PaymentIntent.update(intent.id, amount: @order.total_cents)
+    true
+  rescue Stripe::StripeError => e
+    Rails.logger.warn("PartyPayment: montant PI non synchronisé (commande #{@order.id}): #{e.message}")
+    false
+  end
+
   private
 
   # Met la ligne « pâtons » au nombre confirmé, laisse le forfait à 1, et

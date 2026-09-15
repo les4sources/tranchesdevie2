@@ -162,6 +162,41 @@ RSpec.describe "Admin — décision sur une demande de Pizza party", type: :requ
     end
   end
 
+  describe "correction du nombre par la boulangerie" do
+    before do
+      post accept_admin_party_request_path(party_request), params: { decided_by: "Romane" }
+    end
+
+    it "recalcule le montant aux tarifs figés et reprévient le client" do
+      order = party_request.reload.order
+
+      expect {
+        patch update_headcount_admin_party_request_path(party_request), params: { persons: 15 }
+      }.to have_enqueued_mail(PartyRequestMailer, :payment_prompt)
+
+      order.reload
+      expect(order.party_paton_count).to eq(15)
+      expect(order.total_cents).to eq(15 * 1200 + 4000)
+    end
+
+    it "refuse un nombre inférieur à 1" do
+      order = party_request.reload.order
+
+      patch update_headcount_admin_party_request_path(party_request), params: { persons: 0 }
+
+      expect(order.reload.party_paton_count).to eq(1)
+    end
+
+    it "refuse de corriger une réservation déjà payée" do
+      order = party_request.reload.order
+      order.update!(status: :paid)
+
+      patch update_headcount_admin_party_request_path(party_request), params: { persons: 15 }
+
+      expect(order.reload.party_paton_count).to eq(1)
+    end
+  end
+
   describe "la file des demandes" do
     it "liste les demandes en attente et les réservations non payées" do
       pending_request = party_request
@@ -176,6 +211,14 @@ RSpec.describe "Admin — décision sur une demande de Pizza party", type: :requ
       expect(response.body).to include("Validées, paiement attendu")
       expect(response.body).to include(pending_request.customer.email)
       expect(response.body).to include(accepted.customer.email)
+    end
+
+    it "signale dans la file les demandes qu'une party publique rend invalidables" do
+      create(:party_event, :public_party, held_on: party_request.held_on)
+
+      get admin_party_requests_path
+
+      expect(response.body).to include("Conflit : party publique ce soir-là")
     end
 
     it "affiche le compteur de demandes en attente dans la navigation" do

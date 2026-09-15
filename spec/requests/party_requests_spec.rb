@@ -136,7 +136,7 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
     end
 
     it "refuse un e-mail déjà rattaché à un autre client, avec un message explicite" do
-      create(:customer, email: "camille@example.com")
+      create(:customer, phone_e164: "+32470500500", email: "camille@example.com")
 
       expect { submit }.not_to change(PartyRequest, :count)
       expect(response).to have_http_status(:unprocessable_entity)
@@ -163,7 +163,10 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
   end
 
   describe "suivi et annulation" do
-    let(:party_request) { create(:party_request) }
+    let(:party_request) do
+      create(:party_request,
+             customer: create(:customer, phone_e164: "+32470600600", email: "suivi@example.com"))
+    end
 
     it "affiche l'état de la demande sans connexion" do
       get party_request_path(token: party_request.public_token)
@@ -177,7 +180,8 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
     end
 
     it "refuse d'annuler une demande déjà traitée" do
-      refused = create(:party_request, :refused)
+      refused = create(:party_request, :refused,
+                       customer: create(:customer, phone_e164: "+32470600601", email: "refuse@example.com"))
       delete cancel_party_request_path(token: refused.public_token)
       expect(refused.reload).to be_state_refused
     end

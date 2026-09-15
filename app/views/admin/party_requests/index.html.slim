@@ -27,6 +27,9 @@ section.mb-8
               td.px-4.py-3.font-medium
                 = I18n.l(request.held_on, format: :long_with_day).capitalize
                 .text-xs style="color: var(--text-muted);" = request.slot_label
+                - if @public_party_dates.include?(request.held_on)
+                  .mt-1.text-xs.font-semibold style="color: var(--danger-700);"
+                    | Conflit : party publique ce soir-là
               td.px-4.py-3
                 = request.customer.full_name
                 .text-xs style="color: var(--text-muted);" = request.customer.email

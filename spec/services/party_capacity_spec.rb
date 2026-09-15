@@ -55,8 +55,8 @@ RSpec.describe "Capacité des pâtons de Pizza party" do
     it "ne consomme aucune capacité (ni pétrin ni farine)" do
       event = create(:party_event, kind: :private_party, held_on: bake_day.baked_on, slot: :soir,
                                    title: nil, capacity: nil, registration_closes_at: nil)
-      order = create(:order, customer: create(:customer), party_event: event, bake_day: nil,
-                             source: :party, status: :awaiting_payment)
+      order = create(:order, customer: create(:customer, phone_e164: "+32470700700", email: "cap1@example.com"),
+                             party_event: event, bake_day: nil, source: :party, status: :awaiting_payment)
       create(:order_item, order: order, product_variant: party_variant, qty: 30)
 
       usage = BakeCapacityService.new(bake_day).usage
@@ -68,8 +68,8 @@ RSpec.describe "Capacité des pâtons de Pizza party" do
     it "consomme la capacité une fois payée" do
       event = create(:party_event, kind: :private_party, held_on: bake_day.baked_on, slot: :soir,
                                    title: nil, capacity: nil, registration_closes_at: nil)
-      order = create(:order, customer: create(:customer), party_event: event, bake_day: nil,
-                             source: :party, status: :paid)
+      order = create(:order, customer: create(:customer, phone_e164: "+32470700701", email: "cap2@example.com"),
+                             party_event: event, bake_day: nil, source: :party, status: :paid)
       create(:order_item, order: order, product_variant: party_variant, qty: 30)
 
       usage = BakeCapacityService.new(bake_day).usage

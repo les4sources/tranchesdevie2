@@ -14,7 +14,9 @@ RSpec.describe "Paiement d'une réservation de Pizza party", type: :request do
   # Toute commande a un lieu de retrait ; une party retombe sur le lieu par
   # défaut (Les 4 Sources), cf. Order#assign_default_pickup_location.
   let!(:default_pickup) { create(:pickup_location, name: "Les 4 Sources", default: true) }
-  let(:customer) { create(:customer) }
+  # Identifiants explicites : la base de test est partagée entre agents et les
+  # séquences de factory finissent par entrer en collision.
+  let(:customer) { create(:customer, phone_e164: "+32470400400", email: "paiement@example.com") }
   let(:party_request) { create(:party_request, customer: customer) }
 
   # Une réservation validée : la demande est passée par le service de décision,

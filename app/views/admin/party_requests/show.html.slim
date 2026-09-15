@@ -85,6 +85,16 @@
 
 - elsif @order&.awaiting_payment?
   .adm-card.mt-6.p-5
+    h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" Corriger le nombre de participants
+    p.mb-4.text-sm style="color: var(--text-muted);"
+      | Pour un groupe qui annonce son chiffre au téléphone. Le montant est recalculé aux tarifs figés et le client reçoit le nouveau total.
+    = form_with url: update_headcount_admin_party_request_path(@party_request), method: :patch, class: "flex flex-wrap items-end gap-3" do
+      div
+        label.mb-1.block.text-sm.font-medium Participants
+        = number_field_tag :persons, @order.party_paton_count, min: 1, class: adm_field_class
+      = submit_tag "Mettre à jour", class: adm_btn_class(:default)
+
+  .adm-card.mt-6.p-5
     h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" Retirer la validation
     p.mb-4.text-sm style="color: var(--text-muted);"
       | Tant que rien n'est payé, vous pouvez annuler cette réservation. Le créneau est rendu et le client reçoit votre motif.

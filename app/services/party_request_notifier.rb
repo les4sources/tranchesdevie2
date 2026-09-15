@@ -72,6 +72,12 @@ class PartyRequestNotifier
       PartyRequestMailer.cancelled_by_bakery(order, reason).deliver_later
     end
 
+    def cancelled_by_bakery(order, reason)
+      PartyRequestMailer.cancelled_by_bakery(order, reason).deliver_later
+      OrderNotificationService.notify_team_of_party_cancellation(order)
+      true
+    end
+
     def refunded(order)
       deliver_once_for_order(order, :party_refunded) do
         PartyRequestMailer.refunded(order).deliver_later

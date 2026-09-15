@@ -10,12 +10,13 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
-  get "pizza-party-privee", to: "events#index", as: :pizza_party_privee
-  # Parcours de DEMANDE d'une Pizza party privée (#pizza-parties) : hors panier,
-  # hors checkout. Construit à côté de l'ancien chemin — `/pizza-party-privee`
-  # ne bascule dessus qu'au go-live, pour que le site reste vendeur pendant tout
-  # le chantier.
-  get "pizza-party-privee/demande", to: "party_requests#new", as: :new_party_request
+  # Page de réservation d'une Pizza party privée (#pizza-parties) : c'est le
+  # formulaire de DEMANDE, hors panier et hors checkout. L'ancien tunnel panier
+  # a été retiré au go-live.
+  get "pizza-party-privee", to: "party_requests#new", as: :pizza_party_privee
+  # Les e-mails et liens envoyés pendant le chantier pointaient ici : on les
+  # garde vivants plutôt que de les laisser tomber en 404.
+  get "pizza-party-privee/demande", to: redirect("/pizza-party-privee"), as: :new_party_request
   post "pizza-party-privee/demande", to: "party_requests#create", as: :party_requests
   get "pizza-party-privee/demande/envoyee/:token", to: "party_requests#sent", as: :party_request_sent
   # Suivi d'une demande par son jeton public (pas de compte requis).

@@ -185,6 +185,6 @@ class ManualPrivatePartyService
   end
 
   def forfait_variant
-    @forfait_variant ||= PizzaPartyForfaitService.forfait_variant
+    @forfait_variant ||= Product.pizza_party_variant(:forfait)
   end
 end

@@ -63,16 +63,22 @@ RSpec.describe 'Note calendrier claudy — Pizza party privée', type: :request 
   describe 'paiement en ligne (Stripe)' do
     let(:customer) { create(:customer, first_name: 'Léa', last_name: 'Martin', email: 'lea@example.com') }
 
-    before do
-      sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'Anniversaire de Léa.', qty: 4 }
-      stub_stripe_payment_intent_create(amount: (500 * 4) + 4000)
-      post '/checkout/create_payment_intent',
-           params: { first_name: 'Léa' }.to_json,
-           headers: { 'CONTENT_TYPE' => 'application/json' }
+    # La réservation naît désormais d'une DEMANDE validée par la boulangerie, et
+    # non plus du panier (#pizza-parties). Le reste du scénario — webhook Stripe,
+    # note claudy, idempotence — est inchangé : c'est exactement ce que cette
+    # spec protège.
+    let!(:party_request) do
+      create(:party_request, customer: customer, held_on: party_date, slot: 'soir')
     end
 
-    let(:order) { Order.order(:created_at).last }
+    let!(:order) do
+      created = PartyDecisionService.new(party_request, decided_by: 'Romane').accept
+      # Le nombre de participants s'arrête au paiement (#pizza-parties) : c'est
+      # lui que la note du calendrier annonce.
+      PartyPaymentService.new(created).confirm_headcount!(4)
+      created.update!(payment_intent_id: "pi_test_#{SecureRandom.hex(6)}")
+      created.reload
+    end
 
     def deliver_webhook(payment_intent_id)
       pi = double('Stripe::PaymentIntent', id: payment_intent_id, metadata: {})
@@ -107,8 +113,8 @@ RSpec.describe 'Note calendrier claudy — Pizza party privée', type: :request 
       expect(a_request(:post, notes_url)).to have_been_made.once
     end
 
-    it "une commande restée pending n'enfile aucun job et ne pose aucune note" do
-      expect(order.status).to eq('pending')
+    it "une réservation non payée n'enfile aucun job et ne pose aucune note" do
+      expect(order.status).to eq('awaiting_payment')
 
       expect(enqueued_jobs.select { |j| j['job_class'] == 'SyncClaudyPartyNoteJob' }).to be_empty
       expect(a_request(:post, notes_url)).not_to have_been_made
@@ -125,31 +131,6 @@ RSpec.describe 'Note calendrier claudy — Pizza party privée', type: :request 
       expect(order.reload.status).to eq('paid')
       expect(a_request(:any, /claudy\.test/)).not_to have_been_made
       expect(order.claudy_note_id).to be_nil
-    end
-  end
-
-  describe 'commande cash' do
-    let(:customer) do
-      create(:customer, first_name: 'Yann', last_name: 'Dupont', email: 'yann@example.com', cash_payment_allowed: true)
-    end
-
-    it "pose la note" do
-      sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: "Soirée d'équipe.", qty: 7 }
-
-      perform_claudy_jobs do
-        post '/checkout/create_cash_order',
-             params: { first_name: 'Yann' }.to_json,
-             headers: { 'CONTENT_TYPE' => 'application/json' }
-      end
-
-      expect(response).to have_http_status(:ok)
-      order = Order.order(:created_at).last
-      expect(order.private_party?).to be true
-      expect(a_request(:post, notes_url).with { |req|
-        JSON.parse(req.body)['note']['body'] == "Pizza Party privée\nSoirée : Yann Dupont - 7 personnes"
-      }).to have_been_made.once
-      expect(order.reload.claudy_note_id).to eq(501)
     end
   end
 

@@ -51,15 +51,15 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
     }.merge(overrides)
   end
 
-  describe "GET /pizza-party-privee/demande" do
+  describe "GET /pizza-party-privee" do
     it "affiche le formulaire de demande" do
-      get new_party_request_path
+      get pizza_party_privee_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Envoyer ma demande")
     end
 
     it "n'offre aucune date à moins de 10 jours (préavis)" do
-      get new_party_request_path
+      get pizza_party_privee_path
 
       too_soon = (1...PartyRequest::MINIMUM_NOTICE_DAYS)
                    .map { |n| Date.current + n }
@@ -100,7 +100,7 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
     end
 
     it "ne demande PAS le nombre de participants : il est arrêté au paiement" do
-      get new_party_request_path
+      get pizza_party_privee_path
       expect(response.body).not_to include("Combien serez-vous")
 
       submit
@@ -159,6 +159,37 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
     it "refuse la demande" do
       expect { submit }.not_to change(PartyRequest, :count)
       expect(response).to redirect_to(new_party_request_path)
+    end
+  end
+
+  describe "le panier refuse une variante de party privée" do
+    it "renvoie vers la page de demande au lieu d'ajouter le pâton au panier" do
+      post cart_add_path, params: { product_variant_id: party_variant.id, qty: 4 }
+
+      expect(response).to redirect_to(pizza_party_privee_path)
+      expect(session[:cart]).to be_blank
+    end
+
+    it "refuse aussi le forfait, qui n'a de sens que dans une réservation" do
+      post cart_add_path, params: { product_variant_id: forfait_variant.id, qty: 1 }
+
+      expect(session[:cart]).to be_blank
+    end
+
+    it "laisse passer un pain" do
+      bread = create(:product, name: "Pain de campagne")
+      bread_variant = create(:product_variant, product: bread, price_cents: 550)
+
+      post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 2 }
+
+      expect(session[:cart].first["product_variant_id"]).to eq(bread_variant.id.to_s)
+    end
+  end
+
+  describe "l'ancienne URL de demande" do
+    it "redirige vers la page de réservation, pour que les liens déjà envoyés vivent" do
+      get "/pizza-party-privee/demande"
+      expect(response).to redirect_to("/pizza-party-privee")
     end
   end
 

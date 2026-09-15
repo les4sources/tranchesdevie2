@@ -11,7 +11,7 @@ class Product < ApplicationRecord
   # - party   : produit « Pizza party privée – Nombre de personnes » (1 boule /
   #             personne) ; sa présence au panier déclenche le forfait.
   # - forfait : le forfait Pizza party (40 €), compté UNE seule fois par
-  #             commande, synchronisé automatiquement par PizzaPartyForfaitService.
+  #             commande, ajouté par le service de demande (#pizza-parties).
   # - public_party : produit « Pizza party publique » (variantes adulte / enfant,
   #                  #pizza-parties). Pas de forfait ; barème compta dédié
   #                  (PublicPartyRevenueService, base 4S par variante).
@@ -43,12 +43,23 @@ class Product < ApplicationRecord
   # Le produit forfait de la Pizza party (#68) — un seul attendu en base.
   scope :pizza_party_forfait, -> { where(pizza_party_role: :forfait) }
 
+  # Rôles pizza_party présents dans un panier de session. Seule survivance de
+  # l'ancien service de forfait, dont la raison d'être — synchroniser une ligne
+  # de forfait dans le panier — a disparu avec la sortie de la party privée du
+  # panier (#pizza-parties). La party PUBLIQUE, elle, s'y inscrit encore.
+  def self.pizza_party_roles_in_cart(cart)
+    variant_ids = Array(cart).map { |item| item["product_variant_id"].to_s }.reject(&:blank?).uniq
+    return [] if variant_ids.empty?
+
+    ProductVariant.joins(:product).where(id: variant_ids)
+                  .distinct.pluck(Product.arel_table[:pizza_party_role])
+                  .map { |role| role.is_a?(Integer) ? pizza_party_roles.key(role) : role.to_s }
+  end
+
   # Variante boutique d'un produit Pizza party, par rôle (`:party`, `:forfait`,
-  # `:public_party`). SOURCE UNIQUE : la recherche vivait dans
-  # PizzaPartyForfaitService, qui synchronisait une ligne de PANIER — or la
-  # réservation d'une party ne passe plus par le panier (#pizza-parties). Renvoie
-  # nil si le produit n'est pas configuré (base sans seeds) ; les appelants le
-  # signalent plutôt que de planter.
+  # `:public_party`). SOURCE UNIQUE de cette recherche. Renvoie nil si le produit
+  # n'est pas configuré (base sans seeds) ; les appelants le signalent plutôt que
+  # de planter.
   def self.pizza_party_variant(role)
     product = not_deleted.find_by(pizza_party_role: role)
     return nil unless product
@@ -82,6 +93,18 @@ class Product < ApplicationRecord
   # forfait, unique par commande quel que soit le nombre de convives.
   def paton_line?
     pizza_party_role_party? || pizza_party_role_public_party?
+  end
+
+  # Ce produit peut-il être ajouté au PANIER ? (#pizza-parties)
+  #
+  # Une party PRIVÉE ne se réserve plus par le panier : elle passe par une
+  # demande, validée par la boulangerie. Le refus vit ICI et non dans une garde
+  # de contrôleur, parce que `POST /cart/add` accepte n'importe quel
+  # `product_variant_id` : un pâton privé glissé dans un panier de pain
+  # produirait une commande datée par fournée que l'index des parties et le
+  # barème boulangers compteraient comme une party.
+  def cartable?
+    !pizza_party_role_party? && !pizza_party_role_forfait?
   end
 
   # Un sac à pain est compté d'office pour chaque unité de PAIN PRODUIT (#52) :

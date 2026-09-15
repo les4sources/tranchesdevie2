@@ -2,7 +2,8 @@ module Admin
   # Création à la main d'une pizza party PRIVÉE (#204) : certaines sont
   # demandées par mail ou par téléphone et ne passent jamais par le site.
   class PrivatePartiesController < Admin::BaseController
-    before_action :set_event, only: [ :edit, :update, :destroy, :toggle_paid ]
+    before_action :set_event, only: [ :edit, :update, :destroy ]
+    before_action :refuse_online_order, only: [ :edit, :update ]
     before_action :load_customers, only: [ :new, :create, :edit, :update ]
 
     def new
@@ -45,15 +46,6 @@ module Admin
       end
     end
 
-    def toggle_paid
-      return head :not_found if @order.nil?
-
-      ManualPrivatePartyService.toggle_paid(@order, paid: !@order.paid?)
-
-      redirect_to admin_party_event_path(@event),
-                  notice: @order.reload.paid? ? "Party marquée payée." : "Party marquée non payée."
-    end
-
     # Supprime la party ET sa commande : une party privée créée à la main n'a
     # pas d'existence sans elle.
     def destroy
@@ -64,6 +56,16 @@ module Admin
     end
 
     private
+
+    # Une réservation venue du site porte un PaymentIntent : la modifier depuis
+    # l'écran de saisie manuelle recalculerait son total aux tarifs du jour et
+    # désaccorderait le montant déjà engagé chez Stripe.
+    def refuse_online_order
+      return if @order.nil? || @order.payment_intent_id.blank?
+
+      redirect_to admin_party_event_path(@event),
+                  alert: "Cette réservation a été payée ou engagée en ligne : elle se modifie depuis la commande."
+    end
 
     PrivatePartyForm = Struct.new(:held_on, :slot, :persons, :customer_id, :name, :phone, :email,
                                   :forfait, :paid, keyword_init: true) do

@@ -55,7 +55,7 @@ RSpec.describe "Admin::PrivateParties", type: :request do
       expect(response).to redirect_to(admin_party_event_path(event))
       expect(event.kind_private_party?).to be true
       expect(order.manually_added?).to be true
-      expect(order.paid?).to be true
+      expect(order).to be_payment_status_paid
       expect(order.customer.phone_e164).to be_nil
       expect(order.total_cents).to eq(8 * 500 + 4_000)
     end
@@ -108,23 +108,54 @@ RSpec.describe "Admin::PrivateParties", type: :request do
 
       expect(body).to include("Ajoutée à la main")
       expect(body).to include(edit_admin_private_party_path(event))
-      expect(body).to include(toggle_paid_admin_private_party_path(event))
-      expect(body).to include("Marquer payée")
+      # L'encaissement sur place passe par le chemin unique de pointage, qui
+      # trace le MOYEN — plus de bascule « payée / non payée » (#pizza-parties).
+      expect(body).to include("Encaissée en liquide")
+      expect(body).to include("Encaissée par virement")
     end
   end
 
-  describe "PATCH toggle_paid" do
-    it "bascule dans les deux sens" do
+  describe "encaissement sur place" do
+    it "pointe le moyen et sait revenir en arrière" do
+      create_party(persons: 8, paid: "0")
+      order = PartyEvent.last.orders.last
+      expect(order).to be_payment_status_unpaid
+
+      patch encaissement_admin_order_path(order, method: "cash")
+      order.reload
+      expect(order).to be_payment_status_paid
+      expect(order.offline_payment_method).to eq("cash")
+
+      patch encaissement_admin_order_path(order, method: "none")
+      order.reload
+      expect(order).to be_payment_status_unpaid
+      expect(order.offline_payment_method).to be_nil
+    end
+
+    it "refuse de pointer une réservation déjà payée en ligne" do
+      create_party(persons: 8, paid: "0")
+      order = PartyEvent.last.orders.last
+      create(:payment, order: order, status: :succeeded)
+
+      patch encaissement_admin_order_path(order, method: "cash")
+
+      # Rien n'est pointé : l'app a vu l'argent passer par Stripe, elle a raison
+      # contre le bouton.
+      expect(order.reload.offline_payment_method).to be_nil
+    end
+  end
+
+  describe "édition d'une réservation venue du site" do
+    it "est refusée : elle porte un PaymentIntent engagé chez Stripe" do
       create_party(persons: 8, paid: "0")
       event = PartyEvent.last
-      order = event.orders.last
-      expect(order.paid?).to be false
+      event.orders.last.update!(payment_intent_id: "pi_en_ligne")
 
-      patch toggle_paid_admin_private_party_path(event)
-      expect(order.reload.paid?).to be true
+      get edit_admin_private_party_path(event)
 
-      patch toggle_paid_admin_private_party_path(event)
-      expect(order.reload.paid?).to be false
+      expect(response).to redirect_to(admin_party_event_path(event))
+      follow_redirect!
+      expect(response.body).to include("payée ou engagée en ligne")
     end
   end
 

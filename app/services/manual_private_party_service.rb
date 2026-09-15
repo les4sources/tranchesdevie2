@@ -44,14 +44,6 @@ class ManualPrivatePartyService
     @errors.empty? ? @party_event : false
   end
 
-  # Bascule payée / non payée de la commande d'une party privée.
-  def self.toggle_paid(order, paid:)
-    order.update!(status: paid ? :paid : :unpaid,
-                  payment_status: paid ? :paid : :unpaid,
-                  paid_at: paid ? (order.paid_at || Time.current) : nil)
-    order
-  end
-
   private
 
   def valid?
@@ -86,6 +78,28 @@ class ManualPrivatePartyService
     @order = created
     @order.update!(manually_added: true)
     apply_payment_state
+
+    # La CRÉATION vaut confirmation (#pizza-parties). Une party convenue par
+    # téléphone est acquise dès qu'on l'enregistre : elle n'attend aucun
+    # paiement en ligne, aucune validation. Attendre le pointage de
+    # l'encaissement pour prévenir l'équipe et poser le post-it du calendrier
+    # donnait un post-it APRÈS la soirée, quand le boulanger pointait sa caisse.
+    OrderNotificationService.send_party_team_notification(@order)
+    OrderNotificationService.sync_party_calendar_note(@order)
+  end
+
+  # Encaissement d'une party saisie en admin : elle se règle SUR PLACE, donc sur
+  # l'axe financier (`payment_status` + moyen), jamais en posant `status: paid`
+  # sans trace du moyen. Même sémantique qu'Admin::OrdersController#encaissement,
+  # qui reste le chemin de pointage manuel de tout le reste de l'app.
+  def apply_offline_payment
+    if @paid
+      @order.update!(payment_status: :paid,
+                     offline_payment_method: @order.offline_payment_method || :cash,
+                     paid_at: @order.read_attribute(:paid_at) || Time.current)
+    else
+      @order.update!(payment_status: :unpaid, offline_payment_method: nil, paid_at: nil)
+    end
   end
 
   def update_existing
@@ -104,7 +118,7 @@ class ManualPrivatePartyService
   end
 
   def apply_payment_state
-    self.class.toggle_paid(@order, paid: @paid)
+    apply_offline_payment
   end
 
   # Un pâton par personne, et la ligne forfait seulement si elle est demandée —

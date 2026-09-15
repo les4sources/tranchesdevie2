@@ -40,7 +40,12 @@ module PartyRequestsHelper
   def party_request_state_explanation(party_request, order = party_request.order)
     case party_request_state_key(party_request, order)
     when :pending
-      "La boulangerie examine ta demande. Tu recevras sa réponse par e-mail avant le #{I18n.l(party_request.deadline_at.to_date, format: :long_with_day)}. Rien ne t'a été débité."
+      deadline = party_request.deadline_at
+      if deadline
+        "La boulangerie examine ta demande. Tu recevras sa réponse par e-mail avant le #{I18n.l(deadline.to_date, format: :long_with_day)}. Rien ne t'a été débité."
+      else
+        "La boulangerie examine ta demande et te répondra par e-mail. Rien ne t'a été débité."
+      end
     when :refused
       "La boulangerie n'a pas pu retenir cette date. Rien ne t'a été débité — tu peux faire une nouvelle demande pour une autre soirée."
     when :cancelled_by_customer

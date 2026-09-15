@@ -35,7 +35,6 @@ class PartyRequestsController < ApplicationController
       customer: customer,
       date: date,
       slot: slot,
-      persons: params[:persons],
       customer_note: params[:customer_note],
       group_name: params[:group_name]
     )

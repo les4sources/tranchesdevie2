@@ -10,7 +10,6 @@ FactoryBot.define do
         .find { |date| PartyEvent::PRIVATE_WDAYS.include?(date.wday) }
     end
     slot { "soir" }
-    estimated_persons { 8 }
     forfait { true }
     customer_note { "Anniversaire de Jules, on arrive vers 18h30." }
     state { :pending }

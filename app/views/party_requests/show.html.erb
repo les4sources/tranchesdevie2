@@ -14,8 +14,7 @@
       <%= I18n.l(@party_request.held_on, format: :long_with_day).capitalize %>
     </h1>
     <p class="mt-1 text-sm text-ink-500">
-      <%= @party_request.slot_label %> · <%= @party_request.estimated_persons %>
-      personne<%= "s" if @party_request.estimated_persons > 1 %> annoncée<%= "s" if @party_request.estimated_persons > 1 %>
+      <%= @party_request.slot_label %>
     </p>
 
     <div class="mt-6 rounded-xl border px-5 py-4 <%= party_request_state_classes(@party_request, @order) %>">

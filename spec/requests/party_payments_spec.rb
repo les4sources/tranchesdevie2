@@ -15,7 +15,7 @@ RSpec.describe "Paiement d'une réservation de Pizza party", type: :request do
   # défaut (Les 4 Sources), cf. Order#assign_default_pickup_location.
   let!(:default_pickup) { create(:pickup_location, name: "Les 4 Sources", default: true) }
   let(:customer) { create(:customer) }
-  let(:party_request) { create(:party_request, customer: customer, estimated_persons: 8) }
+  let(:party_request) { create(:party_request, customer: customer) }
 
   # Une réservation validée : la demande est passée par le service de décision,
   # donc l'Order existe en awaiting_payment avec ses lignes figées.
@@ -24,7 +24,6 @@ RSpec.describe "Paiement d'une réservation de Pizza party", type: :request do
       customer: customer,
       date: party_request.held_on,
       slot: "soir",
-      persons: 8,
       customer_note: "Anniversaire."
     ).call.then { |request| PartyDecisionService.new(request, decided_by: "Romane").accept }
   end
@@ -120,7 +119,7 @@ RSpec.describe "Paiement d'une réservation de Pizza party", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(JSON.parse(response.body)["error"]).to match(/Pétrin/)
       expect(Stripe::PaymentIntent).not_to have_received(:create)
-      expect(order.reload.party_paton_count).to eq(8)
+      expect(order.reload.party_paton_count).to eq(1)
     end
 
     it "laisse passer une hausse que la fournée supporte" do

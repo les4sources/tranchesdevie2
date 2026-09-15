@@ -10,11 +10,10 @@
 class PartyRequestService
   attr_reader :party_request, :errors
 
-  def initialize(customer:, date:, slot:, persons:, customer_note:, group_name: nil, forfait: true)
+  def initialize(customer:, date:, slot:, customer_note:, group_name: nil, forfait: true)
     @customer = customer
     @date = date.is_a?(Date) ? date : safe_date(date)
     @slot = slot.to_s
-    @persons = persons.to_i
     @customer_note = customer_note.to_s.strip
     @group_name = group_name.presence
     @forfait = forfait
@@ -30,7 +29,6 @@ class PartyRequestService
         customer: @customer,
         held_on: @date,
         slot: @slot,
-        estimated_persons: @persons,
         forfait: @forfait,
         customer_note: @customer_note,
         group_name: @group_name,
@@ -60,7 +58,6 @@ class PartyRequestService
     @errors << "Date ou créneau de la Pizza party invalide" unless @date && PartyEvent.slots.key?(@slot)
     @errors << "Merci de nous parler de ton groupe avant d'envoyer ta demande." if @customer_note.blank?
     @errors << "Ton commentaire dépasse #{Order::CUSTOMER_NOTE_MAX_LENGTH} caractères." if @customer_note.length > Order::CUSTOMER_NOTE_MAX_LENGTH
-    @errors << "Merci d'indiquer au moins une personne." if @persons < 1
 
     if @date && PartyEvent.slots.key?(@slot) && !PartyRequest.requestable?(@date, @slot)
       @errors << "Cette date n'est pas disponible. Une Pizza party se réserve au moins #{PartyRequest::MINIMUM_NOTICE_DAYS} jours à l'avance."
@@ -80,7 +77,10 @@ class PartyRequestService
   def freeze_lines!
     discounts = GroupDiscountService.new(@customer)
 
-    lines = [ { variant: party_variant, qty: @persons } ]
+    # Quantité 1 : la ligne « pâtons » n'est qu'une RÉFÉRENCE DE PRIX à ce stade.
+    # Le nombre réel de participants est arrêté au paiement, et c'est lui qui
+    # fixera la quantité facturée.
+    lines = [ { variant: party_variant, qty: 1 } ]
     lines << { variant: forfait_variant, qty: 1 } if @forfait && forfait_variant
 
     lines.each do |line|

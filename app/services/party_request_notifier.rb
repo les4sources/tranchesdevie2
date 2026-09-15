@@ -24,7 +24,8 @@ class PartyRequestNotifier
 
       # Une validation tardive vaut sollicitation : l'e-mail d'acceptation porte
       # déjà la demande de confirmation et de paiement, on ne doublonne pas.
-      return unless Time.current >= party_request.payment_prompt_at
+      prompt_at = party_request.payment_prompt_at
+      return if prompt_at.nil? || Time.current < prompt_at
 
       party_request.order&.update_columns(payment_prompted_at: Time.current)
     end

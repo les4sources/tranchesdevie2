@@ -18,7 +18,7 @@
             <b class="font-semibold text-ink-900">Ceci est une demande, pas encore une réservation.</b>
             Rien ne t'est débité aujourd'hui. La boulangerie l'examine et te répond par e-mail ;
             si c'est d'accord, tu confirmeras ton nombre de participants et régleras ta
-            réservation au plus tôt 5 jours avant la date.
+            réservation quelques jours avant la party.
           </p>
         </div>
       </div>
@@ -43,7 +43,7 @@
         <h2 class="mt-4 text-[28px] font-semibold leading-tight text-ink-900">Un pâton par personne</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
           Pétri au levain par les boulangères, avec tout le matériel de cuisson à disposition.
-          Tu confirmeras le nombre exact 5 jours avant.
+          Tu annonceras le nombre exact quelques jours avant la party.
         </p>
       </div>
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
@@ -124,7 +124,7 @@
           </p>
         </div>
 
-        <aside class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs lg:sticky lg:top-6" data-controller="quantity-selector">
+        <aside class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs lg:sticky lg:top-6">
           <h3 class="text-[32px] font-semibold leading-tight text-ink-900">2. Ta demande</h3>
           <p class="mt-1 text-sm text-ink-500">
             <%= number_to_currency(@party_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> / personne
@@ -155,21 +155,6 @@
             <%= lucide "flame", size: 16, color: "var(--sage-700)" %>
             <span>Ce soir-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie).</span>
           </p>
-
-          <div class="mt-5">
-            <span class="text-sm font-medium text-ink-900">Combien serez-vous&nbsp;?</span>
-            <p class="mt-1 text-[13px] leading-relaxed text-ink-500">Une estimation suffit — tu confirmeras le nombre exact 5 jours avant.</p>
-            <div class="mt-2 flex items-center gap-2">
-              <button type="button" data-action="click->quantity-selector#decrement" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
-                <%= lucide "minus", size: 16, color: "var(--ink-700)" %>
-              </button>
-              <span class="inline-flex h-10 min-w-12 items-center justify-center rounded-md bg-flour-100 text-sm font-semibold text-ink-900" data-quantity-selector-target="display">8</span>
-              <button type="button" data-action="click->quantity-selector#increment" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-flour-400 text-ink-700 transition hover:bg-flour-100">
-                <%= lucide "plus", size: 16, color: "var(--ink-700)" %>
-              </button>
-            </div>
-            <input type="hidden" name="persons" value="8" data-quantity-selector-target="input">
-          </div>
 
           <div class="mt-5">
             <label for="customer_note" class="text-sm font-medium text-ink-900">Parle-nous de ton groupe *</label>
@@ -251,7 +236,7 @@
             <%= lucide "send", size: 18, color: "#fff" %> Envoyer ma demande
           </button>
           <p class="mt-3 text-center text-xs text-ink-500">
-            Aucun montant n'est débité maintenant. Montant estimé communiqué dans l'e-mail de confirmation.
+            Aucun montant n'est débité maintenant. Tu confirmeras ton nombre de participants, et régleras, quelques jours avant la party.
           </p>
         </aside>
       </div>

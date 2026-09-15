@@ -11,8 +11,7 @@
     <p class="mt-3 text-[17px] leading-relaxed text-ink-700">
       La boulangerie a reçu ta demande pour le
       <b class="font-semibold text-ink-900"><%= I18n.l(@party_request.held_on, format: :long_with_day) %></b>,
-      <%= @party_request.slot_label.downcase %>, pour <%= @party_request.estimated_persons %>
-      personne<%= "s" if @party_request.estimated_persons > 1 %>.
+      <%= @party_request.slot_label.downcase %>.
     </p>
 
     <div class="mt-6 rounded-xl border border-sage-200 bg-sage-100 px-5 py-4 text-left">
@@ -20,23 +19,23 @@
         <b class="font-semibold text-ink-900">Rien ne t'a été débité.</b>
         L'équipe examine ta demande et te répond par e-mail à
         <b class="font-semibold text-ink-900"><%= @party_request.customer.email %></b>.
-        Si c'est d'accord, tu confirmeras ton nombre de participants et régleras ta réservation —
-        nous te solliciterons le
-        <b class="font-semibold text-ink-900"><%= I18n.l(@party_request.payment_prompt_at.to_date, format: :long_with_day) %></b>.
+        Si c'est d'accord, tu recevras quelques jours avant la party un e-mail pour confirmer ton
+        nombre de participants et régler ta réservation<% if @party_request.payment_prompt_at %> —
+        le <b class="font-semibold text-ink-900"><%= I18n.l(@party_request.payment_prompt_at.to_date, format: :long_with_day) %></b><% end %>.
       </p>
     </div>
 
     <dl class="mt-6 grid gap-3 text-left sm:grid-cols-2">
       <div class="rounded-lg border border-flour-300 px-4 py-3">
-        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Montant estimé</dt>
+        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Tarif</dt>
         <dd class="mt-1 text-lg font-semibold text-ink-900">
-          <%= number_to_currency(@party_request.estimated_total_cents / 100.0, unit: "€", separator: ",", delimiter: " ") %>
+          <%= number_to_currency(@party_request.paton_unit_price_cents / 100.0, unit: "€", separator: ",", delimiter: " ") %> / personne
         </dd>
-        <p class="mt-1 text-xs text-ink-500">forfait compris, recalculé sur le nombre confirmé</p>
+        <p class="mt-1 text-xs text-ink-500">+ forfait de <%= number_to_currency(@party_request.forfait_cents / 100.0, unit: "€", separator: ",", delimiter: " ") %></p>
       </div>
       <div class="rounded-lg border border-flour-300 px-4 py-3">
-        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Réponse attendue avant</dt>
-        <dd class="mt-1 text-lg font-semibold text-ink-900"><%= I18n.l(@party_request.deadline_at.to_date, format: :long_with_day) %></dd>
+        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Ta party</dt>
+        <dd class="mt-1 text-lg font-semibold text-ink-900"><%= I18n.l(@party_request.held_on, format: :long_with_day) %></dd>
       </div>
     </dl>
 

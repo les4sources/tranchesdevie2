@@ -25,8 +25,11 @@ class PartyRequest < ApplicationRecord
     expired: 4       # jamais traitée : clôturée automatiquement à J-3
   }, prefix: :state
 
-  validates :held_on, :slot, :estimated_persons, :customer_note, presence: true
-  validates :estimated_persons, numericality: { only_integer: true, greater_than: 0 }
+  validates :held_on, :slot, :customer_note, presence: true
+  # Le nombre de participants n'est PAS demandé ici : il n'aide pas le boulanger
+  # à décider (le four et le pétrin, eux, sont contrôlés au paiement) et le
+  # client ne le connaît pas encore. Il l'arrête au règlement.
+  validates :estimated_persons, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :customer_note, length: { maximum: Order::CUSTOMER_NOTE_MAX_LENGTH }
   validates :public_token, presence: true, uniqueness: true
   # Le motif est obligatoire sur un refus — c'est tout ce que le client recevra
@@ -43,30 +46,35 @@ class PartyRequest < ApplicationRecord
   # Le boulanger doit avoir le temps de répondre, et le client de payer.
   MINIMUM_NOTICE_DAYS = 10
 
-  # Heure de tous les rendez-vous datés du parcours (sollicitation J-5, relance
-  # J-4, échéance J-3). Une seule heure pour les trois : pas d'e-mail à minuit,
-  # et pas trois échéances au même instant.
-  DEADLINE_HOUR = 9
   DEADLINE_ZONE = "Europe/Brussels"
 
-  # Instant de sollicitation du paiement : J-5 à 9 h.
+  # Délai entre la sollicitation de paiement et le cut-off de la fournée.
+  PROMPT_BEFORE_CUT_OFF = 48.hours
+
+  # Cut-off de la fournée qui pétrira les pâtons.
+  #
+  # Une party privée a TOUJOURS lieu un jour de cuisson (mardi ou vendredi) : son
+  # cut-off est donc celui de la fournée du jour même. C'est le moment où la
+  # boulangerie fige son plan de production — après lui, un nombre de
+  # participants n'a plus de sens.
+  #
+  # La fournée n'existe pas toujours en base au moment où on calcule (elles sont
+  # créées quelques jours à l'avance) : on retombe alors sur la règle, qui est la
+  # même (`BakeDay.calculate_cut_off_for`).
+  def self.cut_off_for(held_on)
+    date = held_on.to_date
+    BakeDay.find_by(baked_on: date)&.cut_off_at || BakeDay.calculate_cut_off_for(date)
+  end
+
+  # Instant de sollicitation du paiement : 48 h avant le cut-off.
   def self.payment_prompt_at(held_on)
-    at_hour(held_on.to_date - 5)
+    cut_off = cut_off_for(held_on)
+    cut_off && cut_off - PROMPT_BEFORE_CUT_OFF
   end
 
-  # Instant de relance : J-4 à 9 h.
-  def self.payment_reminder_at(held_on)
-    at_hour(held_on.to_date - 4)
-  end
-
-  # Échéance de paiement, et terme de la clôture automatique d'une demande jamais
-  # traitée : J-3 à 9 h.
+  # Échéance de paiement : le cut-off lui-même.
   def self.deadline_at(held_on)
-    at_hour(held_on.to_date - 3)
-  end
-
-  def self.at_hour(date)
-    ActiveSupport::TimeZone[DEADLINE_ZONE].local(date.year, date.month, date.day, DEADLINE_HOUR, 0, 0)
+    cut_off_for(held_on)
   end
 
   # Une date est-elle demandable ? Jour et créneau ouverts (mardi/vendredi soir),
@@ -119,17 +127,28 @@ class PartyRequest < ApplicationRecord
     self.class.payment_prompt_at(held_on)
   end
 
-  # Total ANNONCÉ à la demande : les prix unitaires figés × le nombre estimé.
-  # Le montant réellement dû est recalculé au paiement sur le nombre confirmé,
-  # avec ces mêmes prix unitaires (ISC-28 / ISC-66).
-  def estimated_total_cents
-    party_request_items.sum { |item| item.qty * item.unit_price_cents - item.discount_cents }
+  # Prix unitaire figé d'un pâton, remise groupe déduite. Il n'y a pas de total à
+  # annoncer à la demande : le nombre de participants n'est arrêté qu'au paiement.
+  def paton_unit_price_cents
+    item = party_request_items.includes(product_variant: :product)
+                              .find { |i| i.product_variant.product.pizza_party_role_party? }
+    item&.net_unit_price_cents || 0
   end
 
-  # La boulangerie peut-elle encore répondre ? Non si déjà traitée, non si la
-  # clôture automatique est passée.
+  # Forfait figé (dû quel que soit le nombre de participants).
+  def forfait_cents
+    party_request_items.includes(product_variant: :product)
+                       .reject { |i| i.product_variant.product.pizza_party_role_party? }
+                       .sum(&:total_cents)
+  end
+
+  # La boulangerie peut-elle encore répondre ? Non si déjà traitée, non au-delà du
+  # cut-off de la fournée — après lui, plus personne ne peut pétrir pour ce groupe.
   def decidable?
-    state_pending? && Time.current < deadline_at
+    return false unless state_pending?
+
+    deadline = deadline_at
+    deadline.nil? || Time.current < deadline
   end
 
   private

@@ -23,7 +23,9 @@ class PartyRequestMailer < ApplicationMailer
     # Deux branches (ISC-26) : avant la sollicitation de J-5, l'e-mail annonce le
     # rendez-vous ; après, il EST la sollicitation — il ne peut pas donner
     # rendez-vous à une date déjà passée.
-    @prompt_now = Time.current >= party_request.payment_prompt_at
+    prompt_at = party_request.payment_prompt_at
+    @prompt_now = prompt_at.nil? || Time.current >= prompt_at
+    @prompt_at = prompt_at
     prepare(party_request, :party_request_accepted)
     mail(to: party_request.customer.email, subject: "C'est bon pour ta Pizza party du #{date_label}")
   end
@@ -89,7 +91,6 @@ class PartyRequestMailer < ApplicationMailer
   # d'état n'est exécutée par le GET, que les clients mail préchargent.
   def new_request(party_request)
     @party_request = party_request
-    @paton_count = party_request.estimated_persons
     @accept_url = admin_party_decision_url(token: party_request.signed_id(purpose: :party_decision, expires_in: 30.days), decision: "accept")
     @refuse_url = admin_party_decision_url(token: party_request.signed_id(purpose: :party_decision, expires_in: 30.days), decision: "refuse")
 
@@ -99,7 +100,7 @@ class PartyRequestMailer < ApplicationMailer
     mail(
       to: PartyMailer.notification_to,
       cc: PartyMailer.notification_cc,
-      subject: "Demande de Pizza party privée — #{date_label}, #{party_request.estimated_persons} personne#{'s' if party_request.estimated_persons > 1}"
+      subject: "Demande de Pizza party privée — #{date_label}"
     )
   end
 

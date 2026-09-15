@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_15_192000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_15_235000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -403,7 +403,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_15_192000) do
     t.datetime "decided_at"
     t.string "decided_by"
     t.text "decision_reason"
-    t.integer "estimated_persons", null: false
+    t.integer "estimated_persons"
     t.boolean "forfait", default: true, null: false
     t.string "group_name"
     t.date "held_on", null: false

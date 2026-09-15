@@ -166,15 +166,20 @@ class PartyDecisionService
     order
   end
 
-  # Échéance de paiement : J-3 à 9 h en régime normal. Si la validation tombe
-  # après la sollicitation de J-5, le client n'a plus le rendez-vous habituel :
-  # il dispose de 48 h, sans jamais déborder le début de la party.
+  # Échéance de paiement : le CUT-OFF de la fournée qui pétrira les pâtons.
+  # C'est le moment où la boulangerie fige sa production — un nombre de
+  # participants arrivé après n'a plus personne pour le pétrir.
+  #
+  # Validation tardive (après l'instant de sollicitation, voire après le
+  # cut-off) : le client garde au moins 24 h pour répondre, sans jamais déborder
+  # le début de la party.
   def payment_due_at
-    normal = @party_request.deadline_at
+    cut_off = @party_request.deadline_at
+    prompt = @party_request.payment_prompt_at
 
-    return normal if Time.current < @party_request.payment_prompt_at
+    return cut_off if cut_off && prompt && Time.current < prompt
 
-    [ Time.current + 48.hours, party_start_at ].min
+    [ Time.current + 24.hours, party_start_at ].min
   end
 
   def party_start_at

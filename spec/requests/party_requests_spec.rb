@@ -44,7 +44,6 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
   def submit(overrides = {})
     post party_requests_path, params: {
       party_slot_choice: "#{valid_date.iso8601}|soir",
-      persons: 8,
       customer_note: "Anniversaire de Jules, on arrive vers 18h30.",
       first_name: "Camille",
       last_name: "Dupont",
@@ -98,6 +97,14 @@ RSpec.describe "Demande de Pizza party privée", type: :request do
 
       party_variant.update!(price_cents: 1500)
       expect(PartyRequest.last.party_request_items.map(&:unit_price_cents)).to contain_exactly(1200, 4000)
+    end
+
+    it "ne demande PAS le nombre de participants : il est arrêté au paiement" do
+      get new_party_request_path
+      expect(response.body).not_to include("Combien serez-vous")
+
+      submit
+      expect(PartyRequest.last.estimated_persons).to be_nil
     end
 
     it "envoie l'accusé de réception au client et la notification à l'équipe" do

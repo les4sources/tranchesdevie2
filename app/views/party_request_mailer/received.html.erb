@@ -2,16 +2,17 @@
 
 <p>Nous avons bien reçu ta <strong>demande</strong> de Pizza party privée pour le
 <strong><%= I18n.l(@party_request.held_on, format: :long_with_day) %></strong>
-(<%= @party_request.slot_label.downcase %>), pour <%= @party_request.estimated_persons %>
-personne<%= "s" if @party_request.estimated_persons > 1 %>.</p>
+(<%= @party_request.slot_label.downcase %>).</p>
 
 <p><strong>Rien ne t'a été débité.</strong> À ce stade, il s'agit d'une demande : la boulangerie
-va l'examiner et te répondre par e-mail. Si elle est acceptée, tu recevras un lien pour confirmer
-ton nombre de participants et régler ta réservation — au plus tôt 5 jours avant la date.</p>
+va l'examiner et te répondre par e-mail. Si elle est acceptée, tu recevras quelques jours avant
+la party un lien pour confirmer ton nombre de participants et régler ta réservation.</p>
 
-<p>Montant prévu à ce jour :
-<strong><%= number_to_currency(@party_request.estimated_total_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></strong>
-(forfait compris). Il sera recalculé sur le nombre de participants que tu confirmeras.</p>
+<p>Tarif :
+<strong><%= number_to_currency(@party_request.paton_unit_price_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> par personne</strong>
+(un pâton chacun), plus un forfait unique de
+<strong><%= number_to_currency(@party_request.forfait_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></strong>
+qui couvre la préparation, le bois et le matériel.</p>
 
 <p>Tu peux suivre ta demande ici :<br>
 <%= link_to party_request_url(@party_request.public_token), party_request_url(@party_request.public_token) %></p>

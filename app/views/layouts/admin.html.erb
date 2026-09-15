@@ -11,6 +11,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%# Polyfill des import maps pour Safari < 16.4 (TRANCHESDEVIE-19).
+        importmap-rails 2.x n'embarque plus es-module-shims : sur Safari 16.3 et
+        antérieur, « import "application" » lève un TypeError et TOUT le
+        JavaScript du site meurt — panier, saisie du GSM, paiement Stripe. Le
+        client ne peut plus commander et rien n'en paraît côté serveur.
+        Le shim est inerte sur un navigateur qui gère les import maps. %>
+    <script async src="<%= asset_path("es-module-shims.min.js") %>" data-turbo-track="reload"></script>
     <%= javascript_importmap_tags %>
   </head>
 

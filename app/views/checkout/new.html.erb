@@ -831,9 +831,14 @@
               level: isValidationError ? 'warning' : 'error',
               extra: {
                 step: 'confirmPayment',
-                message: error.message,
-                code: error.code,
-                decline_code: error.decline_code,
+                // Clés préfixées : Sentry caviarde « message » et « code » nus
+                // (TRANCHESDEVIE-J n'affichait que « [Filtered] », soit
+                // exactement les deux champs qui disent POURQUOI le paiement a
+                // échoué). Sans eux, un invalid_request_error n'est pas
+                // diagnosticable.
+                stripe_error_message: error.message,
+                stripe_error_code: error.code,
+                stripe_decline_code: error.decline_code,
                 type: error.type,
                 payment_intent_id: paymentIntentId
               }

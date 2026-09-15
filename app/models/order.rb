@@ -7,7 +7,16 @@ class Order < ApplicationRecord
     no_show: 4,
     cancelled: 5,
     unpaid: 6,
-    planned: 7
+    planned: 7,
+    # Réservation de Pizza party validée par la boulangerie mais PAS ENCORE PAYÉE
+    # (#pizza-parties). Volontairement distinct de `unpaid`, qui signifie « vente
+    # due, facturée » et entraîne la commande dans COMPLETED_STATUSES (le CA), dans
+    # BakeDayPartyOrders::PRODUCTION_STATUSES (les pâtons à pétrir) et donc dans
+    # BakeCapacityService. Une party validée n'est ni une vente ni une pâte tant
+    # que l'argent n'est pas encaissé : elle n'appartient à aucune des deux
+    # constantes, et c'est structurel — pas une exclusion à répliquer dans chaque
+    # rapport.
+    awaiting_payment: 8
   }
 
   # Statut de paiement (axe financier) — distinct du `status` logistique.
@@ -55,6 +64,9 @@ class Order < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
   has_one :payment, dependent: :destroy
+  # Demande dont cette commande est issue (#pizza-parties) : présente pour une
+  # party privée réservée par un client, absente pour une party saisie en admin.
+  has_one :party_request, dependent: :nullify
   has_many :invoice_orders, dependent: :destroy
   has_many :invoices, through: :invoice_orders
 
@@ -174,6 +186,12 @@ class Order < ApplicationRecord
   end
 
   def can_be_cancelled_by_customer?
+    # Une commande party n'a pas de fournée : `bake_day` est nul et l'appel à
+    # `cut_off_passed?` levait un NoMethodError depuis « Mon compte » (#pizza-parties).
+    # Son annulation ne passe pas par ici mais par la réservation elle-même
+    # (PartyRequest avant paiement, remboursement après).
+    return false if party?
+
     !bake_day.cut_off_passed? && (paid? || unpaid?)
   end
 
@@ -289,6 +307,10 @@ class Order < ApplicationRecord
     case status.to_sym
     when :pending
       new_status.to_sym == :paid
+    when :awaiting_payment
+      # Payée (le client a réglé dans les temps) ou annulée (échéance dépassée,
+      # retrait de la validation, blocage du créneau).
+      [ :paid, :cancelled ].include?(new_status.to_sym)
     when :planned
       [ :paid, :cancelled ].include?(new_status.to_sym)
     when :paid

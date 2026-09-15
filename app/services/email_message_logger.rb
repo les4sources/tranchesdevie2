@@ -17,6 +17,7 @@ class EmailMessageLogger
       kind: header_value(mail, "X-Email-Kind").presence || "other",
       customer_id: header_value(mail, "X-Customer-Id").presence,
       order_id: header_value(mail, "X-Order-Id").presence,
+      party_request_id: header_value(mail, "X-Party-Request-Id").presence,
       message_id: mail.message_id,
       sent_at: Time.current
     )

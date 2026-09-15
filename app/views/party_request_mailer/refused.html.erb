@@ -1,0 +1,21 @@
+<p>Bonjour <%= @party_request.customer.first_name %>,</p>
+
+<p>Nous ne pouvons malheureusement pas accueillir ta Pizza party du
+<strong><%= I18n.l(@party_request.held_on, format: :long_with_day) %></strong>.</p>
+
+<p><strong>La raison :</strong><br>
+<%= simple_format(@party_request.decision_reason) %></p>
+
+<% if @alternatives.any? %>
+  <p>Ces dates sont encore ouvertes, si tu veux retenter :</p>
+  <ul>
+    <% @alternatives.each do |date| %>
+      <li><%= I18n.l(date, format: :long_with_day) %></li>
+    <% end %>
+  </ul>
+  <p><%= link_to "Faire une nouvelle demande", pizza_party_privee_url %></p>
+<% end %>
+
+<p>Rien ne t'a été débité.</p>
+
+<p>La boulangerie Tranches de Vie</p>

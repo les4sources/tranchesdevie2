@@ -11,6 +11,21 @@ Rails.application.routes.draw do
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
   get "pizza-party-privee", to: "events#index", as: :pizza_party_privee
+  # Parcours de DEMANDE d'une Pizza party privée (#pizza-parties) : hors panier,
+  # hors checkout. Construit à côté de l'ancien chemin — `/pizza-party-privee`
+  # ne bascule dessus qu'au go-live, pour que le site reste vendeur pendant tout
+  # le chantier.
+  get "pizza-party-privee/demande", to: "party_requests#new", as: :new_party_request
+  post "pizza-party-privee/demande", to: "party_requests#create", as: :party_requests
+  get "pizza-party-privee/demande/envoyee/:token", to: "party_requests#sent", as: :party_request_sent
+  # Suivi d'une demande par son jeton public (pas de compte requis).
+  get "demandes/:token", to: "party_requests#show", as: :party_request
+  delete "demandes/:token", to: "party_requests#cancel", as: :cancel_party_request
+  # Paiement différé d'une réservation validée : la page vit hors session, elle
+  # ne connaît que le jeton public de la commande.
+  get "reservations/:token/paiement", to: "party_payments#show", as: :party_payment
+  post "reservations/:token/paiement", to: "party_payments#create_payment_intent", as: :party_payment_intent
+  get "reservations/:token/merci", to: "party_payments#success", as: :party_payment_success
   get "pizza-parties", to: "public_parties#index", as: :pizza_parties
   get "pizza-party-publique", to: redirect("/pizza-parties")
   # Ancienne URL de la page party (liens partagés / historique).
@@ -234,6 +249,19 @@ Rails.application.routes.draw do
     # `/admin/parties/blocages` avec `id: "blocages"` et renvoyait une 404, en
     # rendant `party_slot_blocks#index` inatteignable. Le chemin le plus
     # spécifique passe donc devant. Ne pas réinverser.
+    # File des demandes de party privée (#pizza-parties). Déclarée AVANT
+    # `party_events` pour la même raison que les blocages : `path: "parties"`
+    # capturerait `parties/demandes` comme un id.
+    resources :party_requests, path: "parties/demandes", only: [ :index, :show ] do
+      member do
+        post :accept
+        post :refuse
+        post :retract
+      end
+    end
+    # Page de confirmation ouverte depuis un lien e-mail signé. GET = afficher un
+    # bouton, jamais agir : les clients mail préchargent les liens.
+    get "parties/decision", to: "party_decisions#show", as: :party_decision
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
     # Création à la main d'une party PRIVÉE (#204). Déclaré avant
     # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.

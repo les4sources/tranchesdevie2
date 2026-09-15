@@ -1,0 +1,10 @@
+<p>Bonjour <%= @party_request.customer.first_name %>,</p>
+
+<p>Ta demande de Pizza party pour le
+<strong><%= I18n.l(@party_request.held_on, format: :long_with_day) %></strong>
+n'a pas pu être traitée à temps. Elle est maintenant close, et rien ne t'a été débité.</p>
+
+<p>Si tu veux retenter à une autre date, nous serons ravis de te lire :<br>
+<%= link_to pizza_party_privee_url, pizza_party_privee_url %></p>
+
+<p>Avec toutes nos excuses,<br>La boulangerie Tranches de Vie</p>

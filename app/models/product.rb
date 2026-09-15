@@ -43,6 +43,19 @@ class Product < ApplicationRecord
   # Le produit forfait de la Pizza party (#68) — un seul attendu en base.
   scope :pizza_party_forfait, -> { where(pizza_party_role: :forfait) }
 
+  # Variante boutique d'un produit Pizza party, par rôle (`:party`, `:forfait`,
+  # `:public_party`). SOURCE UNIQUE : la recherche vivait dans
+  # PizzaPartyForfaitService, qui synchronisait une ligne de PANIER — or la
+  # réservation d'une party ne passe plus par le panier (#pizza-parties). Renvoie
+  # nil si le produit n'est pas configuré (base sans seeds) ; les appelants le
+  # signalent plutôt que de planter.
+  def self.pizza_party_variant(role)
+    product = not_deleted.find_by(pizza_party_role: role)
+    return nil unless product
+
+    product.product_variants.active.store_channel.first || product.product_variants.first
+  end
+
   # Vrai si ce produit est commandable pour le lieu de retrait donné (#152).
   # `nil` (aucun lieu) → commandable (pas de contrainte). Un produit sans aucune
   # exclusion est toujours commandable.

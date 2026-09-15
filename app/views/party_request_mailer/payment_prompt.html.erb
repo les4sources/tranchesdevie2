@@ -1,0 +1,14 @@
+<p>Bonjour <%= @order.customer.first_name %>,</p>
+
+<p>Ta Pizza party approche : elle a lieu le
+<strong><%= I18n.l(@order.party_event.held_on, format: :long_with_day) %></strong>.</p>
+
+<p>C'est le moment de <strong>confirmer ton nombre de participants</strong> (un pâton par personne)
+et de régler ta réservation. Tu as jusqu'au
+<strong><%= I18n.l(@order.payment_due_at.in_time_zone("Europe/Brussels"), format: :long) %></strong> ;
+passé ce délai, le créneau est rendu à d'autres groupes.</p>
+
+<p><%= link_to "Confirmer et payer", party_payment_url(@order.public_token) %><br>
+<%= party_payment_url(@order.public_token) %></p>
+
+<p>La boulangerie Tranches de Vie</p>

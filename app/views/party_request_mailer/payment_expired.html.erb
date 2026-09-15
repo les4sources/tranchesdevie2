@@ -1,0 +1,10 @@
+<p>Bonjour <%= @order.customer.first_name %>,</p>
+
+<p>Faute de règlement dans les délais, ta réservation de Pizza party du
+<strong><%= I18n.l(@order.party_event.held_on, format: :long_with_day) %></strong>
+a expiré et le créneau a été rendu. Rien ne t'a été débité.</p>
+
+<p>Si tu souhaites toujours organiser ta party, tu peux faire une nouvelle demande :<br>
+<%= link_to pizza_party_privee_url, pizza_party_privee_url %></p>
+
+<p>La boulangerie Tranches de Vie</p>

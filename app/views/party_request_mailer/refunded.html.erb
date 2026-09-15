@@ -1,0 +1,9 @@
+<p>Bonjour <%= @order.customer.first_name %>,</p>
+
+<p>Ta Pizza party du
+<strong><%= I18n.l(@order.party_event.held_on, format: :long_with_day) %></strong>
+est annulée, et le montant réglé —
+<strong><%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %></strong> —
+t'est intégralement remboursé. Il apparaîtra sur ton compte sous quelques jours.</p>
+
+<p>Au plaisir de te revoir au fournil,<br>La boulangerie Tranches de Vie</p>

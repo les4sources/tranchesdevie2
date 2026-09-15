@@ -130,13 +130,35 @@ class OtpService
     "Entre un numéro de GSM ou une adresse e-mail valide."
   end
 
+  # Normalise une saisie libre en E.164.
+  #
+  # Les formes acceptées côté client sont toutes celles qu'un Belge écrit
+  # spontanément : « 0470 12 34 56 », « 0032 470… », « +32 470… », « 470… », et
+  # même « +32 0470… » (indicatif pays ET zéro national, la faute la plus
+  # courante). Le zéro de tête est un préfixe de composition NATIONAL : il ne
+  # fait pas partie du numéro et ne doit jamais survivre derrière « +32 ».
+  #
+  # L'ancienne version substituait le premier « 0 » rencontré sans regarder ce
+  # qui suivait : « 0032470123456 » devenait « +32032470123456 », un numéro
+  # syntaxiquement valide (donc accepté par valid_e164?) mais inexistant. Le SMS
+  # partait dans le vide et le client attendait un code qui n'arriverait jamais.
   def self.normalize_phone(phone)
     return nil if phone.blank?
 
-    phone = phone.gsub(/[^\d+]/, "")
-    phone = phone.sub(/^0/, "+32") if phone.start_with?("0")
-    phone = "+32#{phone}" unless phone.start_with?("+")
-    phone
+    digits = phone.gsub(/[^\d+]/, "")
+    return nil if digits.blank?
+
+    normalized =
+      if digits.start_with?("+")     then digits                 # déjà international
+      elsif digits.start_with?("00") then "+#{digits[2..]}"       # préfixe international composé
+      elsif digits.start_with?("0")  then "+32#{digits[1..]}"     # national belge
+      elsif digits.start_with?("32") then "+#{digits}"            # indicatif pays sans + ni 00
+      else                                "+32#{digits}"          # numéro belge nu
+      end
+
+    # « +320470… » : zéro national conservé derrière l'indicatif. Aucun numéro
+    # belge ne commence par 0 après +32, la coupe est donc sans ambiguïté.
+    normalized.sub(/\A\+320+/, "+32")
   end
 
   def self.valid_e164?(phone)

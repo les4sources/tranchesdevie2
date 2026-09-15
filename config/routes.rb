@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   patch "cart/update", to: "cart#update", as: :cart_update
   patch "cart/update_bake_day", to: "cart#update_bake_day", as: :cart_update_bake_day
   delete "cart/remove/:id", to: "cart#remove", as: :cart_remove
+  delete "cart/vider", to: "cart#clear", as: :cart_clear
   delete "cart/logout", to: "cart#logout", as: :cart_logout
 
   resources :checkout, only: [ :new ] do

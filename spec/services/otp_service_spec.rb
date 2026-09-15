@@ -88,4 +88,36 @@ RSpec.describe OtpService do
       end
     end
   end
+
+  # Normalisation E.164 (#OTP) : toutes ces saisies désignent LE MÊME numéro.
+  # Le zéro de tête est un préfixe de composition national — il ne doit jamais
+  # survivre derrière « +32 », sous peine d'un numéro valide mais inexistant.
+  describe ".normalize_phone" do
+    {
+      "0470 12 34 56"      => "+32470123456",
+      "0470/12.34.56"      => "+32470123456",
+      "470123456"          => "+32470123456",
+      "+32470123456"       => "+32470123456",
+      "+32 470 12 34 56"   => "+32470123456",
+      "0032 470 12 34 56"  => "+32470123456",
+      "0032470123456"      => "+32470123456",
+      "+32 0470 12 34 56"  => "+32470123456",
+      "32 470 12 34 56"    => "+32470123456"
+    }.each do |raw, expected|
+      it "normalise #{raw.inspect} en #{expected}" do
+        expect(described_class.normalize_phone(raw)).to eq(expected)
+      end
+    end
+
+    it "laisse un numéro étranger sur son indicatif" do
+      expect(described_class.normalize_phone("+33 6 12 34 56 78")).to eq("+33612345678")
+      expect(described_class.normalize_phone("0033 6 12 34 56 78")).to eq("+33612345678")
+    end
+
+    it "renvoie nil sur une saisie vide ou sans chiffre" do
+      expect(described_class.normalize_phone(nil)).to be_nil
+      expect(described_class.normalize_phone("   ")).to be_nil
+      expect(described_class.normalize_phone("abc")).to be_nil
+    end
+  end
 end

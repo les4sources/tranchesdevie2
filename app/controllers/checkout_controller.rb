@@ -301,11 +301,27 @@ class CheckoutController < ApplicationController
     Rails.logger.warn("[checkout] first_name_blank — #{checkout_sentry_context.inspect}")
     render json: { error: "Merci d'indiquer ton prénom pour continuer.", field: "first_name" }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
-    # Échec d'enregistrement du client (first_name vide, e-mail en doublon, …) :
-    # c'était un 500 muet. On le remonte avec les erreurs de validation et on
-    # répond proprement au lieu de planter le tunnel.
-    capture_checkout_issue("customer_save_failed", exception: e, extra: { validation_errors: e.record&.errors&.full_messages })
-    render json: { error: "Impossible d'enregistrer vos informations. Vérifie ton nom et ton e-mail." }, status: :unprocessable_entity
+    # Échec d'enregistrement : c'était un 500 muet. On le remonte avec les
+    # erreurs de validation et on répond proprement au lieu de planter le tunnel.
+    #
+    # Le message dépend de CE QUI a échoué (TRANCHESDEVIE-H). Ce rescue a été
+    # écrit pour le client (prénom vide, e-mail en doublon) mais il attrape tout
+    # le corps de l'action, commande comprise : un client à qui on répondait
+    # « Vérifie ton nom et ton e-mail » relisait son nom et son e-mail, n'y
+    # trouvait rien, et réessayait en boucle. On ne renvoie donc ce message que
+    # lorsque c'est bien le Customer qui est invalide.
+    customer_invalid = e.record.is_a?(Customer)
+    capture_checkout_issue(
+      customer_invalid ? "customer_save_failed" : "order_save_failed",
+      exception: e,
+      extra: { invalid_record: e.record&.class&.name, validation_errors: e.record&.errors&.full_messages }
+    )
+    message = if customer_invalid
+      "Impossible d'enregistrer vos informations. Vérifie ton nom et ton e-mail."
+    else
+      "Ta réservation n'a pas pu être enregistrée. Réessaie dans un instant — si ça recommence, écris-nous à boulangerie@les4sources.be."
+    end
+    render json: { error: message }, status: :unprocessable_entity
   rescue StandardError => e
     capture_checkout_issue("create_payment_intent_unexpected_error", exception: e)
     render json: { error: "Une erreur est survenue. Merci de réessayer." }, status: :internal_server_error

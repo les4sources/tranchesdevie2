@@ -116,7 +116,7 @@ class CartController < ApplicationController
       end
 
       if PizzaPartyForfaitService.non_public_items?(session[:cart])
-        redirect_back_or_public_parties(alert: "Termine d'abord ta commande en cours : l'inscription à la Pizza party se fait dans une commande séparée.")
+        redirect_back_or_public_parties(alert: "Ton panier contient déjà des articles de la boulangerie. Vide-le (bouton ci-dessous) ou termine cette commande : l'inscription à la Pizza party se règle à part.")
         return
       end
 
@@ -213,6 +213,16 @@ class CartController < ApplicationController
     sync_pizza_party_forfait!
     clear_party_selection_unless_party_cart!
     redirect_to cart_path, notice: "Produit retiré du panier"
+  end
+
+  # Vide le panier d'un coup (#pizza-parties). Sert au client coincé par le refus
+  # des paniers mixtes : sans ce bouton, il devait retirer ses articles un par un
+  # — en supposant qu'il ait compris que c'était son panier qui le bloquait.
+  def clear
+    session[:cart] = []
+    clear_party_selection_unless_party_cart!
+
+    redirect_back fallback_location: cart_path, notice: "Ton panier a été vidé."
   end
 
   def update_bake_day

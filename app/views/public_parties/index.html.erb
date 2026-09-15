@@ -66,7 +66,7 @@
       <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "calendar-days", size: 18, color: "var(--sage-700)" %>
-          <span>Inscription <b class="font-semibold text-ink-900">indispensable jusqu'au jeudi midi</b> avant l'événement — c'est ce qui nous permet de préparer le bon nombre de pâtons.</span>
+          <span>Inscription <b class="font-semibold text-ink-900">indispensable jusqu'à la veille 16 h 00</b> (la date exacte est indiquée sous chaque soirée) — c'est ce qui nous permet de préparer le bon nombre de pâtons.</span>
         </p>
         <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
           <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
@@ -82,6 +82,22 @@
         </p>
       </div>
     </div>
+
+    <% if @blocking_cart_count.positive? %>
+      <div class="mt-12 rounded-2xl border border-warning-200 bg-warning-100 p-6 sm:p-8">
+        <p class="flex items-start gap-2.5 text-base font-semibold text-ink-900">
+          <%= lucide "shopping-basket", size: 20, color: "var(--warning-700)" %>
+          <span>Ton panier t'empêche de t'inscrire</span>
+        </p>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Il contient <b class="font-semibold text-ink-900"><%= @blocking_cart_count %> article<%= "s" if @blocking_cart_count > 1 %></b> de la boulangerie. L'inscription à la Pizza Party se règle dans une commande séparée : termine d'abord cette commande, ou vide ton panier pour t'inscrire tout de suite.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <%= link_to "Voir mon panier", cart_path, class: "inline-flex items-center rounded-lg border border-flour-300 bg-warm-white px-4 py-2.5 text-sm font-semibold text-ink-900 transition hover:bg-flour-200" %>
+          <%= button_to "Vider mon panier", cart_clear_path, method: :delete, class: "inline-flex items-center rounded-lg bg-ember-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ember-500" %>
+        </div>
+      </div>
+    <% end %>
 
     <h2 class="mt-12 text-[32px] font-semibold leading-tight text-ink-900">Prochaines dates</h2>
     <div class="mt-6 space-y-6">

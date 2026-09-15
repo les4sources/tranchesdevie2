@@ -64,7 +64,21 @@ class Order < ApplicationRecord
   # Nullable en base : les commandes de pain n'en ont pas, et les réservations
   # antérieures à cette colonne non plus.
   validates :customer_note, length: { maximum: CUSTOMER_NOTE_MAX_LENGTH }, allow_nil: true
-  validates :order_number, presence: true, uniqueness: true
+  validates :order_number, presence: true
+  # Unicité vérifiée À LA CRÉATION seulement (TRANCHESDEVIE-Z / -H).
+  #
+  # Le numéro ne change plus jamais après la création : le revalider à chaque
+  # `update!` n'apporte aucune garantie et ajoute une course. Le checkout en
+  # ligne créait la commande, appelait Stripe, puis faisait
+  # `order.update!(payment_intent_id:)` — et ce dernier explosait en
+  # `RecordInvalid` sur l'unicité, attrapé par un `rescue` écrit pour les échecs
+  # d'enregistrement CLIENT : le client lisait « Vérifie ton nom et ton e-mail »
+  # alors que ni son nom ni son e-mail n'étaient en cause, et son inscription
+  # était perdue. 30 occurrences, 8 clients, dont sur la party publique du 18/09.
+  #
+  # La vraie garantie reste en base (`index_orders_on_order_number`, unique) et
+  # à la création via `ensure_unique_order_number` sous verrou consultatif.
+  validates :order_number, uniqueness: true, on: :create
   validates :status, presence: true
   validates :requires_invoice, inclusion: { in: [ true, false ] }
   validate :pickup_location_open_on_bake_day

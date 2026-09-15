@@ -2,7 +2,7 @@
 title: Les Pizza Parties
 order: 6
 icon: "🍕"
-summary: "Comment une party privée est réservée en ligne, où la retrouver, et comment gérer les parties publiques et les créneaux."
+summary: "Le process de demande et de validation des parties privées, le paiement au cut-off, et la gestion des parties publiques et des créneaux."
 ---
 
 # Les Pizza Parties
@@ -18,21 +18,81 @@ L'onglet **Parties** gère les **pizza parties**. Il y a deux familles :
 
 ![La liste des parties](shot:parties-index)
 
-## Comment un client réserve une party privée
+## Comment une party privée se réserve — le nouveau process
 
-Tout se passe sur la page publique de réservation, sans nous. Le client :
+Depuis septembre 2026, **une réservation de party privée n'est plus automatique**.
+Le client fait une **demande**, et c'est vous qui décidez.
 
-1. Ouvre la page **Pizza Party privée** du site.
-2. Choisit une **date** dans le calendrier — seuls les jours disponibles sont
-   cliquables.
-3. Confirme le **créneau du soir** — c'est le seul proposé — et le **nombre de personnes**.
-4. Le **forfait de 40 €** s'ajoute tout seul au panier.
-5. S'**identifie**, par son GSM **ou** par son adresse email.
-6. **Paie en ligne**.
+### 1. Le client envoie une demande
 
-Le créneau n'est **définitivement bloqué qu'une fois le paiement abouti**. Tant
-que le client n'a pas payé, sa réservation n'est pas acquise et le créneau reste
-proposé aux autres.
+Sur la page **Pizza Party privée** du site, il choisit une date, raconte qui
+vient et pourquoi, laisse ses coordonnées — et c'est tout. Il **ne paie rien**,
+et il **n'indique pas encore combien ils seront** : à dix jours de distance, il
+ne le sait pas, et ça ne change rien à votre décision.
+
+Trois règles ferment le calendrier tout seul :
+
+- **mardi soir et vendredi soir uniquement** — nos jours de boulangerie, four
+  déjà chaud, équipe sur place ;
+- **au moins 10 jours à l'avance** — il faut ce délai pour répondre et prévoir
+  la pâte ;
+- créneau **bloqué par l'équipe**, **party publique** ce soir-là, ou **capacité
+  atteinte** (réglable dans *Paramètres → Production*).
+
+### 2. Vous recevez la demande et vous répondez
+
+Un e-mail arrive à la boulangerie avec tout ce qu'il faut pour décider : la date,
+le créneau, ce que le groupe raconte, ses coordonnées. Il contient **deux liens**,
+« Valider » et « Refuser ».
+
+Ces liens ouvrent une **page de confirmation** dans l'admin : rien n'est décidé
+tant que vous n'avez pas cliqué sur le bouton. C'est volontaire — les boîtes mail
+ouvrent les liens toutes seules pour les vérifier, et une demande ne doit jamais
+être validée par un robot.
+
+Vous pouvez aussi passer par **Demandes party** dans le menu. Une pastille rouge
+y affiche le nombre de demandes qui attendent une réponse, depuis n'importe quel
+écran de l'admin.
+
+![Les demandes de party](shot:party-requests-index)
+
+L'écran a trois sections :
+
+- **À traiter** — les demandes en attente de votre réponse ;
+- **Validées, paiement attendu** — celles que vous avez acceptées et dont le
+  client n'a pas encore réglé ;
+- **Demandes traitées** — l'historique, avec les motifs de refus.
+
+**Refuser demande un motif**, et ce motif part tel quel au client, accompagné des
+prochaines dates encore libres. Écrivez-le comme vous le diriez de vive voix.
+
+### 3. Le client confirme son nombre et paie
+
+**48 h avant le cut-off de la fournée**, le client reçoit un e-mail qui lui
+demande de confirmer son nombre de participants et de régler. Il a jusqu'au
+**cut-off** — le moment où vous figez votre production. Une relance part
+automatiquement 24 h avant.
+
+Le nombre qu'il annonce à ce moment-là est celui qui sera préparé : **un
+participant = un pâton**. S'il annonce un chiffre qui ferait sauter le pétrin, le
+paiement est refusé et il est invité à vous appeler.
+
+Sans règlement au cut-off, la réservation **expire toute seule** : le créneau est
+rendu, et le client est prévenu.
+
+### 4. La party est confirmée
+
+C'est **le paiement** qui confirme, pas votre validation. À l'encaissement :
+le client reçoit sa confirmation, l'équipe séjours est prévenue, et le post-it
+orange apparaît sur le calendrier des 4 Sources.
+
+### Sur le tableau de bord de la fournée
+
+Une party validée **mais pas encore payée** apparaît dans un encart « À
+confirmer — pas encore payées », en pointillés. C'est une **prévision** : elle
+n'est comptée ni dans la pâte, ni dans le pétrin, ni dans le four, et n'entre
+dans aucun chiffre d'affaires. Elle bascule dans les vrais totaux dès que
+l'argent est encaissé.
 
 ### Les tarifs
 
@@ -40,29 +100,26 @@ proposé aux autres.
 - **40 € de forfait**, une seule fois par party, quel que soit le nombre de
   convives. Il couvre la préparation, le bois, le matériel et la mise en place.
 
-### Quand une party privée est-elle possible ?
+Le tarif est **figé au moment de la demande** : si les prix changent entre la
+demande et le paiement, le client paie ce qui lui a été annoncé.
 
-**Le mardi soir et le vendredi soir, uniquement.** Ce sont nos jours de boulangerie : le four est déjà chaud et nous sommes sur place. Aucun autre jour, et **aucun créneau de midi** — à midi la fournée est en cours, les températures ne sont pas les mêmes et personne n'est disponible pour accueillir un groupe.
+### Annuler une party
 
-Les réservations sont ouvertes **jusqu'à la veille à 16 h 00**. Passé cette heure, le créneau du lendemain se ferme tout seul.
+- **Le client** peut annuler en ligne jusqu'au cut-off. S'il avait payé, il est
+  remboursé automatiquement. Après le cut-off, la pâte est engagée : il doit
+  appeler.
+- **Vous** pouvez retirer une validation tant que rien n'est payé, avec un motif
+  qui part au client.
+- **Bloquer un créneau** déjà réservé vous montre d'abord **la liste nominative**
+  des groupes concernés, avant de rien annuler. Les réservations payées sont
+  remboursées automatiquement.
 
-### Pourquoi une date n'est pas disponible
+### Les parties saisies à la main
 
-Le calendrier ferme un créneau tout seul dans cinq cas :
-
-1. Ce n'est **ni un mardi ni un vendredi**, ou c'est le **créneau de midi**.
-2. Il est **plus de 16 h la veille** de la date.
-3. Le créneau a été **bloqué par l'équipe** (voir plus bas).
-4. Une **party publique** occupe déjà cette soirée — les parties publiques sont
-   toujours en soirée, donc elles ne ferment que le créneau du soir.
-5. La **capacité de parties privées** sur ce créneau est atteinte. Ce nombre se
-   règle dans **Paramètres → Production**.
-
-### Le four sera-t-il chaud ?
-
-Oui, toujours. Les parties privées n'ayant lieu que les mardis et vendredis
-soir — nos jours de boulangerie — le four est **déjà chaud** et le groupe
-enfourne directement. Plus aucun groupe n'a à chauffer le four lui-même.
+Une party convenue par téléphone s'enregistre depuis **Nouvelle party privée**.
+Elle est **confirmée dès sa saisie** — le post-it et l'e-mail équipe partent
+tout de suite — et se règle **sur place** : le bouton « Encaissée en liquide »
+ou « Encaissée par virement » trace le moyen de paiement.
 
 ## Ce que le client reçoit — et ce qu'il ne reçoit pas
 

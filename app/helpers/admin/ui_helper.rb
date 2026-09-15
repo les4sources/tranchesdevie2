@@ -16,7 +16,8 @@ module Admin::UiHelper
     "ready" => :success,
     "picked_up" => :neutral,
     "no_show" => :danger,
-    "cancelled" => :danger
+    "cancelled" => :danger,
+    "awaiting_payment" => :warning
   }.freeze
 
   PAYMENT_STATUS_TONES = {

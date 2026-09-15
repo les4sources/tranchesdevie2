@@ -123,6 +123,9 @@ Rails.application.routes.draw do
       end
       resources :wallet_transactions, only: [ :index, :show ]
 
+      # Demandes de Pizza party (#pizza-parties) : filtrables par état
+      # (?state=pending), pour qu'un agent sache ce qui attend une réponse.
+      resources :party_requests, only: [ :index, :show ]
       resources :groups, only: [ :index, :show ]
       resources :flours, only: [ :index, :show ]
       resources :mold_types, only: [ :index, :show ]

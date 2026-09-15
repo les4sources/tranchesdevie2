@@ -25,7 +25,10 @@ module ApplicationHelper
       "ready" => "Prête",
       "picked_up" => "Récupérée",
       "no_show" => "Non reçue",
-      "cancelled" => "Annulée"
+      "cancelled" => "Annulée",
+      # Réservation de Pizza party validée par la boulangerie, en attente du
+      # règlement du client (#pizza-parties).
+      "awaiting_payment" => "À régler"
     }
 
     labels[status.to_s] || status.to_s.tr("_", " ").capitalize

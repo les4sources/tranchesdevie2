@@ -65,8 +65,10 @@ gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.1"
-# image_processing 2.x ne tire plus ruby-vips : il faut le déclarer (Active Storage utilise :vips par défaut)
-gem "ruby-vips", "~> 2.2", require: false # chargé par ImageProcessing::Vips, pas au boot (libvips absent des jobs de scan)
+# Backend ImageMagick des variantes Active Storage (cf. config.active_storage.variant_processor).
+# Le serveur de production n'a PAS libvips (aucun libvips.so.42, rien dans ldconfig) mais a
+# ImageMagick 6.9.11 : vips y faisait échouer `assets:precompile`, donc tous les déploiements.
+gem "mini_magick", "~> 5.0"
 
 # Decorator pattern for Rails models
 gem "draper"

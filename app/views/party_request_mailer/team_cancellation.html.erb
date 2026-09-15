@@ -1,0 +1,16 @@
+<h2>Pizza party privée annulée</h2>
+
+<p>La Pizza party du
+<strong><%= I18n.l(@party_event.held_on, format: :long_with_day) %></strong>
+(<%= @party_event.slot_label.downcase %>) est <strong>annulée</strong>
+<%= @by_customer ? "à la demande du client" : "par la boulangerie" %>.</p>
+
+<table>
+  <tr><td>Client</td><td><%= @order.customer.full_name %></td></tr>
+  <tr><td>Pâtons prévus</td><td><%= @order.party_paton_count %></td></tr>
+  <tr><td>Montant</td><td><%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %><%= " — remboursé" if @order.payment_status_refunded? %></td></tr>
+  <tr><td>Commande</td><td><%= @order.order_number %></td></tr>
+</table>
+
+<p>La soirée est de nouveau libre : le créneau a été rendu et le post-it du
+calendrier retiré.</p>

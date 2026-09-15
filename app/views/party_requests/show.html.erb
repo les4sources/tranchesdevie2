@@ -44,6 +44,32 @@
       <p class="mt-1 text-sm leading-relaxed text-ink-700"><%= simple_format(@party_request.customer_note) %></p>
     </div>
 
+    <% if @order&.paid? && @party_request.deadline_at && Time.current < @party_request.deadline_at %>
+      <%= button_to cancel_party_request_path(token: @party_request.public_token),
+            method: :delete,
+            form: { data: { turbo_confirm: "Annuler cette Pizza party ? Le montant réglé te sera remboursé." } },
+            class: "mt-6 w-full rounded-md border border-danger-200 px-4 py-2.5 text-sm font-semibold text-danger-700 transition hover:bg-danger-100" do %>
+        Annuler ma réservation et me faire rembourser
+      <% end %>
+      <p class="mt-2 text-center text-xs text-ink-500">
+        Possible jusqu'au <%= I18n.l(@party_request.deadline_at.in_time_zone("Europe/Brussels"), format: :long) %>.
+        Passé ce délai, la pâte est engagée — appelle-nous.
+      </p>
+    <% elsif @order&.paid? %>
+      <p class="mt-6 rounded-md border border-flour-300 bg-flour-50 px-4 py-3 text-center text-sm text-ink-600">
+        La pâte est engagée : pour annuler, appelle la boulangerie au 0491 24 07 15.
+      </p>
+    <% end %>
+
+    <% if @order&.awaiting_payment? %>
+      <%= button_to cancel_party_request_path(token: @party_request.public_token),
+            method: :delete,
+            form: { data: { turbo_confirm: "Annuler cette réservation ? Le créneau sera rendu." } },
+            class: "mt-4 w-full rounded-md border border-flour-400 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:bg-flour-100" do %>
+        Annuler ma réservation
+      <% end %>
+    <% end %>
+
     <% if @party_request.state_pending? %>
       <%= button_to cancel_party_request_path(token: @party_request.public_token),
             method: :delete,

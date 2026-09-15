@@ -33,6 +33,8 @@ module PartyRequestsHelper
       awaiting_payment: "Acceptée — à confirmer et régler",
       confirmed: "Réservation confirmée",
       expired_no_payment: "Réservation expirée",
+      cancelled_by_customer_before_payment: "Réservation annulée",
+      cancelled_by_bakery_refunded: "Réservation annulée par la boulangerie et remboursée",
       refunded: "Réservation annulée et remboursée"
     }.fetch(party_request_state_key(party_request, order), "En attente de réponse")
   end
@@ -60,8 +62,12 @@ module PartyRequestsHelper
       "Tout est réglé : ta Pizza party est confirmée. À très vite au fournil !"
     when :expired_no_payment
       "Faute de règlement dans les délais, la réservation a expiré et le créneau a été rendu. Rien ne t'a été débité."
+    when :cancelled_by_customer_before_payment
+      "Tu as annulé cette réservation avant de la régler. Rien ne t'a été débité."
+    when :cancelled_by_bakery_refunded
+      "La boulangerie a dû annuler cette réservation. Le montant réglé t'a été intégralement remboursé — nous en sommes désolés."
     when :refunded
-      "Cette réservation est annulée et le montant réglé t'a été intégralement remboursé."
+      "Tu as annulé cette réservation : le montant réglé t'a été intégralement remboursé."
     end
   end
 
@@ -84,9 +90,22 @@ module PartyRequestsHelper
     if order.paid? || order.ready? || order.picked_up?
       :confirmed
     elsif order.cancelled?
-      order.payment_status_refunded? ? :refunded : :expired_no_payment
+      cancelled_state_key(order)
     else
       :awaiting_payment
+    end
+  end
+
+  # Quatre issues distinctes pour une réservation annulée. Elles partagent le
+  # même état technique (commande annulée) mais pas du tout le même récit :
+  # `cancelled_by` est ce qui les sépare.
+  def cancelled_state_key(order)
+    if order.payment_status_refunded?
+      order.cancelled_by == "customer" ? :refunded : :cancelled_by_bakery_refunded
+    elsif order.cancelled_by == "customer"
+      :cancelled_by_customer_before_payment
+    else
+      :expired_no_payment
     end
   end
 end

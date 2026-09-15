@@ -86,6 +86,23 @@ class PartyRequestMailer < ApplicationMailer
 
   # --- Côté boulangerie ------------------------------------------------------
 
+  # Prévient boulangers et équipe séjours qu'une party CONFIRMÉE est annulée :
+  # la soirée se libère, et personne ne doit rester à attendre un groupe.
+  def team_cancellation(order)
+    @order = order
+    @party_event = order.party_event
+    @by_customer = order.cancelled_by == "customer"
+
+    headers["X-Email-Kind"] = "party_cancelled"
+    headers["X-Order-Id"] = order.id
+
+    mail(
+      to: PartyMailer.notification_to,
+      cc: PartyMailer.notification_cc,
+      subject: "Pizza party ANNULÉE — #{I18n.l(order.party_event.held_on, format: '%A %-d %B')}"
+    )
+  end
+
   # Prévient l'équipe qu'une demande vient d'arriver, avec les deux liens de
   # décision. Les liens sont signés et mènent à une PAGE À BOUTON : aucune action
   # d'état n'est exécutée par le GET, que les clients mail préchargent.

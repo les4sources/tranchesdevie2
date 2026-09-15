@@ -59,14 +59,48 @@ class PartyRequestsController < ApplicationController
   def cancel
     if @party_request.state_pending?
       @party_request.update!(state: :cancelled)
-      redirect_to party_request_path(token: @party_request.public_token), notice: "Ta demande a été annulée."
-    else
-      redirect_to party_request_path(token: @party_request.public_token),
-                  alert: "Cette demande ne peut plus être annulée."
+      return redirect_to party_request_path(token: @party_request.public_token),
+                         notice: "Ta demande a été annulée."
     end
+
+    order = @party_request.order
+
+    # Une réservation PAYÉE s'annule en ligne jusqu'au cut-off de la fournée :
+    # au-delà, la pâte est engagée et c'est à la boulangerie d'en décider.
+    if order&.paid? && cancellable_until_cut_off?
+      return cancel_paid_reservation(order)
+    end
+
+    # Validée mais pas encore payée : rien à rembourser, on rend le créneau.
+    if order&.awaiting_payment?
+      PartyReservationRelease.new(order).call(cancel_payment_intent: true)
+      order.update_column(:cancelled_by, "customer")
+      return redirect_to party_request_path(token: @party_request.public_token),
+                         notice: "Ta réservation a été annulée. Rien ne t'a été débité."
+    end
+
+    redirect_to party_request_path(token: @party_request.public_token),
+                alert: "Cette réservation ne peut plus être annulée en ligne. Appelle-nous, on trouvera une solution."
   end
 
   private
+
+  def cancellable_until_cut_off?
+    deadline = @party_request.deadline_at
+    deadline.nil? || Time.current < deadline
+  end
+
+  def cancel_paid_reservation(order)
+    service = RefundService.new(order, cancelled_by: "customer")
+
+    if service.call
+      redirect_to party_request_path(token: @party_request.public_token),
+                  notice: "Ta réservation est annulée et le montant réglé t'est remboursé."
+    else
+      redirect_to party_request_path(token: @party_request.public_token),
+                  alert: "Le remboursement n'a pas pu être lancé. Appelle-nous, on s'en occupe."
+    end
+  end
 
   # Le calendrier (party_calendar_controller) soumet un seul champ
   # « YYYY-MM-DD|creneau ». On accepte aussi les deux champs séparés, pour qu'une

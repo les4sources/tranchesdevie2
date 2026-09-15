@@ -6,8 +6,12 @@ class RefundService
 
   attr_reader :order, :errors
 
-  def initialize(order)
+  # `cancelled_by` distingue les deux annulations d'une Pizza party payée, que le
+  # client doit pouvoir lire sans ambiguïté sur sa page de suivi : celle qu'il a
+  # demandée lui-même, et celle que la boulangerie lui impose (#pizza-parties).
+  def initialize(order, cancelled_by: nil)
     @order = order
+    @cancelled_by = cancelled_by
     @errors = []
   end
 
@@ -35,7 +39,7 @@ class RefundService
       @order.payment.update!(status: :refunded)
       @order.transition_to!(:cancelled)
       release_private_party_slot
-      SmsService.send_refund(@order) if @order.customer.sms_enabled?
+      notify_refund
       true
     else
       @errors << "Refund failed: #{refund.failure_reason}"
@@ -58,8 +62,22 @@ class RefundService
       @order.transition_to!(:cancelled)
     end
     release_private_party_slot
-    SmsService.send_refund(@order) if @order.customer.sms_enabled?
+    notify_refund
     true
+  end
+
+  # Le canal dépend du parcours : une Pizza party se règle et s'annule par
+  # E-MAIL, jamais par SMS (#pizza-parties) — et le client doit garder une trace
+  # écrite de son remboursement. Les commandes de pain, elles, gardent le SMS
+  # qu'elles ont toujours eu.
+  def notify_refund
+    if @order.party?
+      @order.update_column(:cancelled_by, @cancelled_by) if @cancelled_by.present?
+      PartyRequestNotifier.refunded(@order)
+      OrderNotificationService.notify_team_of_party_cancellation(@order)
+    elsif @order.customer.sms_enabled?
+      SmsService.send_refund(@order)
+    end
   end
 
   # Une party PRIVÉE annulée libère son créneau : la capacité compte les

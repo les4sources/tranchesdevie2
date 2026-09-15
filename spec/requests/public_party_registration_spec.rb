@@ -252,4 +252,49 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       expect(response.body).to include('>5<')
     end
   end
+
+  # Le panier non vide bloquait l'inscription sans rien dire au client de quoi
+  # faire : il cliquait « Ajouter », la page rechargeait, rien n'était ajouté.
+  # Le cookie de session vit un an — un pain oublié bloque des semaines plus tard.
+  describe 'panier bloquant' do
+    let(:bread) { create(:product, channel: 'store') }
+    let(:bread_variant) { create(:product_variant, product: bread, channel: 'store', price_cents: 700) }
+
+    it 'annonce le blocage AVANT le clic, avec de quoi le lever' do
+      post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 2 }
+
+      get pizza_parties_path
+
+      expect(response.body).to include("Ton panier t'empêche de t'inscrire")
+      expect(response.body).to include('2 articles')
+      expect(response.body).to include(cart_clear_path)
+    end
+
+    it "n'affiche aucun bandeau quand le panier ne bloque rien" do
+      get pizza_parties_path
+      expect(response.body).not_to include("Ton panier t'empêche de t'inscrire")
+
+      post cart_add_path, params: { product_variant_id: adult_variant.id, public_party_event_id: event.id, qty: 2 }
+      get pizza_parties_path
+      expect(response.body).not_to include("Ton panier t'empêche de t'inscrire")
+    end
+
+    it 'dit au client de vider son panier plutôt que de « terminer sa commande »' do
+      post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 1 }
+      post cart_add_path, params: { product_variant_id: adult_variant.id, public_party_event_id: event.id, qty: 2 }
+
+      expect(flash[:alert]).to include('Vide-le')
+    end
+
+    it 'vide le panier et laisse l\'inscription passer' do
+      post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 1 }
+
+      delete cart_clear_path
+      expect(session[:cart]).to eq([])
+
+      post cart_add_path, params: { product_variant_id: adult_variant.id, public_party_event_id: event.id, qty: 2 }
+      expect(session[:cart].map { |i| i['product_variant_id'] }).to include(adult_variant.id.to_s)
+      expect(session[:public_party_event_id]).to eq(event.id)
+    end
+  end
 end

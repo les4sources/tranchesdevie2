@@ -604,4 +604,40 @@ RSpec.describe Order, type: :model do
       end
     end
   end
+
+  # TRANCHESDEVIE-Z / -H : le checkout créait la commande, appelait Stripe, puis
+  # `order.update!(payment_intent_id:)` — et ce dernier revalidait l'unicité du
+  # numéro, qui n'avait pourtant pas changé. Quand ça sautait, le client lisait
+  # « Vérifie ton nom et ton e-mail » et son inscription était perdue.
+  describe 'unicité du numéro de commande' do
+    let(:bake_day) { create(:bake_day) }
+
+    it "ne revalide plus l'unicité sur un update" do
+      order = create(:order, bake_day: bake_day)
+
+      expect { order.update!(payment_intent_id: 'pi_test_123') }.not_to raise_error
+      expect(order.reload.payment_intent_id).to eq('pi_test_123')
+    end
+
+    it "n'interroge plus la base sur l'unicité lors d'un update" do
+      order = create(:order, bake_day: bake_day)
+
+      queries = []
+      subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, payload|
+        queries << payload[:sql]
+      end
+      order.update!(payment_intent_id: 'pi_test_456')
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+
+      expect(queries.grep(/order_number/)).to be_empty
+    end
+
+    it 'refuse toujours un doublon à la création' do
+      existing = create(:order, bake_day: bake_day)
+      duplicate = build(:order, bake_day: bake_day, order_number: existing.order_number)
+
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:order_number]).to be_present
+    end
+  end
 end

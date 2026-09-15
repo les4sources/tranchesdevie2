@@ -11,5 +11,18 @@ class PublicPartiesController < ApplicationController
 
     @events = PartyEvent.public_events.upcoming.where(active: true)
                         .where(historical_source: nil)
+
+    # Panier qui EMPÊCHE l'inscription : une commande party ne se mélange ni au
+    # pain ni à une party privée, et le client ne pouvait le découvrir qu'en
+    # cliquant « Ajouter » (le refus arrivait après coup, sans rien lui dire de
+    # quoi faire). Le cookie de session vit un an : un pain oublié il y a des
+    # semaines bloque encore l'inscription aujourd'hui. On l'annonce AVANT.
+    @blocking_cart_count = PizzaPartyForfaitService.non_public_items?(session[:cart]) ? cart_item_count : 0
+  end
+
+  private
+
+  def cart_item_count
+    Array(session[:cart]).sum { |item| item["qty"].to_i }
   end
 end

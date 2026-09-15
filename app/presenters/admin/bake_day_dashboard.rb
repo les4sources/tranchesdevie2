@@ -242,6 +242,36 @@ module Admin
     # pareil. La sélection vient de `party_orders`, qui applique déjà
     # `PartyEvent#preparation_bake_day` : une party de midi apparaît donc sur la
     # fournée qui la prépare, pas sur celle du jour où elle a lieu.
+    # Parties VALIDÉES mais pas encore payées que cette fournée préparerait
+    # (#pizza-parties).
+    #
+    # Elles ne sont ni une vente ni une pâte — elles n'entrent donc dans AUCUN
+    # total. Mais les cacher complètement privait le boulanger de sa prévision :
+    # un groupe de vingt validé dix jours à l'avance n'apparaissait nulle part
+    # jusqu'au paiement. On les montre à part, en « à confirmer ».
+    def parties_to_confirm
+      @parties_to_confirm ||= begin
+        event_ids = PartyEvent.prepared_by(bake_day).pluck(:id)
+
+        if event_ids.empty?
+          []
+        else
+          Order.where(party_event_id: event_ids, status: :awaiting_payment)
+               .includes(:customer, :party_event, order_items: { product_variant: :product })
+               .sort_by { |order| [ order.party_event.held_on, order.party_event.slot.to_s ] }
+               .map { |order| party_entry(order).merge(to_confirm: true) }
+        end
+      end
+    end
+
+    # Parties de cette fournée qu'AUCUNE fournée ne prépare correctement : la
+    # pâte n'existera pas le jour venu. L'app le signale plutôt que de les
+    # laisser disparaître des écrans de production.
+    def parties_without_preparation
+      @parties_without_preparation ||= (parties_to_prepare + parties_to_confirm)
+        .select { |entry| entry[:party_event].preparation_missing? }
+    end
+
     def parties_to_prepare
       @parties_to_prepare ||= party_orders
         .select { |order| order.party_event.present? }

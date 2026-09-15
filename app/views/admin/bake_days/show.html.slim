@@ -125,6 +125,48 @@
               = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
               = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
 
+  / Parties validées mais PAS ENCORE PAYÉES (#pizza-parties). Elles ne comptent
+  / dans aucun total — ni pâte, ni pétrin, ni four — mais les cacher privait le
+  / boulanger de sa prévision : un groupe de vingt validé dix jours avant
+  / n'apparaissait nulle part jusqu'au paiement.
+  - to_confirm = @dashboard.parties_to_confirm
+  - if to_confirm.any?
+    - total_a_confirmer = to_confirm.sum { |party| party[:paton_count] }
+    #parties-a-confirmer.adm-card.p-4.sm:p-6 style="border-style: dashed;"
+      .flex.flex-wrap.items-center.gap-3
+        = lucide "hourglass", size: 18, color: "var(--text-muted)"
+        h2.text-lg.font-semibold style="color: var(--text-muted);" À confirmer — pas encore payées
+        = adm_chip("#{total_a_confirmer} pâton#{'s' if total_a_confirmer > 1} en prévision", tone: :neutral)
+      p.mt-1.text-sm style="color: var(--text-muted);"
+        | Ces réservations sont validées mais le client n'a pas encore réglé. Elles ne sont comptées dans aucun total tant que l'argent n'est pas encaissé.
+
+      .mt-3.grid.gap-2 class="sm:grid-cols-2 xl:grid-cols-3"
+        - to_confirm.each do |party|
+          .adm-card.p-3 style="background: var(--surface-card); border-style: dashed;"
+            .flex.flex-wrap.items-center.gap-2
+              = adm_chip("À confirmer", tone: :neutral)
+              - unless party[:same_day]
+                = adm_chip("pour le #{l(party[:held_on], format: :long_with_day)}", tone: :warning)
+            p.mt-2.text-sm.font-semibold style="color: var(--text-strong);"
+              = "#{party[:paton_count]} pâton#{'s' if party[:paton_count] > 1} — #{party[:customer_name] || 'Sans client'}"
+            - if party[:order].payment_due_at
+              p.text-xs style="color: var(--text-muted);"
+                = "à régler avant le #{l(party[:order].payment_due_at.in_time_zone('Europe/Brussels'), format: :short)}"
+            = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction mt-2 inline-block"
+
+  / Une party dont aucune fournée ne prépare les pâtons : sans ce signal, elle a
+  / lieu sans pâte.
+  - orphelines = @dashboard.parties_without_preparation
+  - if orphelines.any?
+    .adm-card.p-4.sm:p-6 style="border-color: var(--danger-300);"
+      p.text-sm.font-semibold style="color: var(--danger-700);"
+        = "#{orphelines.size} Pizza party sans fournée préparatoire"
+      p.mt-1.text-sm style="color: var(--text-muted);"
+        | Aucune fournée ne pétrit leurs pâtons, ou celle qui le ferait est trop ancienne. Sans intervention, ces parties auront lieu sans pâte.
+      ul.mt-2.text-sm
+        - orphelines.each do |party|
+          li = "#{l(party[:held_on], format: :long_with_day)} — #{party[:customer_name] || 'Sans client'} (#{party[:paton_count]} pâtons)"
+
   .adm-card.p-4.sm:p-6
     h2.text-xl.font-semibold style="color: var(--text-strong);" Qui boulange aujourd'hui ?
     = form_with model: @bake_day, url: admin_bake_day_path(@bake_day), method: :patch, local: true, class: "mt-4 space-y-3" do |form|

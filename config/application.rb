@@ -52,6 +52,19 @@ module Tranchesdevie2
     config.autoload_paths << Rails.root.join("app/decorators")
     config.eager_load_paths << Rails.root.join("app/decorators")
 
+    # Variantes Active Storage : ImageMagick, pas vips (TRANCHESDEVIE-1A).
+    #
+    # Rails utilise :vips par défaut, et le charge AU BOOT (ActiveStorage
+    # after_initialize → Transformers::Vips → require "vips"). Le serveur de
+    # production n'a pas la bibliothèque C libvips : depuis le passage de
+    # image_processing à 2.x, le boot de l'environnement production levait donc
+    # un LoadError, `assets:precompile` échouait, et AUCUN déploiement ne
+    # basculait — la prod est restée figée sur la release du 14/09 20h52 pendant
+    # que les releases suivantes se construisaient dans le vide.
+    #
+    # ImageMagick est installé sur le serveur (6.9.11) : on s'appuie dessus.
+    config.active_storage.variant_processor = :mini_magick
+
     # Don't generate system test files.
     config.generators.system_tests = nil
   end

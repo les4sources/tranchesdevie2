@@ -72,22 +72,33 @@ class PartyRequestService
   end
 
   # Copie les lignes avec leur prix du jour et la remise groupe applicable.
+  #
+  # La remise est figée PAR UNITÉ, pas en total de ligne : le nombre de
+  # participants n'est encore qu'une estimation et sera confirmé au paiement.
+  # Une remise stockée en total ne saurait pas suivre un groupe passé de 8 à 20 —
+  # il faudrait la recalculer, donc la dégeler, donc trahir le montant annoncé.
   def freeze_lines!
+    discounts = GroupDiscountService.new(@customer)
+
     lines = [ { variant: party_variant, qty: @persons } ]
     lines << { variant: forfait_variant, qty: 1 } if @forfait && forfait_variant
 
-    discount_cents = GroupDiscountService.new(@customer).total_discount_cents(lines)
-
-    lines.each_with_index do |line, index|
+    lines.each do |line|
       @party_request.party_request_items.create!(
         product_variant: line[:variant],
         qty: line[:qty],
         unit_price_cents: line[:variant].price_cents,
-        # La remise groupe porte sur l'ensemble : on l'impute entièrement à la
-        # première ligne (les pâtons), la seule dont la quantité varie.
-        discount_cents: index.zero? ? discount_cents : 0
+        discount_cents: unit_discount_for(discounts, line[:variant])
       )
     end
+  end
+
+  # Remise d'UNE unité : la règle ciblée quand elle existe, sinon le pourcentage
+  # global du client appliqué au prix unitaire.
+  def unit_discount_for(discounts, variant)
+    return discounts.unit_discount_cents(variant) if discounts.targeted?(variant)
+
+    GroupDiscountService.percent_discount_cents(variant.price_cents, discounts.global_percent)
   end
 
   def party_variant

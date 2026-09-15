@@ -11,7 +11,14 @@ class PartyRequestItem < ApplicationRecord
   validates :qty, numericality: { only_integer: true, greater_than: 0 }
   validates :unit_price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
+  # `discount_cents` est une remise UNITAIRE (cf. PartyRequestService) : le total
+  # suit donc exactement la quantité, y compris quand le client confirme un
+  # nombre de participants différent de son estimation.
   def total_cents
-    qty * unit_price_cents - discount_cents
+    qty * net_unit_price_cents
+  end
+
+  def net_unit_price_cents
+    [ unit_price_cents - discount_cents, 0 ].max
   end
 end

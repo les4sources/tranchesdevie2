@@ -1,0 +1,12 @@
+- content_for :title, "Lien expiré"
+- content_for :layout, "admin"
+
+= adm_page_header "Lien de décision invalide"
+
+.adm-card.mx-auto.max-w-xl.p-6
+  p.text-sm
+    | Ce lien n'est plus valable : il a expiré, ou il a été modifié en cours de route.
+  p.mt-3.text-sm style="color: var(--text-muted);"
+    | Aucune décision n'a été prise. Ouvrez la file des demandes pour répondre.
+  p.mt-4
+    = link_to "Voir les demandes", admin_party_requests_path, class: adm_btn_class(:primary)

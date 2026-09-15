@@ -1,0 +1,101 @@
+- content_for :title, "Demandes de Pizza party"
+- content_for :layout, "admin"
+
+= adm_page_header "Demandes de Pizza party" do
+  = link_to "Toutes les parties", admin_party_events_path, class: adm_btn_class(:default)
+
+/ Les demandes en attente d'une réponse : c'est l'écran qui manquait au process.
+/ Sans lui, une demande n'existe que dans un e-mail.
+section.mb-8
+  h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);"
+    | À traiter
+    - if @pending.any?
+      span.ml-2.text-sm style="color: var(--text-muted);" = "(#{@pending.size})"
+  - if @pending.any?
+    .adm-card.overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr
+            th.px-4.py-3.text-left Date de la party
+            th.px-4.py-3.text-left Client
+            th.px-4.py-3.text-left Ce que le groupe dit
+            th.px-4.py-3.text-left Réponse attendue avant
+            th.px-4.py-3
+        tbody
+          - @pending.each do |request|
+            tr.border-t
+              td.px-4.py-3.font-medium
+                = I18n.l(request.held_on, format: :long_with_day).capitalize
+                .text-xs style="color: var(--text-muted);" = request.slot_label
+              td.px-4.py-3
+                = request.customer.full_name
+                .text-xs style="color: var(--text-muted);" = request.customer.email
+              td.px-4.py-3.max-w-md.truncate title=request.customer_note
+                = truncate(request.customer_note, length: 90)
+              td.px-4.py-3
+                - if request.deadline_at
+                  = I18n.l(request.deadline_at, format: :short)
+                  .text-xs style="color: var(--text-muted);" cut-off de la fournée
+                - else
+                  span style="color: var(--text-muted);" —
+              td.px-4.py-3.text-right
+                = link_to "Ouvrir", admin_party_request_path(request), class: adm_btn_class(:primary)
+  - else
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);"
+      | Aucune demande en attente.
+
+/ Une party validée mais pas encore payée n'a AUCUN autre écran : elle n'est ni
+/ une vente (hors index des parties) ni une pâte (hors feuilles de production).
+section.mb-8
+  h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Validées, paiement attendu
+  - if @awaiting_payment.any?
+    .adm-card.overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr
+            th.px-4.py-3.text-left Date de la party
+            th.px-4.py-3.text-left Client
+            th.px-4.py-3.text-left À régler avant
+            th.px-4.py-3.text-left Validée par
+            th.px-4.py-3
+        tbody
+          - @awaiting_payment.each do |request|
+            tr.border-t
+              td.px-4.py-3.font-medium = I18n.l(request.held_on, format: :long_with_day).capitalize
+              td.px-4.py-3
+                = request.customer.full_name
+                .text-xs style="color: var(--text-muted);" = request.customer.email
+              td.px-4.py-3
+                - if request.order&.payment_due_at
+                  = I18n.l(request.order.payment_due_at.in_time_zone("Europe/Brussels"), format: :short)
+              td.px-4.py-3
+                = request.decided_by
+                .text-xs style="color: var(--text-muted);" = request.decided_at && I18n.l(request.decided_at, format: :short)
+              td.px-4.py-3.text-right
+                = link_to "Ouvrir", admin_party_request_path(request), class: adm_btn_class(:default)
+  - else
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);"
+      | Aucune réservation en attente de paiement.
+
+section.mb-8
+  h2.mb-4.text-xl.font-semibold style="color: var(--text-strong);" Demandes traitées
+  - if @handled.any?
+    .adm-card.overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr
+            th.px-4.py-3.text-left Date
+            th.px-4.py-3.text-left Client
+            th.px-4.py-3.text-left Issue
+            th.px-4.py-3.text-left Motif
+        tbody
+          - @handled.each do |request|
+            tr.border-t
+              td.px-4.py-3 = I18n.l(request.held_on, format: :long_with_day)
+              td.px-4.py-3 = request.customer.full_name
+              td.px-4.py-3 = admin_party_request_state_label(request)
+              td.px-4.py-3.max-w-md.truncate title=request.decision_reason
+                = request.decision_reason.presence || "—"
+  - else
+    .adm-card.px-4.py-10.text-center.text-sm style="color: var(--text-muted);"
+      | Aucune demande traitée pour l'instant.

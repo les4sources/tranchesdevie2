@@ -1,0 +1,95 @@
+- content_for :title, "Demande de Pizza party"
+- content_for :layout, "admin"
+
+= adm_page_header "Demande — #{I18n.l(@party_request.held_on, format: :long_with_day)}" do
+  = link_to "Retour aux demandes", admin_party_requests_path, class: adm_btn_class(:default)
+
+- if @conflict
+  .adm-card.mb-6.px-4.py-3 style="border-color: var(--danger-300);"
+    p.text-sm.font-semibold style="color: var(--danger-700);"
+      | Conflit : une Pizza party PUBLIQUE est programmée ce jour-là (#{@conflict.title}).
+    p.mt-1.text-sm style="color: var(--text-muted);"
+      | Le créneau du soir est déjà pris — la validation échouera. Refusez la demande avec un motif, ou déplacez la party publique.
+
+.grid.gap-6.lg:grid-cols-2
+  .adm-card.p-5
+    h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" La demande
+    dl.space-y-2.text-sm
+      div
+        dt.font-medium Date et créneau
+        dd = "#{I18n.l(@party_request.held_on, format: :long_with_day)} — #{@party_request.slot_label.downcase}"
+      div
+        dt.font-medium État
+        dd = admin_party_request_state_label(@party_request)
+      div
+        dt.font-medium Tarif figé
+        dd = "#{number_to_currency(@party_request.paton_unit_price_cents / 100.0, unit: '€', separator: ',', delimiter: '')} / personne + forfait #{number_to_currency(@party_request.forfait_cents / 100.0, unit: '€', separator: ',', delimiter: '')}"
+      div
+        dt.font-medium Nombre de participants
+        dd
+          - if @order
+            = "#{@order.party_paton_count} pâton(s) — confirmé au paiement"
+          - else
+            span style="color: var(--text-muted);" Pas encore connu : le client le confirmera en réglant.
+      - if @party_request.deadline_at
+        div
+          dt.font-medium Cut-off de la fournée
+          dd = I18n.l(@party_request.deadline_at, format: :long)
+      - if @party_request.decided_at
+        div
+          dt.font-medium Traitée par
+          dd = "#{@party_request.decided_by} le #{I18n.l(@party_request.decided_at, format: :long)}"
+      - if @party_request.decision_reason.present?
+        div
+          dt.font-medium Motif communiqué au client
+          dd = @party_request.decision_reason
+
+  .adm-card.p-5
+    h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" Le groupe
+    dl.space-y-2.text-sm
+      div
+        dt.font-medium Client
+        dd = @party_request.customer.full_name
+      div
+        dt.font-medium E-mail
+        dd = @party_request.customer.email
+      div
+        dt.font-medium Téléphone
+        dd = @party_request.customer.phone_e164.presence || "—"
+      div
+        dt.font-medium Ce qu'il nous dit
+        dd.whitespace-pre-line = @party_request.customer_note
+
+- if @party_request.state_pending?
+  .adm-card.mt-6.p-5
+    h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" Répondre
+    p.mb-4.text-sm style="color: var(--text-muted);"
+      | Valider crée la réservation et envoie au client son lien de règlement. Refuser lui envoie votre motif, tel quel.
+
+    = form_with url: accept_admin_party_request_path(@party_request), method: :post, class: "mb-6 flex flex-wrap items-end gap-3" do
+      div
+        label.mb-1.block.text-sm.font-medium Votre prénom
+        = text_field_tag :decided_by, nil, placeholder: "Romane", class: adm_field_class
+      = submit_tag "Valider la demande", class: adm_btn_class(:primary)
+
+    = form_with url: refuse_admin_party_request_path(@party_request), method: :post, class: "space-y-3" do
+      div
+        label.mb-1.block.text-sm.font-medium Motif du refus (envoyé au client)
+        = text_area_tag :reason, nil, rows: 3, required: true, class: adm_field_class("w-full"),
+          placeholder: "Ex. le four est déjà pris par un autre groupe ce soir-là."
+      .flex.flex-wrap.items-end.gap-3
+        div
+          label.mb-1.block.text-sm.font-medium Votre prénom
+          = text_field_tag :decided_by, nil, placeholder: "Romane", class: adm_field_class
+        = submit_tag "Refuser la demande", class: adm_btn_class(:danger)
+
+- elsif @order&.awaiting_payment?
+  .adm-card.mt-6.p-5
+    h2.mb-3.text-lg.font-semibold style="color: var(--text-strong);" Retirer la validation
+    p.mb-4.text-sm style="color: var(--text-muted);"
+      | Tant que rien n'est payé, vous pouvez annuler cette réservation. Le créneau est rendu et le client reçoit votre motif.
+    = form_with url: retract_admin_party_request_path(@party_request), method: :post, class: "space-y-3" do
+      div
+        label.mb-1.block.text-sm.font-medium Motif (envoyé au client)
+        = text_area_tag :reason, nil, rows: 3, required: true, class: adm_field_class("w-full")
+      = submit_tag "Annuler cette réservation", class: adm_btn_class(:danger)

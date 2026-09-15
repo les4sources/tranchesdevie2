@@ -42,6 +42,14 @@ class PartyDecisionService
         raise ActiveRecord::Rollback
       end
 
+      # Sans lignes figées, il n'y a pas de prix à facturer : la commande naîtrait
+      # à 0 € et exploserait sur sa validation de total. On le dit plutôt que de
+      # laisser remonter un RecordInvalid illisible.
+      if @party_request.party_request_items.empty?
+        @errors << "Cette demande n'a pas de tarif enregistré : impossible de la valider."
+        raise ActiveRecord::Rollback
+      end
+
       lock_slot!
 
       unless PartyEvent.private_slot_available?(@party_request.held_on, @party_request.slot)

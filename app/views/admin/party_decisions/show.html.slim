@@ -1,0 +1,49 @@
+- content_for :title, "Décision — Pizza party"
+- content_for :layout, "admin"
+
+= adm_page_header "Demande de Pizza party"
+
+.adm-card.mx-auto.max-w-2xl.p-6
+  p.mb-4.text-sm style="color: var(--text-muted);"
+    | Vous arrivez depuis l'e-mail de notification. <strong>Rien n'a encore été décidé</strong> : la décision ne part qu'au clic sur le bouton ci-dessous.
+
+  dl.mb-6.space-y-2.text-sm
+    div
+      dt.font-medium Date
+      dd = "#{I18n.l(@party_request.held_on, format: :long_with_day)} — #{@party_request.slot_label.downcase}"
+    div
+      dt.font-medium Client
+      dd = "#{@party_request.customer.full_name} · #{@party_request.customer.email}"
+    div
+      dt.font-medium Ce que le groupe dit
+      dd.whitespace-pre-line = @party_request.customer_note
+    div
+      dt.font-medium État actuel
+      dd = admin_party_request_state_label(@party_request)
+
+  - if @party_request.state_pending?
+    - if @decision == "accept"
+      = form_with url: accept_admin_party_request_path(@party_request), method: :post, class: "flex flex-wrap items-end gap-3"
+        div
+          label.mb-1.block.text-sm.font-medium Votre prénom
+          = text_field_tag :decided_by, nil, placeholder: "Romane", class: adm_field_class
+        = submit_tag "Valider cette demande", class: adm_btn_class(:primary)
+      p.mt-3.text-sm
+        = link_to "Plutôt refuser…", admin_party_request_path(@party_request)
+    - else
+      = form_with url: refuse_admin_party_request_path(@party_request), method: :post, class: "space-y-3"
+        div
+          label.mb-1.block.text-sm.font-medium Motif du refus (envoyé au client)
+          = text_area_tag :reason, nil, rows: 3, required: true, class: adm_field_class("w-full")
+        .flex.flex-wrap.items-end.gap-3
+          div
+            label.mb-1.block.text-sm.font-medium Votre prénom
+            = text_field_tag :decided_by, nil, placeholder: "Romane", class: adm_field_class
+          = submit_tag "Refuser cette demande", class: adm_btn_class(:danger)
+      p.mt-3.text-sm
+        = link_to "Plutôt valider…", admin_party_request_path(@party_request)
+  - else
+    p.text-sm.font-semibold style="color: var(--danger-700);"
+      = admin_party_request_already_handled(@party_request)
+    p.mt-3.text-sm
+      = link_to "Voir la demande", admin_party_request_path(@party_request)

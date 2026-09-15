@@ -10,6 +10,7 @@ module Admin::NavigationHelper
     { key: "bake_days",    label: "Jours de cuisson",  icon: "flame",           path: :admin_bake_days_path },
     { key: "customers",    label: "Mangeurs",          icon: "users",           path: :admin_customers_path },
     { key: "products",     label: "Produits",          icon: "wheat",           path: :admin_products_path },
+    { key: "party_requests", label: "Demandes party", icon: "mail",            path: :admin_party_requests_path, badge: :pending_party_requests },
     { key: "party_events", label: "Parties",           icon: "party-popper",    path: :admin_party_events_path },
     { key: "workshops",    label: "Ateliers",          icon: "sprout",          path: :admin_workshops_path },
     { key: "billing",      label: "Facturation",       icon: "badge-euro",      path: :admin_billing_path },
@@ -21,7 +22,22 @@ module Admin::NavigationHelper
 
   def admin_nav_items
     ADMIN_NAV.map do |item|
-      item.merge(href: public_send(item[:path]), active: admin_nav_active?(item[:key], item[:path]))
+      item.merge(
+        href: public_send(item[:path]),
+        active: admin_nav_active?(item[:key], item[:path]),
+        badge_count: admin_nav_badge_count(item[:badge])
+      )
+    end
+  end
+
+  # Compteur affiché en pastille. Une demande de Pizza party sans réponse ne doit
+  # pas dépendre d'un e-mail retrouvé : elle se voit depuis n'importe quel écran
+  # de l'admin (#pizza-parties).
+  def admin_nav_badge_count(badge)
+    case badge
+    when :pending_party_requests
+      count = PartyRequest.state_pending.count
+      count.positive? ? count : nil
     end
   end
 

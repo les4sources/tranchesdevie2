@@ -1,0 +1,50 @@
+<% content_for :title, "Demande envoyée — Pizza Party privée" %>
+
+<div class="mx-auto max-w-[680px] px-6 py-16">
+  <div class="rounded-2xl border border-flour-300 bg-warm-white p-8 text-center shadow-xs sm:p-10">
+    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sage-100">
+      <%= lucide "send", size: 26, color: "var(--sage-700)" %>
+    </div>
+
+    <h1 class="mt-5 font-script text-[36px] font-bold leading-tight text-ink-900">Ta demande est partie&nbsp;!</h1>
+
+    <p class="mt-3 text-[17px] leading-relaxed text-ink-700">
+      La boulangerie a reçu ta demande pour le
+      <b class="font-semibold text-ink-900"><%= I18n.l(@party_request.held_on, format: :long_with_day) %></b>,
+      <%= @party_request.slot_label.downcase %>, pour <%= @party_request.estimated_persons %>
+      personne<%= "s" if @party_request.estimated_persons > 1 %>.
+    </p>
+
+    <div class="mt-6 rounded-xl border border-sage-200 bg-sage-100 px-5 py-4 text-left">
+      <p class="text-[15px] leading-relaxed text-ink-700">
+        <b class="font-semibold text-ink-900">Rien ne t'a été débité.</b>
+        L'équipe examine ta demande et te répond par e-mail à
+        <b class="font-semibold text-ink-900"><%= @party_request.customer.email %></b>.
+        Si c'est d'accord, tu confirmeras ton nombre de participants et régleras ta réservation —
+        nous te solliciterons le
+        <b class="font-semibold text-ink-900"><%= I18n.l(@party_request.payment_prompt_at.to_date, format: :long_with_day) %></b>.
+      </p>
+    </div>
+
+    <dl class="mt-6 grid gap-3 text-left sm:grid-cols-2">
+      <div class="rounded-lg border border-flour-300 px-4 py-3">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Montant estimé</dt>
+        <dd class="mt-1 text-lg font-semibold text-ink-900">
+          <%= number_to_currency(@party_request.estimated_total_cents / 100.0, unit: "€", separator: ",", delimiter: " ") %>
+        </dd>
+        <p class="mt-1 text-xs text-ink-500">forfait compris, recalculé sur le nombre confirmé</p>
+      </div>
+      <div class="rounded-lg border border-flour-300 px-4 py-3">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-400">Réponse attendue avant</dt>
+        <dd class="mt-1 text-lg font-semibold text-ink-900"><%= I18n.l(@party_request.deadline_at.to_date, format: :long_with_day) %></dd>
+      </div>
+    </dl>
+
+    <%= link_to party_request_path(token: @party_request.public_token),
+          class: "mt-7 inline-flex items-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500" do %>
+      <%= lucide "eye", size: 18, color: "#fff" %> Suivre ma demande
+    <% end %>
+
+    <p class="mt-3 text-xs text-ink-500">Garde ce lien : il te donne l'état de ta demande à tout moment.</p>
+  </div>
+</div>

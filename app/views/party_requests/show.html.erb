@@ -1,0 +1,57 @@
+<% content_for :title, "Ma demande de Pizza Party" %>
+
+<div class="mx-auto max-w-[680px] px-6 py-12">
+  <% if flash[:notice] %>
+    <p class="mb-6 rounded-md border border-sage-200 bg-sage-100 px-4 py-3 text-sm font-medium text-sage-700"><%= flash[:notice] %></p>
+  <% end %>
+  <% if flash[:alert] %>
+    <p class="mb-6 rounded-md border border-danger-200 bg-danger-100 px-4 py-3 text-sm font-medium text-danger-700"><%= flash[:alert] %></p>
+  <% end %>
+
+  <div class="rounded-2xl border border-flour-300 bg-warm-white p-8 shadow-xs">
+    <p class="text-xs font-semibold uppercase tracking-wide text-ink-400">Pizza Party privée</p>
+    <h1 class="mt-1 font-script text-[32px] font-bold leading-tight text-ink-900">
+      <%= I18n.l(@party_request.held_on, format: :long_with_day).capitalize %>
+    </h1>
+    <p class="mt-1 text-sm text-ink-500">
+      <%= @party_request.slot_label %> · <%= @party_request.estimated_persons %>
+      personne<%= "s" if @party_request.estimated_persons > 1 %> annoncée<%= "s" if @party_request.estimated_persons > 1 %>
+    </p>
+
+    <div class="mt-6 rounded-xl border px-5 py-4 <%= party_request_state_classes(@party_request, @order) %>">
+      <p class="text-sm font-semibold"><%= party_request_state_label(@party_request, @order) %></p>
+      <p class="mt-1 text-sm leading-relaxed"><%= party_request_state_explanation(@party_request, @order) %></p>
+    </div>
+
+    <% if @order&.awaiting_payment? %>
+      <%= link_to party_payment_path(token: @order.public_token),
+            class: "mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500" do %>
+        <%= lucide "credit-card", size: 18, color: "#fff" %> Confirmer et régler ma réservation
+      <% end %>
+      <p class="mt-2 text-center text-xs text-ink-500">
+        À régler avant le <%= I18n.l(@order.payment_due_at.in_time_zone("Europe/Brussels"), format: :long) %>
+      </p>
+    <% end %>
+
+    <% if @party_request.decision_reason.present? %>
+      <div class="mt-6 rounded-lg border border-flour-300 bg-flour-50 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-wide text-ink-400">Le mot de la boulangerie</p>
+        <p class="mt-1 text-sm leading-relaxed text-ink-700"><%= simple_format(@party_request.decision_reason) %></p>
+      </div>
+    <% end %>
+
+    <div class="mt-6 border-t border-flour-300 pt-5">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-400">Ce que tu nous as écrit</p>
+      <p class="mt-1 text-sm leading-relaxed text-ink-700"><%= simple_format(@party_request.customer_note) %></p>
+    </div>
+
+    <% if @party_request.state_pending? %>
+      <%= button_to cancel_party_request_path(token: @party_request.public_token),
+            method: :delete,
+            form: { data: { turbo_confirm: "Annuler cette demande ? Cette action est définitive." } },
+            class: "mt-6 w-full rounded-md border border-flour-400 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:bg-flour-100" do %>
+        Annuler ma demande
+      <% end %>
+    <% end %>
+  </div>
+</div>

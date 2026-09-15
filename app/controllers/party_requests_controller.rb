@@ -29,10 +29,12 @@ class PartyRequestsController < ApplicationController
       return render_new
     end
 
+    date, slot = parse_slot_choice
+
     service = PartyRequestService.new(
       customer: customer,
-      date: params[:held_on],
-      slot: params[:slot].presence || PartyEvent::PRIVATE_SLOT,
+      date: date,
+      slot: slot,
       persons: params[:persons],
       customer_note: params[:customer_note],
       group_name: params[:group_name]
@@ -66,6 +68,19 @@ class PartyRequestsController < ApplicationController
   end
 
   private
+
+  # Le calendrier (party_calendar_controller) soumet un seul champ
+  # « YYYY-MM-DD|creneau ». On accepte aussi les deux champs séparés, pour qu'une
+  # soumission sans JavaScript reste possible.
+  def parse_slot_choice
+    choice = params[:party_slot_choice].to_s
+    if choice.include?("|")
+      date, slot = choice.split("|", 2)
+      [ date, slot.presence || PartyEvent::PRIVATE_SLOT ]
+    else
+      [ params[:held_on], params[:slot].presence || PartyEvent::PRIVATE_SLOT ]
+    end
+  end
 
   def render_new
     new

@@ -179,6 +179,38 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       expect(response.parsed_body['error']).to include('portefeuille')
     end
 
+    # Le groupe Sourciers porte une remise CIBLÉE (8 € par place) et 0 % de remise
+    # globale : la page de paiement calculait la remise sur le seul pourcentage
+    # global, et affichait donc le prix plein alors que Stripe encaissait le prix
+    # remisé — panier et paiement ne racontaient pas la même chose.
+    it 'affiche le prix remisé quand la remise du groupe est ciblée sur le produit' do
+      sourciers = create(:group, name: 'Sourciers', discount_percent: 0)
+      create(:group_product_discount, :fixed, group: sourciers, product: public_product, discount_value: 800)
+      create(:customer_group, customer: customer, group: sourciers)
+
+      get new_checkout_path
+
+      expect(response).to have_http_status(:ok)
+      # 2 adultes à 10 € + 1 enfant à 6 € = 26 € ; remise 8 €/place : 16 € + 6 €
+      expect(response.body).to include('Payer 4,00 €')
+      expect(response.body).to include('-22,00 €')
+      expect(response.body).not_to include('Payer 26,00 €')
+    end
+
+    it 'encaisse exactement le montant affiché avec une remise ciblée' do
+      sourciers = create(:group, name: 'Sourciers', discount_percent: 0)
+      create(:group_product_discount, :fixed, group: sourciers, product: public_product, discount_value: 800)
+      create(:customer_group, customer: customer, group: sourciers)
+      stub_stripe_payment_intent_create(amount: 400)
+
+      post '/checkout/create_payment_intent',
+           params: { first_name: 'Léa' }.to_json,
+           headers: { 'CONTENT_TYPE' => 'application/json' }
+
+      expect(response).to have_http_status(:ok)
+      expect(Order.order(:created_at).last.total_cents).to eq(400)
+    end
+
     it 'renvoie vers la page publique si les inscriptions ferment entre-temps' do
       event.update!(registration_closes_at: 1.minute.ago)
 

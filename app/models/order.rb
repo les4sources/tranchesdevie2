@@ -130,6 +130,19 @@ class Order < ApplicationRecord
   scope :in_bake_day_range, lambda { |start_date, end_date|
     joins(:bake_day).where(bake_days: { baked_on: start_date..end_date, draft: false })
   }
+  # Même porte que `in_bake_day_range`, mais datée par l'ÉVÉNEMENT quand il y en
+  # a un. Une commande party n'a pas de fournée (#pizza-parties) : la jointure
+  # INTERNE de `in_bake_day_range` la faisait disparaître des rapports party
+  # sans lever d'erreur. Les jours brouillon restent exclus (#197) ; une
+  # commande party, sans fournée, n'est jamais un brouillon.
+  scope :in_event_date_range, lambda { |start_date, end_date|
+    left_joins(:bake_day, :party_event)
+      .where("bake_days.draft IS NOT TRUE")
+      .where(
+        "COALESCE(party_events.held_on, bake_days.baked_on) BETWEEN :start_date AND :end_date",
+        start_date: start_date, end_date: end_date
+      )
+  }
   scope :from_calendar, -> { calendar }
   scope :from_checkout, -> { checkout }
   # Commandes affichables dans « Mon compte » (#144) : une commande `pending` est

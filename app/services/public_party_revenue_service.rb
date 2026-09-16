@@ -76,7 +76,7 @@ class PublicPartyRevenueService
       next if items.empty?
 
       party_orders += 1
-      date = order.bake_day&.baked_on || Date.current
+      date = order.event_date || Date.current
       rate = four_sources_rate(date)
       # CA NET par ligne (#274), pour la même raison que côté party privée : le
       # CA party se retranche de la marge pain, il doit donc se lire dans la

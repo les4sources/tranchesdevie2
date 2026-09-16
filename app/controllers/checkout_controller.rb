@@ -878,15 +878,20 @@ class CheckoutController < ApplicationController
   end
 
   def calculate_subtotal
-    (session[:cart] || []).sum do |item|
-      item["qty"].to_i * item["price_cents"].to_i
-    end
+    current_cart_subtotal_cents
   end
 
-  def calculate_discount(subtotal, customer)
-    return 0 unless customer&.effective_discount_percent&.positive?
+  # Le panier et la commande créée passent tous deux par GroupDiscountService,
+  # qui connaît les remises CIBLÉES (#87) en plus du pourcentage global. La page
+  # de paiement calculait, elle, la seule remise globale : un client remisé sur
+  # un produit précis (Sourciers sur les Pizza parties publiques) voyait le prix
+  # plein à l'écran alors que Stripe encaissait le prix remisé.
+  def calculate_discount(_subtotal, customer)
+    return 0 unless customer
 
-    (subtotal * customer.effective_discount_percent / 100.0).round
+    GroupDiscountService.new(customer).total_discount_cents(
+      current_cart_items.map { |item| { variant: item[:variant], qty: item[:qty] } }
+    )
   end
 
   def normalize_phone(phone)

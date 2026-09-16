@@ -76,7 +76,7 @@ class PizzaPartyRevenueService
       next if party_items.empty?
 
       party_orders += 1
-      date = order.bake_day&.baked_on || Date.current
+      date = order.event_date || Date.current
       # CA NET par ligne (#274) : le CA party doit se lire dans la même unité que
       # `orders.total_cents`, sur lequel s'appuie le CA du jour. Compté au brut,
       # toute remise consentie sur une party était retranchée de la marge PAIN —

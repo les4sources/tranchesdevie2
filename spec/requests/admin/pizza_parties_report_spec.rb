@@ -84,4 +84,65 @@ RSpec.describe "Admin::Reports pizza parties", type: :request do
     expect(response.body).to include("216,30 €")  # boulangers dus (barème rétro)
     expect(response.body).to include("418,87 €")  # 4S net encaissé (446 − 27,13)
   end
+
+  # Une commande party est datée par son ÉVÉNEMENT et n'a pas de fournée : la
+  # jointure interne de `in_bake_day_range` la faisait disparaître du rapport,
+  # sans erreur — des parties réelles manquaient aux chiffres (#pizza-parties).
+  describe "commandes rattachées à un PartyEvent (sans fournée)" do
+    it "compte une party privée datée par son événement" do
+      create(:pickup_location, :default)
+      customer = create(:customer, first_name: "Carla", last_name: "Nero")
+      event = create(:party_event, :private_party, held_on: date)
+      party_product = create(:product, :pizza_party, name: "Pizza party privée – Nombre de personnes")
+      party_variant = create(:product_variant, product: party_product, name: "une boule", price_cents: 500)
+      forfait_product = create(:product, :pizza_party_forfait, name: "Forfait Pizza party")
+      forfait_variant = create(:product_variant, product: forfait_product, name: "forfait", price_cents: 4000)
+      create(:variant_cost_price, product_variant: party_variant, amount_cents: 26, active_from: date - 30)
+      order = create(:order, :paid, customer: customer, bake_day: nil, party_event: event,
+                                    source: :party, total_cents: 10 * 500 + 4000)
+      create(:order_item, order: order, product_variant: party_variant, qty: 10, unit_price_cents: 500)
+      create(:order_item, order: order, product_variant: forfait_variant, qty: 1, unit_price_cents: 4000)
+
+      get pizza_parties_admin_reports_path, params: { start_date: "2026-07-01", end_date: "2026-07-31" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Carla Nero")
+      expect(response.body).to include("10/07/2026")
+      expect(response.body).not_to include("Aucune pizza party privée sur cette période.")
+    end
+
+    it "compte une inscription à une party publique datée par son événement" do
+      create(:pickup_location, :default)
+      customer = create(:customer, first_name: "Dina", last_name: "Rossi")
+      event = create(:party_event, :public_party, held_on: date)
+      product = create(:product, :pizza_party_public, name: "Pizza party publique")
+      adulte = create(:product_variant, product: product, name: "adulte", price_cents: 1_000, party_four_sources_base_cents: 300)
+      create(:variant_cost_price, product_variant: adulte, amount_cents: 26, active_from: date - 30)
+      create(:revenue_parameter, :four_sources_rate, value: 3_000, active_from: date - 60)
+      order = create(:order, :paid, customer: customer, bake_day: nil, party_event: event,
+                                    source: :party, total_cents: 1_000)
+      create(:order_item, order: order, product_variant: adulte, qty: 1, unit_price_cents: 1_000)
+
+      get pizza_parties_admin_reports_path, params: { start_date: "2026-07-01", end_date: "2026-07-31" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Dina Rossi")
+      expect(response.body).to include("10/07/2026")
+    end
+
+    it "laisse dehors une party hors période" do
+      create(:pickup_location, :default)
+      customer = create(:customer, first_name: "Elio", last_name: "Bianchi")
+      event = create(:party_event, :private_party, held_on: Date.new(2026, 8, 20))
+      party_product = create(:product, :pizza_party, name: "Pizza party privée – Nombre de personnes")
+      party_variant = create(:product_variant, product: party_product, name: "une boule", price_cents: 500)
+      order = create(:order, :paid, customer: customer, bake_day: nil, party_event: event,
+                                    source: :party, total_cents: 5 * 500)
+      create(:order_item, order: order, product_variant: party_variant, qty: 5, unit_price_cents: 500)
+
+      get pizza_parties_admin_reports_path, params: { start_date: "2026-07-01", end_date: "2026-07-31" }
+
+      expect(response.body).not_to include("Elio Bianchi")
+    end
+  end
 end

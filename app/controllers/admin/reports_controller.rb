@@ -109,11 +109,11 @@ class Admin::ReportsController < Admin::BaseController
                          .select(:order_id)
 
     Order.completed
-         .in_bake_day_range(@start_date, @end_date)
+         .in_event_date_range(@start_date, @end_date)
          .where(id: order_ids)
-         .includes(:customer, :bake_day,
+         .includes(:customer, :bake_day, :party_event,
                    order_items: { product_variant: [ :variant_cost_prices, :product ] })
-         .sort_by { |order| [ order.bake_day.baked_on, order.created_at ] }
+         .sort_by { |order| [ order.event_date, order.created_at ] }
   end
 
   def parsed_date(value)

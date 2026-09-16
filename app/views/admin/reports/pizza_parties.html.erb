@@ -81,7 +81,7 @@
 
         <% @rows.each do |order, r| %>
           <tr>
-            <td class="adm-grid-num whitespace-nowrap"><%= l(order.bake_day.baked_on) %></td>
+            <td class="adm-grid-num whitespace-nowrap"><%= l(order.event_date) %></td>
             <td class="font-medium">
               <%= link_to order.customer.full_name, admin_order_path(order), class: "adm-link" %>
             </td>
@@ -160,7 +160,7 @@
 
         <% @public_rows.each do |order, r| %>
           <tr>
-            <td class="adm-grid-num whitespace-nowrap"><%= l(order.bake_day.baked_on) %></td>
+            <td class="adm-grid-num whitespace-nowrap"><%= l(order.event_date) %></td>
             <td class="font-medium">
               <%= link_to order.customer.full_name, admin_order_path(order), class: "adm-link" %>
             </td>

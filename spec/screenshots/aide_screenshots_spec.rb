@@ -249,6 +249,32 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
     create(:party_event, :public_party, title: "Pizza Party publique de l'été", held_on: Date.current + 14)
     create(:party_event, :public_party, title: "Pizza Party de la rentrée", held_on: Date.current + 35)
     create(:party_slot_block, blocked_on: Date.current + 21, slot: :soir)
+
+    build_party_requests
+  end
+
+  # Demandes de Pizza party (#pizza-parties) : la file d'attente du boulanger a
+  # besoin des trois états pour que sa capture montre quelque chose — une à
+  # traiter, une validée en attente de paiement, une refusée avec son motif.
+  def build_party_requests
+    # E-mails explicites : la factory préfixe les siens par le PID du processus
+    # de test, ce qui donne des adresses fantaisistes en pleine documentation.
+    pending_customer = create(:customer, first_name: "Fabienne", last_name: "Renard",
+                                         email: "fabienne.renard@example.be")
+    create(:party_request, customer: pending_customer,
+                           customer_note: "Les 40 ans de Claire. On arrive vers 18 h, on sera une quinzaine.")
+
+    accepted_customer = create(:customer, first_name: "Yann", last_name: "Dupont",
+                                          email: "yann.dupont@example.be")
+    accepted = create(:party_request, customer: accepted_customer,
+                                      customer_note: "Soirée d'équipe, arrivée 18 h 30.")
+    PartyDecisionService.new(accepted, decided_by: "Romane").accept
+
+    refused_customer = create(:customer, first_name: "Sofia", last_name: "Mercier",
+                                         email: "sofia.mercier@example.be")
+    create(:party_request, :refused, customer: refused_customer,
+                                     customer_note: "Anniversaire surprise.",
+                                     decision_reason: "Le four est déjà pris par un autre groupe ce soir-là.")
   end
 
   def resolve_path(entry, records)

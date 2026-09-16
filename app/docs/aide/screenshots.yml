@@ -117,6 +117,9 @@
 - slug: party-new
   path: /admin/parties/new
 
+- slug: party-requests-index
+  path: /admin/parties/demandes
+
 - slug: party-slot-blocks
   path: /admin/parties/blocages
 

@@ -176,6 +176,8 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `APP_HOST` (production host for links in emails — unsubscribe, order pages)
 - `PARTY_NOTIFICATION_TO` (internal recipient of the new-private-party notification, defaults to `boulangerie@les4sources.be`)
 - `PARTY_NOTIFICATION_CC` (copied on that notification, defaults to `sejours@les4sources.be`)
+- `BAKERY_BCC` (blind copy added to **every** outbound email addressed to the bakery, defaults to `michael+tranchesdevie@hulet.eu`; set to an empty string to disable). Applied by an ActionMailer interceptor (`config/initializers/bakery_bcc.rb`), not per-mailer — a future email to the team is copied without touching it.
+- `BAKERY_NOTIFICATION_ADDRESS` (the watched recipient, defaults to `boulangerie@les4sources.be`)
 - `TRANCHESDEVIE_API_KEY` (Bearer token for the private read-only agent API — see Agent API below)
 - `CLAUDY_API_URL` (base URL of claudy, the Les 4 Sources app — defaults to `https://app.les4sources.be`)
 - `CLAUDY_API_TOKEN` (Bearer token for claudy's notes API — no default; when blank the calendar-note sync is a silent no-op, which is the state of dev and CI)

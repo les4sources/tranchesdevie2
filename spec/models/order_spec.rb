@@ -132,9 +132,15 @@ RSpec.describe Order, type: :model do
   end
 
   describe 'payment_status / invoice_status enums (#41)' do
+    # « Additive increment » est bien l'intention : un statut peut s'ajouter en fin
+    # de liste (`awaiting_payment`, #pizza-parties), aucun ne peut changer de
+    # valeur — ces entiers sont écrits dans `orders.status` depuis le début.
+    # D'où `include` plutôt que `contain_exactly` : c'est le déplacement qu'on
+    # interdit, pas l'ajout.
     it 'leaves the logistic status enum untouched (additive increment)' do
-      expect(Order.statuses.keys).to contain_exactly(
-        'pending', 'paid', 'ready', 'picked_up', 'no_show', 'cancelled', 'unpaid', 'planned'
+      expect(Order.statuses).to include(
+        'pending' => 0, 'paid' => 1, 'ready' => 2, 'picked_up' => 3, 'no_show' => 4,
+        'cancelled' => 5, 'unpaid' => 6, 'planned' => 7
       )
     end
 

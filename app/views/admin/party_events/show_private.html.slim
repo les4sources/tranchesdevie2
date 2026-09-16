@@ -11,7 +11,19 @@
   / supprime d'ici — pas une réservation venue du site, payée en ligne.
   - if @reservation&.manually_added?
     = link_to "Modifier", edit_admin_private_party_path(@event), class: adm_btn_class(:default)
-    = button_to (@reservation.paid? ? "Marquer non payée" : "Marquer payée"), toggle_paid_admin_private_party_path(@event), method: :patch, class: adm_btn_class(:default)
+    / Encaissement SUR PLACE : le moyen est tracé, et le contrôle disparaît dès
+    / qu'un paiement réel existe (Stripe / portefeuille).
+    - if @reservation.tracked_payment?
+      = adm_chip "Payée en ligne", tone: :success
+    / `turbo: false` : la réponse Turbo Stream d'`encaissement` remplace la CARTE
+    / d'une commande sur la page d'un jour de cuisson. Une party n'a pas de
+    / fournée et donc pas cette carte — sans ça, le pointage passait en base
+    / mais l'écran ne bougeait pas. On reste en HTML, le contrôleur redirige.
+    - elsif @reservation.payment_status_paid?
+      = button_to "Annuler le pointage", encaissement_admin_order_path(@reservation, method: "none"), method: :patch, form: { data: { turbo: false } }, class: adm_btn_class(:default)
+    - else
+      = button_to "Encaissée en liquide", encaissement_admin_order_path(@reservation, method: "cash"), method: :patch, form: { data: { turbo: false } }, class: adm_btn_class(:default)
+      = button_to "Encaissée par virement", encaissement_admin_order_path(@reservation, method: "transfer"), method: :patch, form: { data: { turbo: false } }, class: adm_btn_class(:default)
     = button_to "Supprimer la party", admin_private_party_path(@event), method: :delete, form: { data: { turbo_confirm: "Supprimer cette party et sa commande ? Les revenus seront recalculés." } }, class: adm_btn_class(:danger)
   = link_to "Retour aux parties", admin_party_events_path, class: adm_btn_class(:default)
 

@@ -51,6 +51,27 @@ production:
     schedule: "0 */3 * * *"
     description: "Backfill missing Stripe fees (stripe_fee_cents NULL) every 3 hours"
 
+  # Cycle de vie des Pizza parties (#pizza-parties), toutes les 10 minutes.
+  #
+  # La cadence est courte pour la même raison que `expire_stale_pending_orders` :
+  # les échéances sont portées par le CUT-OFF DE CHAQUE FOURNÉE et ne tombent
+  # jamais à heure fixe. Un passage quotidien honorerait une sollicitation ou une
+  # expiration jusqu'à 24 h trop tard — le client serait sollicité après le
+  # cut-off, ou son créneau rendu bien après avoir dû l'être.
+  #
+  # Les deux jobs sont idempotents : chaque envoi pose son horodatage
+  # (`reminded_at`, `payment_prompted_at`, `payment_reminded_at`), qui sert de
+  # garde au passage suivant.
+  party_request_lifecycle:
+    class: PartyRequestLifecycleJob
+    schedule: "*/10 * * * *"
+    description: "Relance la boulangerie sur une demande de Pizza party sans réponse et clôture celles que le cut-off a dépassées"
+
+  party_payment_lifecycle:
+    class: PartyPaymentLifecycleJob
+    schedule: "*/10 * * * *"
+    description: "Sollicite, relance et fait expirer le paiement des Pizza parties validées, en interrogeant Stripe avant d'annuler"
+
   # Alerte « solde insuffisant », TOUS LES JOURS à 10h00 (#274) — soit six heures
   # avant un cut-off à 16h00. Quotidien pour la même raison que le job
   # ci-dessus : le cut-off est porté par la fournée, pas par le jour de semaine.

@@ -1,0 +1,57 @@
+- content_for :title, "Confirmer le blocage"
+- content_for :layout, "admin"
+
+= adm_page_header "Cette soirée est déjà réservée"
+
+.adm-card.mb-6.p-5 style="border-color: var(--danger-300);"
+  p.text-sm.font-semibold style="color: var(--danger-700);"
+    | Bloquer le #{l(@block.blocked_on, format: :long_with_day)}#{@block.slot.present? ? " (#{@block.slot})" : ""} annulera #{@impacted.size} réservation#{'s' if @impacted.size > 1}.
+  p.mt-1.text-sm style="color: var(--text-muted);"
+    | Les groupes ci-dessous seront prévenus par e-mail. Les réservations déjà payées seront remboursées automatiquement.
+
+.adm-card.mb-6.overflow-x-auto
+  table.w-full.text-sm
+    thead
+      tr
+        th.px-4.py-3.text-left Groupe
+        th.px-4.py-3.text-left Date
+        th.px-4.py-3.text-left Pâtons
+        th.px-4.py-3.text-left État
+    tbody
+      - @impacted.each do |entry|
+        tr.border-t
+          td.px-4.py-3
+            = entry.customer.full_name
+            .text-xs style="color: var(--text-muted);" = entry.customer.email
+          td.px-4.py-3 = "#{l(entry.held_on, format: :long_with_day)} — #{entry.slot}"
+          td.px-4.py-3 = entry.patons
+          td.px-4.py-3
+            - if entry.paid?
+              = adm_chip "Payée — sera remboursée", tone: :danger
+            - else
+              = adm_chip "Non payée", tone: :neutral
+
+- if @pending_requests.any?
+  .adm-card.mb-6.p-5
+    p.text-sm.font-semibold style="color: var(--text-strong);"
+      | #{@pending_requests.size} demande#{'s' if @pending_requests.size > 1} en attente sur cette date
+    p.mt-1.text-sm style="color: var(--text-muted);"
+      | Elles ne sont PAS annulées automatiquement : à vous de leur répondre depuis la file des demandes.
+    ul.mt-2.text-sm
+      - @pending_requests.each do |request|
+        li = "#{request.customer.full_name} — #{l(request.held_on, format: :long_with_day)}"
+
+= form_with url: admin_party_slot_blocks_path, method: :post, class: "adm-card p-5 space-y-4" do
+  = hidden_field_tag "party_slot_block[blocked_on]", @block.blocked_on
+  = hidden_field_tag "party_slot_block[slot]", @block.slot
+  = hidden_field_tag "party_slot_block[reason]", @block.reason
+  = hidden_field_tag :confirmed, "1"
+
+  div
+    label.mb-1.block.text-sm.font-medium Ce qu'on dit aux groupes annulés
+    = text_area_tag :cancellation_reason, @block.reason, rows: 3, class: adm_field_class("w-full"),
+      placeholder: "Ex. le four doit être réparé ce soir-là."
+
+  .flex.flex-wrap.gap-3
+    = submit_tag "Bloquer et annuler ces réservations", class: adm_btn_class(:danger)
+    = link_to "Renoncer", admin_party_slot_blocks_path, class: adm_btn_class(:default)

@@ -80,6 +80,19 @@ class WebhooksController < ApplicationController
       return false
     end
 
+    # Garde-fou (#pizza-parties) : le montant encaissé doit être celui de la
+    # commande. Un écart signifie que la commande a bougé entre la création du
+    # PaymentIntent et le paiement (nombre de participants corrigé, deux onglets).
+    # On encaisse quand même — l'argent est pris, refuser laisserait le client
+    # payé sans réservation — mais on le signale pour régularisation.
+    charged = payment_intent.try(:amount)
+
+    if charged.present? && charged != order.total_cents
+      message = "Webhook: montant encaissé #{charged} ≠ commande #{order.total_cents} (commande #{order.id})"
+      Rails.logger.error(message)
+      Sentry.capture_message(message, level: :error) if defined?(Sentry)
+    end
+
     OrderPaymentFinalizer.call(order: order, payment_intent_id: payment_intent_id)
     Rails.logger.info("Order #{order.id} encaissée via webhook (PI #{payment_intent_id})")
     true

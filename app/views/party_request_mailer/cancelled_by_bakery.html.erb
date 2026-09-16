@@ -1,0 +1,17 @@
+<p>Bonjour <%= @order.customer.first_name %>,</p>
+
+<p>Nous devons annuler ta Pizza party du
+<strong><%= I18n.l(@order.party_event.held_on, format: :long_with_day) %></strong>.
+Nous en sommes sincèrement désolés.</p>
+
+<% if @reason.present? %>
+  <p><strong>La raison :</strong><br><%= simple_format(@reason) %></p>
+<% end %>
+
+<% if @order.payment_status_refunded? %>
+  <p>Le montant réglé, soit
+  <strong><%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %></strong>,
+  t'est intégralement remboursé. Le remboursement apparaît sur ton compte sous quelques jours.</p>
+<% end %>
+
+<p>La boulangerie Tranches de Vie</p>

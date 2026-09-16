@@ -1,0 +1,28 @@
+<h2>Nouvelle demande de Pizza party privée</h2>
+
+<p>Une demande vient d'arriver. <strong>Rien n'est réservé et le client n'a rien payé</strong>
+tant que vous n'avez pas répondu. Le nombre de participants n'est pas encore connu : le client
+le confirmera en réglant, 48 h avant le cut-off de la fournée.</p>
+
+<table>
+  <tr><td>Date</td><td><strong><%= I18n.l(@party_request.held_on, format: :long_with_day) %></strong></td></tr>
+  <tr><td>Créneau</td><td><%= @party_request.slot_label %></td></tr>
+  <tr><td>Client</td><td><%= @party_request.customer.full_name %></td></tr>
+  <tr><td>E-mail</td><td><%= @party_request.customer.email %></td></tr>
+  <tr><td>Téléphone</td><td><%= @party_request.customer.phone_e164.presence || "—" %></td></tr>
+  <tr><td>Tarif</td><td><%= number_to_currency(@party_request.paton_unit_price_cents / 100.0, unit: "€", separator: ",", delimiter: "") %> / personne + forfait <%= number_to_currency(@party_request.forfait_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></td></tr>
+  <% if @party_request.deadline_at %>
+    <tr><td>Réponse attendue avant</td><td><%= I18n.l(@party_request.deadline_at, format: :long) %> (cut-off de la fournée)</td></tr>
+  <% end %>
+</table>
+
+<p><strong>Ce que le groupe raconte :</strong><br>
+<%= simple_format(@party_request.customer_note) %></p>
+
+<p>
+  <%= link_to "Valider cette demande", @accept_url %><br>
+  <%= link_to "Refuser cette demande", @refuse_url %>
+</p>
+
+<p>Les deux liens ouvrent une page de confirmation dans l'admin : rien n'est décidé
+tant que vous n'avez pas cliqué sur le bouton.</p>

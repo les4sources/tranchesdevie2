@@ -17,10 +17,15 @@ class PublicPartiesController < ApplicationController
     # cliquant « Ajouter » (le refus arrivait après coup, sans rien lui dire de
     # quoi faire). Le cookie de session vit un an : un pain oublié il y a des
     # semaines bloque encore l'inscription aujourd'hui. On l'annonce AVANT.
-    @blocking_cart_count = PizzaPartyForfaitService.non_public_items?(session[:cart]) ? cart_item_count : 0
+    @blocking_cart_count = non_public_items_in_cart? ? cart_item_count : 0
   end
 
   private
+
+  # Le panier contient-il autre chose qu'une inscription à une party publique ?
+  def non_public_items_in_cart?
+    (Product.pizza_party_roles_in_cart(session[:cart]) - [ "public_party" ]).any?
+  end
 
   def cart_item_count
     Array(session[:cart]).sum { |item| item["qty"].to_i }

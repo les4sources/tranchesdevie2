@@ -1,0 +1,250 @@
+<% content_for :title, "Demander une Pizza Party privée — au four à bois des 4 Sources" %>
+
+<section class="border-b border-flour-300 bg-gradient-to-b from-sage-100 to-flour-50">
+  <div class="mx-auto max-w-[1040px] px-6 py-12 md:py-16">
+    <div class="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
+      <div>
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
+          <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Pizza Party privée
+        </div>
+        <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Demande ta Pizza Party privée</h1>
+        <p class="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-700">
+          Les boulangères te préparent des pâtons au levain, tu amènes tes garnitures, et ton
+          groupe enfourne ses pizzas dans le four à bois des 4 Sources.
+        </p>
+        <div class="mt-6 flex items-start gap-3 rounded-xl border border-sage-200 bg-warm-white px-4 py-3.5">
+          <%= lucide "hand-heart", size: 20, color: "var(--sage-700)" %>
+          <p class="text-[15px] leading-relaxed text-ink-700">
+            <b class="font-semibold text-ink-900">Ceci est une demande, pas encore une réservation.</b>
+            Rien ne t'est débité aujourd'hui. La boulangerie l'examine et te répond par e-mail ;
+            si c'est d'accord, tu confirmeras ton nombre de participants et régleras ta
+            réservation quelques jours avant la party.
+          </p>
+        </div>
+      </div>
+      <div class="relative">
+        <%= image_tag "pizza_party/party-1.jpg", alt: "Pizza au levain sortie du four à bois", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="mx-auto max-w-[1040px] px-6 py-10">
+  <% if flash.now[:alert] || flash[:alert] %>
+    <p class="mb-6 rounded-md border border-danger-200 bg-danger-100 px-4 py-3 text-sm font-medium text-danger-700">
+      <%= flash.now[:alert] || flash[:alert] %>
+    </p>
+  <% end %>
+
+  <% if @party_variant %>
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "wheat", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[28px] font-semibold leading-tight text-ink-900">Un pâton par personne</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Pétri au levain par les boulangères, avec tout le matériel de cuisson à disposition.
+          Tu annonceras le nombre exact quelques jours avant la party.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "calendar-check", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[28px] font-semibold leading-tight text-ink-900">Au moins 10 jours à l'avance</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Les pizza parties ont lieu le mardi soir et le vendredi soir — les jours de boulangerie,
+          quand le four est déjà chaud et l'équipe présente.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "flame", size: 22, color: "var(--ember-600)" %></div>
+        <h2 class="mt-4 text-[28px] font-semibold leading-tight text-ink-900">Cuisson au feu de bois</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-700">
+          Ton groupe gère le feu et la cuisson dans le four professionnel — jusqu'à 30 pizzas
+          à la fois.
+        </p>
+      </div>
+    </div>
+
+    <%= form_with url: party_requests_path, method: :post, local: true,
+          data: { controller: "party-calendar party-request", action: "submit->party-calendar#guard" },
+          class: "mt-10" do |f| %>
+      <input type="hidden" name="party_slot_choice" data-party-calendar-target="input">
+      <input type="hidden" name="otp_verified" value="<%= @customer ? "1" : "0" %>" data-party-request-target="verified">
+
+      <div class="grid gap-8 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+        <div>
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">1. Choisis ta date</h3>
+          <p class="mt-1 text-sm text-ink-500">
+            Les dates à moins de <%= PartyRequest::MINIMUM_NOTICE_DAYS %> jours n'apparaissent pas :
+            l'équipe a besoin de ce délai pour te répondre et préparer la pâte.
+          </p>
+
+          <div class="mt-4 space-y-9">
+            <% (@availability || {}).group_by { |date, _slots| date.beginning_of_month }.each do |month, days| %>
+              <div>
+                <p class="font-script text-[26px] font-bold text-ink-900">
+                  <%= I18n.with_locale(:fr) { I18n.l(month, format: "%B %Y") }.capitalize %>
+                </p>
+                <div class="mt-3 grid grid-cols-7 gap-1.5 sm:gap-2">
+                  <% %w[Lun Mar Mer Jeu Ven Sam Dim].each do |weekday| %>
+                    <span class="pb-1 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-400"><%= weekday %></span>
+                  <% end %>
+                  <% (days.first.first.cwday - 1).times do %>
+                    <span></span>
+                  <% end %>
+                  <% days.each do |date, slots| %>
+                    <% if slots.values.any? %>
+                      <button type="button"
+                              class="group flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-flour-300 bg-warm-white text-ink-900 transition hover:-translate-y-0.5 hover:border-sage-400 hover:shadow-xs aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white"
+                              aria-pressed="false"
+                              aria-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") } %>"
+                              data-party-calendar-target="day"
+                              data-action="click->party-calendar#selectDay"
+                              data-date="<%= date.iso8601 %>"
+                              data-oven-hot="<%= BakeDay::COOKING_WDAYS.include?(date.wday) %>"
+                              data-midi="<%= slots["midi"] %>"
+                              data-soir="<%= slots["soir"] %>"
+                              data-label="<%= I18n.with_locale(:fr) { I18n.l(date, format: "%A %-d %B") }.capitalize %>">
+                        <span class="text-base font-semibold sm:text-lg"><%= date.day %></span>
+                        <span class="flex gap-1">
+                          <span class="h-1.5 w-1.5 rounded-full <%= slots["soir"] ? "bg-ember-500 group-aria-pressed:bg-white" : "bg-flour-300" %>"></span>
+                        </span>
+                      </button>
+                    <% else %>
+                      <span class="flex aspect-square items-center justify-center rounded-lg border border-flour-200 bg-flour-100 text-base text-ink-300 line-through sm:text-lg"><%= date.day %></span>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <p class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-500">
+            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ember-500"></span> Soirée ouverte aux demandes</span>
+            <span class="inline-flex items-center gap-1.5 text-ink-400"><span class="h-1.5 w-1.5 rounded-full bg-flour-300"></span> Indisponible</span>
+          </p>
+        </div>
+
+        <aside class="rounded-2xl border border-flour-300 bg-warm-white p-6 shadow-xs lg:sticky lg:top-6">
+          <h3 class="text-[32px] font-semibold leading-tight text-ink-900">2. Ta demande</h3>
+          <p class="mt-1 text-sm text-ink-500">
+            <%= number_to_currency(@party_variant.price_euros, unit: "€", separator: ",", delimiter: " ") %> / personne
+            <span class="text-ink-400">·</span> forfait 40 €
+          </p>
+
+          <div class="mt-5" data-party-calendar-target="placeholder">
+            <p class="flex items-center gap-2 rounded-md border border-dashed border-flour-400 bg-flour-50 px-4 py-3 text-sm text-ink-500">
+              <%= lucide "calendar-days", size: 16, color: "var(--ink-500)" %> Choisis d'abord une date dans le calendrier.
+            </p>
+          </div>
+
+          <div class="mt-5 hidden" data-party-calendar-target="slotPanel">
+            <p class="text-sm font-semibold text-ink-900" data-party-calendar-target="slotLabel"></p>
+            <div class="mt-2 grid gap-2">
+              <button type="button"
+                      class="inline-flex items-center justify-center gap-2 rounded-md border border-flour-400 px-3 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-sage-400 aria-pressed:border-sage-600 aria-pressed:bg-sage-600 aria-pressed:text-white disabled:cursor-not-allowed disabled:border-flour-200 disabled:bg-flour-100 disabled:text-ink-300 disabled:line-through"
+                      aria-pressed="false"
+                      data-slot="soir"
+                      data-party-calendar-target="slotButton"
+                      data-action="click->party-calendar#selectSlot">
+                <%= lucide "moon-star", size: 16 %> Soir
+              </button>
+            </div>
+          </div>
+
+          <p class="mt-3 hidden items-start gap-2 rounded-md border border-sage-200 bg-sage-100 px-3 py-2.5 text-[13px] leading-relaxed text-ink-700" data-party-calendar-target="ovenHotNotice">
+            <%= lucide "flame", size: 16, color: "var(--sage-700)" %>
+            <span>Ce soir-là, le four est <b class="font-semibold text-ink-900">déjà chaud</b> (jour de boulangerie).</span>
+          </p>
+
+          <div class="mt-5">
+            <label for="customer_note" class="text-sm font-medium text-ink-900">Parle-nous de ton groupe *</label>
+            <p class="mt-1 text-[13px] leading-relaxed text-ink-500">
+              Quelle est l'occasion&nbsp;? À quelle heure arrivez-vous&nbsp;?
+            </p>
+            <textarea id="customer_note"
+                      name="customer_note"
+                      rows="4"
+                      required
+                      maxlength="<%= Order::CUSTOMER_NOTE_MAX_LENGTH %>"
+                      data-party-calendar-target="note"
+                      data-action="input->party-calendar#countNote"
+                      class="mt-2 w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]"
+                      placeholder="Ex. C'est l'anniversaire de Jules, on arrive vers 18h30."><%= params[:customer_note] %></textarea>
+            <p class="mt-1 text-right text-xs text-ink-400">
+              <span data-party-calendar-target="noteCount">0</span>/<%= Order::CUSTOMER_NOTE_MAX_LENGTH %> caractères
+            </p>
+          </div>
+
+          <div class="mt-6 border-t border-flour-300 pt-5">
+            <h4 class="text-sm font-semibold text-ink-900">Tes coordonnées</h4>
+            <p class="mt-1 text-[13px] leading-relaxed text-ink-500">
+              L'e-mail est indispensable : c'est par là que la boulangerie te répond et que tu
+              recevras le lien de règlement.
+            </p>
+
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <input type="text" name="first_name" placeholder="Prénom *" required
+                     value="<%= @customer&.first_name || params[:first_name] %>"
+                     data-party-request-target="identity" data-identity-key="first_name"
+                     class="w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 focus:border-sage-600 focus:outline-none">
+              <input type="text" name="last_name" placeholder="Nom"
+                     value="<%= @customer&.last_name || params[:last_name] %>"
+                     data-party-request-target="identity" data-identity-key="last_name"
+                     class="w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 focus:border-sage-600 focus:outline-none">
+            </div>
+
+            <input type="email" name="email" placeholder="Adresse e-mail *" required
+                   value="<%= @customer&.email || params[:email] %>"
+                   class="mt-3 w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 focus:border-sage-600 focus:outline-none">
+
+            <% unless @customer %>
+              <div class="mt-3">
+                <div class="flex gap-2">
+                  <input type="tel" name="phone_e164" placeholder="+32 4xx xx xx xx"
+                         data-party-request-target="phone"
+                         class="w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] text-ink-900 focus:border-sage-600 focus:outline-none">
+                  <button type="button" data-action="click->party-request#sendCode"
+                          class="shrink-0 rounded-md border border-sage-600 px-3 py-2 text-sm font-semibold text-sage-700 transition hover:bg-sage-100">
+                    Recevoir le code
+                  </button>
+                </div>
+
+                <div class="mt-3 hidden" data-party-request-target="codeSection">
+                  <div class="flex gap-2">
+                    <input type="text" inputmode="numeric" maxlength="6" placeholder="Code à 6 chiffres"
+                           data-party-request-target="code"
+                           class="w-full rounded-md border border-flour-400 bg-white px-3 py-2 text-[15px] tracking-widest text-ink-900 focus:border-sage-600 focus:outline-none">
+                    <button type="button" data-action="click->party-request#verify"
+                            class="shrink-0 rounded-md bg-sage-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-sage-500">
+                      Vérifier
+                    </button>
+                  </div>
+                </div>
+
+                <p class="mt-3 hidden" data-party-request-target="message"></p>
+              </div>
+            <% end %>
+          </div>
+
+          <p class="mt-4 hidden rounded-md border border-danger-200 bg-danger-100 px-3 py-2 text-sm text-danger-700" data-party-calendar-target="warning">
+            Choisis une date et un créneau dans le calendrier avant d'envoyer ta demande.
+          </p>
+
+          <button type="submit" <%= "disabled" unless @customer %>
+                  data-party-request-target="submit"
+                  class="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-6 py-3 text-base font-semibold text-white shadow-xs transition hover:bg-ember-500 disabled:cursor-not-allowed disabled:bg-flour-300 disabled:text-ink-400">
+            <%= lucide "send", size: 18, color: "#fff" %> Envoyer ma demande
+          </button>
+          <p class="mt-3 text-center text-xs text-ink-500">
+            Aucun montant n'est débité maintenant. Tu confirmeras ton nombre de participants, et régleras, quelques jours avant la party.
+          </p>
+        </aside>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="rounded-2xl border border-flour-300 bg-warm-white p-10 text-center">
+      <p class="text-lg font-semibold text-ink-900">Les demandes de Pizza Party ouvrent bientôt.</p>
+      <%= link_to "Voir la boutique", catalog_path, class: "mt-6 inline-flex items-center gap-2 rounded-md bg-ember-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-500" %>
+    </div>
+  <% end %>
+</div>

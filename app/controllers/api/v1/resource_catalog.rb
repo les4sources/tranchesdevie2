@@ -80,7 +80,9 @@ module Api
           description: "Commandes clients pour un jour de fournée. Liées à un client (PII) et à des lignes de commande.",
           fields: {
             id: "integer", order_number: "string (TV-YYYYMMDD-NNNN)",
-            status: "enum: pending|paid|ready|picked_up|no_show|cancelled|unpaid|planned",
+            status: "enum: pending|paid|ready|picked_up|no_show|cancelled|unpaid|planned|awaiting_payment " \
+                    "(awaiting_payment = réservation de Pizza party validée par la boulangerie, en attente du " \
+                    "règlement du client : elle N'EST PAS comptée dans le chiffre d'affaires ni dans la production)",
             source: "enum: checkout|calendar|admin", total_cents: "integer", total_euros: "number",
             requires_invoice: "boolean", payment_method: "enum: stripe|wallet|null",
             payment_received: "boolean", paid_at: "datetime|null", customer_id: "integer",
@@ -182,10 +184,29 @@ module Api
           key: "email_messages", singular: "email_message", title: "Messages e-mail", pii: true, collection: true,
           description: "Journal des e-mails. CONTIENT DES DONNÉES PERSONNELLES (adresses, sujet, corps HTML).",
           fields: {
-            id: "integer", direction: "enum: outbound|inbound", kind: "enum: confirmation|otp|other",
+            id: "integer", direction: "enum: outbound|inbound",
+            kind: "enum: confirmation|otp|other|ready|party_team_notification|party_request_received|" \
+                  "party_request_team|party_request_accepted|party_request_refused|party_request_expired|" \
+                  "party_payment_prompt|party_payment_reminder|party_payment_expired|party_cancelled|party_refunded",
             to_email: "string (PII)", from_email: "string (PII)", subject: "string|null", body_html: "string (PII)",
             message_id: "string|null", customer_id: "integer|null", order_id: "integer|null",
+            party_request_id: "integer|null (e-mails du parcours Pizza party antérieurs à la validation)",
             sent_at: "datetime|null", created_at: "datetime", updated_at: "datetime"
+          }
+        },
+        {
+          key: "party_requests", singular: "party_request", title: "Demandes de Pizza party", pii: true, collection: true,
+          description: "Demandes de Pizza party privée (#pizza-parties). Une demande n'occupe aucun créneau et ne " \
+                       "crée ni événement ni commande : c'est la validation de la boulangerie qui les fait naître, " \
+                       "et l'encaissement qui confirme. CONTIENT DES DONNÉES PERSONNELLES (client, commentaire).",
+          fields: {
+            id: "integer", state: "enum: pending|accepted|refused|cancelled|expired",
+            held_on: "date", slot: "enum: midi|soir",
+            customer_id: "integer (PII)", customer_note: "string (PII)", group_name: "string|null",
+            order_id: "integer|null (présent dès la validation)",
+            decided_at: "datetime|null", decided_by: "string|null", decision_reason: "string|null (PII)",
+            reminded_at: "datetime|null", public_token: "string",
+            created_at: "datetime", updated_at: "datetime"
           }
         }
       ].freeze

@@ -52,6 +52,18 @@ class OrderNotificationService
     false
   end
 
+  # Prévient les équipes qu'une party CONFIRMÉE est annulée (#pizza-parties).
+  #
+  # Symétrique de `send_party_team_notification` : l'équipe séjours était
+  # prévenue de l'arrivée d'un groupe, jamais de sa disparition — elle gardait
+  # donc une soirée bloquée pour personne.
+  def self.notify_team_of_party_cancellation(order)
+    return false unless order&.private_party?
+
+    PartyRequestMailer.team_cancellation(order).deliver_later
+    true
+  end
+
   # Retire la note du calendrier de claudy quand la party privée est annulée et
   # remboursée : un post-it fantôme est pire que pas de post-it du tout.
   def self.remove_party_calendar_note(order)

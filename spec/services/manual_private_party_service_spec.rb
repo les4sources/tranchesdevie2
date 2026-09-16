@@ -51,7 +51,13 @@ RSpec.describe ManualPrivatePartyService do
       order = service.order
       expect(order.manually_added?).to be true
       expect(order.source).to eq("party")
-      expect(order.paid?).to be true
+      # `status` reste `unpaid` — une vente due, comptée dans le CA facturé —
+      # et c'est `payment_status` qui porte l'encaissement sur place
+      # (#pizza-parties, même axe que #275). Avant, les deux étaient confondus :
+      # on posait `status: paid` sans jamais tracer le moyen d'encaissement.
+      expect(order.status).to eq("unpaid")
+      expect(order).to be_payment_status_paid
+      expect(order.offline_payment_method).to eq("cash")
       expect(order.total_cents).to eq(8 * 500 + 4_000)
     end
 
@@ -192,15 +198,39 @@ RSpec.describe ManualPrivatePartyService do
         .to eq(service.order.total_cents)
     end
 
-    it "bascule non payée → payée sans changer la comptabilisation" do
+    it "encaisse sur l'axe financier, en traçant le moyen, sans changer la comptabilisation" do
+      service = build(persons: 8, paid: true)
+      service.call
+
+      order = service.order.reload
+      expect(order).to be_payment_status_paid
+      expect(order.offline_payment_method).to eq("cash")
+      expect(order.read_attribute(:paid_at)).to be_present
+      expect(PizzaPartyRevenueService.call(Order.completed.where(id: order.id)).persons).to eq(8)
+    end
+
+    it "laisse la commande non encaissée quand la party n'est pas payée" do
       service = build(persons: 8, paid: false)
       service.call
-      expect(PizzaPartyRevenueService.call(Order.completed.where(id: service.order.id)).persons).to eq(8)
 
-      described_class.toggle_paid(service.order, paid: true)
+      order = service.order.reload
+      expect(order).to be_payment_status_unpaid
+      expect(order.offline_payment_method).to be_nil
+    end
+  end
 
-      expect(service.order.reload.paid?).to be true
-      expect(PizzaPartyRevenueService.call(Order.completed.where(id: service.order.id)).persons).to eq(8)
+  describe "la création vaut confirmation" do
+    it "prévient l'équipe et pose la note du calendrier dès la création" do
+      adapter = ActiveJob::Base.queue_adapter
+      ActiveJob::Base.queue_adapter = :test
+
+      service = build(persons: 8, paid: false)
+
+      expect { service.call }
+        .to have_enqueued_mail(PartyMailer, :new_private_party)
+        .and have_enqueued_job(SyncClaudyPartyNoteJob)
+    ensure
+      ActiveJob::Base.queue_adapter = adapter
     end
   end
 

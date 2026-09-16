@@ -38,7 +38,12 @@ module Admin
 
     def entries
       @entries ||= @orders
-        .reject(&:cancelled?)
+        # `awaiting_payment` exclu au même titre que `cancelled` : une
+        # réservation validée mais pas encore payée n'est pas une party acquise
+        # (#pizza-parties). L'écran des parties liste ce qui a eu lieu ou aura
+        # lieu, pas ce qui attend un règlement — celui-là se suit dans la file
+        # des demandes, section « Validées, paiement attendu ».
+        .reject { |order| order.cancelled? || order.awaiting_payment? }
         .map { |order| entry_for(order) }
         .sort_by { |entry| [ entry.held_on || Date.new(0), entry.order.created_at ] }
     end

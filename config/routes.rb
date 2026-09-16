@@ -10,7 +10,23 @@ Rails.application.routes.draw do
   get "catalogue", to: "catalog#index", as: :catalog
   get "productions/:id", to: "products#show", as: :product
   get "a-propos", to: "pages#a_propos", as: :a_propos
-  get "pizza-party-privee", to: "events#index", as: :pizza_party_privee
+  # Page de réservation d'une Pizza party privée (#pizza-parties) : c'est le
+  # formulaire de DEMANDE, hors panier et hors checkout. L'ancien tunnel panier
+  # a été retiré au go-live.
+  get "pizza-party-privee", to: "party_requests#new", as: :pizza_party_privee
+  # Les e-mails et liens envoyés pendant le chantier pointaient ici : on les
+  # garde vivants plutôt que de les laisser tomber en 404.
+  get "pizza-party-privee/demande", to: redirect("/pizza-party-privee"), as: :new_party_request
+  post "pizza-party-privee/demande", to: "party_requests#create", as: :party_requests
+  get "pizza-party-privee/demande/envoyee/:token", to: "party_requests#sent", as: :party_request_sent
+  # Suivi d'une demande par son jeton public (pas de compte requis).
+  get "demandes/:token", to: "party_requests#show", as: :party_request
+  delete "demandes/:token", to: "party_requests#cancel", as: :cancel_party_request
+  # Paiement différé d'une réservation validée : la page vit hors session, elle
+  # ne connaît que le jeton public de la commande.
+  get "reservations/:token/paiement", to: "party_payments#show", as: :party_payment
+  post "reservations/:token/paiement", to: "party_payments#create_payment_intent", as: :party_payment_intent
+  get "reservations/:token/merci", to: "party_payments#success", as: :party_payment_success
   get "pizza-parties", to: "public_parties#index", as: :pizza_parties
   get "pizza-party-publique", to: redirect("/pizza-parties")
   # Ancienne URL de la page party (liens partagés / historique).
@@ -108,6 +124,9 @@ Rails.application.routes.draw do
       end
       resources :wallet_transactions, only: [ :index, :show ]
 
+      # Demandes de Pizza party (#pizza-parties) : filtrables par état
+      # (?state=pending), pour qu'un agent sache ce qui attend une réponse.
+      resources :party_requests, only: [ :index, :show ]
       resources :groups, only: [ :index, :show ]
       resources :flours, only: [ :index, :show ]
       resources :mold_types, only: [ :index, :show ]
@@ -234,14 +253,27 @@ Rails.application.routes.draw do
     # `/admin/parties/blocages` avec `id: "blocages"` et renvoyait une 404, en
     # rendant `party_slot_blocks#index` inatteignable. Le chemin le plus
     # spécifique passe donc devant. Ne pas réinverser.
+    # File des demandes de party privée (#pizza-parties). Déclarée AVANT
+    # `party_events` pour la même raison que les blocages : `path: "parties"`
+    # capturerait `parties/demandes` comme un id.
+    resources :party_requests, path: "parties/demandes", only: [ :index, :show ] do
+      member do
+        post :accept
+        post :refuse
+        post :retract
+        patch :update_headcount
+      end
+    end
+    # Page de confirmation ouverte depuis un lien e-mail signé. GET = afficher un
+    # bouton, jamais agir : les clients mail préchargent les liens.
+    get "parties/decision", to: "party_decisions#show", as: :party_decision
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
     # Création à la main d'une party PRIVÉE (#204). Déclaré avant
     # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.
-    resources :private_parties, path: "parties/privees", only: [ :new, :create, :edit, :update, :destroy ] do
-      member do
-        patch :toggle_paid
-      end
-    end
+    # Plus de `toggle_paid` (#pizza-parties) : l'encaissement d'une party saisie
+    # en admin passe par le chemin unique `Admin::OrdersController#encaissement`,
+    # qui trace le MOYEN et refuse d'écraser un paiement Stripe abouti.
+    resources :private_parties, path: "parties/privees", only: [ :new, :create, :edit, :update, :destroy ]
     resources :party_events, path: "parties" do
       # Inscriptions ajoutées à la main sur une party publique (#203).
       resources :party_registrations, path: "inscriptions", only: [ :new, :create, :edit, :update, :destroy ] do

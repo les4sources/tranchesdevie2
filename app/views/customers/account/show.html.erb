@@ -135,8 +135,10 @@
       <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
         <div class="px-6 pt-4">
           <h2 class="mb-3.5 font-script text-2xl font-bold text-ink-900">Mes commandes</h2>
-          <% counts = { "all" => @orders.size, "ready" => @orders.count { |o| o.status == "ready" }, "paid" => @orders.count { |o| o.status == "paid" }, "picked_up" => @orders.count { |o| o.status == "picked_up" }, "cancelled" => @orders.count { |o| o.status == "cancelled" } } %>
-          <% filters = [ [ "all", "Toutes" ], [ "ready", "Prêtes" ], [ "paid", "Payées" ], [ "picked_up", "Récupérées" ], [ "cancelled", "Annulées" ] ] %>
+          <% counts = { "all" => @orders.size, "awaiting_payment" => @orders.count { |o| o.status == "awaiting_payment" }, "ready" => @orders.count { |o| o.status == "ready" }, "paid" => @orders.count { |o| o.status == "paid" }, "picked_up" => @orders.count { |o| o.status == "picked_up" }, "cancelled" => @orders.count { |o| o.status == "cancelled" } } %>
+          <%# « À régler » en tête : une Pizza party validée attend une action du
+              client, et c'est la seule ligne de cet écran qui en demande une. %>
+          <% filters = [ [ "all", "Toutes" ], [ "awaiting_payment", "À régler" ], [ "ready", "Prêtes" ], [ "paid", "Payées" ], [ "picked_up", "Récupérées" ], [ "cancelled", "Annulées" ] ] %>
           <div class="flex flex-wrap gap-2 border-b border-flour-300 pb-3.5">
             <% filters.each_with_index do |(key, label), i| %>
               <button type="button" data-account-tab="<%= key %>" class="acct-tab inline-flex items-center gap-2 rounded-full border border-flour-400 bg-warm-white px-3 py-1.5 text-[13px] font-semibold text-ink-700 transition <%= "is-active" if i.zero? %>">
@@ -150,6 +152,7 @@
           <% if @orders.any? %>
             <% @orders.each do |order| %>
               <% tone = case order.status
+                        when "awaiting_payment" then [ "bg-ember-100", "text-ember-700", "hourglass" ]
                         when "ready" then [ "bg-success-100", "text-success-700", "package-check" ]
                         when "paid" then [ "bg-water-100", "text-water-700", "badge-euro" ]
                         when "picked_up" then [ "bg-flour-200", "text-ink-700", "check" ]
@@ -171,6 +174,17 @@
                 <div class="flex flex-shrink-0 items-center gap-3">
                   <span class="hidden items-center rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex <%= tone[0] %> <%= tone[1] %>"><%= order_status_label(order.status) %></span>
                   <span class="font-semibold text-ink-900"><%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %></span>
+                  <%# Une Pizza party validée attend un règlement : on emmène le
+                      client là où il peut confirmer son nombre et payer, plutôt
+                      que de lui ouvrir une modale qui ne sait rien en faire. %>
+                  <% if order.awaiting_payment? %>
+                    <%= link_to party_payment_path(token: order.public_token),
+                          onclick: "event.stopPropagation()",
+                          data: { turbo: false },
+                          class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-ember-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-ember-500" do %>
+                      <%= lucide "credit-card", size: 14, color: "#fff" %> <span class="hidden sm:inline">Confirmer et régler</span><span class="sm:hidden">Régler</span>
+                    <% end %>
+                  <% end %>
                   <% if order.can_be_picked_up_by_customer? %>
                     <%= button_to customers_pickup_order_path(order), method: :patch, form: { class: "inline" }, onclick: "event.stopPropagation()", class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-success-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-success-700" do %>
                       <%= lucide "check", size: 14, color: "#fff" %> <span class="hidden sm:inline">J'ai récupéré ma commande</span><span class="sm:hidden">Récupérée</span>

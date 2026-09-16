@@ -139,6 +139,20 @@ class PartyEvent < ApplicationRecord
     public_events.not_deleted.where(held_on: date).exists?
   end
 
+  # Aucune fournée ne prépare cette party, ou celle qui la prépare est trop
+  # ancienne pour que la pâte tienne (#pizza-parties).
+  #
+  # Cas réel du mardi : quand la fournée du mardi n'existe pas encore, les pâtons
+  # se rattachent au vendredi PRÉCÉDENT, déjà cuit — ils n'apparaissent alors sur
+  # aucune feuille utile et la party a lieu sans pâte. L'app doit le signaler
+  # plutôt que de laisser la party disparaître des écrans de production.
+  def preparation_missing?
+    return false unless kind_private_party? && held_on.present?
+
+    bake_day = preparation_bake_day
+    bake_day.nil? || bake_day.baked_on < held_on - 1
+  end
+
   # Fournée qui PRÉPARE les pâtons d'une party privée (#170).
   #
   # Les pâtons se pétrissent à l'avance : une party du soir peut être servie par

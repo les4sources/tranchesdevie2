@@ -100,7 +100,12 @@ class BakeCapacityService
         OrderItem
           .joins(:order, product_variant: :product)
           .where(orders: { source: Order.sources[:party], party_event_id: event_ids })
-          .where.not(orders: { status: :cancelled })
+          # `awaiting_payment` exclu comme `cancelled` : une réservation validée
+          # mais PAS ENCORE PAYÉE n'est pas une pâte (#pizza-parties). Tant que
+          # l'argent n'est pas encaissé, ses pâtons ne pèsent ni sur le pétrin ni
+          # sur la farine — sinon une party qui expire aurait consommé pendant
+          # 48 h une capacité que le pain ne pouvait plus utiliser.
+          .where.not(orders: { status: [ :cancelled, :awaiting_payment ] })
           .where(products: { category: Product.categories[:dough_balls] })
           .includes(product_variant: { product: { product_flours: :flour } })
           .to_a
@@ -190,6 +195,23 @@ class BakeCapacityService
       end
 
       qty = ci.respond_to?(:qty) ? ci.qty : (ci["qty"] || ci[:qty]).to_i
+
+      # Pâtons de Pizza party : ils sont PÉTRIS dans la fournée — donc pétrin et
+      # farine — mais ne cuisent pas dans le four à pain et n'occupent aucun
+      # moule. Mêmes règles que `party_dough_order_items`, qui les compte déjà
+      # côté usage : sans cette branche, le contrôle de capacité laissait passer
+      # n'importe quel nombre de pâtons sans rien compter (#pizza-parties).
+      if variant.product.paton_line?
+        dough_grams = qty * (variant.flour_quantity || 0)
+        next if dough_grams.zero?
+
+        variant.product.product_flours.each do |pf|
+          kneader[pf.flour_id] += dough_grams * pf.percentage / 100.0
+        end
+
+        next
+      end
+
       next unless variant.product.breads?
 
       # Molds

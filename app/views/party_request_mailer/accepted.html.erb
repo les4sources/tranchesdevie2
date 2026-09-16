@@ -1,0 +1,26 @@
+<p>Bonjour <%= @party_request.customer.first_name %>,</p>
+
+<p>Bonne nouvelle : ta Pizza party du
+<strong><%= I18n.l(@party_request.held_on, format: :long_with_day) %></strong>
+(<%= @party_request.slot_label.downcase %>) est <strong>acceptée</strong> par la boulangerie.</p>
+
+<% if @prompt_now %>
+  <p>Il ne reste qu'une étape : <strong>confirmer ton nombre de participants et régler</strong>
+  ta réservation, avant le
+  <strong><%= I18n.l(@order.payment_due_at.in_time_zone("Europe/Brussels"), format: :long) %></strong>.</p>
+<% else %>
+  <p>Tu n'as rien à payer tout de suite. Nous t'écrirons le
+  <strong><%= I18n.l(@prompt_at, format: :long) %></strong>
+  pour que tu confirmes ton nombre de participants (un pâton par personne) et règles ta
+  réservation — au plus tard le
+  <strong><%= I18n.l(@order.payment_due_at.in_time_zone("Europe/Brussels"), format: :long) %></strong>,
+  heure à laquelle la boulangerie fige sa production. Si tu préfères t'en occuper dès
+  maintenant, c'est possible :</p>
+<% end %>
+
+<p><%= link_to "Confirmer et payer", party_payment_url(@order.public_token) %><br>
+<%= party_payment_url(@order.public_token) %></p>
+
+<p>Un pâton par personne — tu ajusteras le nombre au moment du paiement.</p>
+
+<p>À très vite,<br>La boulangerie Tranches de Vie</p>

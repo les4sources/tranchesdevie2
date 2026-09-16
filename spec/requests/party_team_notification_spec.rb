@@ -57,16 +57,20 @@ RSpec.describe 'Notification équipe — Pizza party privée', type: :request do
   describe 'paiement en ligne (Stripe)' do
     let(:customer) { create(:customer, first_name: 'Léa', email: 'lea@example.com') }
 
-    before do
-      sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'Anniversaire de Léa, 4 adultes.', qty: 4 }
-      stub_stripe_payment_intent_create(amount: (500 * 4) + 4000)
-      post '/checkout/create_payment_intent',
-           params: { first_name: 'Léa' }.to_json,
-           headers: { 'CONTENT_TYPE' => 'application/json' }
+    # La réservation naît d'une DEMANDE validée par la boulangerie, plus du
+    # panier (#pizza-parties). Ce que la spec protège — l'e-mail d'équipe posté
+    # une seule fois à l'encaissement — est inchangé.
+    let!(:party_request) do
+      create(:party_request, customer: customer, held_on: party_date, slot: 'soir',
+                             customer_note: 'Anniversaire de Léa, 4 adultes.')
     end
 
-    let(:order) { Order.order(:created_at).last }
+    let!(:order) do
+      created = PartyDecisionService.new(party_request, decided_by: 'Romane').accept
+      PartyPaymentService.new(created).confirm_headcount!(4)
+      created.update!(payment_intent_id: "pi_test_#{SecureRandom.hex(6)}")
+      created.reload
+    end
 
     def deliver_webhook(payment_intent_id)
       pi = double('Stripe::PaymentIntent', id: payment_intent_id, metadata: {})
@@ -94,28 +98,6 @@ RSpec.describe 'Notification équipe — Pizza party privée', type: :request do
         deliver_webhook(order.payment_intent_id)
       end
 
-      expect(notification_count(order)).to eq(1)
-    end
-  end
-
-  describe 'commande cash' do
-    let(:customer) do
-      create(:customer, first_name: 'Yann', email: 'yann@example.com', cash_payment_allowed: true)
-    end
-
-    it "journalise un EmailMessage de notification d'équipe" do
-      sign_in(customer)
-      post cart_add_path, params: { product_variant_id: party_variant.id, party_slot_choice: slot_choice, party_note: 'Soirée d\'équipe, 7 personnes.', qty: 7 }
-
-      deliver_pending_emails do
-        post '/checkout/create_cash_order',
-             params: { first_name: 'Yann' }.to_json,
-             headers: { 'CONTENT_TYPE' => 'application/json' }
-      end
-
-      expect(response).to have_http_status(:ok)
-      order = Order.order(:created_at).last
-      expect(order.private_party?).to be true
       expect(notification_count(order)).to eq(1)
     end
   end

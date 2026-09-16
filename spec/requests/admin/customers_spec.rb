@@ -128,4 +128,22 @@ RSpec.describe "Admin::Customers", type: :request do
       expect(response.body).to include("Solde bas")
     end
   end
+
+  # Régression : une commande party n'a pas de fournée — la fiche mangeur plantait
+  # en 500 sur `order.bake_day.baked_on` dès qu'un client avait réservé une party.
+  describe "GET /admin/customers/:id (commande party sans fournée)" do
+    it "affiche la date de l'événement et le chip Party au lieu de planter" do
+      create(:pickup_location, :default)
+      customer = create(:customer)
+      party_event = create(:party_event, :private_party, held_on: Date.new(2026, 10, 3))
+      order = create(:order, customer: customer, bake_day: nil, party_event: party_event, source: :party)
+
+      get admin_customer_path(customer)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("03/10/2026")
+      expect(response.body).to include("Party")
+      expect(response.body).to include(order.order_number)
+    end
+  end
 end

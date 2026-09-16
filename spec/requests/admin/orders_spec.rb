@@ -173,4 +173,20 @@ RSpec.describe "Admin::Orders", type: :request do
       expect(response.body).to include("Paul Durand")
     end
   end
+
+  # Régression : une commande party n'a pas de fournée — la page d'édition
+  # plantait sur `@order.bake_day.open_pickup_locations`.
+  describe "GET /admin/orders/:id/edit (commande party sans fournée)" do
+    it "propose les points de retrait actifs au lieu de planter" do
+      pickup = create(:pickup_location, :default, name: "Les 4 Sources")
+      party_event = create(:party_event, :private_party, held_on: Date.current + 10)
+      party_order = create(:order, :paid, bake_day: nil, party_event: party_event,
+                                          source: :party, pickup_location: pickup)
+
+      get edit_admin_order_path(party_order)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Les 4 Sources")
+    end
+  end
 end

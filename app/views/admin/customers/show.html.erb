@@ -169,8 +169,12 @@
                 <%= order.order_number %>
               </span>
             </td>
-            <td class="adm-grid-num whitespace-nowrap">
-              <%= order.bake_day.baked_on.strftime("%d/%m/%Y") %>
+            <td class="whitespace-nowrap">
+              <%# Une commande party est datée par son événement, sans fournée. %>
+              <span class="adm-grid-num"><%= order.event_date&.strftime("%d/%m/%Y") || "—" %></span>
+              <% if order.party_event %>
+                <%= adm_chip "Party", tone: :accent %>
+              <% end %>
             </td>
             <td class="adm-grid-num whitespace-nowrap text-right font-medium" style="color: var(--text-strong);">
               <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>

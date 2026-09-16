@@ -44,7 +44,7 @@ class Admin::CustomersController < Admin::BaseController
   end
 
   def show
-    @orders = @customer.orders.includes(:bake_day, :payment, :wallet_transactions).order(created_at: :desc)
+    @orders = @customer.orders.includes(:bake_day, :party_event, :payment, :wallet_transactions).order(created_at: :desc)
     @sms_messages = @customer.sms_messages.ordered_by_sent_at
     @email_messages = @customer.email_messages.ordered_by_sent_at
     @wallet = @customer.wallet

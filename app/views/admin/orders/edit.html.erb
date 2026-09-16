@@ -54,7 +54,9 @@
           incohérent à l'enregistrement. %>
       <div>
         <%= f.label :pickup_location_id, "Point de retrait", class: "adm-eyebrow mb-1 block" %>
-        <% pickup_options = @order.bake_day.open_pickup_locations.map { |location| [location.name, location.id] } %>
+        <%# Une commande party n'a pas de fournée : on propose alors tous les lieux actifs. %>
+        <% available_locations = @order.bake_day ? @order.bake_day.open_pickup_locations : PickupLocation.not_deleted.active.ordered %>
+        <% pickup_options = available_locations.map { |location| [ location.name, location.id ] } %>
         <%= f.select :pickup_location_id,
                      options_for_select(pickup_options, @order.pickup_location_id),
                      { include_blank: "Sélectionner un point de retrait" },

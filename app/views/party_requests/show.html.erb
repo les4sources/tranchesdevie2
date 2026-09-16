@@ -57,7 +57,7 @@
       </p>
     <% elsif @order&.paid? %>
       <p class="mt-6 rounded-md border border-flour-300 bg-flour-50 px-4 py-3 text-center text-sm text-ink-600">
-        La pâte est engagée : pour annuler, appelle la boulangerie au 0491 24 07 15.
+        La pâte est engagée : pour annuler, appelle la boulangerie au <a href="tel:<%= BakeryDetails::PHONE_E164 %>" class="font-medium text-ember-600 underline-offset-2 hover:underline"><%= BakeryDetails::PHONE_DISPLAY %></a>.
       </p>
     <% end %>
 

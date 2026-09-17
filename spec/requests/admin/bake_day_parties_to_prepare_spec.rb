@@ -48,6 +48,31 @@ RSpec.describe "Admin — Pizza parties à préparer", type: :request do
     expect(response.body).to include("Alix Renard")
   end
 
+  it "affiche une seule card pour une party publique, sans nom ni lien vers les commandes" do
+    public_product = create(:product, :pizza_party_public, category: :dough_balls)
+    adulte = create(:product_variant, product: public_product, name: "adulte",
+                                      price_cents: 1_000, flour_quantity: 200)
+    event = create(:party_event, :public_party, held_on: friday, title: "Soirée pizza")
+    orders = 3.times.map do |i|
+      PartyOrderCreationService.new(
+        customer: create(:customer, first_name: "Convive#{i}", last_name: "Public", phone_e164: "+3247000000#{i}"),
+        party_event: event,
+        cart_items: [ { "product_variant_id" => adulte.id.to_s, "qty" => "2" } ]
+      ).call.tap { |order| order.update!(status: :paid) }
+    end
+
+    get admin_bake_day_path(friday_bake)
+
+    block = Nokogiri::HTML(response.body).at_css("#parties-a-preparer").to_html
+    expect(block).to include("1 party")
+    expect(block).to include("6 pâtons au total")
+    expect(block).to include("Soirée pizza")
+    expect(block).to include("3 inscriptions")
+    expect(block).to include(admin_party_event_path(event))
+    expect(block).not_to include("Convive0 Public")
+    orders.each { |order| expect(block).not_to include(admin_order_path(order)) }
+  end
+
   it "signale qu'une party a lieu le jour même" do
     book_party(held_on: friday, slot: :soir)
 

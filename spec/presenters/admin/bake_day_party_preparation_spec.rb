@@ -158,6 +158,36 @@ RSpec.describe Admin::BakeDayDashboard, "parties à préparer" do
       expect(dashboard_for(friday_bake).parties_to_prepare.first[:paton_count]).to eq(8)
     end
 
+    # Vingt-et-une inscriptions à la même soirée faisaient vingt-et-une cards et
+    # annonçaient « 21 parties » : l'encart regroupe désormais par événement.
+    it "regroupe les inscriptions d'une party publique en une seule card" do
+      event = create(:party_event, :public_party, held_on: friday, title: "Soirée pizza")
+      3.times do |i|
+        PartyOrderCreationService.new(
+          customer: create(:customer, phone_e164: "+3247000000#{i}"), party_event: event,
+          cart_items: [ { "product_variant_id" => adulte.id.to_s, "qty" => (i + 1).to_s } ]
+        ).call.update!(status: :paid)
+      end
+      book_party(held_on: friday, slot: :soir, qty: 11)
+
+      cards = dashboard_for(friday_bake).party_preparation_cards
+
+      expect(dashboard_for(friday_bake).parties_to_prepare.size).to eq(4)
+      expect(cards.size).to eq(2)
+
+      public_card = cards.find { |card| !card[:private] }
+      expect(public_card[:title]).to eq("Soirée pizza")
+      expect(public_card[:orders_count]).to eq(3)
+      expect(public_card[:paton_count]).to eq(6)
+      expect(public_card[:customer_name]).to be_nil
+      expect(public_card[:order]).to be_nil
+      expect(public_card[:party_event]).to eq(event)
+
+      private_card = cards.find { |card| card[:private] }
+      expect(private_card[:orders_count]).to eq(1)
+      expect(private_card[:customer_name]).to eq("Alix Renard")
+    end
+
     # Le forfait n'existe que sur les parties privées, et n'est jamais un pâton.
     it "ne compte pas la ligne forfait d'une party privée" do
       order = book_party(held_on: friday, slot: :soir, qty: 11)

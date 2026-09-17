@@ -72,7 +72,9 @@ Une Pizza party privée consomme des **pâtons** qu'il faut pétrir à l'avance,
 mais elle n'a pas de fournée à elle. Quand une party se prépare sur la fournée
 que tu regardes, un bloc **Pizza parties à préparer** apparaît en haut du détail,
 avec la date de la party, son créneau, le nombre de personnes et le nom du
-client.
+client. Une Pizza party **publique** apparaît dans le même bloc, mais en une
+seule carte : le nombre d'inscriptions et le total des pâtons de la soirée,
+sans le nom des convives — la liste nominative se lit sur la page de la party.
 
 La fournée qui prépare une party n'est pas toujours celle du jour même :
 

@@ -279,6 +279,32 @@ module Admin
         .map { |order| party_entry(order) }
     end
 
+    # Les cards de l'encart « Pizza parties à préparer » : une par party PRIVÉE
+    # (c'est un groupe, un client, une commande), une SEULE par party PUBLIQUE.
+    # Les convives d'une party publique ne sont pas des clients de la fournée,
+    # c'est l'événement qui l'est : vingt-et-une inscriptions faisaient vingt-et-une
+    # cards et annonçaient « 21 parties » pour une seule soirée. Même règle que
+    # le tableau des clients (`customer_matrix_party_rows`).
+    def party_preparation_cards
+      @party_preparation_cards ||= begin
+        private_entries, public_entries = parties_to_prepare.partition { |entry| entry[:private] }
+
+        private_cards = private_entries.map { |entry| entry.merge(orders_count: 1) }
+
+        public_cards = public_entries.group_by { |entry| entry[:party_event] }.map do |event, entries|
+          entries.first.merge(
+            order: nil,
+            customer_name: nil,
+            title: event.title.presence || "Pizza party publique",
+            paton_count: entries.sum { |entry| entry[:paton_count] },
+            orders_count: entries.size
+          )
+        end
+
+        (private_cards + public_cards).sort_by { |card| [ card[:held_on], card[:slot_label].to_s, card[:private] ? 0 : 1 ] }
+      end
+    end
+
     # Les mêmes parties, indexées par commande : le flux des commandes s'en sert
     # pour poser le badge à côté du nom du client.
     def party_entry_by_order_id

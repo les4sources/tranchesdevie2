@@ -86,7 +86,10 @@
   / L'encart est délibérément gros (#202) : « quand on voit les journées, on a
   / notre topo, on sait ce qui arrive ». Les pâtons et le créneau se lisent de
   / loin, pas en petits caractères au fond d'un tableau.
-  - parties = @dashboard.parties_to_prepare
+  / Une card par party PRIVÉE, une seule par party PUBLIQUE quel que soit le
+  / nombre d'inscriptions : le compteur dit combien de soirées se préparent,
+  / pas combien de convives se sont inscrits.
+  - parties = @dashboard.party_preparation_cards
   - if parties.any?
     - total_patons = parties.sum { |party| party[:paton_count] }
     #parties-a-preparer.adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
@@ -119,11 +122,19 @@
                 p.mt-1.text-xl.font-bold style="color: var(--accent);"
                   = party[:slot_label]
 
-            p.mt-3.text-base.font-semibold style="color: var(--text-strong);"
-              = party[:customer_name] || "Sans client"
-            .mt-2.flex.flex-wrap.gap-3
-              = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
-              = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
+            - if party[:private]
+              p.mt-3.text-base.font-semibold style="color: var(--text-strong);"
+                = party[:customer_name] || "Sans client"
+              .mt-2.flex.flex-wrap.gap-3
+                = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
+                = link_to "Voir la commande", admin_order_path(party[:order]), class: "adm-rowaction"
+            - else
+              p.mt-3.text-base.font-semibold style="color: var(--text-strong);"
+                = party[:title]
+              p.mt-1.text-sm style="color: var(--text-muted);"
+                = "#{party[:orders_count]} inscription#{'s' if party[:orders_count] > 1}"
+              .mt-2.flex.flex-wrap.gap-3
+                = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
 
   / Parties validées mais PAS ENCORE PAYÉES (#pizza-parties). Elles ne comptent
   / dans aucun total — ni pâte, ni pétrin, ni four — mais les cacher privait le

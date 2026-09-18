@@ -1,0 +1,31 @@
+PIZZA PARTY PRIVÉE PAYÉE
+
+Le paiement de cette Pizza Party privée vient d'être encaissé. Si le groupe est
+aussi hébergé aux 4 Sources, pensez à la reporter sur la facture du séjour.
+
+Date                : <%= I18n.l(@party_event.held_on, format: :long_with_day) %>
+Créneau             : <%= @party_event.slot_label %>
+Groupe              : <%= @party_request&.group_name.presence || "—" %>
+Nombre de personnes : <%= @paton_count %> personne<%= "s" if @paton_count > 1 %> (<%= @paton_count %> pâton<%= "s" if @paton_count > 1 %>)
+Forfait             : <%= @party_request.nil? ? "—" : (@party_request.forfait? ? "Oui" : "Non") %>
+Remarque du client  : <%= @party_request&.customer_note.presence || "—" %>
+Client              : <%= @customer.full_name %>
+E-mail              : <%= @customer.email.presence || "—" %>
+Téléphone           : <%= @customer.phone_e164.presence || "—" %>
+Commande            : <%= @order.order_number %>
+
+DÉTAIL
+<% @order.order_items.includes(product_variant: :product).each do |item| -%>
+- <%= item.full_name %> : <%= item.qty %> × <%= number_to_currency(item.unit_price_euros, unit: "€", separator: ",", delimiter: "") %> = <%= number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "") %>
+<% end -%>
+
+Montant total payé  : <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>
+Moyen de paiement   : <%= @payment_method_label %>
+Date de paiement    : <%= @order.paid_at ? I18n.l(@order.paid_at.in_time_zone("Europe/Brussels"), format: :long) : "—" %>
+Facture demandée    : <%= @order.requires_invoice? ? "Oui" : "Non" %>
+
+Voir la Pizza Party dans l'admin :
+<%= @admin_party_event_url %>
+
+Voir la commande :
+<%= @admin_order_url %>

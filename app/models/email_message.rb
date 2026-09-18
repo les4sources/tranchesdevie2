@@ -22,7 +22,11 @@ class EmailMessage < ApplicationRecord
     party_payment_reminder: 11,
     party_payment_expired: 12,
     party_cancelled: 13,
-    party_refunded: 14
+    party_refunded: 14,
+    # Information de la COMPTA qu'une party privée est encaissée (#289).
+    # Ajouté en fin : les valeurs d'enum sont persistées en entier, intercaler
+    # une valeur réétiquetterait tous les e-mails déjà journalisés.
+    party_accounting_notification: 15
   }
 
   belongs_to :customer, optional: true

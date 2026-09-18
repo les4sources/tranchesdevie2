@@ -10,7 +10,7 @@
   = f.label :cut_off_at, "Date limite de commande", class: "adm-eyebrow mb-1 block"
   = f.datetime_local_field :cut_off_at, class: adm_field_class, required: true, data: { bake_day_cutoff_target: "cutOff" }
   - if cut_off_hint
-    p.mt-1.text-xs style="color: var(--text-muted);" Pré-rempli à la veille de la cuisson, 16h00 — modifiable.
+    p.mt-1.text-xs style="color: var(--text-muted);" Pré-rempli à la veille de la cuisson, 12h00 — modifiable.
 
 .mb-4
   = f.label :internal_note, "Note interne du jour", class: "adm-eyebrow mb-1 block"

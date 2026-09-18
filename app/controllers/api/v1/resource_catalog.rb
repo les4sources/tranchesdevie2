@@ -88,13 +88,28 @@ module Api
             payment_received: "boolean", paid_at: "datetime|null", customer_id: "integer",
             bake_day_id: "integer", pickup_location_id: "integer",
             pickup_location: "object {id,name,description} (lieu de retrait)",
+            party: "object|null {party_event_id,kind,held_on,slot,group_name,persons,forfait,admin_url} " \
+                   "(Pizza party rattachée ; null pour une commande de pain. persons = nombre de pâtons)",
+            customer: "object {id,full_name,email,phone_e164} (résumé client, PII)",
+            cancelled: "boolean (statut cancelled)",
+            refunded: "boolean (remboursement abouti, Stripe ou portefeuille)",
+            refunded_at: "datetime|null (horodatage du remboursement)",
             items: "array<order_item>", payment: "object|null (détail)",
             created_at: "datetime", updated_at: "datetime"
           },
           filters: {
             status: "Filtrer par statut (ex. ?status=paid).",
             source: "Filtrer par source (ex. ?source=checkout).",
-            bake_day_id: "Filtrer par jour de fournée (ex. ?bake_day_id=12)."
+            bake_day_id: "Filtrer par jour de fournée (ex. ?bake_day_id=12).",
+            kind: "Filtrer par type de commande. Seule valeur acceptée : private_party " \
+                  "(ex. ?kind=private_party). Une valeur inconnue renvoie 400.",
+            held_on_from: "Borne INCLUSIVE basse sur la date de la party, YYYY-MM-DD " \
+                          "(ex. ?held_on_from=2026-10-01). Exclut de fait les commandes sans party. " \
+                          "Date invalide → 400.",
+            held_on_to: "Borne INCLUSIVE haute sur la date de la party, YYYY-MM-DD " \
+                        "(ex. ?held_on_to=2026-10-31). Date invalide → 400.",
+            paid: "true = paiement reçu (Stripe, portefeuille, liquide/virement pointé) ; " \
+                  "false = les autres. Toute autre valeur → 400."
           }
         },
         {

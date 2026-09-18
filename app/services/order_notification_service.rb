@@ -34,6 +34,28 @@ class OrderNotificationService
     false
   end
 
+  # Informe la COMPTA qu'une Pizza party privée est ENCAISSÉE (#289).
+  #
+  # Sœur de send_party_team_notification, mais branchée sur l'argent et non sur
+  # la réservation : la compta doit ajouter la party sur la facture du séjour, ce
+  # qui n'a de sens qu'une fois le paiement reçu. Elle ne part donc ni à la
+  # création d'une party saisie en admin, ni à la réservation d'une commande cash
+  # non encaissée.
+  #
+  # Notification INTERNE : l'opt-out e-mail du client n'a aucune prise dessus, et
+  # un client sans e-mail ne l'empêche pas de partir. Idempotente par commande.
+  def self.send_party_accounting_notification(order)
+    return false unless order&.private_party?
+    return false if EmailMessage.exists?(order_id: order.id, kind: :party_accounting_notification)
+
+    PartyMailer.private_party_paid_for_accounting(order).deliver_later
+    true
+  rescue StandardError => e
+    Rails.logger.error("OrderNotificationService error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
+  end
+
   # Pose la note « Pizza party » sur le calendrier de claudy — l'application des
   # 4 Sources (#259). Sœur de send_party_team_notification : mêmes gardes (party
   # PRIVÉE uniquement), mêmes points d'appel, pour que le lieu voie venir un

@@ -241,6 +241,12 @@ class Admin::OrdersController < Admin::BaseController
     attributes[:paid_at] = Time.current if @order.read_attribute(:paid_at).blank?
 
     @order.update!(attributes)
+
+    # Une party privée réglée en liquide ou par virement n'a laissé aucune trace
+    # automatique : ce pointage EST l'encaissement, et c'est donc ici que la
+    # compta doit être prévenue (#289). Idempotent côté service : repointer
+    # n'envoie pas un second e-mail.
+    OrderNotificationService.send_party_accounting_notification(@order)
   end
 
   # Annule le pointage (le boulanger s'est trompé de bouton). `paid_at` n'est

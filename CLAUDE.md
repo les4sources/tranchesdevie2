@@ -176,6 +176,7 @@ Key env vars (set in `.env` for dev, managed via Hatchbox for production):
 - `APP_HOST` (production host for links in emails — unsubscribe, order pages)
 - `PARTY_NOTIFICATION_TO` (internal recipient of the new-private-party notification, defaults to `boulangerie@les4sources.be`)
 - `PARTY_NOTIFICATION_CC` (copied on that notification, defaults to `sejours@les4sources.be`)
+- `PARTY_ACCOUNTING_TO` (recipient of the accounting notification sent when a private party is *paid*, defaults to `compta@les4sources.be`; no Cc)
 - `BAKERY_BCC` (blind copy added to **every** outbound email addressed to the bakery, defaults to `michael+tranchesdevie@hulet.eu`; set to an empty string to disable). Applied by an ActionMailer interceptor (`config/initializers/bakery_bcc.rb`), not per-mailer — a future email to the team is copied without touching it.
 - `BAKERY_NOTIFICATION_ADDRESS` (the watched recipient, defaults to `boulangerie@les4sources.be`)
 - `TRANCHESDEVIE_API_KEY` (Bearer token for the private read-only agent API — see Agent API below)

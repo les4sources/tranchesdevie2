@@ -123,4 +123,110 @@ RSpec.describe PartyMailer, type: :mailer do
       expect(logged.to_email).to eq("boulangerie@les4sources.be, sejours@les4sources.be")
     end
   end
+
+  describe "#private_party_paid_for_accounting" do
+    let(:order) { build_private_party_order }
+
+    subject(:mail) { described_class.private_party_paid_for_accounting(order) }
+
+    before { order.update!(paid_at: Time.zone.local(2026, 8, 28, 14, 5)) }
+
+    it "part vers la compta, seule destinataire (pas de copie)" do
+      expect(mail.to).to eq([ "compta@les4sources.be" ])
+      expect(mail.cc).to be_nil
+    end
+
+    it "laisse surcharger la destinataire par PARTY_ACCOUNTING_TO" do
+      original = ENV["PARTY_ACCOUNTING_TO"]
+      ENV["PARTY_ACCOUNTING_TO"] = "finance@example.com"
+
+      expect(mail.to).to eq([ "finance@example.com" ])
+    ensure
+      ENV["PARTY_ACCOUNTING_TO"] = original
+    end
+
+    it "annonce date, créneau, personnes et montant dans le sujet" do
+      expect(mail.subject).to eq("Pizza Party privée payée — vendredi 4 septembre, soir, 11 personnes — 110,00 €")
+    end
+
+    it "détaille la réservation dans le corps" do
+      body = decoded_body(mail)
+
+      expect(body).to include("vendredi 4 septembre 2026")
+      expect(body).to include("Soir")
+      expect(body).to include("Alix Renard")
+      expect(body).to include("alix@example.com")
+      expect(body).to include("+32470111222")
+      expect(body).to include(order.order_number)
+      expect(body).to include("110,00")
+    end
+
+    it "détaille les lignes de la commande (libellé, quantité, prix unitaire)" do
+      body = decoded_body(mail)
+
+      expect(body).to include(order.order_items.first.full_name)
+      expect(body).to include("11 × 10,00")
+    end
+
+    it "reprend la demande du client : groupe, forfait, remarque" do
+      create(:party_request, :accepted, customer: customer, order: order,
+                                        group_name: "Les Coquelicots", forfait: true,
+                                        customer_note: "Anniversaire de Jules, on arrive vers 18h30.")
+      body = decoded_body(described_class.private_party_paid_for_accounting(order.reload))
+
+      expect(body).to include("Les Coquelicots")
+      expect(body).to include("Anniversaire de Jules")
+      expect(body).to include("Forfait")
+    end
+
+    it "affiche « — » pour une party saisie en admin, sans demande client" do
+      expect(order.party_request).to be_nil
+      expect { decoded_body(mail) }.not_to raise_error
+      expect(decoded_body(mail)).to include("—")
+    end
+
+    it "nomme le moyen de paiement Stripe quand un Payment existe" do
+      create(:payment, order: order, stripe_payment_intent_id: "pi_acc_1", status: :succeeded)
+
+      expect(decoded_body(described_class.private_party_paid_for_accounting(order.reload))).to include("Stripe")
+    end
+
+    it "nomme les espèces quand l'encaissement a été pointé hors ligne" do
+      order.update!(offline_payment_method: :cash, payment_status: :paid)
+
+      expect(decoded_body(described_class.private_party_paid_for_accounting(order.reload))).to include("Espèces")
+    end
+
+    it "indique si le client a demandé une facture" do
+      order.update!(requires_invoice: true)
+
+      expect(decoded_body(described_class.private_party_paid_for_accounting(order.reload))).to include("Facture demandée")
+    end
+
+    it "pointe d'abord vers la party, puis vers la commande" do
+      body = decoded_body(mail)
+
+      expect(body).to include("/admin/parties/#{order.party_event.id}")
+      expect(body).to include("/admin/orders/#{order.id}")
+      expect(body).to include("Voir la Pizza Party dans l'admin")
+    end
+
+    it "étiquette le kind sans identifier de client destinataire" do
+      expect(mail["X-Email-Kind"].value).to eq("party_accounting_notification")
+      expect(mail["X-Order-Id"].value).to eq(order.id.to_s)
+      expect(mail["X-Customer-Id"]).to be_nil
+    end
+
+    it "ne porte aucun lien de désinscription (ce n'est pas un email client)" do
+      expect(decoded_body(mail)).not_to include("/e-mails/preferences/")
+    end
+
+    it "se journalise en EmailMessage rattaché à la commande, sans client" do
+      expect { mail.deliver_now }.to change(EmailMessage, :count).by(1)
+
+      logged = EmailMessage.last
+      expect(logged).to have_attributes(kind: "party_accounting_notification", order_id: order.id, customer_id: nil)
+      expect(logged.to_email).to eq("compta@les4sources.be")
+    end
+  end
 end

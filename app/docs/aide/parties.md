@@ -86,6 +86,8 @@ C'est **le paiement** qui confirme, pas votre validation. À l'encaissement :
 le client reçoit sa confirmation, l'équipe séjours est prévenue, et le post-it
 orange apparaît sur le calendrier des 4 Sources.
 
+La **comptabilité** reçoit aussi son e-mail à ce moment-là — et uniquement à ce moment-là, y compris quand vous pointez un paiement en espèces ou par virement — pour qu'elle puisse reporter la party sur la facture du séjour.
+
 ### Sur le tableau de bord de la fournée
 
 Une party validée **mais pas encore payée** apparaît dans un encart « À

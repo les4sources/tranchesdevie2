@@ -45,4 +45,26 @@ RSpec.describe OrderPaymentFinalizer do
       expect(order.paid_at).to be_present
     end
   end
+
+  describe "information de la compta pour une party privée (#289)" do
+    before { allow(OrderNotificationService).to receive(:send_party_team_notification) }
+
+    it "informe la compta au premier enregistrement du paiement" do
+      order = private_party_order
+
+      expect(OrderNotificationService).to receive(:send_party_accounting_notification).with(order).once
+
+      described_class.call(order: order, payment_intent_id: "pi_test_289")
+    end
+
+    it "n'informe pas de nouveau quand le paiement est rejoué" do
+      order = private_party_order
+      described_class.call(order: order, payment_intent_id: "pi_test_289")
+
+      expect(OrderNotificationService).not_to receive(:send_party_accounting_notification)
+
+      described_class.call(order: order, payment_intent_id: "pi_test_289")
+      described_class.call(order: order, payment_intent_id: "pi_test_289")
+    end
+  end
 end

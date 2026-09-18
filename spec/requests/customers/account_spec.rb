@@ -70,4 +70,103 @@ RSpec.describe 'Customers::Account', type: :request do
       expect(customer.reload.email_opt_out).to be true
     end
   end
+
+  # Pointage « J'ai récupéré ma commande » sans rechargement (#291).
+  describe 'PATCH /mon-compte/commandes/:id/recuperee (pickup_order)' do
+    let(:bake_day) { create(:bake_day) }
+    let(:turbo) { { "Accept" => "text/vnd.turbo-stream.html" } }
+
+    def ready_order
+      create(:order, :ready, customer: customer, bake_day: bake_day, total_cents: 1100)
+    end
+
+    it 'répond en Turbo Stream : ligne remplacée, compteurs et flash mis à jour' do
+      order = ready_order
+
+      patch customers_pickup_order_path(order), headers: turbo
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include(%(<turbo-stream action="replace" target="order_row_#{order.id}">))
+      expect(response.body).to include(%(<turbo-stream action="update" target="acct-count-ready">))
+      expect(response.body).to include(%(<turbo-stream action="update" target="acct-count-picked_up">))
+      expect(response.body).to include(%(<turbo-stream action="update" target="account-flash">))
+      expect(response.body).to include("Commande marquée comme récupérée. Bon appétit !")
+      expect(order.reload).to be_picked_up
+    end
+
+    it 'renvoie la ligne dans son nouvel état, bouton de pointage retiré' do
+      order = ready_order
+
+      patch customers_pickup_order_path(order), headers: turbo
+
+      expect(response.body).to include('data-status="picked_up"')
+      expect(response.body).to include("Récupérée")
+      expect(response.body).not_to include("J'ai récupéré ma commande")
+    end
+
+    it 'met à jour le JSON de la modale porté par la ligne' do
+      order = ready_order
+
+      patch customers_pickup_order_path(order), headers: turbo
+
+      expect(response.body).to include("&quot;status&quot;:&quot;picked_up&quot;")
+    end
+
+    it 'rafraîchit les compteurs de la page (prêtes -1, récupérées +1)' do
+      order = ready_order
+      create(:order, :ready, customer: customer, bake_day: create(:bake_day, baked_on: Date.current.next_occurring(:friday)))
+
+      patch customers_pickup_order_path(order), headers: turbo
+
+      expect(response.body).to include(%(<turbo-stream action="update" target="acct-count-ready"><template>1</template>))
+      expect(response.body).to include(%(<turbo-stream action="update" target="acct-count-picked_up"><template>1</template>))
+      expect(response.body).to include(%(<turbo-stream action="update" target="acct-stat-ready"><template>1</template>))
+      expect(response.body).to include(%(<turbo-stream action="replace" target="acct-ready-banner">))
+    end
+
+    it 'garde la redirection historique hors Turbo (JS désactivé)' do
+      order = ready_order
+
+      patch customers_pickup_order_path(order)
+
+      expect(response).to redirect_to(customers_account_path)
+      expect(flash[:notice]).to eq("Commande marquée comme récupérée. Bon appétit !")
+      expect(order.reload).to be_picked_up
+    end
+
+    it 'signale une commande introuvable sans rien casser' do
+      other = create(:order, :ready, customer: create(:customer), bake_day: bake_day)
+
+      patch customers_pickup_order_path(other), headers: turbo
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Commande introuvable")
+      expect(response.body).not_to include(%(target="order_row_#{other.id}"))
+      expect(other.reload).to be_ready
+    end
+
+    it "remplace la ligne par son état réel quand la commande n'est plus récupérable" do
+      order = create(:order, :paid, customer: customer, bake_day: bake_day)
+
+      patch customers_pickup_order_path(order), headers: turbo
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Cette commande ne peut pas être marquée comme récupérée")
+      expect(response.body).to include(%(<turbo-stream action="replace" target="order_row_#{order.id}">))
+      expect(response.body).to include('data-status="paid"')
+      expect(order.reload).to be_paid
+    end
+
+    it 'rend la liste initiale avec les mêmes identifiants de ligne que le flux' do
+      order = ready_order
+
+      get customers_account_path
+
+      expect(response.body).to include(%(id="order_row_#{order.id}"))
+      expect(response.body).to include('id="account-flash"')
+      expect(response.body).to include('id="acct-count-ready"')
+      expect(response.body).to include('id="acct-ready-banner"')
+    end
+  end
 end

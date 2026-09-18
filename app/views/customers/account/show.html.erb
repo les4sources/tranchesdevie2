@@ -32,16 +32,12 @@
       <div class="mb-1 font-script text-[30px] font-bold leading-none text-ink-900">Bonjour <%= @customer.first_name %> 👋</div>
       <div class="text-sm text-ink-500">Mangeur·se depuis <%= I18n.with_locale(:fr) { I18n.l(@member_since, format: "%B %Y") } %> · <%= @orders_count %> commande<%= "s" if @orders_count > 1 %> passée<%= "s" if @orders_count > 1 %></div>
     </div>
-    <% if @ready_count > 0 %>
-      <div class="relative flex items-center gap-3 rounded-lg border border-success-200 bg-warm-white px-4 py-3">
-        <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-success-100"><%= lucide "package-check", size: 20, color: "var(--success-600)" %></span>
-        <div>
-          <div class="text-[13px] font-semibold text-ink-900"><%= @ready_count %> commande<%= "s" if @ready_count > 1 %> à récupérer</div>
-          <div class="text-[12.5px] text-ink-500">Confirme la réception ci-dessous</div>
-        </div>
-      </div>
-    <% end %>
+    <%= render "customers/account/ready_banner", ready_count: @ready_count %>
   </div>
+
+  <%# Zone de flash du compte : le pointage d'une commande y écrit sa
+      confirmation (ou son erreur) sans recharger la page (#291). %>
+  <div id="account-flash"></div>
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[0.82fr_1.18fr]">
     <!-- Left column -->
@@ -121,7 +117,7 @@
         </div>
         <div class="flex flex-col gap-1 rounded-md border border-sage-200 bg-sage-100 p-4">
           <span class="text-[13px] font-medium text-ink-500">Prêtes à récupérer</span>
-          <span class="text-[28px] font-bold leading-none text-ink-900"><%= @ready_count %></span>
+          <span id="acct-stat-ready" class="text-[28px] font-bold leading-none text-ink-900"><%= @ready_count %></span>
           <span class="text-xs text-ink-500">aux 4 Sources</span>
         </div>
         <div class="flex flex-col gap-1 rounded-md border border-flour-300 bg-warm-white p-4">
@@ -135,14 +131,16 @@
       <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
         <div class="px-6 pt-4">
           <h2 class="mb-3.5 font-script text-2xl font-bold text-ink-900">Mes commandes</h2>
-          <% counts = { "all" => @orders.size, "awaiting_payment" => @orders.count { |o| o.status == "awaiting_payment" }, "ready" => @orders.count { |o| o.status == "ready" }, "paid" => @orders.count { |o| o.status == "paid" }, "picked_up" => @orders.count { |o| o.status == "picked_up" }, "cancelled" => @orders.count { |o| o.status == "cancelled" } } %>
+          <%# Compteurs calculés par le contrôleur (load_account_orders) : le flux
+              Turbo du pointage les recalcule à l'identique (#291). %>
+          <% counts = @status_counts %>
           <%# « À régler » en tête : une Pizza party validée attend une action du
               client, et c'est la seule ligne de cet écran qui en demande une. %>
           <% filters = [ [ "all", "Toutes" ], [ "awaiting_payment", "À régler" ], [ "ready", "Prêtes" ], [ "paid", "Payées" ], [ "picked_up", "Récupérées" ], [ "cancelled", "Annulées" ] ] %>
           <div class="flex flex-wrap gap-2 border-b border-flour-300 pb-3.5">
             <% filters.each_with_index do |(key, label), i| %>
               <button type="button" data-account-tab="<%= key %>" class="acct-tab inline-flex items-center gap-2 rounded-full border border-flour-400 bg-warm-white px-3 py-1.5 text-[13px] font-semibold text-ink-700 transition <%= "is-active" if i.zero? %>">
-                <%= label %><span class="acct-tab-count rounded-full bg-flour-200 px-1.5 py-0.5 text-[11px] font-bold text-ink-500"><%= counts[key] %></span>
+                <%= label %><span id="acct-count-<%= key %>" class="acct-tab-count rounded-full bg-flour-200 px-1.5 py-0.5 text-[11px] font-bold text-ink-500"><%= counts.fetch(key, 0) %></span>
               </button>
             <% end %>
           </div>
@@ -151,53 +149,7 @@
         <div class="flex flex-col p-3" data-account-orders>
           <% if @orders.any? %>
             <% @orders.each do |order| %>
-              <% tone = case order.status
-                        when "awaiting_payment" then [ "bg-ember-100", "text-ember-700", "hourglass" ]
-                        when "ready" then [ "bg-success-100", "text-success-700", "package-check" ]
-                        when "paid" then [ "bg-water-100", "text-water-700", "badge-euro" ]
-                        when "picked_up" then [ "bg-flour-200", "text-ink-700", "check" ]
-                        when "cancelled" then [ "bg-danger-100", "text-danger-700", "x" ]
-                        else [ "bg-flour-200", "text-ink-700", "shopping-basket" ]
-                        end %>
-              <div data-order-row data-status="<%= order.status %>"
-                   class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-3 transition hover:bg-flour-100"
-                   data-action="click->order-modal#open"
-                   data-order-modal-order-id-value="<%= order.id %>"
-                   data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [ :id, :baked_on, :cut_off_at ] }, party_event: { only: [ :id, :held_on, :slot, :title, :kind ] }, pickup_location: { only: [ :id, :name, :description ] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [ :id, :name, :discount_percent ] } } } }) %>">
-                <div class="flex min-w-0 items-center gap-3">
-                  <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full <%= tone[0] %> <%= tone[1] %>"><%= lucide tone[2], size: 18, color: "currentColor" %></span>
-                  <div class="min-w-0">
-                    <p class="truncate font-semibold text-ink-900"><%= order.party_event ? "Pizza party du" : "Fournée du" %> <%= I18n.with_locale(:fr) { I18n.l(order.event_date, format: "%-d %B %Y") } %></p>
-                    <p class="text-[13px] text-ink-500">Retrait aux 4 Sources</p>
-                  </div>
-                </div>
-                <div class="flex flex-shrink-0 items-center gap-3">
-                  <span class="hidden items-center rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex <%= tone[0] %> <%= tone[1] %>"><%= order_status_label(order.status) %></span>
-                  <span class="font-semibold text-ink-900"><%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %></span>
-                  <%# Une Pizza party validée attend un règlement : on emmène le
-                      client là où il peut confirmer son nombre et payer, plutôt
-                      que de lui ouvrir une modale qui ne sait rien en faire. %>
-                  <% if order.awaiting_payment? %>
-                    <%= link_to party_payment_path(token: order.public_token),
-                          onclick: "event.stopPropagation()",
-                          data: { turbo: false },
-                          class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-ember-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-ember-500" do %>
-                      <%= lucide "credit-card", size: 14, color: "#fff" %> <span class="hidden sm:inline">Confirmer et régler</span><span class="sm:hidden">Régler</span>
-                    <% end %>
-                  <% end %>
-                  <% if order.can_be_picked_up_by_customer? %>
-                    <%= button_to customers_pickup_order_path(order), method: :patch, form: { class: "inline" }, onclick: "event.stopPropagation()", class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-success-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-success-700" do %>
-                      <%= lucide "check", size: 14, color: "#fff" %> <span class="hidden sm:inline">J'ai récupéré ma commande</span><span class="sm:hidden">Récupérée</span>
-                    <% end %>
-                  <% end %>
-                  <% if @customer.billable? %>
-                    <%# Relevé PDF réservé aux clients facturables (#38). download stoppe la propagation pour ne pas ouvrir la modale. %>
-                    <%= link_to customers_order_invoice_path(order_id: order.id), class: "inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-ember-600 transition hover:text-ember-500", data: { turbo: false, action: "click->order-modal#download" } do %>
-                      <%= lucide "badge-euro", size: 14, color: "var(--ember-600)" %> Relevé PDF
-                    <% end %>
-                  <% end %>
-                </div>
-              </div>
+              <%= render "customers/account/order_row", order: order, customer: @customer %>
             <% end %>
             <p data-account-empty class="hidden py-8 text-center text-ink-500">Aucune commande dans cette catégorie.</p>
           <% else %>
@@ -213,12 +165,17 @@
 
 <script>
   (function () {
+    // Les lignes sont re-sélectionnées à CHAQUE application du filtre : un
+    // pointage « J'ai récupéré ma commande » remplace une ligne par Turbo Stream,
+    // et la référence capturée au chargement pointerait sur un nœud détaché (#291).
     const tabs = document.querySelectorAll('[data-account-tab]');
-    const rows = document.querySelectorAll('[data-order-row]');
     const empty = document.querySelector('[data-account-empty]');
+    let current = 'all';
+
     function apply(f) {
+      current = f;
       let shown = 0;
-      rows.forEach(r => {
+      document.querySelectorAll('[data-order-row]').forEach(r => {
         const visible = (f === 'all' || r.dataset.status === f);
         r.style.display = visible ? '' : 'none';
         if (visible) shown++;
@@ -226,6 +183,14 @@
       if (empty) empty.classList.toggle('hidden', shown !== 0);
       tabs.forEach(t => t.classList.toggle('is-active', t.dataset.accountTab === f));
     }
+
     tabs.forEach(t => t.addEventListener('click', () => apply(t.dataset.accountTab)));
+
+    // Après le rendu d'un flux Turbo, la ligne remplacée est neuve et visible :
+    // on réapplique le filtre courant pour qu'elle obéisse à l'onglet actif —
+    // sinon une commande pointée resterait affichée sous l'onglet « Prêtes ».
+    document.addEventListener('turbo:before-stream-render', () => {
+      requestAnimationFrame(() => apply(current));
+    });
   })();
 </script>

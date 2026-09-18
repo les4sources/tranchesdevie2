@@ -1,0 +1,24 @@
+<%# Réponse au pointage « J'ai récupéré ma commande » (#291). La page ne bouge
+    pas : on remplace la ligne concernée, on rafraîchit les compteurs qui en
+    dépendent, et on écrit le message dans la zone de flash du compte. %>
+<%= turbo_stream.update "account-flash" do %>
+  <%= render "customers/account/account_flash",
+             message: @alert.presence || @notice,
+             tone: @alert.present? ? :alert : :notice %>
+<% end %>
+
+<% if @order %>
+  <%= turbo_stream.replace order_row_id(@order) do %>
+    <%= render "customers/account/order_row", order: @order, customer: @customer %>
+  <% end %>
+<% end %>
+
+<% @status_counts.each do |status, count| %>
+  <%= turbo_stream.update "acct-count-#{status}", count %>
+<% end %>
+
+<%= turbo_stream.update "acct-stat-ready", @ready_count %>
+
+<%= turbo_stream.replace "acct-ready-banner" do %>
+  <%= render "customers/account/ready_banner", ready_count: @ready_count %>
+<% end %>

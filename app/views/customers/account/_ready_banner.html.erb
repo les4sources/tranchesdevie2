@@ -1,0 +1,14 @@
+<%# Encart « N commandes à récupérer » du bandeau d'accueil. Toujours rendu (vide
+    quand il n'y a rien à récupérer) : le flux Turbo a besoin d'une cible stable
+    à remplacer après un pointage (#291). %>
+<div id="acct-ready-banner" class="contents">
+  <% if ready_count > 0 %>
+    <div class="relative flex items-center gap-3 rounded-lg border border-success-200 bg-warm-white px-4 py-3">
+      <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-success-100"><%= lucide "package-check", size: 20, color: "var(--success-600)" %></span>
+      <div>
+        <div class="text-[13px] font-semibold text-ink-900"><%= ready_count %> commande<%= "s" if ready_count > 1 %> à récupérer</div>
+        <div class="text-[12.5px] text-ink-500">Confirme la réception ci-dessous</div>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,51 @@
+<%# Une ligne de la liste « Mes commandes ». SOURCE UNIQUE du markup : la page
+    compte la rend au chargement, et le flux Turbo la re-rend à l'identique après
+    un pointage « J'ai récupéré ma commande » (#291). Toute divergence entre les
+    deux se verrait immédiatement à l'écran. %>
+<% tone = case order.status
+          when "awaiting_payment" then [ "bg-ember-100", "text-ember-700", "hourglass" ]
+          when "ready" then [ "bg-success-100", "text-success-700", "package-check" ]
+          when "paid" then [ "bg-water-100", "text-water-700", "badge-euro" ]
+          when "picked_up" then [ "bg-flour-200", "text-ink-700", "check" ]
+          when "cancelled" then [ "bg-danger-100", "text-danger-700", "x" ]
+          else [ "bg-flour-200", "text-ink-700", "shopping-basket" ]
+          end %>
+<div id="<%= order_row_id(order) %>" data-order-row data-status="<%= order.status %>"
+     class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-3 transition hover:bg-flour-100"
+     data-action="click->order-modal#open"
+     data-order-modal-order-id-value="<%= order.id %>"
+     data-order-modal-order-data-value="<%= order.to_json(include: { bake_day: { only: [ :id, :baked_on, :cut_off_at ] }, party_event: { only: [ :id, :held_on, :slot, :title, :kind ] }, pickup_location: { only: [ :id, :name, :description ] }, order_items: { include: { product_variant: { include: :product } } }, customer: { include: { group: { only: [ :id, :name, :discount_percent ] } } } }) %>">
+  <div class="flex min-w-0 items-center gap-3">
+    <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full <%= tone[0] %> <%= tone[1] %>"><%= lucide tone[2], size: 18, color: "currentColor" %></span>
+    <div class="min-w-0">
+      <p class="truncate font-semibold text-ink-900"><%= order.party_event ? "Pizza party du" : "Fournée du" %> <%= I18n.with_locale(:fr) { I18n.l(order.event_date, format: "%-d %B %Y") } %></p>
+      <p class="text-[13px] text-ink-500">Retrait aux 4 Sources</p>
+    </div>
+  </div>
+  <div class="flex flex-shrink-0 items-center gap-3">
+    <span class="hidden items-center rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex <%= tone[0] %> <%= tone[1] %>"><%= order_status_label(order.status) %></span>
+    <span class="font-semibold text-ink-900"><%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %></span>
+    <%# Une Pizza party validée attend un règlement : on emmène le
+        client là où il peut confirmer son nombre et payer, plutôt
+        que de lui ouvrir une modale qui ne sait rien en faire. %>
+    <% if order.awaiting_payment? %>
+      <%= link_to party_payment_path(token: order.public_token),
+            onclick: "event.stopPropagation()",
+            data: { turbo: false },
+            class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-ember-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-ember-500" do %>
+        <%= lucide "credit-card", size: 14, color: "#fff" %> <span class="hidden sm:inline">Confirmer et régler</span><span class="sm:hidden">Régler</span>
+      <% end %>
+    <% end %>
+    <% if order.can_be_picked_up_by_customer? %>
+      <%= button_to customers_pickup_order_path(order), method: :patch, form: { class: "inline" }, onclick: "event.stopPropagation()", class: "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-success-600 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-success-700" do %>
+        <%= lucide "check", size: 14, color: "#fff" %> <span class="hidden sm:inline">J'ai récupéré ma commande</span><span class="sm:hidden">Récupérée</span>
+      <% end %>
+    <% end %>
+    <% if customer.billable? %>
+      <%# Relevé PDF réservé aux clients facturables (#38). download stoppe la propagation pour ne pas ouvrir la modale. %>
+      <%= link_to customers_order_invoice_path(order_id: order.id), class: "inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-ember-600 transition hover:text-ember-500", data: { turbo: false, action: "click->order-modal#download" } do %>
+        <%= lucide "badge-euro", size: 14, color: "var(--ember-600)" %> Relevé PDF
+      <% end %>
+    <% end %>
+  </div>
+</div>

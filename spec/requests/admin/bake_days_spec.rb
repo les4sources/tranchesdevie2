@@ -148,4 +148,49 @@ RSpec.describe "Admin::BakeDays", type: :request do
       expect(response.body).to include("Mettre à jour le jour de cuisson")
     end
   end
+
+  # Défaut du cut-off : la veille de la cuisson à 12h00 (#292). Le formulaire le
+  # pré-remplit côté client, mais le serveur doit tenir la même règle — une
+  # requête sans date limite reste parfaitement légitime.
+  describe "date limite par défaut" do
+    it "cale un POST sans date limite sur la veille à 12h00" do
+      friday = Date.current.next_occurring(:friday) + 7
+
+      post admin_bake_days_path, params: {
+        bake_day: { baked_on: friday.to_s, cut_off_at: "", oven_capacity_grams: 110_000 }
+      }
+
+      bake_day = BakeDay.find_by(baked_on: friday)
+      expect(bake_day).to be_present
+      expect(bake_day.cut_off_at).to eq(Time.zone.parse("#{friday - 1.day} 12:00:00"))
+    end
+
+    it "recale un PATCH qui vide la date limite sur la veille à 12h00" do
+      bake_day = create(:bake_day, :tuesday)
+      tuesday = bake_day.baked_on
+
+      patch admin_bake_day_path(bake_day), params: {
+        bake_day: { baked_on: tuesday.to_s, cut_off_at: "" }
+      }
+
+      expect(bake_day.reload.cut_off_at).to eq(Time.zone.parse("#{tuesday - 1.day} 12:00:00"))
+    end
+
+    it "n'écrase jamais une date limite saisie à la main" do
+      tuesday = Date.current.next_occurring(:tuesday) + 7
+      chosen = Time.zone.parse("#{tuesday - 3.days} 09:30:00")
+
+      post admin_bake_days_path, params: {
+        bake_day: { baked_on: tuesday.to_s, cut_off_at: chosen.strftime("%Y-%m-%dT%H:%M"), oven_capacity_grams: 110_000 }
+      }
+
+      expect(BakeDay.find_by(baked_on: tuesday).cut_off_at).to eq(chosen)
+    end
+
+    it "annonce la règle dans le formulaire" do
+      get new_admin_bake_day_path
+
+      expect(response.body).to include("Pré-rempli à la veille de la cuisson, 12h00")
+    end
+  end
 end

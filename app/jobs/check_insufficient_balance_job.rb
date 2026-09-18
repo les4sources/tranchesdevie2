@@ -3,14 +3,20 @@ class CheckInsufficientBalanceJob < ApplicationJob
 
   queue_as :default
 
+  # Préavis de l'alerte « solde insuffisant » : on ne regarde que les fournées
+  # dont le cut-off tombe dans les 4 heures. Nommé plutôt qu'écrit en dur, parce
+  # que cette fenêtre et l'heure du cron (08h00, cf. config/recurring.yml) ne se
+  # comprennent que l'une par l'autre : 08h00 + 4 h = le cut-off de 12h00 (#292).
+  WARNING_LEAD = 4.hours
+
   def perform
     @checked_count = 0
     @warned_count = 0
 
-    # Fournées dont le cut-off tombe dans les 6 heures. Le job passe tous les
-    # jours à 10h00 (#274) — six heures avant un cut-off à 16h00 — et cette
-    # fenêtre le rend sans effet les jours sans cut-off.
-    upcoming_cutoffs = BakeDay.where(cut_off_at: Time.current..6.hours.from_now)
+    # Fournées dont le cut-off tombe dans WARNING_LEAD. Le job passe tous les
+    # jours à 08h00 (#274, recalé en #292) — quatre heures avant un cut-off à
+    # 12h00 — et cette fenêtre le rend sans effet les jours sans cut-off.
+    upcoming_cutoffs = BakeDay.where(cut_off_at: Time.current..WARNING_LEAD.from_now)
 
     upcoming_cutoffs.find_each do |bake_day|
       Rails.logger.info("Checking insufficient balances for bake day #{bake_day.baked_on}")

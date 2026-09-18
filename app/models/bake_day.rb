@@ -1,9 +1,14 @@
 class BakeDay < ApplicationRecord
   # Source de vérité unique des jours de cuisson de la boulangerie.
-  # Clé = wday (0=dimanche … 6=samedi), valeur = nombre de jours avant pour le cut-off (18:00).
+  # Clé = wday (0=dimanche … 6=samedi), valeur = nombre de jours avant pour le cut-off (12:00).
   # Pour ajouter un jour de cuisson (ex. le jeudi), il suffit d'ajouter une entrée ici :
   # tout le reste (cut-off, panier, restriction de variante par jour) s'y adapte.
-  COOKING_DAYS = { 2 => 2, 5 => 2 }.freeze # mardi ← dim 18:00, vendredi ← mer 18:00
+  COOKING_DAYS = { 2 => 1, 5 => 1 }.freeze # mardi ← lun 12:00, vendredi ← jeu 12:00
+
+  # Heure de clôture des commandes, la veille de la cuisson (#292). Les boulangers
+  # figent leur plan de production à midi : passé cette heure, la fournée ne bouge
+  # plus. Deux crons sont calés dessus (cf. config/recurring.yml).
+  CUT_OFF_HOUR = "12:00:00".freeze
 
   # Liste ordonnée des wday de cuisson, dérivée de COOKING_DAYS.
   COOKING_WDAYS = COOKING_DAYS.keys.freeze
@@ -143,9 +148,11 @@ class BakeDay < ApplicationRecord
       days_before = COOKING_DAYS[date.wday]
       return nil unless days_before # pas un jour de cuisson
 
-      # Cut-off à 18:00 (Europe/Brussels), days_before jours avant la cuisson.
+      # Cut-off à CUT_OFF_HOUR (Europe/Brussels), days_before jours avant la
+      # cuisson. Parse dans le fuseau de l'app : midi reste midi à Bruxelles des
+      # deux côtés du changement d'heure.
       cut_off_date = date - days_before.days
-      Time.zone.parse("#{cut_off_date} 18:00:00")
+      Time.zone.parse("#{cut_off_date} #{CUT_OFF_HOUR}")
     end
   end
 

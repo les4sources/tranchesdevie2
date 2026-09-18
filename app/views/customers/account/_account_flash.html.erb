@@ -1,0 +1,8 @@
+<%# Message du pointage, dans la page compte plutôt que dans le flash global :
+    aucun rechargement, donc aucun flash Rails à afficher (#291). %>
+<% if message.present? %>
+  <div class="mb-5 flex items-center gap-2.5 rounded-lg border px-4 py-3 text-sm font-semibold <%= tone == :alert ? "border-danger-200 bg-danger-100 text-danger-700" : "border-success-200 bg-success-100 text-success-700" %>">
+    <%= lucide(tone == :alert ? "triangle-alert" : "check", size: 18, color: "currentColor") %>
+    <span><%= message %></span>
+  </div>
+<% end %>

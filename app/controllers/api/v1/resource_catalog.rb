@@ -202,7 +202,8 @@ module Api
             id: "integer", direction: "enum: outbound|inbound",
             kind: "enum: confirmation|otp|other|ready|party_team_notification|party_request_received|" \
                   "party_request_team|party_request_accepted|party_request_refused|party_request_expired|" \
-                  "party_payment_prompt|party_payment_reminder|party_payment_expired|party_cancelled|party_refunded",
+                  "party_payment_prompt|party_payment_reminder|party_payment_expired|party_cancelled|party_refunded|" \
+                  "party_accounting_notification",
             to_email: "string (PII)", from_email: "string (PII)", subject: "string|null", body_html: "string (PII)",
             message_id: "string|null", customer_id: "integer|null", order_id: "integer|null",
             party_request_id: "integer|null (e-mails du parcours Pizza party antérieurs à la validation)",

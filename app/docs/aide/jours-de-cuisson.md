@@ -9,7 +9,7 @@ summary: Créer les fournées, suivre les capacités (four, pétrin, moules) et 
 
 Une **fournée** (ou « jour de cuisson »), c'est une date à laquelle on cuit.
 Chez Tranches de Vie, c'est le **mardi** et le **vendredi**. Chaque fournée a
-une **date limite de commande** (le dimanche et le mercredi à 18h) : après, on
+une **date limite de commande** (la veille de la cuisson à 12h) : après, on
 ne peut plus commander pour cette date.
 
 ![La liste des jours de cuisson](shot:bake-days-index)

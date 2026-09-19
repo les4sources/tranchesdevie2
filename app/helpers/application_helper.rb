@@ -117,4 +117,15 @@ module ApplicationHelper
       role: "img", "aria-label": "#{label} : #{state}"
     )
   end
+
+  # Identifiant DOM d'une ligne de « Mes commandes ». SOURCE UNIQUE, partagée par
+  # la page compte et par le flux Turbo qui remplace la ligne après un pointage
+  # (#291) — deux façons de le construire, c'est une ligne qui ne se remplace
+  # plus le jour où l'une des deux change.
+  #
+  # Volontairement PAS `dom_id(order, :row)`, qui produirait `row_order_12` : ici
+  # l'identifiant nomme la ligne de commande, `order_row_12`.
+  def order_row_id(order)
+    "order_row_#{order.id}"
+  end
 end

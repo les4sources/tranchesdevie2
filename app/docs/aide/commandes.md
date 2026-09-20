@@ -82,6 +82,8 @@ Le bouton **Rembourser** n'est visible que tant que la commande est « Payée »
 
 Il arrive qu'un retrait se passe mal : il manque un pain dans le sac, on en a donné un autre que celui commandé. Rembourser toute la commande serait injuste des deux côtés — le bloc **Remboursement partiel**, en bas de la fiche d'une commande payée, sert exactement à ça.
 
+![Le signalement du client et le bloc de remboursement partiel](shot:order-partial-refund)
+
 Tu indiques la quantité à rendre sur chaque ligne, et le montant se calcule tout seul (la remise du client est déjà répartie dedans). Tu peux l'écraser : si tu décides d'offrir un pain plutôt que de le rembourser, tu baisses le montant, c'est toi qui décides.
 
 Trois façons de rendre l'argent :
@@ -97,5 +99,7 @@ Le client reçoit un e-mail avec le détail de ce qui lui est rendu, et un SMS c
 Un mangeur qui constate un problème en rentrant chez lui peut le signaler lui-même depuis « Mon compte », pendant les deux semaines qui suivent la fournée. Il coche les pains concernés et écrit ce qui s'est passé.
 
 Vous recevez alors un e-mail à `boulangerie@les4sources.be`, et une pastille apparaît sur **Signalements** dans le menu de gauche. Rien n'est remboursé automatiquement : c'est vous qui décidez.
+
+![La liste des signalements](shot:order-issues-index)
 
 Depuis l'écran **Signalements**, tu ouvres la commande concernée : le message du client s'affiche sur sa fiche, et les quantités qu'il a signalées sont déjà pré-remplies dans le bloc de remboursement partiel. Rembourser clôt le signalement. S'il n'y a rien à rendre (pain remplacé sur place, malentendu), le bouton **Marquer traité sans rembourser** le referme aussi.

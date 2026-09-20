@@ -46,6 +46,15 @@
   record: order
   path: /admin/orders/:id/edit
 
+# Retrait incomplet (#remboursement-partiel) : la fiche porte le signalement du
+# client ET le bloc de remboursement ligne à ligne.
+- slug: order-partial-refund
+  record: problem_order
+  path: /admin/orders/:id
+
+- slug: order-issues-index
+  path: /admin/order_issues
+
 # --- Jours de cuisson --------------------------------------------------------
 - slug: bake-days-index
   path: /admin/bake_days

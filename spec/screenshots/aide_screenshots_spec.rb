@@ -72,11 +72,16 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
     groups = build_groups
     customers = build_customers(groups, rng)
     orders = build_orders(products, bake_days, customers, pickup_locations, rng)
+    problem_order = build_problem_order(products, bake_days, customers, pickup_locations)
     build_pro_billing(products, bake_days)
     build_parties
 
     {
       order: orders.first,
+      # Retrait qui s'est mal passé (#remboursement-partiel) : sans signalement
+      # ouvert ni encaissement réel, ni le bloc de remboursement partiel ni
+      # l'écran Signalements n'auraient rien à montrer.
+      problem_order: problem_order,
       bake_day: bake_days[:upcoming],
       customer: customers.first,
       product: products.first,
@@ -205,6 +210,33 @@ RSpec.describe "Aide — génération des captures", type: :system, aide_screens
       order.update!(total_cents: order.order_items.sum { |it| it.qty * it.unit_price_cents })
       order
     end
+  end
+
+  # Commande retirée dont le sac était incomplet : trois pains, payée pour de
+  # vrai (c'est ce qui ouvre le remboursement partiel), et le signalement du
+  # client avec les deux lignes qu'il a cochées.
+  def build_problem_order(products, bake_days, customers, pickup_locations)
+    customer = customers.last
+    order = create(:order, customer: customer, bake_day: bake_days[:past], status: :paid,
+                           pickup_location: pickup_locations.first)
+
+    variants = products.first(3).map { |product| product.product_variants.order(:id).first }
+    [ 6, 1, 1 ].each_with_index do |qty, index|
+      variant = variants[index]
+      create(:order_item, order: order, product_variant: variant, qty: qty, unit_price_cents: variant.price_cents)
+    end
+    order.update!(total_cents: order.order_items.sum { |item| item.qty * item.unit_price_cents },
+                  payment_status: :paid, paid_at: 2.days.ago)
+    order.update!(status: :picked_up)
+
+    issue = order.order_issues.create!(
+      customer: customer,
+      description: "Il manquait un pain d'épeautre (5 au lieu de 6) et le pain au froment n'était pas dans le sac."
+    )
+    issue.order_issue_items.create!(order_item: order.order_items.first, qty: 1)
+    issue.order_issue_items.create!(order_item: order.order_items.second, qty: 1)
+
+    order
   end
 
   # Client professionnel facturé au mois : sans lui, /admin/billing est vide.

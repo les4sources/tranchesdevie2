@@ -79,9 +79,14 @@ RSpec.describe "Mon compte — pointer une commande récupérée", type: :system
     visit customers_account_path
     within("#order_row_#{orders[0].id}") { click_button "J'ai récupéré ma commande" }
 
+    # Attendre le REMPLACEMENT de la ligne avant d'en lire les attributs : `[]`
+    # ne réessaie pas, si bien qu'un `find` juste après le clic renvoyait parfois
+    # l'ancienne ligne et la CI échouait sur `data-status` (verte en local, rouge
+    # sur un agent plus lent). Le sélecteur porte donc la condition.
+    expect(page).to have_css("#order_row_#{orders[0].id}[data-status='picked_up']", wait: 10)
+
     row = find("#order_row_#{orders[0].id}")
     expect(row).to have_text("Récupérée")
-    expect(row[:"data-status"]).to eq("picked_up")
     expect(row).to have_no_button("J'ai récupéré ma commande")
     expect(row[:"data-order-modal-order-data-value"]).to include('"status":"picked_up"')
   end

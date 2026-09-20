@@ -1,0 +1,60 @@
+<% content_for :title, "Signaler un problème" %>
+
+<div class="mx-auto w-full max-w-2xl">
+  <div class="mb-6">
+    <%= link_to customers_account_path, class: "inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition hover:text-ink-900" do %>
+      <%= lucide "arrow-left", size: 16, color: "currentColor" %> Retour à mon compte
+    <% end %>
+    <div class="tdv-eyebrow mb-1.5 mt-4 text-sage-700">
+      <%= @order.party_event ? "Pizza party du" : "Fournée du" %> <%= I18n.with_locale(:fr) { I18n.l(@order.event_date, format: "%-d %B %Y") } %>
+    </div>
+    <h1 class="font-script text-4xl font-bold text-ink-900">Un souci avec ta commande ?</h1>
+    <p class="mt-2 text-[15px] leading-relaxed text-ink-500">
+      Il manquait un pain, on t'en a donné un autre, quelque chose ne va pas ? Dis-nous ce qui s'est passé : les boulangers reçoivent ton message et te recontactent — avec un remboursement s'il y a lieu.
+    </p>
+  </div>
+
+  <% if @order_issue.errors.any? %>
+    <div class="mb-5 rounded-md border border-danger-200 bg-danger-100 p-4 text-sm text-danger-700">
+      <% @order_issue.errors.full_messages.each do |message| %>
+        <div><%= message %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= form_with url: customers_order_issues_path(@order), method: :post, local: true,
+        class: "overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm" do %>
+    <div class="border-b border-flour-300 px-6 py-5">
+      <h2 class="mb-1 text-base font-semibold text-ink-900">Quels articles sont concernés ?</h2>
+      <p class="mb-4 text-[13.5px] text-ink-500">Facultatif — laisse à zéro si le problème ne porte sur aucun pain en particulier.</p>
+
+      <div class="flex flex-col gap-2.5">
+        <% @order.order_items.each do |item| %>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-flour-300 px-3.5 py-2.5">
+            <div class="min-w-0">
+              <div class="truncate font-semibold text-ink-900"><%= item.product_variant.product&.name %></div>
+              <div class="text-[13px] text-ink-500"><%= item.product_variant.name %> · commandé ×<%= item.qty %></div>
+            </div>
+            <%= number_field_tag "reported_items[#{item.id}]", 0, in: 0..item.qty, step: 1,
+                  class: "w-20 rounded-md border border-flour-400 bg-white px-2.5 py-1.5 text-right text-sm text-ink-900" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="px-6 py-5">
+      <label for="order_issue_description" class="mb-1 block text-base font-semibold text-ink-900">Que s'est-il passé ?</label>
+      <p class="mb-3 text-[13.5px] text-ink-500">Le plus précis possible : c'est ce que liront les boulangers.</p>
+      <%= text_area_tag "order_issue[description]", @order_issue.description, rows: 5, maxlength: OrderIssue::DESCRIPTION_MAX_LENGTH,
+            id: "order_issue_description",
+            class: "w-full rounded-md border border-flour-400 bg-white px-3.5 py-2.5 text-[15px] text-ink-900",
+            placeholder: "Ex. : il manquait un froment aux graines et le rond cuit sur pierre, et j'ai eu deux épeautres au lieu d'un épeautre et d'un noix-figue." %>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-flour-300 bg-flour-100 px-6 py-4">
+      <%= link_to "Annuler", customers_account_path, class: "text-sm font-semibold text-ink-500 transition hover:text-ink-900" %>
+      <%= submit_tag "Envoyer le signalement",
+            class: "cursor-pointer rounded-md bg-sage-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-sage-500" %>
+    </div>
+  <% end %>
+</div>

@@ -131,6 +131,18 @@ Three resources tracked per bake day:
 2. **Kneader** — dough weight per flour type, each flour has `kneader_limit_grams`
 3. **Oven** — total flour grams vs. oven capacity
 
+### Partial Refunds & Issue Reports
+
+A delivered order can be refunded **line by line** without being cancelled (a missing loaf, a wrong bread). Distinct from `RefundService`, which refunds everything and cancels the order.
+
+- **Models**: `PartialRefund` (+ `PartialRefundItem`) — the only source of truth for the amount given back; `OrderIssue` (+ `OrderIssueItem`) — a problem reported by the customer, a *request*, never an automatic refund.
+- **Invariants**: a partial refund never touches `orders.status` nor `orders.payment_status`; cumulative refunds are capped at the amount collected; each unit of a line can only be refunded once (`Order#refunded_qty_by_item`).
+- **Channels** (`PartialRefund#channel`): `stripe` (partial `Stripe::Refund`), `wallet` (credit typed `partial_refund`, *not* `order_refund` — that one means fully refunded), `cash` (bookkeeping trace only).
+- **Amount**: proposed from the NET of the selected lines (`Order#net_cents_by_item`, discount already spread), overridable by the baker.
+- **Admin**: `/admin/orders/:id` → « Remboursement partiel » block; `/admin/order_issues` lists reports (nav badge on open ones).
+- **Customer**: « Mon compte » → « Signaler un problème » within `Order::ISSUE_REPORT_WINDOW_DAYS` (14) of the bake day → `OrderIssueMailer#reported` to `BAKERY_NOTIFICATION_ADDRESS`.
+- **Reporting**: partial refunds are their own bucket in `Order.refunds_summary_between` / `detailed_refunds_between` (`:partial`, sources `:partiel_*`). Revenue is untouched — the order stays sold.
+
 ### Key Services
 
 | Service | Responsibility |
@@ -140,7 +152,8 @@ Three resources tracked per bake day:
 | `PlannedOrderService` | Calendar order upsert/cancel with wallet check |
 | `ProcessPlannedOrdersService` | Post-cut-off wallet debit + order confirmation |
 | `WalletService` | Wallet credit/debit with typed transactions |
-| `RefundService` | Stripe refund + order cancellation + SMS |
+| `RefundService` | Stripe refund + order cancellation + SMS (full refunds only) |
+| `PartialRefundService` | Line-by-line refund of a delivered order (stripe/wallet/cash) |
 | `OtpService` | OTP generation, sending, verification |
 | `SmsService` | All outbound SMS (confirmation, ready, refund, alerts) |
 
@@ -197,7 +210,7 @@ A versioned JSON API for AI agents lives under `/api/v1`, built on `ActionContro
 ## Email (Amazon SES)
 
 - **Delivery**: SMTP via SES (`config/environments/production.rb`); `:letter_opener` in dev (opens in browser), `:test` in test.
-- **Mailers**: `AuthMailer#otp` (login code, always sent), `OrderMailer#confirmation` (order paid), `RawMailer#resend` (admin verbatim resend).
+- **Mailers**: `AuthMailer#otp` (login code, always sent), `OrderMailer#confirmation` (order paid), `OrderMailer#partial_refund` (line-by-line refund detail), `OrderIssueMailer#reported` (customer-reported problem → bakery team), `RawMailer#resend` (admin verbatim resend).
 - **Logging**: every outbound email is recorded as an `EmailMessage` via an `after_action` in `ApplicationMailer` → `EmailMessageLogger` (reads `X-Customer-Id`/`X-Email-Kind`/`X-Order-Id` headers set by mailers).
 - **Opt-out**: `Customer#email_enabled?` gates non-OTP emails (`email_opt_out` flag). Unsubscribe link uses a signed token (`signed_id(purpose: :email_unsubscribe)`) → public `EmailPreferencesController`. OTP emails ignore opt-out.
 

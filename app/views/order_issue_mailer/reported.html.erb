@@ -1,0 +1,46 @@
+<p style="margin:0 0 16px 0; font-size:17px; color:#2d2a26;">
+  🍞 Un problème vient d'être signalé sur une commande retirée.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px; background-color:#fdf6ef; border-radius:12px;">
+  <tr>
+    <td style="padding:18px 20px; font-size:14px; line-height:1.7; color:#5c544b;">
+      <strong style="color:#2d2a26;"><%= @customer.full_name %></strong><br>
+      Commande <strong><%= @order.order_number %></strong>
+      <% if @order.event_date %> — <%= I18n.l(@order.event_date, format: "%A %-d %B %Y") %><% end %><br>
+      <% if @customer.phone_e164.present? %><%= @customer.phone_e164 %><% end %>
+      <% if @customer.email.present? %> · <%= @customer.email %><% end %><br>
+      Total payé : <strong><%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %></strong>
+    </td>
+  </tr>
+</table>
+
+<% if @issue_items.any? %>
+  <p style="margin:0 0 8px 0; font-size:14px; font-weight:bold; color:#2d2a26;">Articles concernés</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <% @issue_items.each do |item| %>
+      <tr>
+        <td style="padding:4px 0; font-size:14px; color:#5c544b;">
+          <%= item.qty %> × <%= item.order_item.full_name %>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+<% end %>
+
+<p style="margin:0 0 8px 0; font-size:14px; font-weight:bold; color:#2d2a26;">Ce que dit le client</p>
+<div style="margin:0 0 24px 0; padding:16px 18px; background-color:#f7f4ef; border-left:3px solid #7c2d12; border-radius:6px; font-size:15px; line-height:1.6; color:#2d2a26; white-space:pre-wrap;"><%= @order_issue.description %></div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center">
+      <a href="<%= @admin_order_url %>" style="display:inline-block; background-color:#7c2d12; color:#ffffff; text-decoration:none; font-size:15px; font-weight:bold; padding:13px 28px; border-radius:10px;">
+        Ouvrir la commande et rembourser
+      </a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:20px 0 0 0; font-size:13px; line-height:1.6; color:#8a8178;">
+  Rien n'est remboursé automatiquement : c'est vous qui décidez de ce qui est rendu, ligne à ligne, depuis la fiche de la commande.
+</p>

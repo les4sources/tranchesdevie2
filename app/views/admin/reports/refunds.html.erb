@@ -47,8 +47,17 @@
               <%= link_to refund[:order].order_number, admin_order_path(refund[:order]), class: "adm-link" %>
             </td>
             <td class="whitespace-nowrap">
-              <%= adm_chip(refund[:source] == :stripe ? "Stripe" : "Portefeuille",
-                           tone: refund[:source] == :stripe ? :water : :accent) %>
+              <%# `partiel_*` : quelques lignes rendues sur une commande qui reste
+                  vendue (#remboursement-partiel). %>
+              <% label, tone = case refund[:source]
+                               when :stripe then [ "Stripe", :water ]
+                               when :wallet then [ "Portefeuille", :accent ]
+                               when :partiel_stripe then [ "Partiel · Stripe", :warning ]
+                               when :partiel_wallet then [ "Partiel · portefeuille", :warning ]
+                               when :partiel_cash then [ "Partiel · liquide", :warning ]
+                               else [ refund[:source].to_s, :neutral ]
+                               end %>
+              <%= adm_chip(label, tone: tone) %>
             </td>
             <td class="adm-grid-num whitespace-nowrap text-right font-medium" style="color: var(--text-strong);">
               <%= reports_currency(refund[:amount_cents]) %>

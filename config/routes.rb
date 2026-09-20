@@ -74,6 +74,11 @@ Rails.application.routes.draw do
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
     patch "mon-compte/commandes/:id/recuperee", to: "account#pickup_order", as: :pickup_order
 
+    # Signalement d'un problème au retrait (#remboursement-partiel) : le client
+    # coche les lignes qui clochent, l'équipe reçoit l'e-mail et décide.
+    get "mon-compte/commandes/:id/signalement", to: "order_issues#new", as: :new_order_issue
+    post "mon-compte/commandes/:id/signalement", to: "order_issues#create", as: :order_issues
+
     # Facture PDF du détail d'une commande, téléchargeable par les clients
     # « facturables » (#38). Gating « billable » + propriété dans le contrôleur.
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
@@ -182,6 +187,17 @@ Rails.application.routes.draw do
         # financier uniquement, ne touche pas au statut logistique.
         patch :encaissement
         post :refund
+        # Remboursement ligne à ligne d'une commande livrée
+        # (#remboursement-partiel). Distinct de `refund`, qui rembourse tout et
+        # annule la commande.
+        post :partial_refund, to: "partial_refunds#create"
+      end
+    end
+
+    # Problèmes signalés par les clients au retrait (#remboursement-partiel).
+    resources :order_issues, only: [ :index ] do
+      member do
+        patch :resolve
       end
     end
 

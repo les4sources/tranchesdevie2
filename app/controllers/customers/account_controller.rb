@@ -79,7 +79,7 @@ class Customers::AccountController < ApplicationController
     @customer = current_customer
     @orders = @customer.orders
                       .visible_to_customer
-                      .includes(:bake_day, order_items: { product_variant: :product })
+                      .includes(:bake_day, :order_issues, order_items: { product_variant: :product })
                       .order("bake_days.baked_on DESC")
                       .to_a
     @orders_count = @orders.size

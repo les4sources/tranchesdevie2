@@ -1,0 +1,53 @@
+<p style="margin:0 0 16px 0; font-size:17px; color:#2d2a26;">
+  Bonjour <%= @customer.first_name %>,
+</p>
+
+<p style="margin:0 0 20px 0; font-size:16px; line-height:1.6; color:#2d2a26;">
+  Désolés pour le souci sur ta commande <strong><%= @order.order_number %></strong>
+  <% if @order.event_date %>(fournée du <%= I18n.l(@order.event_date, format: "%-d %B %Y") %>)<% end %>.
+  On te rembourse
+  <strong><%= number_to_currency(@partial_refund.amount_euros, unit: "€", separator: ",", delimiter: "") %></strong><%=
+    case @partial_refund.channel
+    when "wallet" then ", crédités sur ton portefeuille"
+    when "cash" then ", rendus en liquide"
+    else " sur ton moyen de paiement (compte 2 à 5 jours ouvrables)"
+    end %>.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px; background-color:#fdf6ef; border-radius:12px;">
+  <tr>
+    <td style="padding:18px 20px; font-size:14px; line-height:1.7; color:#5c544b;">
+      <strong style="color:#2d2a26;">Ce qui t'est remboursé</strong>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
+        <% @items.each do |item| %>
+          <tr>
+            <td style="padding:4px 0; font-size:14px; color:#5c544b;">
+              <%= item.qty %> × <%= item.order_item.full_name %>
+            </td>
+            <td align="right" style="padding:4px 0; font-size:14px; color:#2d2a26; font-weight:bold;">
+              <%= number_to_currency(item.amount_euros, unit: "€", separator: ",", delimiter: "") %>
+            </td>
+          </tr>
+        <% end %>
+      </table>
+      <% if @partial_refund.reason.present? %>
+        <p style="margin:12px 0 0 0; font-size:13.5px; color:#8a8178;"><%= @partial_refund.reason %></p>
+      <% end %>
+    </td>
+  </tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center">
+      <a href="<%= @order_url %>" style="display:inline-block; background-color:#7c2d12; color:#ffffff; text-decoration:none; font-size:15px; font-weight:bold; padding:13px 28px; border-radius:10px;">
+        Voir ma commande
+      </a>
+    </td>
+  </tr>
+</table>
+
+<% content_for :unsubscribe do %>
+  Tu reçois cet e-mail car tu as commandé chez Tranches de Vie.
+  <a href="<%= @unsubscribe_url %>" style="color:#a89f94; text-decoration:underline;">Gérer mes préférences e-mail</a>.
+<% end %>

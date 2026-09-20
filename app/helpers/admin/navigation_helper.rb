@@ -11,6 +11,7 @@ module Admin::NavigationHelper
     { key: "customers",    label: "Mangeurs",          icon: "users",           path: :admin_customers_path },
     { key: "products",     label: "Produits",          icon: "wheat",           path: :admin_products_path },
     { key: "party_requests", label: "Demandes party", icon: "mail",            path: :admin_party_requests_path, badge: :pending_party_requests },
+    { key: "order_issues", label: "Signalements",     icon: "alert-triangle", path: :admin_order_issues_path, badge: :open_order_issues },
     { key: "party_events", label: "Parties",           icon: "party-popper",    path: :admin_party_events_path },
     { key: "workshops",    label: "Ateliers",          icon: "sprout",          path: :admin_workshops_path },
     { key: "billing",      label: "Facturation",       icon: "badge-euro",      path: :admin_billing_path },
@@ -37,6 +38,11 @@ module Admin::NavigationHelper
     case badge
     when :pending_party_requests
       count = PartyRequest.state_pending.count
+      count.positive? ? count : nil
+    when :open_order_issues
+      # Un problème signalé au retrait attend une décision humaine : il se voit
+      # depuis n'importe quel écran (#remboursement-partiel).
+      count = OrderIssue.state_open.count
       count.positive? ? count : nil
     end
   end

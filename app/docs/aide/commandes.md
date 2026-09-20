@@ -77,3 +77,25 @@ rend l'argent (en ligne ou sur le portefeuille) et prévient le client par SMS.
 ⚠️ **Attention au piège** : dans le formulaire **Modifier**, le menu « Statut de paiement » a une option « Remboursé ». Cette option **ne rembourse rien** — c'est une simple étiquette comptable, réservée aux paiements en espèces rendus de la main à la main. Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille, utilise toujours le bouton rouge **Rembourser** sur la page de la commande : lui seul renvoie vraiment l'argent au client.
 
 Le bouton **Rembourser** n'est visible que tant que la commande est « Payée » et que la date limite de commande n'est pas passée. S'il n'apparaît plus et qu'il faut quand même rembourser, contacte Michael.
+
+## Rembourser une partie seulement
+
+Il arrive qu'un retrait se passe mal : il manque un pain dans le sac, on en a donné un autre que celui commandé. Rembourser toute la commande serait injuste des deux côtés — le bloc **Remboursement partiel**, en bas de la fiche d'une commande payée, sert exactement à ça.
+
+Tu indiques la quantité à rendre sur chaque ligne, et le montant se calcule tout seul (la remise du client est déjà répartie dedans). Tu peux l'écraser : si tu décides d'offrir un pain plutôt que de le rembourser, tu baisses le montant, c'est toi qui décides.
+
+Trois façons de rendre l'argent :
+
+- **Carte / Bancontact** — le remboursement repart vers le moyen de paiement d'origine (2 à 5 jours ouvrables). Proposé seulement si la commande a été payée en ligne.
+- **Portefeuille** — un avoir crédité tout de suite sur le portefeuille du mangeur. C'est le plus simple, et le client le réutilise à la fournée suivante.
+- **Liquide** — tu rends les pièces toi-même. L'app n'en garde que la trace, pour que l'argent sorti du tiroir apparaisse dans le reporting.
+
+Le client reçoit un e-mail avec le détail de ce qui lui est rendu, et un SMS court. La commande, elle, reste « prête » ou « récupérée » et reste comptée dans le chiffre d'affaires : elle a bien été livrée, on en a juste rendu un morceau. Tu peux rembourser plusieurs fois, tant que le cumul ne dépasse pas ce qui a été encaissé.
+
+## Les signalements des clients
+
+Un mangeur qui constate un problème en rentrant chez lui peut le signaler lui-même depuis « Mon compte », pendant les deux semaines qui suivent la fournée. Il coche les pains concernés et écrit ce qui s'est passé.
+
+Vous recevez alors un e-mail à `boulangerie@les4sources.be`, et une pastille apparaît sur **Signalements** dans le menu de gauche. Rien n'est remboursé automatiquement : c'est vous qui décidez.
+
+Depuis l'écran **Signalements**, tu ouvres la commande concernée : le message du client s'affiche sur sa fiche, et les quantités qu'il a signalées sont déjà pré-remplies dans le bloc de remboursement partiel. Rembourser clôt le signalement. S'il n'y a rien à rendre (pain remplacé sur place, malentendu), le bouton **Marquer traité sans rembourser** le referme aussi.

@@ -60,6 +60,18 @@ class WalletService
       )
     end
 
+    # Avoir sur le portefeuille pour quelques lignes manquantes d'une commande
+    # livrée (#remboursement-partiel). Type dédié : un `order_refund` ferait
+    # basculer la commande entière en « remboursée » (cf. Order#payment_refunded?).
+    def partial_refund_for_order(wallet:, order:, amount_cents:)
+      wallet.credit!(
+        amount_cents,
+        type: :partial_refund,
+        order: order,
+        description: "Remboursement partiel commande #{order.order_number}"
+      )
+    end
+
     private
 
     # L'index unique est global (et un identifiant Stripe l'est aussi), donc on

@@ -26,7 +26,11 @@ class EmailMessage < ApplicationRecord
     # Information de la COMPTA qu'une party privée est encaissée (#289).
     # Ajouté en fin : les valeurs d'enum sont persistées en entier, intercaler
     # une valeur réétiquetterait tous les e-mails déjà journalisés.
-    party_accounting_notification: 15
+    party_accounting_notification: 15,
+    # Retrait qui s'est mal passé (#remboursement-partiel) : le signalement du
+    # client part à l'équipe, le remboursement partiel part au client.
+    order_issue_reported: 16,
+    partial_refund: 17
   }
 
   belongs_to :customer, optional: true

@@ -1,0 +1,42 @@
+<%# Problèmes signalés par le client sur cette commande (#remboursement-partiel). %>
+<div class="adm-card mt-4">
+  <div class="adm-cardhd">
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Signalements du client</h2>
+    <span class="adm-eyebrow"><%= pluralize(order_issues.size, "signalement") %></span>
+  </div>
+
+  <div class="space-y-3 p-4">
+    <% order_issues.each do |issue| %>
+      <div class="rounded-md border p-4" style="border-color: var(--border); background: <%= issue.state_open? ? "var(--surface-inset)" : "transparent" %>;">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <%= issue.state_open? ? adm_chip("À traiter", tone: :warning) : adm_chip("Traité", tone: :success) %>
+            <span class="text-sm" style="color: var(--text-muted);">
+              signalé le <%= l(issue.created_at, format: "%d/%m/%Y à %H:%M") %>
+            </span>
+          </div>
+          <% if issue.state_open? %>
+            <%= button_to "Marquer traité sans rembourser", resolve_admin_order_issue_path(issue), method: :patch,
+                  class: adm_btn_class(:ghost),
+                  form: { class: "inline" },
+                  data: { turbo_confirm: "Clore ce signalement sans remboursement ?" } %>
+          <% end %>
+        </div>
+
+        <% if issue.order_issue_items.any? %>
+          <ul class="mb-2 list-inside list-disc text-sm" style="color: var(--text-strong);">
+            <% issue.order_issue_items.each do |issue_item| %>
+              <li><%= issue_item.qty %> × <%= issue_item.order_item.full_name %></li>
+            <% end %>
+          </ul>
+        <% end %>
+
+        <p class="whitespace-pre-wrap text-sm" style="color: var(--text-strong);"><%= issue.description %></p>
+
+        <% if issue.resolved_at %>
+          <p class="mt-2 text-xs" style="color: var(--text-muted);">Traité le <%= l(issue.resolved_at, format: "%d/%m/%Y à %H:%M") %></p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

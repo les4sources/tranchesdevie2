@@ -45,6 +45,31 @@ class SmsService
     )
   end
 
+  # Alerte courte d'un remboursement partiel (#remboursement-partiel) : le détail
+  # des lignes rendues part par e-mail, le SMS ne fait que prévenir que l'argent
+  # revient — un client sans e-mail ne doit pas l'apprendre par son relevé.
+  def self.send_partial_refund(partial_refund)
+    order = partial_refund.order
+    return false unless order.customer.sms_enabled?
+
+    amount = number_to_currency(partial_refund.amount_euros, unit: "€", separator: ",", delimiter: "", format: "%n %u")
+    destination = case partial_refund.channel
+    when "wallet" then "crédités sur ton portefeuille"
+    when "cash" then "rendus en liquide"
+    else "remboursés sur ton moyen de paiement"
+    end
+    message = "Désolés pour le souci sur ta commande #{order.order_number} : #{amount} te sont #{destination}. " \
+      "Les artisans de Tranche de Vie"
+
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :refund,
+      baked_on: order.event_date,
+      customer_id: order.customer.id
+    )
+  end
+
   def self.send_bake_cancelled(order, refunded: true)
     return false unless order.customer.sms_enabled?
 

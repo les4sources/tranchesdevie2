@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_030000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_20_100100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -295,6 +295,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_030000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "order_issue_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "order_issue_id", null: false
+    t.bigint "order_item_id", null: false
+    t.integer "qty", default: 1, null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_issue_id"], name: "index_order_issue_items_on_order_issue_id"
+    t.index ["order_item_id"], name: "index_order_issue_items_on_order_item_id"
+  end
+
+  create_table "order_issues", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "customer_id", null: false
+    t.text "description", null: false
+    t.bigint "order_id", null: false
+    t.datetime "resolved_at"
+    t.string "resolved_by"
+    t.integer "state", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_order_issues_on_customer_id"
+    t.index ["order_id"], name: "index_order_issues_on_order_id"
+    t.index ["state"], name: "index_order_issues_on_state"
+  end
+
   create_table "order_items", force: :cascade do |t|
     t.bigint "batch_id"
     t.datetime "created_at", null: false
@@ -345,6 +369,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_030000) do
     t.index ["public_token"], name: "index_orders_on_public_token", unique: true
     t.index ["source"], name: "index_orders_on_source"
     t.index ["status"], name: "index_orders_on_status"
+  end
+
+  create_table "partial_refund_items", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.datetime "created_at", null: false
+    t.bigint "order_item_id", null: false
+    t.bigint "partial_refund_id", null: false
+    t.integer "qty", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_item_id"], name: "index_partial_refund_items_on_order_item_id"
+    t.index ["partial_refund_id"], name: "index_partial_refund_items_on_partial_refund_id"
+  end
+
+  create_table "partial_refunds", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.integer "channel", null: false
+    t.datetime "created_at", null: false
+    t.bigint "order_id", null: false
+    t.bigint "order_issue_id"
+    t.text "reason"
+    t.string "stripe_refund_id"
+    t.datetime "updated_at", null: false
+    t.bigint "wallet_transaction_id"
+    t.index ["order_id"], name: "index_partial_refunds_on_order_id"
+    t.index ["order_issue_id"], name: "index_partial_refunds_on_order_issue_id"
+    t.index ["stripe_refund_id"], name: "index_partial_refunds_on_stripe_refund_id", unique: true, where: "(stripe_refund_id IS NOT NULL)"
+    t.index ["wallet_transaction_id"], name: "index_partial_refunds_on_wallet_transaction_id"
   end
 
   create_table "party_events", force: :cascade do |t|
@@ -866,6 +917,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_030000) do
   add_foreign_key "invoice_orders", "invoices"
   add_foreign_key "invoice_orders", "orders"
   add_foreign_key "invoices", "customers"
+  add_foreign_key "order_issue_items", "order_issues"
+  add_foreign_key "order_issue_items", "order_items"
+  add_foreign_key "order_issues", "customers"
+  add_foreign_key "order_issues", "orders"
   add_foreign_key "order_items", "batches"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
@@ -873,6 +928,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_030000) do
   add_foreign_key "orders", "customers"
   add_foreign_key "orders", "party_events"
   add_foreign_key "orders", "pickup_locations"
+  add_foreign_key "partial_refund_items", "order_items"
+  add_foreign_key "partial_refund_items", "partial_refunds"
+  add_foreign_key "partial_refunds", "order_issues"
+  add_foreign_key "partial_refunds", "orders"
+  add_foreign_key "partial_refunds", "wallet_transactions"
   add_foreign_key "party_participants", "party_events"
   add_foreign_key "party_request_items", "party_requests"
   add_foreign_key "party_request_items", "product_variants"

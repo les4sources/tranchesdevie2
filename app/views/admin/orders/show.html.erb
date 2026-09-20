@@ -2,6 +2,12 @@
 <% content_for :layout, "admin" %>
 
 <%= adm_page_header "Commande #{@order.order_number}" do %>
+  <% if @open_issue %>
+    <%= adm_chip "Problème signalé", tone: :warning, icon: "alert-triangle" %>
+  <% end %>
+  <% if @order.partially_refunded? %>
+    <%= adm_chip "Remboursé en partie", tone: :accent %>
+  <% end %>
   <%= link_to "Modifier", edit_admin_order_path(@order), class: adm_btn_class(:primary) %>
 <% end %>
 
@@ -161,6 +167,14 @@
         <% end %>
       <% end %>
 
+      <%# Le remboursement PARTIEL vit dans son propre bloc plus bas : il demande
+          de choisir des lignes, pas juste de cliquer. %>
+      <% if @order.can_be_partially_refunded? %>
+        <p class="text-sm" style="color: var(--text-muted);">
+          Il manquait quelque chose au retrait ? Le remboursement ligne à ligne est en bas de page.
+        </p>
+      <% end %>
+
       <% if @order.deletable_by_admin? %>
         <%= button_to "Supprimer la commande", admin_order_path(@order), method: :delete,
             class: adm_btn_class(:default, "w-full"),
@@ -210,3 +224,15 @@
     </tbody>
   </table>
 </div>
+
+<% if @order_issues.any? %>
+  <%= render "admin/orders/order_issues", order_issues: @order_issues %>
+<% end %>
+
+<% if @partial_refunds.any? %>
+  <%= render "admin/orders/partial_refunds", order: @order, partial_refunds: @partial_refunds %>
+<% end %>
+
+<% if @order.can_be_partially_refunded? %>
+  <%= render "admin/orders/partial_refund_form", order: @order, open_issue: @open_issue %>
+<% end %>

@@ -1,0 +1,106 @@
+<%# Remboursement ligne à ligne (#remboursement-partiel) : la cliente est
+    repartie sans son rond cuit sur pierre, on lui rend ce pain-là — pas la
+    commande entière. %>
+<% net_by_item = order.net_cents_by_item %>
+<% refunded_qty = order.refunded_qty_by_item %>
+<% stripe_available = order.payment.present? && order.payment.succeeded? %>
+
+<div class="adm-card mt-4" data-controller="partial-refund">
+  <div class="adm-cardhd">
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Remboursement partiel</h2>
+    <span class="adm-eyebrow">reste remboursable <%= number_to_currency(order.refundable_remaining_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+  </div>
+
+  <%= form_with url: partial_refund_admin_order_path(order), method: :post, local: true, class: "space-y-4 p-4" do %>
+    <% if open_issue %>
+      <%= hidden_field_tag :order_issue_id, open_issue.id %>
+      <p class="rounded-md p-3 text-sm" style="background: var(--surface-inset); color: var(--text-strong);">
+        Les quantités signalées par le client sont pré-remplies. Rembourser clôt le signalement.
+      </p>
+    <% end %>
+
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th class="text-right">Commandé</th>
+          <th class="text-right">Déjà remboursé</th>
+          <th class="text-right">Net de la ligne</th>
+          <th class="text-right">À rembourser</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% order.order_items.each do |item| %>
+          <% already = refunded_qty.fetch(item.id, 0) %>
+          <% remaining = item.qty - already %>
+          <% prefill = open_issue ? [ open_issue.reported_qty_for(item), remaining ].min : 0 %>
+          <tr>
+            <td>
+              <div class="font-semibold" style="color: var(--text-strong);"><%= item.product_variant.name %></div>
+              <% if item.product_variant.product %>
+                <div class="text-xs" style="color: var(--text-muted);"><%= item.product_variant.product.name %></div>
+              <% end %>
+            </td>
+            <td class="adm-grid-num text-right"><%= item.qty %></td>
+            <td class="adm-grid-num text-right"><%= already.positive? ? already : "—" %></td>
+            <td class="adm-grid-num text-right"><%= number_to_currency(net_by_item[item.id].to_i / 100.0, unit: "€", separator: ",", delimiter: "") %></td>
+            <td class="text-right">
+              <% if remaining.positive? %>
+                <%= number_field_tag "refund_items[#{item.id}]", prefill, in: 0..remaining, step: 1,
+                      class: adm_field_class("w-20 text-right"),
+                      data: {
+                        partial_refund_target: "qty",
+                        action: "input->partial-refund#recalculate",
+                        ordered_qty: item.qty,
+                        net_cents: net_by_item[item.id].to_i
+                      } %>
+              <% else %>
+                <span class="text-sm" style="color: var(--text-faint);">tout remboursé</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="adm-eyebrow mb-1 block" for="amount_euros">Montant remboursé (€)</label>
+        <%= text_field_tag :amount_euros, nil, inputmode: "decimal",
+              class: adm_field_class,
+              data: { partial_refund_target: "amount", action: "input->partial-refund#markManual" } %>
+        <p class="mt-1 text-xs" style="color: var(--text-muted);">
+          Calculé depuis les lignes cochées (remise du client comprise). Modifiable — un geste commercial reste un geste.
+        </p>
+        <p class="mt-1 text-sm font-semibold" data-partial-refund-target="summary" style="color: var(--text-strong);"></p>
+      </div>
+
+      <div>
+        <span class="adm-eyebrow mb-1 block">Comment rembourser</span>
+        <div class="space-y-2">
+          <% if stripe_available %>
+            <label class="flex items-center gap-2 text-sm" style="color: var(--text-strong);">
+              <%= radio_button_tag :channel, "stripe", true %> Sur la carte / Bancontact (Stripe)
+            </label>
+          <% end %>
+          <label class="flex items-center gap-2 text-sm" style="color: var(--text-strong);">
+            <%= radio_button_tag :channel, "wallet", !stripe_available %> Crédit sur le portefeuille
+          </label>
+          <label class="flex items-center gap-2 text-sm" style="color: var(--text-strong);">
+            <%= radio_button_tag :channel, "cash", false %> Rendu en liquide (trace seule)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="adm-eyebrow mb-1 block" for="reason">Motif (visible par le client)</label>
+      <%= text_area_tag :reason, nil, rows: 2, class: adm_field_class,
+            placeholder: "Ex. : un froment aux graines et le rond cuit sur pierre manquaient." %>
+    </div>
+
+    <%= submit_tag "Rembourser",
+          class: adm_btn_class(:danger, "w-full sm:w-auto"),
+          data: { partial_refund_target: "submit", turbo_confirm: "Confirmer ce remboursement ? Le mouvement est immédiat et irréversible." } %>
+  <% end %>
+</div>

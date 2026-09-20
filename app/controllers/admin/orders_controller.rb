@@ -30,6 +30,15 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   def show
+    # Signalements et remboursements partiels (#remboursement-partiel) : la
+    # fiche commande est l'écran où l'un se lit et l'autre se décide.
+    @order_issues = @order.order_issues
+                          .includes(order_issue_items: { order_item: { product_variant: :product } })
+                          .recent
+    @open_issue = @order_issues.detect(&:state_open?)
+    @partial_refunds = @order.partial_refunds
+                             .includes(partial_refund_items: { order_item: { product_variant: :product } })
+                             .recent
   end
 
   def edit

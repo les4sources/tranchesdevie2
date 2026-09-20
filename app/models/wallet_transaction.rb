@@ -2,7 +2,11 @@ class WalletTransaction < ApplicationRecord
   belongs_to :wallet
   belongs_to :order, optional: true
 
-  enum :transaction_type, { top_up: 0, order_debit: 1, order_refund: 2 }
+  # `order_refund` = remboursement INTÉGRAL (la commande est annulée avec).
+  # `partial_refund` = quelques lignes rendues sur une commande livrée
+  # (#remboursement-partiel) : elle reste payée, et `Order#payment_refunded?`
+  # ne doit surtout pas s'allumer dessus.
+  enum :transaction_type, { top_up: 0, order_debit: 1, order_refund: 2, partial_refund: 3 }
 
   validates :amount_cents, presence: true
   validates :transaction_type, presence: true

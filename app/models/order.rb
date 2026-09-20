@@ -64,6 +64,10 @@ class Order < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :wallet_transactions
   has_one :payment, dependent: :destroy
+  # Problèmes signalés par le client au retrait, et remboursements partiels
+  # décidés par les boulangers (#remboursement-partiel).
+  has_many :order_issues, dependent: :destroy
+  has_many :partial_refunds, dependent: :destroy
   # Demande dont cette commande est issue (#pizza-parties) : présente pour une
   # party privée réservée par un client, absente pour une party saisie en admin.
   has_one :party_request, dependent: :nullify
@@ -264,6 +268,57 @@ class Order < ApplicationRecord
     !tracked_payment? && offline_payment_method.blank?
   end
 
+  # --- Remboursement partiel (#remboursement-partiel) ------------------------
+
+  # Somme déjà rendue au client sur cette commande, tous canaux confondus. Les
+  # remboursements partiels sont la SEULE source de ce montant : ils ne
+  # touchent ni `status` ni `payment_status`, exprès.
+  def partially_refunded_cents
+    partial_refunds.sum(:amount_cents)
+  end
+
+  def partially_refunded?
+    partially_refunded_cents.positive?
+  end
+
+  # Ce qu'il reste remboursable : le montant encaissé moins ce qui est déjà
+  # reparti. Plafond dur du formulaire ET du service.
+  def refundable_remaining_cents
+    return 0 unless payment_received?
+    return 0 if payment_refunded?
+
+    [ total_cents - partially_refunded_cents, 0 ].max
+  end
+
+  # Quantités déjà remboursées par ligne : { order_item_id => qty }. Borne le
+  # formulaire d'admin comme le service — on ne rembourse pas deux fois le même
+  # pain.
+  def refunded_qty_by_item
+    PartialRefundItem.where(order_item_id: order_items.map(&:id)).group(:order_item_id).sum(:qty)
+  end
+
+  def can_be_partially_refunded?
+    !cancelled? && refundable_remaining_cents.positive?
+  end
+
+  # Net par ligne de CETTE commande (remise du client répartie au prorata),
+  # sur lequel se calcule le montant proposé d'un remboursement partiel.
+  def net_cents_by_item
+    self.class.net_cents_by_item(self)
+  end
+
+  # Fenêtre pendant laquelle le client peut encore signaler un problème depuis
+  # « Mon compte ». Assez large pour un retrait du vendredi raconté le lundi,
+  # assez courte pour qu'on ne rouvre pas une fournée d'il y a deux mois.
+  ISSUE_REPORT_WINDOW_DAYS = 14
+
+  def can_report_issue_by_customer?
+    return false unless %w[paid ready picked_up].include?(status)
+    return false if event_date.blank?
+
+    event_date <= Date.current && event_date >= ISSUE_REPORT_WINDOW_DAYS.days.ago.to_date
+  end
+
   def payment_refunded?
     payment&.refunded? ||
       wallet_transactions.any? { |transaction| transaction.transaction_type == "order_refund" }
@@ -365,12 +420,17 @@ class Order < ApplicationRecord
     def refunds_summary_between(start_date, end_date)
       stripe = stripe_refunds_between(start_date, end_date)
       wallet = wallet_refunds_between(start_date, end_date)
+      # Les remboursements PARTIELS (#remboursement-partiel) n'annulent pas la
+      # commande : sans cette troisième assiette, de l'argent sortait du compte
+      # sans apparaître nulle part dans les chiffres.
+      partial = partial_refunds_between(start_date, end_date)
 
       {
         stripe: stripe,
         wallet: wallet,
-        count: stripe[:count] + wallet[:count],
-        amount_cents: stripe[:amount_cents] + wallet[:amount_cents],
+        partial: partial,
+        count: stripe[:count] + wallet[:count] + partial[:count],
+        amount_cents: stripe[:amount_cents] + wallet[:amount_cents] + partial[:amount_cents],
         # Stripe ne rembourse pas sa commission lors d'un remboursement : elle
         # reste donc à la charge de la boulangerie et grève le CA net.
         stripe_fee_cents: stripe[:stripe_fee_cents]
@@ -402,6 +462,15 @@ class Order < ApplicationRecord
       }
     end
 
+    # Remboursements partiels : quelques lignes rendues sur une commande qui,
+    # elle, reste vendue. Datés par la fournée (ou l'événement) de la commande,
+    # comme le reste du reporting.
+    def partial_refunds_between(start_date, end_date)
+      scope = PartialRefund.in_event_date_range(start_date, end_date)
+
+      { count: scope.count, amount_cents: scope.sum(:amount_cents) }
+    end
+
     # Détail ligne à ligne des remboursements de la période (#100), pour le
     # drill-down depuis le total. Même périmètre que `refunds_summary_between`
     # (ventilé par jour de cuisson) pour rester cohérent avec les totaux.
@@ -409,7 +478,8 @@ class Order < ApplicationRecord
     # liée, source (stripe/wallet) et motif si disponible. Trié du plus récent.
     def detailed_refunds_between(start_date, end_date)
       (stripe_refund_details_between(start_date, end_date) +
-        wallet_refund_details_between(start_date, end_date))
+        wallet_refund_details_between(start_date, end_date) +
+        partial_refund_details_between(start_date, end_date))
         .sort_by { |refund| refund[:refunded_at] }
         .reverse
     end
@@ -444,6 +514,21 @@ class Order < ApplicationRecord
             refunded_at: transaction.created_at,
             order: transaction.order,
             reason: transaction.description
+          }
+        end
+    end
+
+    def partial_refund_details_between(start_date, end_date)
+      PartialRefund.in_event_date_range(start_date, end_date)
+        .preload(:partial_refund_items, order: :customer)
+        .map do |refund|
+          {
+            source: :"partiel_#{refund.channel}",
+            customer_name: refund.order.customer.full_name,
+            amount_cents: refund.amount_cents,
+            refunded_at: refund.created_at,
+            order: refund.order,
+            reason: refund.reason
           }
         end
     end

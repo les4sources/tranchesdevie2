@@ -1,0 +1,73 @@
+<% content_for :title, "Signalements" %>
+<% content_for :layout, "admin" %>
+
+<%= adm_page_header "Signalements" %>
+
+<div class="mb-4 flex flex-wrap gap-2">
+  <%= link_to "À traiter (#{@open_count})", admin_order_issues_path(state: "open"),
+        class: adm_btn_class(@state == "open" ? :primary : :default) %>
+  <%= link_to "Traités (#{@resolved_count})", admin_order_issues_path(state: "resolved"),
+        class: adm_btn_class(@state == "resolved" ? :primary : :default) %>
+</div>
+
+<div class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">
+      <%= @state == "open" ? "Problèmes en attente d'une décision" : "Signalements traités" %>
+    </h2>
+    <span class="adm-eyebrow"><%= pluralize(@issues.size, "signalement") %></span>
+  </div>
+
+  <table class="adm-grid">
+    <thead>
+      <tr>
+        <th>Signalé le</th>
+        <th>Client</th>
+        <th>Commande</th>
+        <th>Articles</th>
+        <th>Message</th>
+        <th class="text-right">Remboursé</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @issues.empty? %>
+        <%= adm_empty_row(colspan: 7,
+              title: @state == "open" ? "Aucun signalement en attente" : "Aucun signalement traité",
+              hint: "Les clients signalent un problème depuis « Mon compte », après le retrait.") %>
+      <% end %>
+
+      <% @issues.each do |issue| %>
+        <tr>
+          <td class="adm-grid-num whitespace-nowrap"><%= l(issue.created_at, format: "%d/%m/%Y") %></td>
+          <td>
+            <%= link_to issue.customer.full_name, admin_customer_path(issue.customer), class: "adm-link" %>
+          </td>
+          <td>
+            <%= link_to issue.order.order_number, admin_order_path(issue.order), class: "adm-link" %>
+            <% if issue.order.event_date %>
+              <div class="text-xs" style="color: var(--text-muted);">fournée du <%= l(issue.order.event_date, format: "%d/%m/%Y") %></div>
+            <% end %>
+          </td>
+          <td class="text-sm" style="color: var(--text-strong);">
+            <% if issue.order_issue_items.any? %>
+              <% issue.order_issue_items.each do |issue_item| %>
+                <div><%= issue_item.qty %> × <%= issue_item.order_item.full_name %></div>
+              <% end %>
+            <% else %>
+              <span style="color: var(--text-faint);">—</span>
+            <% end %>
+          </td>
+          <td class="max-w-xs text-sm" style="color: var(--text-muted);"><%= truncate(issue.description, length: 140) %></td>
+          <td class="adm-grid-num text-right">
+            <% refunded = issue.partial_refunds.sum(&:amount_cents) %>
+            <%= refunded.positive? ? number_to_currency(refunded / 100.0, unit: "€", separator: ",", delimiter: "") : "—" %>
+          </td>
+          <td class="text-right">
+            <%= link_to "Ouvrir la commande", admin_order_path(issue.order), class: adm_btn_class(:primary) %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

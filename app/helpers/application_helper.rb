@@ -64,6 +64,17 @@ module ApplicationHelper
     labels[source.to_s] || source.to_s.capitalize
   end
 
+  # Canal d'un remboursement partiel (#remboursement-partiel). Distinct du moyen
+  # d'ENCAISSEMENT : l'argent peut repartir autrement qu'il n'est arrivé — un
+  # paiement Bancontact peut se rendre en avoir sur le portefeuille.
+  def partial_refund_channel_label(channel)
+    {
+      "stripe" => "Carte / Bancontact",
+      "wallet" => "Portefeuille",
+      "cash" => "Liquide"
+    }[channel.to_s] || channel.to_s
+  end
+
   def order_payment_method_label(method)
     labels = {
       stripe: "Carte / Bancontact",

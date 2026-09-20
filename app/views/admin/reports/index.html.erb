@@ -97,13 +97,18 @@
                       class: "underline decoration-dotted", style: "color: inherit;" %>
         </dd>
         <dd class="mt-1 text-sm" style="color: var(--text-muted);">
-          <%= @refunds[:stripe][:count] %> Stripe · <%= @refunds[:wallet][:count] %> portefeuille
+          <%= @refunds[:stripe][:count] %> Stripe · <%= @refunds[:wallet][:count] %> portefeuille · <%= @refunds[:partial][:count] %> partiel(s)
         </dd>
       </div>
       <div>
         <dt class="adm-eyebrow">Montant total remboursé</dt>
         <dd class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= reports_currency(@refunds[:amount_cents]) %></dd>
-        <dd class="mt-1 text-sm" style="color: var(--text-muted);">Stripe + portefeuille</dd>
+        <dd class="mt-1 text-sm" style="color: var(--text-muted);">
+          Stripe + portefeuille + partiels
+          <% if @refunds[:partial][:amount_cents].positive? %>
+            (dont <%= reports_currency(@refunds[:partial][:amount_cents]) %> de remboursements partiels)
+          <% end %>
+        </dd>
       </div>
       <div>
         <dt class="adm-eyebrow">Remboursé via Stripe</dt>

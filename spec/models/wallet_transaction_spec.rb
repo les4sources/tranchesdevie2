@@ -11,8 +11,15 @@ RSpec.describe WalletTransaction, type: :model do
     it { should validate_presence_of(:transaction_type) }
   end
 
+  # Les valeurs entières sont persistées : les renuméroter réécrirait le sens des
+  # lignes déjà en base. Écrit en `include` et non en `eq` — un ajout passe
+  # (`partial_refund`, #remboursement-partiel), un déplacement échoue.
   describe 'enums' do
-    it { should define_enum_for(:transaction_type).with_values(top_up: 0, order_debit: 1, order_refund: 2) }
+    it 'garde les valeurs entières existantes stables' do
+      expect(WalletTransaction.transaction_types).to include(
+        "top_up" => 0, "order_debit" => 1, "order_refund" => 2, "partial_refund" => 3
+      )
+    end
   end
 
   describe 'scopes' do

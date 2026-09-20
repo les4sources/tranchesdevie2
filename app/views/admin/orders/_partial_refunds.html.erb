@@ -1,0 +1,38 @@
+<%# Historique des remboursements partiels de la commande (#remboursement-partiel). %>
+<div class="adm-card mt-4 overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Remboursements partiels</h2>
+    <span class="adm-eyebrow">
+      total rendu <%= number_to_currency(order.partially_refunded_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+    </span>
+  </div>
+
+  <table class="adm-grid">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Articles</th>
+        <th>Canal</th>
+        <th>Motif</th>
+        <th class="text-right">Montant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% partial_refunds.each do |refund| %>
+        <tr>
+          <td class="adm-grid-num whitespace-nowrap"><%= l(refund.created_at, format: "%d/%m/%Y") %></td>
+          <td>
+            <% refund.partial_refund_items.each do |item| %>
+              <div class="text-sm" style="color: var(--text-strong);"><%= item.qty %> × <%= item.order_item.full_name %></div>
+            <% end %>
+          </td>
+          <td><%= partial_refund_channel_label(refund.channel) %></td>
+          <td class="text-sm" style="color: var(--text-muted);"><%= refund.reason.presence || "—" %></td>
+          <td class="adm-grid-num text-right font-semibold" style="color: var(--text-strong);">
+            <%= number_to_currency(refund.amount_euros, unit: "€", separator: ",", delimiter: "") %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

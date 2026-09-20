@@ -109,6 +109,40 @@ class OrderNotificationService
     true
   end
 
+  # Prévient le client d'un remboursement partiel (#remboursement-partiel) sur
+  # les DEUX canaux, chacun derrière son garde-fou. L'e-mail porte le détail des
+  # lignes rendues — c'est la trace écrite ; le SMS n'en est que l'alerte.
+  def self.send_partial_refund(partial_refund)
+    send_partial_refund_email(partial_refund)
+    SmsService.send_partial_refund(partial_refund)
+    true
+  end
+
+  def self.send_partial_refund_email(partial_refund)
+    return false unless partial_refund&.order&.customer&.email_enabled?
+
+    OrderMailer.partial_refund(partial_refund).deliver_later
+    true
+  rescue StandardError => e
+    Rails.logger.error("OrderNotificationService error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
+  end
+
+  # Prévient les boulangers qu'un client signale un problème sur sa commande
+  # (#remboursement-partiel). Notification INTERNE : ni opt-out client, ni
+  # adresse client — elle part à l'équipe, qui décidera d'un remboursement.
+  def self.notify_team_of_order_issue(order_issue)
+    return false if order_issue.nil?
+
+    OrderIssueMailer.reported(order_issue).deliver_later
+    true
+  rescue StandardError => e
+    Rails.logger.error("OrderNotificationService error: #{e.class} - #{e.message}")
+    Sentry.capture_exception(e) if defined?(Sentry)
+    false
+  end
+
   def self.send_ready_email(order)
     return false unless order&.customer&.email_enabled?
     return false if EmailMessage.exists?(order_id: order.id, kind: :ready)

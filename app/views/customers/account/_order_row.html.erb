@@ -41,6 +41,18 @@
         <%= lucide "check", size: 14, color: "#fff" %> <span class="hidden sm:inline">J'ai récupéré ma commande</span><span class="sm:hidden">Récupérée</span>
       <% end %>
     <% end %>
+    <%# Signalement d'un problème au retrait (#remboursement-partiel) : la
+        fenêtre se referme après deux semaines. %>
+    <% if order.order_issues.any? %>
+      <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-ember-100 px-2.5 py-0.5 text-xs font-semibold text-ember-700">
+        <%= lucide "alert-triangle", size: 13, color: "currentColor" %> Signalé
+      </span>
+    <% elsif order.can_report_issue_by_customer? %>
+      <%= link_to customers_new_order_issue_path(order), onclick: "event.stopPropagation()",
+            class: "inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-ink-500 transition hover:text-ink-900" do %>
+        <%= lucide "alert-triangle", size: 14, color: "currentColor" %> <span class="hidden sm:inline">Signaler un problème</span><span class="sm:hidden">Problème</span>
+      <% end %>
+    <% end %>
     <% if customer.billable? %>
       <%# Relevé PDF réservé aux clients facturables (#38). download stoppe la propagation pour ne pas ouvrir la modale. %>
       <%= link_to customers_order_invoice_path(order_id: order.id), class: "inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-ember-600 transition hover:text-ember-500", data: { turbo: false, action: "click->order-modal#download" } do %>

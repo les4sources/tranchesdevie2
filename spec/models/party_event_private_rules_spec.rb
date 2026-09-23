@@ -1,7 +1,8 @@
 require "rails_helper"
 
-# #201 — les parties privées ne se réservent plus que le mardi soir et le
-# vendredi soir, jusqu'à la veille 16 h (Europe/Brussels).
+# #201 — les parties privées se réservent le mardi soir et le vendredi soir,
+# jusqu'à la veille 12 h (Europe/Brussels) — plus les dates ouvertes à la main
+# (voir `party_event_openings_spec.rb`).
 #
 # La raison est physique, pas administrative : mardi et vendredi sont les jours
 # de boulangerie, le four y est déjà chaud, et un groupe qui le chauffe lui-même
@@ -17,7 +18,7 @@ RSpec.describe PartyEvent, "règles des parties privées" do
   let(:friday)  { Date.new(2026, 9, 11) }
   let(:wednesday) { Date.new(2026, 9, 9) }
 
-  # Deux jours avant le mardi : bien avant la limite de la veille 16 h.
+  # Deux jours avant le mardi : bien avant la limite de la veille 12 h.
   def travel_to_brussels(date, hour, minute = 0)
     travel_to(ActiveSupport::TimeZone["Europe/Brussels"].local(date.year, date.month, date.day, hour, minute))
   end
@@ -86,23 +87,23 @@ RSpec.describe PartyEvent, "règles des parties privées" do
 
   # La règle est celle de la boulangerie, pas celle du serveur : elle est ancrée
   # sur Europe/Brussels et doit suivre l'heure d'été.
-  describe "la limite de la veille à 16 h 00, heure de Bruxelles" do
-    it "est encore ouverte à 15 h 59 la veille" do
-      travel_to_brussels(tuesday.prev_day, 15, 59)
+  describe "la limite de la veille à 12 h 00, heure de Bruxelles" do
+    it "est encore ouverte à 11 h 59 la veille" do
+      travel_to_brussels(tuesday.prev_day, 11, 59)
 
       expect(described_class.private_booking_open?(tuesday)).to be true
       expect(described_class.private_slot_available?(tuesday, "soir")).to be true
     end
 
-    it "est fermée à 16 h 01 la veille" do
-      travel_to_brussels(tuesday.prev_day, 16, 1)
+    it "est fermée à 12 h 01 la veille" do
+      travel_to_brussels(tuesday.prev_day, 12, 1)
 
       expect(described_class.private_booking_open?(tuesday)).to be false
       expect(described_class.private_slot_available?(tuesday, "soir")).to be false
     end
 
-    it "est fermée à 16 h 00 pile — la limite est stricte" do
-      travel_to_brussels(tuesday.prev_day, 16, 0)
+    it "est fermée à 12 h 00 pile — la limite est stricte" do
+      travel_to_brussels(tuesday.prev_day, 12, 0)
 
       expect(described_class.private_booking_open?(tuesday)).to be false
     end
@@ -122,7 +123,7 @@ RSpec.describe PartyEvent, "règles des parties privées" do
 
         expect(target.wday).to eq(5)
         expect(deadline.utc_offset).to eq(2 * 3600)
-        expect(deadline.utc).to eq(Time.utc(2026, 9, 24, 14, 0, 0))
+        expect(deadline.utc).to eq(Time.utc(2026, 9, 24, 10, 0, 0))
       end
 
       it "tient en heure d'HIVER (UTC+1) — vendredi 06/11/2026" do
@@ -131,15 +132,15 @@ RSpec.describe PartyEvent, "règles des parties privées" do
 
         expect(target.wday).to eq(5)
         expect(deadline.utc_offset).to eq(3600)
-        expect(deadline.utc).to eq(Time.utc(2026, 11, 5, 15, 0, 0))
+        expect(deadline.utc).to eq(Time.utc(2026, 11, 5, 11, 0, 0))
       end
 
-      it "reste ouverte à 15 h 59 locale des deux côtés du changement" do
+      it "reste ouverte à 11 h 59 locale des deux côtés du changement" do
         [ Date.new(2026, 9, 25), Date.new(2026, 11, 6) ].each do |target|
-          travel_to_brussels(target.prev_day, 15, 59)
+          travel_to_brussels(target.prev_day, 11, 59)
           expect(described_class.private_booking_open?(target)).to be(true), "ouvert le #{target}"
 
-          travel_to_brussels(target.prev_day, 16, 1)
+          travel_to_brussels(target.prev_day, 12, 1)
           expect(described_class.private_booking_open?(target)).to be(false), "fermé le #{target}"
         end
       end

@@ -2,12 +2,13 @@
 - content_for :layout, "admin"
 
 = adm_page_header "Créneaux parties privées" do
+  = link_to "Dates supplémentaires", admin_party_openings_path, class: adm_btn_class(:ghost)
   = link_to "Parties", admin_party_events_path, class: adm_btn_class(:ghost)
 
 p.mb-5.text-sm style="color: var(--text-muted);"
-  | Les parties privées sont ouvertes par défaut (midi &amp; soir), jusqu'à
+  | Les parties privées sont ouvertes le soir, d'office les jours de boulangerie (mardi et vendredi), jusqu'à
   strong.mx-1 = @capacity
-  | parties par créneau. Bloque ici les créneaux indisponibles.
+  | parties par soirée. Bloque ici les soirs indisponibles.
 
 .grid.grid-cols-1.gap-6.lg:grid-cols-3
   .lg:col-span-1
@@ -22,9 +23,9 @@ p.mb-5.text-sm style="color: var(--text-muted);"
         .space-y-2
           = f.label :blocked_on, "Date", class: "adm-eyebrow block"
           = f.date_field :blocked_on, required: true, class: adm_field_class
-        .space-y-2
-          = f.label :slot, "Créneau", class: "adm-eyebrow block"
-          = f.select :slot, [ [ "Toute la journée", "" ], [ "Midi", "midi" ], [ "Soir", "soir" ] ], {}, class: adm_field_class
+        / Plus de choix de créneau : le midi n'est plus proposé, un blocage ferme
+        / donc la journée entière (`slot` nul).
+        = f.hidden_field :slot, value: ""
         .space-y-2
           = f.label :reason, "Motif (optionnel)", class: "adm-eyebrow block"
           = f.text_field :reason, class: adm_field_class
@@ -45,7 +46,7 @@ p.mb-5.text-sm style="color: var(--text-muted);"
               - @blocks.each do |block|
                 tr
                   td.adm-grid-num.whitespace-nowrap style="color: var(--text-strong);" = l(block.blocked_on)
-                  td style="color: var(--text-muted);" = block.slot ? (block.slot_midi? ? "Midi" : "Soir") : "Toute la journée"
+                  td style="color: var(--text-muted);" = block.slot ? block.slot_label : "Toute la journée"
                   td style="color: var(--text-muted);" = block.reason
                   td.whitespace-nowrap.text-right
                     = link_to "Débloquer", admin_party_slot_block_path(block), data: { turbo_method: :delete, turbo_confirm: "Retirer ce blocage ?" }, class: "adm-rowaction"

@@ -177,12 +177,15 @@ Tu peux **Modifier** ou **Supprimer** une party depuis la liste.
 
 ## Bloquer un créneau de party privée
 
-Pour empêcher une réservation sur une date (four indisponible, équipe absente,
-lieu déjà pris), **bloque le créneau** : il disparaît alors du calendrier du
-client. La section **Créneaux privés (blocages)** sert exactement à ça — tu
-ajoutes une date + un créneau, et il devient indisponible.
+Pour empêcher une réservation sur une date (four indisponible, équipe absente, lieu déjà pris), **bloque la date** : elle disparaît alors du calendrier du client. La section **Créneaux privés (blocages)** sert exactement à ça — tu ajoutes une date, et le soir devient indisponible. Les parties privées n'ont lieu que le soir : un blocage ferme toute la journée.
 
-Un blocage sans créneau précisé ferme **toute la journée**.
+## Ouvrir une date supplémentaire
+
+D'office, les parties privées ne se réservent que le **mardi soir** et le **vendredi soir** — les jours de boulangerie, quand le four est déjà chaud. Pour accepter un autre soir (un samedi, un jour férié), va dans **Parties → Dates supplémentaires**, choisis la date et, si tu veux, un motif. Le soir apparaît aussitôt dans le calendrier du client, avec un message qui précise que ce n'est pas un jour de boulangerie.
+
+Un soir sans fournée n'a personne pour pétrir le jour même : ses pâtons sont faits par la **fournée précédente** (le vendredi, pour un samedi). La réservation ferme donc la veille de CETTE fournée à 12 h — la colonne **Réservation jusqu'au** te donne la date exacte.
+
+Toutes les autres règles restent valables sur une date ouverte : un blocage la referme, une party publique ce soir-là la prend, et la capacité par soirée s'applique. **Refermer** une date ne supprime aucune party déjà réservée : le tableau affiche combien il y en a avant que tu cliques.
 
 ## Compta des parties
 

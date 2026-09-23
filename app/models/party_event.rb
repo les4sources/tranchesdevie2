@@ -45,44 +45,105 @@ class PartyEvent < ApplicationRecord
 
   SLOT_LABELS = { "midi" => "Midi", "soir" => "Soir" }.freeze
 
-  # Jours et créneau ouverts aux parties PRIVÉES (#201, réunion du 25/08/2026).
+  # Jours et créneau ouverts d'office aux parties PRIVÉES (#201, réunion du
+  # 25/08/2026).
   #
   # Mardi et vendredi parce que ce sont les jours de boulangerie : le four est
   # déjà chaud, et un groupe qui le chauffe lui-même l'abîme (« on va péter le
   # four, en deux ans il sera foutu »). Le SOIR seulement, parce qu'à midi les
   # boulangers sont encore sur leur fournée — pains en train de lever,
-  # températures incompatibles, et personne pour accueillir le groupe.
+  # températures incompatibles, et personne pour accueillir le groupe. Le midi
+  # n'est plus proposé du tout : l'enum le garde pour l'historique, la
+  # réservation ne l'ouvre jamais.
   #
   # Volontairement une constante littérale et non `BakeDay::COOKING_WDAYS` :
   # les deux valent [2, 5] aujourd'hui pour la même raison, mais ajouter un jour
   # de cuisson ne doit pas ouvrir des pizza parties dans le dos de l'équipe.
+  #
+  # En PLUS de ces jours, l'admin ouvre des soirs à la main (`PartyOpening`) —
+  # un samedi de groupe, un jour férié. Voir `private_bookable_slot?`.
   PRIVATE_WDAYS = [ 2, 5 ].freeze
   PRIVATE_SLOT = "soir"
 
-  # Réservation possible jusqu'à la VEILLE 16 h 00, heure de Bruxelles. Le
-  # fuseau est explicite (et non `Time.zone`) : la règle est celle de la
-  # boulangerie, pas celle du serveur, et elle doit suivre l'heure d'été.
+  # Réservation possible jusqu'à la VEILLE 12 h 00 du jour de FOURNÉE qui pétrit
+  # les pâtons, heure de Bruxelles (#pizza-parties). Le fuseau est explicite (et
+  # non `Time.zone`) : la règle est celle de la boulangerie, pas celle du
+  # serveur, et elle doit suivre l'heure d'été.
+  #
+  # 12 h et non 16 h : c'est l'heure à laquelle la boulangerie fige son plan de
+  # production (`BakeDay::CUT_OFF_HOUR`). Après elle, les pâtons du groupe ne
+  # sont plus pétrissables — une party acceptée plus tard arriverait sans pâte.
   PRIVATE_BOOKING_ZONE = "Europe/Brussels"
-  PRIVATE_BOOKING_CUT_OFF_HOUR = 16
+  PRIVATE_BOOKING_CUT_OFF_HOUR = 12
+
+  # Jour de FOURNÉE qui pétrira les pâtons de la party du `date`.
+  #
+  # Un mardi ou un vendredi, c'est le jour même : la fournée du matin fait aussi
+  # les pâtons du soir. Une date ouverte exceptionnellement (un samedi) n'a pas
+  # de fournée : ce sont les pâtons de la DERNIÈRE fournée avant elle, et c'est
+  # cette équipe-là qui doit savoir qu'elle a un groupe à préparer — sinon
+  # personne ne pétrit.
+  #
+  # Les fournées ne sont créées en base que quelques jours à l'avance : la règle
+  # des jours de cuisson complète donc toujours la base.
+  # Au-delà de deux semaines, une fournée ne prépare plus rien : la pâte ne tient
+  # pas. La fenêtre est bornée pour que le calcul dise la MÊME chose qu'il
+  # interroge la base date par date (réservation) ou qu'il travaille sur des
+  # fournées préchargées (calendrier).
+  PREPARATION_LOOKBACK_DAYS = 14
+
+  # `bake_dates` : jours de fournée déjà chargés (Set de Date). Le calendrier les
+  # précharge pour toute sa plage ; à l'unité, on interroge la base.
+  def self.private_preparation_date(date, bake_dates: nil)
+    date = date.to_date
+    return date if BakeDay::COOKING_WDAYS.include?(date.wday)
+
+    window = (date - PREPARATION_LOOKBACK_DAYS)...date
+    if bake_dates
+      return date if bake_dates.include?(date)
+
+      previous = bake_dates.select { |baked_on| window.cover?(baked_on) }.max
+    else
+      return date if BakeDay.exists?(baked_on: date)
+
+      previous = BakeDay.where(baked_on: window).order(baked_on: :desc).pick(:baked_on)
+    end
+
+    # La plus RÉCENTE des deux : une fournée exceptionnelle en base (un jeudi)
+    # rapproche la préparation, mais une fournée pas encore créée (le vendredi de
+    # la semaine suivante) ne doit pas la reculer d'une semaine.
+    [ previous, last_cooking_day_before(date) ].compact.max
+  end
+
+  # Dernier jour de cuisson strictement avant `date`, par la règle seule.
+  def self.last_cooking_day_before(date)
+    day = date.to_date.prev_day
+    day = day.prev_day until BakeDay::COOKING_WDAYS.include?(day.wday)
+    day
+  end
 
   # Instant limite pour réserver le créneau du `date` donné.
-  def self.private_booking_deadline(date)
-    day = date.to_date.prev_day
+  def self.private_booking_deadline(date, bake_dates: nil)
+    day = private_preparation_date(date, bake_dates: bake_dates).prev_day
     ActiveSupport::TimeZone[PRIVATE_BOOKING_ZONE].local(day.year, day.month, day.day, PRIVATE_BOOKING_CUT_OFF_HOUR, 0, 0)
   end
 
-  # Encore dans les temps ? Strict : à 16 h 00 pile, c'est fermé.
-  def self.private_booking_open?(date)
-    Time.current < private_booking_deadline(date)
+  # Encore dans les temps ? Strict : à 12 h 00 pile, c'est fermé.
+  def self.private_booking_open?(date, bake_dates: nil)
+    Time.current < private_booking_deadline(date, bake_dates: bake_dates)
   end
 
   # Jour ET créneau ouverts à la réservation privée, indépendamment de
   # l'occupation. Séparé de `private_slot_available?` pour que le service de
   # réservation puisse distinguer « jour interdit » de « déjà complet ».
-  def self.private_bookable_slot?(date, slot)
+  def self.private_bookable_slot?(date, slot, opened_dates: nil)
     return false if date.blank? || slot.blank?
+    return false unless slot.to_s == PRIVATE_SLOT
 
-    PRIVATE_WDAYS.include?(date.to_date.wday) && slot.to_s == PRIVATE_SLOT
+    date = date.to_date
+    return true if PRIVATE_WDAYS.include?(date.wday)
+
+    opened_dates ? opened_dates.include?(date) : PartyOpening.open_on?(date)
   end
 
   # Capacité par créneau des parties PRIVÉES (réglage singleton).
@@ -121,11 +182,13 @@ class PartyEvent < ApplicationRecord
                             .to_set
     public_dates = public_events.not_deleted.where(held_on: range).distinct.pluck(:held_on).to_set
     counts = private_events.not_deleted.where(held_on: range).group(:held_on, :slot).count
+    opened_dates = PartyOpening.on_range(range).pluck(:opened_on).to_set
+    bake_dates = BakeDay.where(baked_on: (range.begin - PREPARATION_LOOKBACK_DAYS)..range.end).pluck(:baked_on).to_set
 
     range.each_with_object({}) do |date, map|
       map[date] = SLOT_LABELS.keys.index_with do |slot|
-        next false unless private_bookable_slot?(date, slot)
-        next false unless private_booking_open?(date)
+        next false unless private_bookable_slot?(date, slot, opened_dates: opened_dates)
+        next false unless private_booking_open?(date, bake_dates: bake_dates)
         next false if blocked.include?([ date, slot ]) || blocked.include?([ date, nil ])
         next false if slot == "soir" && public_dates.include?(date)
 

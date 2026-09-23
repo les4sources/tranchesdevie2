@@ -1,0 +1,62 @@
+- content_for :title, "Dates supplémentaires — parties privées"
+- content_for :layout, "admin"
+
+= adm_page_header "Dates supplémentaires" do
+  = link_to "Blocages", admin_party_slot_blocks_path, class: adm_btn_class(:ghost)
+  = link_to "Parties", admin_party_events_path, class: adm_btn_class(:ghost)
+
+p.mb-5.text-sm style="color: var(--text-muted);"
+  | Les parties privées sont ouvertes d'office le mardi soir et le vendredi soir — les jours de boulangerie.
+  | Ajoute ici les soirs supplémentaires qu'on accepte d'ouvrir. Toujours le soir.
+
+.grid.grid-cols-1.gap-6.lg:grid-cols-3
+  .lg:col-span-1
+    .adm-card.p-4.sm:p-6
+      h2.mb-3.text-xl.font-semibold style="color: var(--text-strong);" Ouvrir une date
+      = form_with model: [ :admin, @opening ], url: admin_party_openings_path, local: true, class: "space-y-4" do |f|
+        - if @opening.errors.any?
+          .rounded-md.p-3 style="border: 1px solid var(--danger-200); background: var(--danger-100);"
+            ul.list-inside.list-disc.text-sm style="color: var(--danger-700);"
+              - @opening.errors.full_messages.each do |message|
+                li= message
+        .space-y-2
+          = f.label :opened_on, "Date", class: "adm-eyebrow block"
+          = f.date_field :opened_on, required: true, class: adm_field_class
+        .space-y-2
+          = f.label :reason, "Motif (optionnel)", class: "adm-eyebrow block"
+          = f.text_field :reason, class: adm_field_class
+        = f.submit "Ouvrir", class: adm_btn_class(:primary)
+
+      p.mt-4.text-xs style="color: var(--text-muted);"
+        | Les pâtons d'un soir sans fournée sont pétris par la fournée précédente :
+        | la réservation ferme donc la veille de CETTE fournée, à 12 h.
+
+  .lg:col-span-2
+    .adm-card.overflow-hidden
+      .overflow-x-auto
+        table.adm-grid
+          thead
+            tr
+              th Date
+              th Réservation jusqu'au
+              th Motif
+              th.text-right Action
+          tbody
+            - if @openings.any?
+              - @openings.each do |opening|
+                tr
+                  td.adm-grid-num.whitespace-nowrap style="color: var(--text-strong);"
+                    = l(opening.opened_on)
+                    - if opening.redundant?
+                      span.ml-2.text-xs style="color: var(--text-muted);" (déjà un jour de boulangerie)
+                    - elsif @booked[opening.opened_on].to_i.positive?
+                      span.ml-2.text-xs style="color: var(--text-muted);"
+                        - booked = @booked[opening.opened_on]
+                        = booked == 1 ? "1 party réservée" : "#{booked} parties réservées"
+                  td.whitespace-nowrap style="color: var(--text-muted);"
+                    = l(PartyEvent.private_booking_deadline(opening.opened_on), format: :short)
+                  td style="color: var(--text-muted);" = opening.reason
+                  td.whitespace-nowrap.text-right
+                    = link_to "Refermer", admin_party_opening_path(opening), data: { turbo_method: :delete, turbo_confirm: "Retirer cette date ? Les parties déjà réservées ne sont pas annulées." }, class: "adm-rowaction"
+            - else
+              = adm_empty_row colspan: 4, title: "Aucune date supplémentaire", hint: "Seuls les mardis et vendredis soir sont ouverts."

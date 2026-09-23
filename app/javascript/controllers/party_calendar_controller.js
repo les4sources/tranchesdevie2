@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Calendrier de réservation Pizza party privée (#pizza-parties).
-// Deux temps : choisir un JOUR dans la grille mensuelle, puis un CRÉNEAU
-// (midi/soir) dans la carte de réservation. La valeur soumise reste le format
-// serveur "YYYY-MM-DD|slot" (revalidé côté serveur à l'ajout panier).
+// Deux temps : choisir un JOUR dans la grille mensuelle, puis la SOIRÉE dans la
+// carte de réservation (le midi n'est plus proposé). La valeur soumise reste le
+// format serveur "YYYY-MM-DD|slot" (revalidé côté serveur à l'ajout panier).
 export default class extends Controller {
   static targets = ["day", "input", "slotPanel", "slotLabel", "slotButton", "warning", "placeholder",
-    "ovenHotNotice", "note", "noteCount"]
+    "ovenHotNotice", "extraDateNotice", "note", "noteCount"]
 
   connect() {
     this.countNote()
@@ -36,9 +36,12 @@ export default class extends Controller {
     this.slotPanelTarget.classList.remove("hidden")
     this.warningTarget.classList.add("hidden")
 
-    // Les parties n'ont lieu que les jours de boulangerie (#201), donc le four
-    // est toujours chaud — il n'y a plus de cas « four froid » à annoncer.
-    this.toggleNotice(this.ovenHotNoticeTarget, day.dataset.ovenHot === "true")
+    // Deux cas, et un seul message à la fois : un jour de boulangerie (four déjà
+    // chaud), ou une date ouverte en plus (pâtons de la fournée précédente, donc
+    // demande qui ferme plus tôt).
+    const ovenHot = day.dataset.ovenHot === "true"
+    this.toggleNotice(this.ovenHotNoticeTarget, ovenHot)
+    if (this.hasExtraDateNoticeTarget) this.toggleNotice(this.extraDateNoticeTarget, !ovenHot)
   }
 
   toggleNotice(el, show) {

@@ -284,6 +284,9 @@ Rails.application.routes.draw do
     # bouton, jamais agir : les clients mail préchargent les liens.
     get "parties/decision", to: "party_decisions#show", as: :party_decision
     resources :party_slot_blocks, path: "parties/blocages", only: [ :index, :create, :destroy ]
+    # Ouvertures exceptionnelles (#pizza-parties) : même précaution d'ordre que
+    # les blocages — `path: "parties"` capturerait sinon `parties/ouvertures`.
+    resources :party_openings, path: "parties/ouvertures", only: [ :index, :create, :destroy ]
     # Création à la main d'une party PRIVÉE (#204). Déclaré avant
     # `party_events` : `path: "parties"` capturerait sinon `parties/privees`.
     # Plus de `toggle_paid` (#pizza-parties) : l'encaissement d'une party saisie

@@ -3,6 +3,7 @@
 
 = adm_page_header "Événements party" do
   = link_to "Créneaux privés (blocages)", admin_party_slot_blocks_path, class: adm_btn_class(:default)
+  = link_to "Dates supplémentaires", admin_party_openings_path, class: adm_btn_class(:default)
   / Certaines parties privées arrivent par mail ou par téléphone (#204).
   = link_to "Nouvelle party privée", new_admin_private_party_path, class: adm_btn_class(:default)
   = link_to "Nouvel événement public", new_admin_party_event_path, class: adm_btn_class(:primary)

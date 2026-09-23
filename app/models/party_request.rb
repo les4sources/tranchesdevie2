@@ -53,16 +53,21 @@ class PartyRequest < ApplicationRecord
 
   # Cut-off de la fournée qui pétrira les pâtons.
   #
-  # Une party privée a TOUJOURS lieu un jour de cuisson (mardi ou vendredi) : son
-  # cut-off est donc celui de la fournée du jour même. C'est le moment où la
-  # boulangerie fige son plan de production — après lui, un nombre de
-  # participants n'a plus de sens.
+  # C'est le moment où la boulangerie fige son plan de production — après lui, un
+  # nombre de participants n'a plus de sens.
+  #
+  # Un mardi ou un vendredi, c'est la fournée du jour même. Une date ouverte
+  # exceptionnellement (#pizza-parties) n'a pas de fournée : le cut-off est celui
+  # de la DERNIÈRE fournée avant elle, celle qui pétrira ses pâtons — sinon la
+  # demande resterait ouverte alors que plus personne ne peut produire.
   #
   # La fournée n'existe pas toujours en base au moment où on calcule (elles sont
   # créées quelques jours à l'avance) : on retombe alors sur la règle, qui est la
   # même (`BakeDay.calculate_cut_off_for`).
   def self.cut_off_for(held_on)
-    date = held_on.to_date
+    return nil if held_on.blank?
+
+    date = PartyEvent.private_preparation_date(held_on)
     BakeDay.find_by(baked_on: date)&.cut_off_at || BakeDay.calculate_cut_off_for(date)
   end
 
@@ -83,6 +88,7 @@ class PartyRequest < ApplicationRecord
     return false if date.blank? || slot.blank?
     return false unless PartyEvent.private_bookable_slot?(date, slot)
     return false if date.to_date < Date.current + MINIMUM_NOTICE_DAYS
+    return false unless PartyEvent.private_booking_open?(date)
     return false if PartySlotBlock.blocked?(date, slot)
     return false if slot.to_s == "soir" && PartyEvent.public_party_scheduled?(date)
 
@@ -102,11 +108,14 @@ class PartyRequest < ApplicationRecord
     public_dates = PartyEvent.public_events.not_deleted.where(held_on: range).distinct.pluck(:held_on).to_set
     counts = PartyEvent.private_events.not_deleted.where(held_on: range).group(:held_on, :slot).count
     floor = Date.current + MINIMUM_NOTICE_DAYS
+    opened_dates = PartyOpening.on_range(range).pluck(:opened_on).to_set
+    bake_dates = BakeDay.where(baked_on: (range.begin - PartyEvent::PREPARATION_LOOKBACK_DAYS)..range.end).pluck(:baked_on).to_set
 
     range.each_with_object({}) do |date, map|
       map[date] = PartyEvent::SLOT_LABELS.keys.index_with do |slot|
-        next false unless PartyEvent.private_bookable_slot?(date, slot)
+        next false unless PartyEvent.private_bookable_slot?(date, slot, opened_dates: opened_dates)
         next false if date < floor
+        next false unless PartyEvent.private_booking_open?(date, bake_dates: bake_dates)
         next false if blocked.include?([ date, slot ]) || blocked.include?([ date, nil ])
         next false if slot == "soir" && public_dates.include?(date)
 

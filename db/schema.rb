@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_20_100100) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_22_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -418,6 +418,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_20_100100) do
     t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
     t.index ["held_on"], name: "index_party_events_on_held_on"
     t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
+  end
+
+  create_table "party_openings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "opened_on", null: false
+    t.string "reason"
+    t.datetime "updated_at", null: false
+    t.index ["opened_on"], name: "index_party_openings_on_opened_on", unique: true
   end
 
   create_table "party_participants", force: :cascade do |t|

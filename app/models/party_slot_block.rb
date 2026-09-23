@@ -9,6 +9,12 @@ class PartySlotBlock < ApplicationRecord
 
   # Un (date, créneau) est-il bloqué ? Un blocage sans créneau (slot nil) couvre
   # toute la journée.
+  # Libellé du créneau bloqué (les blocages d'avant l'abandon du midi en portent
+  # encore un).
+  def slot_label
+    PartyEvent::SLOT_LABELS[slot.to_s] || "Toute la journée"
+  end
+
   def self.blocked?(date, slot)
     where(blocked_on: date).where(slot: [ nil, slot ]).exists?
   end

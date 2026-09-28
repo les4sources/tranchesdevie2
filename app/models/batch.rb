@@ -4,10 +4,12 @@
 # enfournent d'un coup, quand le pétrin et le four ne permettent pas de tout
 # passer en une fois. Un jour de cuisson en porte 1 à N.
 #
-# La répartition est MANUELLE et le reste : rien ici ne propose ni n'applique de
-# découpe automatique — décision explicite des boulangers du 25/08/2026, parce
-# que les contraintes réelles (ordre de sortie des froments, livraisons, marché)
-# ne sont pas modélisables.
+# La répartition est MANUELLE par défaut — décision des boulangers du
+# 25/08/2026, parce que les contraintes réelles (ordre de sortie des froments,
+# livraisons, marché) ne sont pas toutes modélisables. Depuis le 28/09/2026, le
+# bouton « Proposer une répartition » (`BatchProposalService`, règles de Claire)
+# peut remplacer les fournées du jour sur clic ; elles restent ajustables ligne
+# à ligne ensuite.
 class Batch < ApplicationRecord
   belongs_to :bake_day
   # Une fournée supprimée ne détruit jamais une ligne de commande : les lignes

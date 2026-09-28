@@ -4,7 +4,8 @@ module Admin
   # et à l'armoire à moules.
   #
   # Deux invariants tenus ici, et testés :
-  #   - aucune répartition automatique n'est calculée, proposée ou appliquée ;
+  #   - rien n'est réparti sans clic : la proposition du bouton « Proposer une
+  #     répartition » vit dans `BatchProposalService`, jamais ici ;
   #   - la somme des fournées égale le tableau global du jour dès que toutes les
   #     lignes sont affectées, parce que les deux passent par `DoughCalculator`.
   class BatchPlanner
@@ -126,6 +127,10 @@ module Admin
         lines_count: items.size,
         units_count: items.sum(&:qty),
         total_dough_grams: calculator.total_dough_grams,
+        # Pâte pétrie avec la fournée mais cuite au four à bois : elle sort des
+        # 70 kg de pain que la fournée peut enfourner.
+        paton_dough_grams: items.reject { |item| item.product_variant.product.breads? }
+                                .sum { |item| item.qty * (item.product_variant.flour_quantity || 0) },
         dough: calculator.dough_quantities,
         molds: mold_breakdown(items)
       }

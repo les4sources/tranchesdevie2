@@ -254,6 +254,9 @@ Rails.application.routes.draw do
       # sous le même segment ferait matcher `batches#update` avec
       # `id: "affectations"` selon l'ordre de déclaration (cf. #200).
       resource :batch_assignment, path: "affectation-fournee", only: [ :update ]
+      # « Proposer une répartition » : remplace les fournées du jour par une
+      # proposition calculée, que les boulangers ajustent ensuite à la main.
+      resource :batch_proposal, path: "proposition-fournees", only: [ :create ]
       resources :batches, path: "fournees", only: [ :create, :update, :destroy ]
     end
 

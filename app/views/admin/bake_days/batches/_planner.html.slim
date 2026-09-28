@@ -18,10 +18,13 @@
           - else
             = adm_chip "#{unassigned} ligne#{'s' if unassigned > 1} non affectée#{'s' if unassigned > 1}", tone: :warning
         p.mt-1.text-sm style="color: var(--text-muted);"
-          | Cochez vous-même chaque ligne : rien n'est réparti automatiquement. #{planner.assigned_lines_count} / #{total_lines} lignes affectées.
+          | Répartissez à la main, ou demandez une proposition (70 kg de pain au plus par fournée, pâtons avec le froment) puis ajustez-la. #{planner.assigned_lines_count} / #{total_lines} lignes affectées.
       .flex.flex-wrap.items-center.gap-2.shrink-0
         p.adm-tonetext.text-xs.font-medium.adm-tone-success data-batch-planner-target="status" role="status" aria-live="polite"
           = notice
+        - if total_lines.positive?
+          - replace_confirm = "Remplacer #{stats.size == 1 ? 'la fournée actuelle' : "les #{stats.size} fournées actuelles"} par une proposition ? Les affectations faites à la main seront perdues." if stats.any?
+          = button_to "Proposer une répartition", admin_bake_day_batch_proposal_path(bake_day), method: :post, form: { data: { turbo_stream: true, turbo_confirm: replace_confirm } }, class: adm_btn_class(:default)
         = button_to "Ajouter une fournée", admin_bake_day_batches_path(bake_day), method: :post, form: { data: { turbo_stream: true } }, class: adm_btn_class(:primary)
 
     - if stats.empty?

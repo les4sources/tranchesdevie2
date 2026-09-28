@@ -23,6 +23,9 @@
         p.adm-batchweight.mt-1 data-role="batch-dough" data-grams=entry[:total_dough_grams] style="font-size: 2.25rem;"
           = number_with_precision(entry[:total_dough_grams] / 1000.0, precision: 2, strip_insignificant_zeros: true)
           span.ml-1.text-lg.font-semibold style="color: var(--text-muted);" kg
+        - if entry[:paton_dough_grams].positive?
+          p.mt-1.text-xs style="color: var(--text-muted);" data-role="batch-paton-dough"
+            | dont #{number_with_precision(entry[:paton_dough_grams] / 1000.0, precision: 2, strip_insignificant_zeros: true)} kg de pâtons (four à bois)
       - if dough[:per_flour].any?
         .flex.flex-wrap.gap-x-5.gap-y-2
           - [ [ "Farine", dough[:totals][:farine_kg], "kg", 2 ], [ "Eau", dough[:totals][:eau_l], "l", 2 ], [ "Sel", dough[:totals][:sel_kg], "kg", 3 ], [ "Levain", dough[:totals][:levain_kg], "kg", 3 ] ].each do |label, value, unit, precision|

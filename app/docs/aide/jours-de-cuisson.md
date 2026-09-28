@@ -66,6 +66,24 @@ production **tient dans la journée**. Trois jauges sont suivies :
 > commandes sur cette fournée, ou ouvrir une capacité supplémentaire dans les
 > **Paramètres**.
 
+## Répartir le jour en fournées
+
+L'onglet **Fournées** du jour de cuisson découpe la production en enfournements. Tu peux tout répartir à la main, ligne par ligne, par client ou par produit, ou bien toucher **Proposer une répartition** : l'application calcule une répartition, et tu l'ajustes ensuite avec les mêmes boutons qu'avant.
+
+La proposition suit ces règles, de la plus importante à la moins importante :
+
+1. **Le moins de fournées possible**, avec au plus **70 kg de pain** par fournée, jours de marché compris.
+2. **Une même farine reste dans une même fournée** autant que possible.
+3. **L'ordre de passage** : petit épeautre, puis épeautre, puis seigle, puis froment. Les autres farines (le blé ancien, par exemple) passent entre le seigle et le froment.
+4. Quand une farine doit être coupée en deux, les produits qui partagent des **ingrédients** restent ensemble (noix et noix-figues).
+5. Ce qui déborde part d'abord sous forme de **produits de 10 kg au plus**, glissés dans la fournée d'une autre farine.
+6. Un produit n'est coupé entre deux fournées qu'**en dernier recours**.
+7. Deux fournées qui ne contiennent que la même farine sont **équilibrées**.
+
+Un pain fait de plusieurs farines est rangé avec sa **farine principale**. Les **pâtons** de Pizza party vont dans la fournée froment : ils sont pétris avec elle, mais ne comptent pas dans ses 70 kg puisqu'ils cuisent au four à bois. La carte de la fournée l'indique sous le poids de pâte (« dont 7,5 kg de pâtons »).
+
+> Proposer une répartition **remplace** les fournées du jour : les affectations faites à la main sont perdues, c'est pour ça qu'une confirmation t'est demandée. Aucune commande n'est touchée, seules les fournées changent.
+
 ## Les Pizza parties à préparer
 
 Une Pizza party privée consomme des **pâtons** qu'il faut pétrir à l'avance,

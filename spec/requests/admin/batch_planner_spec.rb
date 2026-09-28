@@ -53,6 +53,29 @@ RSpec.describe "Admin::BatchPlanner", type: :request do
     end
   end
 
+  describe "POST proposition" do
+    it "remplace les fournées par une proposition et renvoie le planificateur" do
+      create(:batch, bake_day: bake_day, name: "À la main", position: 1)
+
+      post admin_bake_day_batch_proposal_path(bake_day), headers: turbo_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Répartition proposée en 1 fournée")
+      expect(bake_day.batches.pluck(:name)).to eq([ "Fournée 1" ])
+      expect(bake_day.batches.first.order_items).to contain_exactly(alice_big, alice_small, bob_small)
+    end
+
+    it "affiche le bouton, avec une confirmation dès qu'une fournée existe" do
+      get admin_bake_day_path(bake_day)
+      expect(response.body).to include("Proposer une répartition")
+      expect(response.body).not_to include("par une proposition ?")
+
+      create(:batch, bake_day: bake_day, name: "Fournée 1", position: 1)
+      get admin_bake_day_path(bake_day)
+      expect(response.body).to include("Remplacer la fournée actuelle par une proposition ?")
+    end
+  end
+
   describe "PATCH update" do
     let!(:batch) { create(:batch, bake_day: bake_day, name: "Fournée 1", position: 1) }
 

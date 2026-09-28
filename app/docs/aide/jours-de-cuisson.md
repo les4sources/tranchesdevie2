@@ -62,6 +62,15 @@ production **tient dans la journée**. Trois jauges sont suivies :
 3. **Le four** — le poids total de farine par rapport à la capacité du four
    (110 kg en temps normal, 165 kg les jours de marché).
 
+### L'alerte à 130 kg : deux fournées pleines ou une 3e ?
+
+Une journée démarre à **deux fournées de 70 kg** de pain. La boutique s'arrête à sa limite habituelle, mais les commandes que tu ajoutes toi-même depuis l'admin peuvent pousser le four plus loin. Dès que le four atteint **130 kg de pain**, un bandeau orange apparaît en haut de toutes les pages de l'admin, et la fiche du jour te demande de choisir :
+
+- **Rester à 2 fournées** : tu acceptes encore quelques kilos, jusqu'à 140 kg, pour deux fournées pleines ;
+- **Ouvrir une 3e fournée** : l'horaire de production s'allonge d'autant.
+
+Le choix est noté avec sa date sur la fiche du jour, et tu peux revenir dessus. Si tu restes à deux fournées et que le four dépasse quand même 140 kg, l'alerte revient. Les pâtons ne comptent pas dans ces kilos : ils cuisent au four à bois. Il n'y a pas de 4e fournée prévue.
+
 > Si une jauge est pleine, c'est le signal qu'il faut arrêter d'accepter des
 > commandes sur cette fournée, ou ouvrir une capacité supplémentaire dans les
 > **Paramètres**.

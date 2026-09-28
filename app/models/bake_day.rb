@@ -36,6 +36,9 @@ class BakeDay < ApplicationRecord
 
   validates :baked_on, presence: true, uniqueness: true
   validates :cut_off_at, presence: true
+  # Décision face à l'alerte « Capacité four » (OvenBatchAlert) : 2 ou 3
+  # fournées, nil tant que personne n'a choisi.
+  validates :oven_batch_plan, inclusion: { in: [ 2, 3 ] }, allow_nil: true
   validate :pickup_locations_in_use_still_open
 
   after_save :sync_pickup_locations

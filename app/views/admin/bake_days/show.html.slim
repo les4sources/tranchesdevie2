@@ -32,6 +32,8 @@
       = link_to "Annuler la fournée", confirm_cancel_admin_bake_day_path(@bake_day), class: adm_btn_class(:default)
       = button_to "Supprimer", admin_bake_day_path(@bake_day), method: :delete, form: { data: { turbo_confirm: "Supprimer ce jour de cuisson ? Cette action est définitive." } }, class: adm_btn_class(:danger)
 
+  = render "admin/bake_days/oven_batch_alert", bake_day: @bake_day, alert: OvenBatchAlert.for(@bake_day)
+
   / Consignes du jour (#195) : un bandeau d'une ligne, et l'éditeur dans une
   / modale. Le point dur n'est pas la modale, c'est qu'une consigne saisie ne
   / disparaisse pas de la vue — d'où la pastille ET l'aperçu, lisibles sans clic.

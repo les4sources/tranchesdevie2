@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_22_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_28_160012) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,6 +105,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_22_090000) do
     t.boolean "draft", default: false, null: false
     t.text "internal_note"
     t.boolean "market_day", default: false, null: false
+    t.integer "oven_batch_plan"
+    t.datetime "oven_batch_plan_decided_at"
     t.datetime "updated_at", null: false
     t.index ["baked_on"], name: "index_bake_days_on_baked_on", unique: true
     t.index ["draft"], name: "index_bake_days_on_draft"

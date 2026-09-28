@@ -248,6 +248,10 @@ Rails.application.routes.draw do
         get :sheet
       end
 
+      # Alerte « Capacité four » : rester à deux fournées pleines ou ouvrir une
+      # 3e fournée (OvenBatchAlert).
+      resource :oven_batch_plan, path: "plan-four", only: [ :update ]
+
       # Calculateur de fournées (#194) : découpe manuelle du jour en 1 à N
       # enfournements, et affectation des lignes de commande à chacun.
       # Chemin distinct de `fournees/:id` à dessein : imbriquer l'affectation

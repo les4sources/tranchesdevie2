@@ -78,6 +78,8 @@
               </div>
             <% end %>
 
+            <%= render "admin/bake_days/oven_batch_banner", except: (@bake_day if controller_name == "bake_days" && action_name == "show") %>
+
             <%= yield %>
           </main>
         </div>

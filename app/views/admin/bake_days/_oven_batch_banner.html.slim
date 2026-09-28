@@ -1,0 +1,9 @@
+/ Bandeau de toutes les pages admin : les jours à venir dont le four attend une
+/ décision (OvenBatchAlert). Le jour ouvert à l'écran n'y figure pas, son bloc
+/ de décision est déjà sous les yeux.
+- OvenBatchAlert.pending.reject { |alert| alert.bake_day == except }.each do |alert|
+  - kg = number_with_precision(alert.oven_grams / 1000.0, precision: 1, strip_insignificant_zeros: true)
+  - question = alert.state == :decision_needed ? "deux fournées pleines ou une 3e fournée ?" : "au-delà de deux fournées pleines, ouvrir une 3e ?"
+  = link_to admin_bake_day_path(alert.bake_day), class: "mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium", style: "background: var(--warning-100); color: var(--warning-700);", data: { role: "oven-batch-banner" } do
+    = lucide "alert-triangle", size: 15
+    span = "Fournée du #{alert.bake_day.baked_on.strftime('%d/%m')} : #{kg} kg de pain au four, #{question} Décider →"

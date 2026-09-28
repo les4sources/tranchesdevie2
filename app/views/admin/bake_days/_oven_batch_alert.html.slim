@@ -1,0 +1,32 @@
+/ Alerte « Capacité four » (OvenBatchAlert) : à 130 kg de pain, les boulangers
+/ choisissent entre deux fournées pleines et une 3e fournée, qui allonge leur
+/ horaire. Une fois le choix fait, il reste lisible en une ligne, et réversible.
+- kg = ->(grams) { number_with_precision(grams / 1000.0, precision: 1, strip_insignificant_zeros: true) }
+- decided_at = bake_day.oven_batch_plan_decided_at&.in_time_zone("Europe/Brussels")&.strftime("%d/%m à %H:%M")
+- plan_path = admin_bake_day_oven_batch_plan_path(bake_day)
+
+- case alert.state
+- when :decision_needed, :over_two_batches
+  .adm-card.p-4.text-sm#oven-batch-alert style="border-color: var(--warning-200); background: var(--warning-100);"
+    p.font-semibold style="color: var(--warning-700);"
+      - if alert.two_batches_possible?
+        = "Capacité four : #{kg.(alert.oven_grams)} kg de pain. Encore #{kg.(alert.remaining_grams)} kg et les deux fournées seront pleines."
+      - else
+        = "Capacité four : #{kg.(alert.oven_grams)} kg de pain, soit #{kg.(alert.excess_grams)} kg de plus que deux fournées pleines (140 kg)."
+    p.mt-1 style="color: var(--text-body);"
+      | Choisissez : rester à deux fournées pleines (jusqu'à 140 kg), ou ouvrir une 3e fournée, ce qui allonge l'horaire de production. La boutique, elle, garde sa limite habituelle.
+    .mt-3.flex.flex-wrap.gap-2
+      - if alert.two_batches_possible? && alert.state == :decision_needed
+        = button_to "Rester à 2 fournées", plan_path, method: :patch, params: { plan: 2 }, class: adm_btn_class(:default)
+      = button_to "Ouvrir une 3e fournée", plan_path, method: :patch, params: { plan: 3 }, class: adm_btn_class(:primary)
+
+- when :two_batches
+  .flex.flex-wrap.items-center.gap-2.text-xs#oven-batch-alert style="color: var(--text-muted);"
+    span = "Deux fournées pleines validées le #{decided_at} : jusqu'à 140 kg de pain au four (#{kg.(alert.oven_grams)} kg à ce jour)."
+    = button_to "Ouvrir une 3e fournée", plan_path, method: :patch, params: { plan: 3 }, class: adm_btn_class(:ghost)
+
+- when :third_batch
+  .flex.flex-wrap.items-center.gap-2.text-xs#oven-batch-alert style="color: var(--text-muted);"
+    span = "3e fournée ouverte le #{decided_at} : horaire de production allongé (#{kg.(alert.oven_grams)} kg de pain au four à ce jour)."
+    - if alert.two_batches_possible?
+      = button_to "Revenir à 2 fournées", plan_path, method: :patch, params: { plan: 2 }, class: adm_btn_class(:ghost)

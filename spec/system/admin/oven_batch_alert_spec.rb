@@ -19,7 +19,7 @@ RSpec.describe "Admin — alerte capacité four", type: :system, batch_planner_u
 
     variant = create(:product_variant, product: create(:product, :bread, name: "Pain froment"), flour_quantity: 1_000)
     order = create(:order, :paid, customer: create(:customer), bake_day: bake_day, total_cents: 1_000)
-    create(:order_item, order: order, product_variant: variant, qty: 134)
+    create(:order_item, order: order, product_variant: variant, qty: 124)
   end
 
   def sign_in_admin
@@ -29,12 +29,12 @@ RSpec.describe "Admin — alerte capacité four", type: :system, batch_planner_u
     expect(page).to have_no_current_path(%r{/admin/login}, wait: 10)
   end
 
-  it "signale 130 kg partout, puis enregistre le choix sous les yeux" do
+  it "signale 120 kg partout, puis enregistre le choix sous les yeux" do
     sign_in_admin
     visit "/admin/bake_days"
 
     banner = find("[data-role='oven-batch-banner']")
-    expect(banner).to have_text("134 kg de pain au four, deux fournées pleines ou une 3e fournée ?")
+    expect(banner).to have_text("124 kg de pain au four, deux fournées pleines ou une 3e fournée ?")
     page.save_screenshot(shot_dir.join("oven-alert-banner.png").to_s)
 
     banner.click
@@ -43,12 +43,12 @@ RSpec.describe "Admin — alerte capacité four", type: :system, batch_planner_u
 
     click_button "Ouvrir une 3e fournée"
     expect(page).to have_text("3e fournée ouverte : l'horaire de production s'allonge.")
-    expect(page).to have_text("horaire de production allongé (134 kg de pain au four à ce jour)")
+    expect(page).to have_text("horaire de production allongé (124 kg de pain au four à ce jour)")
     expect(page).to have_no_css("[data-role='oven-batch-banner']")
     page.save_screenshot(shot_dir.join("oven-alert-third.png").to_s)
 
     click_button "Revenir à 2 fournées"
-    expect(page).to have_text("Deux fournées pleines validées : jusqu'à 140 kg de pain au four.")
+    expect(page).to have_text("Deux fournées pleines validées : jusqu'à 130 kg de pain au four.")
     expect(bake_day.reload.oven_batch_plan).to eq(2)
   end
 end

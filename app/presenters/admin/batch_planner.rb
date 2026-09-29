@@ -128,7 +128,7 @@ module Admin
         units_count: items.sum(&:qty),
         total_dough_grams: calculator.total_dough_grams,
         # Pâte pétrie avec la fournée mais cuite au four à bois : elle sort des
-        # 70 kg de pain que la fournée peut enfourner.
+        # 65 kg de pain que la fournée peut enfourner.
         paton_dough_grams: items.reject { |item| item.product_variant.product.breads? }
                                 .sum { |item| item.qty * (item.product_variant.flour_quantity || 0) },
         dough: calculator.dough_quantities,

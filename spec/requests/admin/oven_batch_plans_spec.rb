@@ -18,18 +18,18 @@ RSpec.describe "Admin::OvenBatchPlans", type: :request do
   end
 
   describe "le bandeau de l'admin" do
-    it "signale un jour à 130 kg sur les autres pages, avec un lien vers sa fiche" do
-      fill_oven(132)
+    it "signale un jour à 120 kg sur les autres pages, avec un lien vers sa fiche" do
+      fill_oven(122)
 
       get admin_bake_days_path
 
       expect(response.body).to include('data-role="oven-batch-banner"')
-      expect(response.body).to include("132 kg de pain au four, deux fournées pleines ou une 3e fournée ?")
+      expect(response.body).to include("122 kg de pain au four, deux fournées pleines ou une 3e fournée ?")
       expect(response.body).to include(admin_bake_day_path(bake_day))
     end
 
-    it "reste absent sous 130 kg" do
-      fill_oven(120)
+    it "reste absent sous 120 kg" do
+      fill_oven(115)
 
       get admin_bake_days_path
 
@@ -37,7 +37,7 @@ RSpec.describe "Admin::OvenBatchPlans", type: :request do
     end
 
     it "laisse la place au bloc de décision sur la fiche du jour" do
-      fill_oven(132)
+      fill_oven(122)
 
       get admin_bake_day_path(bake_day)
 
@@ -48,7 +48,7 @@ RSpec.describe "Admin::OvenBatchPlans", type: :request do
   end
 
   describe "PATCH update" do
-    before { fill_oven(132) }
+    before { fill_oven(122) }
 
     it "valide deux fournées pleines et fait taire l'alerte" do
       patch admin_bake_day_oven_batch_plan_path(bake_day), params: { plan: 2 }
@@ -69,14 +69,14 @@ RSpec.describe "Admin::OvenBatchPlans", type: :request do
       expect(response.body).to include("3e fournée ouverte : l&#39;horaire de production s&#39;allonge.")
     end
 
-    it "refuse de rester à deux fournées au-delà de 140 kg" do
+    it "refuse de rester à deux fournées au-delà de 130 kg" do
       fill_oven(10)
 
       patch admin_bake_day_oven_batch_plan_path(bake_day), params: { plan: 2 }
 
       expect(bake_day.reload.oven_batch_plan).to be_nil
       follow_redirect!
-      expect(response.body).to include("Le four dépasse déjà 140 kg")
+      expect(response.body).to include("Le four dépasse déjà 130 kg")
     end
 
     it "refuse un choix inconnu" do

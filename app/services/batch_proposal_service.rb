@@ -8,9 +8,12 @@
 # ce service ne tourne que sur clic, et les boulangers corrigent ensuite ligne à
 # ligne comme avant.
 class BatchProposalService
-  # 70 kg de pain par fournée, jours de marché compris (Claire, 28/09/2026). Les
-  # pâtons n'y comptent pas : ils ne cuisent pas dans le four à pain.
-  CAPACITY_GRAMS = 70_000
+  # 65 kg de pain par fournée, jours de marché compris (Claire, 29/09/2026 ;
+  # 70 kg au départ, abaissé parce que le poids réel fluctue selon les moules).
+  # Les pâtons n'y comptent pas : ils ne cuisent pas dans le four à pain. SOURCE
+  # UNIQUE : l'alerte « Capacité four » (OvenBatchAlert) en dérive.
+  CAPACITY_GRAMS = 65_000
+  CAPACITY_KG = CAPACITY_GRAMS / 1_000
   # Taille maximale d'un produit qu'on glisse dans la fournée d'une autre farine.
   SMALL_PRODUCT_GRAMS = 10_000
 
@@ -93,16 +96,23 @@ class BatchProposalService
          end
   end
 
-  # Les pâtons (et tout ce qui n'est pas du pain) rejoignent la première
-  # fournée froment : ils sont pétris avec elle, mais ne comptent pas dans ses
-  # 70 kg puisqu'ils cuisent au four à bois. Sans fournée froment, la dernière.
+  # Les pâtons (et tout ce qui n'est pas du pain) rejoignent la fournée
+  # froment : ils sont pétris avec elle, mais ne comptent pas dans ses
+  # 65 kg puisqu'ils cuisent au four à bois. Sans fournée froment, la dernière.
   def attach_patons(groups, others)
     return groups if others.empty?
     return [ others ] if groups.empty?
 
-    target = groups.index { |items| items.any? { |item| froment?(item) } } || groups.size - 1
+    # LA fournée froment, celle qui en porte le plus : une fournée d'épeautres
+    # qui a reçu quelques petits froments en débord ne compte pas (règle 5).
+    froment_grams = groups.map { |items| items.select { |item| froment?(item) }.sum { |item| dough_grams(item) } }
+    target = froment_grams.max.positive? ? froment_grams.index(froment_grams.max) : groups.size - 1
     groups[target] += others
     groups
+  end
+
+  def dough_grams(item)
+    item.qty * (item.product_variant.flour_quantity || 0)
   end
 
   def froment?(item)

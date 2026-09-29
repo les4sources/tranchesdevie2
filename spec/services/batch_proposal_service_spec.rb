@@ -46,7 +46,7 @@ RSpec.describe BatchProposalService do
     let!(:froment_line) { line("Pain au froment", flour: froment, units: 60) }
     let!(:patons) { line("Pâtons", flour: froment_patons, units: 30, grams: 250, category: :dough_balls) }
 
-    it "sépare épeautres et froment dès 70 kg de pain, dans l'ordre de passage" do
+    it "sépare épeautres et froment au-delà de 65 kg de pain, dans l'ordre de passage" do
       expect(described_class.new(bake_day).apply!).to eq(2)
 
       first, second = bake_day.batches.ordered.to_a
@@ -55,12 +55,24 @@ RSpec.describe BatchProposalService do
       expect(second.order_items).to include(froment_line)
     end
 
-    it "met les pâtons dans la fournée froment, hors des 70 kg" do
+    it "met les pâtons dans la fournée froment, hors des 65 kg" do
       described_class.new(bake_day).apply!
 
       froment_batch = froment_line.reload.batch
       expect(patons.reload.batch).to eq(froment_batch)
       expect(Admin::BatchPlanner.new(bake_day).batch_stats.last[:paton_dough_grams]).to eq(7_500)
+    end
+
+    it "met les pâtons dans LA fournée froment, pas dans celle qui reçoit un débord de froment" do
+      # 60 + 8 kg de froment : les graines débordent chez les épeautres (35 kg).
+      spill = line("Pain froment aux graines", flour: froment, units: 8, grams: 1_000)
+      described_class.new(bake_day).apply!
+
+      epeautres = epeautre_line.reload.batch
+      main_froment = froment_line.reload.batch
+      expect(spill.reload.batch).to eq(epeautres)
+      expect(main_froment).not_to eq(epeautres)
+      expect(patons.reload.batch).to eq(main_froment)
     end
 
     it "remplace les fournées existantes sans perdre de ligne" do
@@ -81,9 +93,9 @@ RSpec.describe BatchProposalService do
     expect(Batch.exists?(existing.id)).to be(true)
   end
 
-  it "fait une seule fournée jusqu'à 70 kg" do
+  it "fait une seule fournée jusqu'à 65 kg" do
     line("Pain d'épeautre", flour: epeautre, units: 30)
-    line("Pain au froment", flour: froment, units: 40)
+    line("Pain au froment", flour: froment, units: 35)
 
     expect(described_class.new(bake_day).apply!).to eq(1)
   end

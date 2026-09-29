@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 # Alerte « Capacité four » (Claire, 28/09/2026). Une journée démarre à deux
-# fournées de 70 kg de pain. Dès 130 kg au four, les boulangers doivent choisir,
-# en connaissance de cause :
-#   - rester à deux fournées pleines, jusqu'à 140 kg ;
+# fournées de pain (65 kg chacune depuis le 29/09, cf.
+# `BatchProposalService::CAPACITY_GRAMS`). 10 kg avant qu'elles soient pleines,
+# les boulangers doivent choisir, en connaissance de cause :
+#   - rester à deux fournées pleines ;
 #   - ou ouvrir une 3e fournée, donc allonger leur horaire de production.
 #
 # La boutique garde sa propre limite (`BakeDay#oven_capacity_grams`, 110 kg ou
@@ -14,12 +15,14 @@
 # Le poids compté est celui de la jauge « Capacité four » : les pains des
 # commandes non annulées, sans les pâtons, qui cuisent au four à bois.
 class OvenBatchAlert
-  BATCH_GRAMS = 70_000
+  BATCH_GRAMS = BatchProposalService::CAPACITY_GRAMS
   DEFAULT_BATCHES = 2
   THIRD_BATCH = 3
   TWO_BATCHES_GRAMS = DEFAULT_BATCHES * BATCH_GRAMS
   # 10 kg sous deux fournées pleines : assez tôt pour décider avant d'y être.
   ALERT_GRAMS = TWO_BATCHES_GRAMS - 10_000
+  TWO_BATCHES_KG = TWO_BATCHES_GRAMS / 1_000
+  ALERT_KG = ALERT_GRAMS / 1_000
 
   attr_reader :bake_day, :oven_grams
 
@@ -53,10 +56,10 @@ class OvenBatchAlert
     @oven_grams = oven_grams.to_i
   end
 
-  # :quiet            — sous 130 kg, rien à décider ;
-  # :decision_needed  — 130 kg atteints, pas encore de choix ;
+  # :quiet            — sous le seuil d'alerte, rien à décider ;
+  # :decision_needed  — seuil atteint, pas encore de choix ;
   # :two_batches      — deux fournées pleines validées, et ça tient ;
-  # :over_two_batches — deux fournées validées, mais le four dépasse 140 kg ;
+  # :over_two_batches — deux fournées validées, mais le four les dépasse ;
   # :third_batch      — 3e fournée ouverte.
   def state
     case bake_day.oven_batch_plan

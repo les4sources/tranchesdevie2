@@ -62,14 +62,14 @@ production **tient dans la journée**. Trois jauges sont suivies :
 3. **Le four** — le poids total de farine par rapport à la capacité du four
    (110 kg en temps normal, 165 kg les jours de marché).
 
-### L'alerte à 130 kg : deux fournées pleines ou une 3e ?
+### L'alerte à 120 kg : deux fournées pleines ou une 3e ?
 
-Une journée démarre à **deux fournées de 70 kg** de pain. La boutique s'arrête à sa limite habituelle, mais les commandes que tu ajoutes toi-même depuis l'admin peuvent pousser le four plus loin. Dès que le four atteint **130 kg de pain**, un bandeau orange apparaît en haut de toutes les pages de l'admin, et la fiche du jour te demande de choisir :
+Une journée démarre à **deux fournées de 65 kg** de pain. La boutique s'arrête à sa limite habituelle, mais les commandes que tu ajoutes toi-même depuis l'admin peuvent pousser le four plus loin. Dès que le four atteint **120 kg de pain**, un bandeau orange apparaît en haut de toutes les pages de l'admin, et la fiche du jour te demande de choisir :
 
-- **Rester à 2 fournées** : tu acceptes encore quelques kilos, jusqu'à 140 kg, pour deux fournées pleines ;
+- **Rester à 2 fournées** : tu acceptes encore quelques kilos, jusqu'à 130 kg, pour deux fournées pleines ;
 - **Ouvrir une 3e fournée** : l'horaire de production s'allonge d'autant.
 
-Le choix est noté avec sa date sur la fiche du jour, et tu peux revenir dessus. Si tu restes à deux fournées et que le four dépasse quand même 140 kg, l'alerte revient. Les pâtons ne comptent pas dans ces kilos : ils cuisent au four à bois. Il n'y a pas de 4e fournée prévue.
+Le choix est noté avec sa date sur la fiche du jour, et tu peux revenir dessus. Si tu restes à deux fournées et que le four dépasse quand même 130 kg, l'alerte revient. Les pâtons ne comptent pas dans ces kilos : ils cuisent au four à bois. Il n'y a pas de 4e fournée prévue.
 
 > Si une jauge est pleine, c'est le signal qu'il faut arrêter d'accepter des
 > commandes sur cette fournée, ou ouvrir une capacité supplémentaire dans les
@@ -81,7 +81,7 @@ L'onglet **Fournées** du jour de cuisson découpe la production en enfournement
 
 La proposition suit ces règles, de la plus importante à la moins importante :
 
-1. **Le moins de fournées possible**, avec au plus **70 kg de pain** par fournée, jours de marché compris.
+1. **Le moins de fournées possible**, avec au plus **65 kg de pain** par fournée (pâtons non compris), jours de marché compris. Le poids réel varie un peu selon les moules : cette marge évite de trop charger l'enfournement.
 2. **Une même farine reste dans une même fournée** autant que possible.
 3. **L'ordre de passage** : petit épeautre, puis épeautre, puis seigle, puis froment. Les autres farines (le blé ancien, par exemple) passent entre le seigle et le froment.
 4. Quand une farine doit être coupée en deux, les produits qui partagent des **ingrédients** restent ensemble (noix et noix-figues).
@@ -89,7 +89,7 @@ La proposition suit ces règles, de la plus importante à la moins importante :
 6. Un produit n'est coupé entre deux fournées qu'**en dernier recours**.
 7. Deux fournées qui ne contiennent que la même farine sont **équilibrées**.
 
-Un pain fait de plusieurs farines est rangé avec sa **farine principale**. Les **pâtons** de Pizza party vont dans la fournée froment : ils sont pétris avec elle, mais ne comptent pas dans ses 70 kg puisqu'ils cuisent au four à bois. La carte de la fournée l'indique sous le poids de pâte (« dont 7,5 kg de pâtons »).
+Un pain fait de plusieurs farines est rangé avec sa **farine principale**. Les **pâtons** de Pizza party vont dans la fournée froment : ils sont pétris avec elle, mais ne comptent pas dans ses 65 kg puisqu'ils cuisent au four à bois. La carte de la fournée l'indique sous le poids de pâte (« dont 7,5 kg de pâtons »).
 
 > Proposer une répartition **remplace** les fournées du jour : les affectations faites à la main sont perdues, c'est pour ça qu'une confirmation t'est demandée. Aucune commande n'est touchée, seules les fournées changent.
 

@@ -17,6 +17,9 @@ RSpec.describe BatchPacker do
     BatchPacker::Product.new(key: key, family: rank, rank: rank, ingredients: ingredients.to_set, lines: lines)
   end
 
+  # Capacité passée en paramètre : les scénarios ci-dessous sont calibrés à
+  # 70 kg et testent les RÈGLES. Le réglage réel (65 kg) vit dans
+  # `BatchProposalService::CAPACITY_GRAMS` et se teste dans son spec.
   def pack(*products)
     described_class.new(products, capacity: 70_000, small_product_grams: 10_000).call
   end

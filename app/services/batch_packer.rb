@@ -3,7 +3,7 @@
 # Répartit les produits d'un jour de cuisson en fournées, selon les règles que
 # Claire a posées le 28/09/2026, par ordre de priorité :
 #
-#   1. faire le moins de fournées possible (70 kg de pain chacune) ;
+#   1. faire le moins de fournées possible (65 kg de pain chacune) ;
 #   2. garder au maximum une même farine dans une même fournée ;
 #   3. passer dans l'ordre petit épeautre, épeautre, seigle, froment ;
 #   4. quand une farine doit être coupée, ne pas séparer les produits qui ont

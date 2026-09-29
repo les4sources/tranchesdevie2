@@ -18,7 +18,7 @@
           - else
             = adm_chip "#{unassigned} ligne#{'s' if unassigned > 1} non affectée#{'s' if unassigned > 1}", tone: :warning
         p.mt-1.text-sm style="color: var(--text-muted);"
-          | Répartissez à la main, ou demandez une proposition (70 kg de pain au plus par fournée, pâtons avec le froment) puis ajustez-la. #{planner.assigned_lines_count} / #{total_lines} lignes affectées.
+          | Répartissez à la main, ou demandez une proposition (#{BatchProposalService::CAPACITY_KG} kg de pain au plus par fournée, pâtons avec le froment) puis ajustez-la. #{planner.assigned_lines_count} / #{total_lines} lignes affectées.
       .flex.flex-wrap.items-center.gap-2.shrink-0
         p.adm-tonetext.text-xs.font-medium.adm-tone-success data-batch-planner-target="status" role="status" aria-live="polite"
           = notice

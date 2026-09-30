@@ -261,60 +261,68 @@
       <div class="fixed inset-0 bg-ink-900/50" data-action="click->calendar#closeModal"></div>
 
       <!-- Modal content -->
-      <div class="relative max-h-[90vh] w-full max-w-md overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-lg">
-        <!-- État formulaire -->
+      <div class="relative w-full max-w-md overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-lg">
+        <!-- État formulaire. En-tête et pied restent fixes, seul le milieu défile :
+             sur un petit téléphone, avec plusieurs points de retrait, le bouton
+             « Enregistrer » sortait sinon de la modale sans qu'on puisse le
+             rejoindre. `dvh` suit la hauteur réellement visible (barres de
+             Safari comprises), là où `vh` la surestime. -->
         <div data-calendar-target="modalForm">
-          <div class="p-6">
-            <div class="mb-4 flex items-center justify-between">
+          <div class="flex max-h-[90dvh] flex-col">
+            <div class="flex shrink-0 items-center justify-between px-6 pb-4 pt-6">
               <h3 class="font-script text-2xl font-bold text-ink-900" data-calendar-target="modalTitle">Planifier ma commande</h3>
               <button type="button" class="text-ink-400 transition hover:text-ink-700" data-action="click->calendar#closeModal">
                 <%= lucide "x", size: 22, color: "currentColor" %>
               </button>
             </div>
 
-            <!-- Product list -->
-            <div class="max-h-[50vh] space-y-3 overflow-y-auto" data-calendar-target="productList">
-              <!-- Products will be rendered here by Stimulus -->
-            </div>
+            <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
+              <!-- Product list -->
+              <div class="space-y-3" data-calendar-target="productList">
+                <!-- Products will be rendered here by Stimulus -->
+              </div>
 
-            <!-- Point de retrait (#148) : rempli par Stimulus, limité aux lieux ouverts sur cette date -->
-            <div class="mt-4 border-t border-flour-300 pt-4" data-calendar-target="pickupLocation"></div>
+              <!-- Point de retrait (#148) : rempli par Stimulus, limité aux lieux ouverts sur cette date -->
+              <div class="mt-4 border-t border-flour-300 pt-4" data-calendar-target="pickupLocation"></div>
+            </div>
 
             <!-- Total -->
-            <div class="mt-4 flex items-center justify-between border-t border-flour-300 pt-4">
-              <span class="font-semibold text-ink-900">Total :</span>
-              <span class="text-xl font-bold text-sage-700" data-calendar-target="modalTotal">0,00 €</span>
+            <div class="shrink-0 border-t border-flour-300 px-6 py-3">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-ink-900">Total :</span>
+                <span class="text-xl font-bold text-sage-700" data-calendar-target="modalTotal">0,00 €</span>
+              </div>
+
+              <!-- Balance indicator -->
+              <div data-calendar-target="balanceIndicator" class="mt-1 text-sm"></div>
             </div>
 
-            <!-- Balance indicator -->
-            <div data-calendar-target="balanceIndicator" class="mt-2 text-sm"></div>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex justify-between bg-flour-100 px-6 py-4">
-            <button type="button"
-                    class="px-4 py-2 font-semibold text-danger-600 transition hover:text-danger-700"
-                    data-action="click->calendar#deleteOrder">
-              Vider
-            </button>
-            <div class="flex gap-2">
+            <!-- Actions -->
+            <div class="flex shrink-0 justify-between bg-flour-100 px-6 py-4">
               <button type="button"
-                      class="rounded-md border border-flour-400 bg-warm-white px-4 py-2 font-semibold text-ink-700 transition hover:bg-flour-100"
-                      data-action="click->calendar#closeModal">
-                Annuler
+                      class="px-4 py-2 font-semibold text-danger-600 transition hover:text-danger-700"
+                      data-action="click->calendar#deleteOrder">
+                Vider
               </button>
-              <button type="button"
-                      class="rounded-md bg-sage-600 px-4 py-2 font-semibold text-white transition hover:bg-sage-500 disabled:cursor-not-allowed disabled:bg-flour-400"
-                      data-action="click->calendar#saveOrder"
-                      data-calendar-target="saveBtn">
-                Enregistrer
-              </button>
+              <div class="flex gap-2">
+                <button type="button"
+                        class="rounded-md border border-flour-400 bg-warm-white px-4 py-2 font-semibold text-ink-700 transition hover:bg-flour-100"
+                        data-action="click->calendar#closeModal">
+                  Annuler
+                </button>
+                <button type="button"
+                        class="rounded-md bg-sage-600 px-4 py-2 font-semibold text-white transition hover:bg-sage-500 disabled:cursor-not-allowed disabled:bg-flour-400"
+                        data-action="click->calendar#saveOrder"
+                        data-calendar-target="saveBtn">
+                  Enregistrer
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- État confirmation (injecté par JS) -->
-        <div data-calendar-target="modalSuccess" class="hidden p-6"></div>
+        <div data-calendar-target="modalSuccess" class="hidden max-h-[90dvh] overflow-y-auto p-6"></div>
       </div>
     </div>
   </div>

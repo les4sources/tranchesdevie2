@@ -84,6 +84,10 @@ export default class extends Controller {
     return String(open[0].id)
   }
 
+  // Un menu déroulant plutôt qu'une carte par lieu : avec trois lieux ouverts
+  // (4 Sources, marché, Champalle), les cartes suffisaient à pousser le bouton
+  // « Enregistrer » hors d'un écran de téléphone. Seule la description du lieu
+  // choisi s'affiche en dessous.
   renderPickupLocations() {
     if (!this.hasPickupLocationTarget) return
 
@@ -94,31 +98,38 @@ export default class extends Controller {
       return
     }
 
-    const choices = open.map(location => {
-      const checked = String(location.id) === String(this.currentPickupLocationId) ? "checked" : ""
-      const description = location.description
-        ? `<span class="block text-[13px] text-ink-500">${this.escapeHtml(location.description)}</span>`
-        : ""
+    if (open.length === 1) {
+      this.pickupLocationTarget.innerHTML = `
+        <p class="mb-1 text-sm font-semibold text-ink-900">Point de retrait</p>
+        <p class="text-sm text-ink-900">${this.escapeHtml(open[0].name)}</p>
+        <p class="mt-1 text-[13px] text-ink-500">${this.escapeHtml(open[0].description || "")}</p>`
+      return
+    }
 
-      return `
-        <label class="flex cursor-pointer items-start gap-2 rounded-md border border-flour-400 bg-white p-2.5 transition hover:border-sage-600">
-          <input type="radio" name="calendar_pickup_location" value="${location.id}" ${checked}
-                 class="mt-0.5 h-[18px] w-[18px] accent-sage-600"
-                 data-action="change->calendar#selectPickupLocation">
-          <span>
-            <span class="block text-sm font-semibold text-ink-900">${this.escapeHtml(location.name)}</span>
-            ${description}
-          </span>
-        </label>`
+    const options = open.map(location => {
+      const selected = String(location.id) === String(this.currentPickupLocationId) ? "selected" : ""
+      return `<option value="${location.id}" ${selected}>${this.escapeHtml(location.name)}</option>`
     }).join("")
 
     this.pickupLocationTarget.innerHTML = `
-      <p class="mb-2 text-sm font-semibold text-ink-900">Point de retrait</p>
-      <div class="space-y-2">${choices}</div>`
+      <label for="calendar_pickup_location" class="mb-2 block text-sm font-semibold text-ink-900">Point de retrait</label>
+      <select id="calendar_pickup_location" name="calendar_pickup_location"
+              class="block w-full rounded-md border border-flour-400 bg-white px-3 py-2.5 text-base text-ink-900 focus:border-sage-600 focus:outline-none focus:ring-2 focus:ring-sage-600/30"
+              data-action="change->calendar#selectPickupLocation">
+        ${options}
+      </select>
+      <p class="mt-1.5 text-[13px] text-ink-500" data-pickup-description>${this.escapeHtml(this.pickupDescription(open))}</p>`
   }
 
   selectPickupLocation(event) {
     this.currentPickupLocationId = event.target.value
+    const description = this.pickupLocationTarget.querySelector("[data-pickup-description]")
+    if (description) description.textContent = this.pickupDescription(this.pickupLocationsFor(this.currentBakeDayId))
+  }
+
+  pickupDescription(open) {
+    const location = open.find(l => String(l.id) === String(this.currentPickupLocationId))
+    return location?.description || ""
   }
 
   escapeHtml(value) {

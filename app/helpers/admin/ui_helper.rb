@@ -87,6 +87,22 @@ module Admin::UiHelper
     adm_chip(payment_status_label(payment_status), tone: PAYMENT_STATUS_TONES.fetch(payment_status.to_s, :neutral))
   end
 
+  # État de paiement d'une commande, identique sur toutes les vues admin (liste
+  # des parties, fiche party, fiche client). Source : `payment_status`, posé par
+  # les paiements réels (Stripe, portefeuille) ET par les marquages admin
+  # (« Marquer comme payée », pointage liquide / virement) ; le moyen s'affiche
+  # quand il est connu.
+  def adm_order_payment_chip(order)
+    if order.payment_status_paid?
+      label = order_payment_method_label(order.payment_method)
+      adm_chip(label ? "Payé · #{label}" : "Payé", tone: :success)
+    elsif order.payment_status_refunded?
+      adm_chip("Remboursé", tone: :accent)
+    else
+      adm_chip("Non payé", tone: :warning)
+    end
+  end
+
   def adm_payout_status_chip(status)
     adm_chip(status.to_s, tone: PAYOUT_STATUS_TONES.fetch(status.to_s, :neutral))
   end

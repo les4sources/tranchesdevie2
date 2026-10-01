@@ -243,29 +243,13 @@ class Admin::OrdersController < Admin::BaseController
 
   # Date de paiement saisie via l'input date (format YYYY-MM-DD), interprétée
   # dans le fuseau horaire de l'application. À défaut, la date/heure courante.
-  # Pointe l'encaissement. `paid_at` n'est posé que s'il est vide : repointer ne
-  # doit pas décaler la date du premier pointage.
+  # Pointage partagé avec la sélection groupée de la fiche client.
   def mark_offline_payment(method)
-    attributes = { payment_status: :paid, offline_payment_method: method }
-    attributes[:paid_at] = Time.current if @order.read_attribute(:paid_at).blank?
-
-    @order.update!(attributes)
-
-    # Une party privée réglée en liquide ou par virement n'a laissé aucune trace
-    # automatique : ce pointage EST l'encaissement, et c'est donc ici que la
-    # compta doit être prévenue (#289). Idempotent côté service : repointer
-    # n'envoie pas un second e-mail.
-    OrderNotificationService.send_party_accounting_notification(@order)
+    OfflinePaymentService.mark!(@order, method)
   end
 
-  # Annule le pointage (le boulanger s'est trompé de bouton). `paid_at` n'est
-  # remis à nil que s'il n'existe aucune trace de paiement réelle — sinon on
-  # effacerait une date qui ne vient pas du pointage.
   def clear_offline_payment
-    attributes = { payment_status: :unpaid, offline_payment_method: nil }
-    attributes[:paid_at] = nil unless @order.tracked_payment?
-
-    @order.update!(attributes)
+    OfflinePaymentService.clear!(@order)
   end
 
   # La page du jour de cuisson enchaîne les remises : on répond en Turbo Stream

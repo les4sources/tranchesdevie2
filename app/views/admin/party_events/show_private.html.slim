@@ -33,6 +33,7 @@
   = adm_chip @event.slot_label, tone: :accent
   - if @reservation
     = adm_order_status_chip(@reservation.status)
+    = adm_order_payment_chip(@reservation)
     - if @reservation.manually_added?
       = adm_chip "Ajoutée à la main", tone: :accent
 
@@ -91,9 +92,13 @@
           dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
             = @reservation.created_at.strftime("%d/%m/%Y à %H:%M")
         div
-          dt.adm-eyebrow Payée le
-          dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
-            = @reservation.paid_at ? l(@reservation.paid_at, format: :long) : "—"
+          / Même pastille que la liste des parties : une seule vérité.
+          dt.adm-eyebrow Paiement
+          dd.mt-1.text-sm style="color: var(--text-strong);"
+            = adm_order_payment_chip(@reservation)
+            - if @reservation.paid_at && !@reservation.payment_status_unpaid?
+              span.adm-grid-num.mt-1.block.text-xs style="color: var(--text-muted);"
+                | le #{l(@reservation.paid_at, format: :long)}
         div
           dt.adm-eyebrow Montant total
           dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"

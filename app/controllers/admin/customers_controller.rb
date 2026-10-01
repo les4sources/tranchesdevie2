@@ -1,5 +1,5 @@
 class Admin::CustomersController < Admin::BaseController
-  before_action :set_customer, only: [ :show, :edit, :update, :destroy, :send_sms ]
+  before_action :set_customer, only: [ :show, :edit, :update, :destroy, :send_sms, :encaissement ]
 
   def index
     @customers = Customer.includes(:orders, :groups, :wallet)
@@ -95,6 +95,34 @@ class Admin::CustomersController < Admin::BaseController
 
     @customer.destroy
     redirect_to admin_customers_path, notice: "Mangeur supprimé avec succès"
+  end
+
+  # Pointage groupé des commandes sélectionnées sur la fiche client : un client
+  # qui règle plusieurs commandes d'un coup (un virement pour le mois, par
+  # exemple). Garde-fou serveur : seules les commandes du client encore à
+  # pointer sont touchées — une page périmée ne repointe pas une commande déjà
+  # payée en ligne.
+  def encaissement
+    method = params[:method].to_s
+    unless OfflinePaymentService::METHODS.include?(method)
+      return redirect_to(admin_customer_path(@customer), alert: "Moyen d'encaissement inconnu.")
+    end
+
+    orders = @customer.orders.where(id: Array(params[:order_ids]))
+                      .includes(:payment, :wallet_transactions)
+                      .select { |order| OfflinePaymentService.settleable?(order) }
+
+    if orders.empty?
+      return redirect_to(admin_customer_path(@customer), alert: "Aucune commande à pointer dans la sélection.")
+    end
+
+    Order.transaction { orders.each { |order| OfflinePaymentService.mark!(order, method) } }
+
+    s = orders.size > 1 ? "s" : ""
+    total = helpers.number_to_currency(orders.sum(&:total_cents) / 100.0, unit: "€", separator: ",", delimiter: " ")
+    redirect_to admin_customer_path(@customer),
+                notice: "#{orders.size} commande#{s} marquée#{s} payée#{s} " \
+                        "(#{helpers.order_payment_method_label(method)}) : #{total}."
   end
 
   def send_sms

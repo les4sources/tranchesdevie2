@@ -136,33 +136,63 @@
   <% end %>
 </div>
 
-<div class="adm-card mt-4 overflow-hidden">
+<%# Commandes du client, avec pointage groupé : on coche ce que le client
+    règle, le total dû s'affiche, un clic pointe tout (liquide / virement).
+    Seules les commandes encore à pointer sont cochables. %>
+<% settleable = @orders.select { |order| OfflinePaymentService.settleable?(order) } %>
+<%= form_with url: encaissement_admin_customer_path(@customer), method: :patch, local: true,
+      class: "adm-card mt-4 overflow-clip", data: { controller: "settlement-bulk" } do %>
   <div class="adm-cardhd">
     <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Commandes</h2>
-    <span class="adm-eyebrow"><%= compte_commandes(@orders.size) %></span>
+    <span class="adm-eyebrow">
+      <%= compte_commandes(@orders.size) %>
+      <% if settleable.any? %>
+        · <%= settleable.size %> non payée<%= "s" if settleable.size > 1 %> :
+        <%= number_to_currency(settleable.sum(&:total_cents) / 100.0, unit: "€", separator: ",", delimiter: " ") %>
+      <% end %>
+    </span>
   </div>
 
   <div class="overflow-x-auto">
     <table class="adm-grid">
       <thead>
         <tr>
+          <th class="w-8">
+            <% if settleable.any? %>
+              <input type="checkbox" class="h-4 w-4" style="accent-color: var(--brand);"
+                     aria-label="Sélectionner toutes les commandes non payées"
+                     data-settlement-bulk-target="selectAll"
+                     data-action="change->settlement-bulk#toggleAll">
+            <% end %>
+          </th>
           <th>Commande</th>
           <th>Jour de cuisson</th>
           <th class="text-right">Total</th>
           <th>Statut</th>
+          <th>Paiement</th>
           <th>Date</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <% if @orders.empty? %>
-          <%= adm_empty_row(colspan: 6, title: "Aucune commande pour ce mangeur.") do %>
+          <%= adm_empty_row(colspan: 8, title: "Aucune commande pour ce mangeur.") do %>
             <%= link_to "Nouvelle commande", new_admin_order_path(customer_id: @customer.id), class: adm_btn_class(:primary) %>
           <% end %>
         <% end %>
 
         <% @orders.each do |order| %>
           <tr>
+            <td>
+              <% if settleable.include?(order) %>
+                <input type="checkbox" name="order_ids[]" value="<%= order.id %>" class="h-4 w-4"
+                       style="accent-color: var(--brand);"
+                       aria-label="Sélectionner <%= order.order_number %>"
+                       data-amount-cents="<%= order.total_cents %>"
+                       data-settlement-bulk-target="checkbox"
+                       data-action="change->settlement-bulk#refresh">
+              <% end %>
+            </td>
             <td class="adm-grid-num whitespace-nowrap font-semibold" style="color: var(--text-strong);">
               <span class="inline-flex items-center gap-2">
                 <%= order_payment_method_icon(order) %>
@@ -180,6 +210,14 @@
               <%= number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "") %>
             </td>
             <td><%= adm_order_status_chip(order.status) %></td>
+            <td class="whitespace-nowrap">
+              <%# Une commande hors CA (annulée, planifiée…) n'a rien à payer. %>
+              <% if Order::COMPLETED_STATUSES.include?(order.status) || !order.payment_status_unpaid? %>
+                <%= adm_order_payment_chip(order) %>
+              <% else %>
+                <span style="color: var(--text-faint);">—</span>
+              <% end %>
+            </td>
             <td class="adm-grid-num whitespace-nowrap"><%= order.created_at.strftime("%d/%m/%Y") %></td>
             <td class="whitespace-nowrap text-right">
               <%= link_to "Voir", admin_order_path(order), class: "adm-rowaction" %>
@@ -189,7 +227,31 @@
       </tbody>
     </table>
   </div>
-</div>
+
+  <% if settleable.any? %>
+    <%# Collée en bas de l'écran : la liste peut être longue, le total reste visible. %>
+    <div class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+         style="background: var(--surface-card); border-top: 1px solid var(--border-subtle);">
+      <p class="text-sm" style="color: var(--text-muted);">
+        <span class="font-semibold" style="color: var(--text-strong);" data-settlement-bulk-target="count">0</span>
+        sélectionnée(s) · Total dû :
+        <span class="adm-grid-num text-base font-semibold" style="color: var(--text-strong);" data-settlement-bulk-target="total">0,00 €</span>
+      </p>
+      <div class="flex gap-2">
+        <button type="submit" name="method" value="transfer" class="<%= adm_btn_class(:primary) %>"
+                data-settlement-bulk-target="action" disabled
+                data-turbo-confirm="Marquer les commandes sélectionnées comme payées par virement ?">
+          Marquer payé · Virement
+        </button>
+        <button type="submit" name="method" value="cash" class="<%= adm_btn_class(:default) %>"
+                data-settlement-bulk-target="action" disabled
+                data-turbo-confirm="Marquer les commandes sélectionnées comme payées en liquide ?">
+          Marquer payé · Liquide
+        </button>
+      </div>
+    </div>
+  <% end %>
+<% end %>
 
 <div class="adm-card mt-4 overflow-hidden">
   <div class="adm-cardhd">

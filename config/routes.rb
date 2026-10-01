@@ -208,6 +208,8 @@ Rails.application.routes.draw do
       end
       member do
         post :send_sms
+        # Pointage groupé des commandes sélectionnées (liquide / virement).
+        patch :encaissement
       end
       resources :sms_messages, only: [ :show ], controller: "sms_messages"
       resources :email_messages, only: [ :show ], controller: "email_messages" do

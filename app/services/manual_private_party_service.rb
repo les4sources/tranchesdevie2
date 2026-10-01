@@ -90,15 +90,18 @@ class ManualPrivatePartyService
 
   # Encaissement d'une party saisie en admin : elle se règle SUR PLACE, donc sur
   # l'axe financier (`payment_status` + moyen), jamais en posant `status: paid`
-  # sans trace du moyen. Même sémantique qu'Admin::OrdersController#encaissement,
-  # qui reste le chemin de pointage manuel de tout le reste de l'app.
+  # sans trace du moyen. Même sémantique qu'OfflinePaymentService, y compris le
+  # statut `unpaid ↔ paid` qui suit l'encaissement pour que la fiche party et la
+  # liste disent la même chose.
   def apply_offline_payment
     if @paid
       @order.update!(payment_status: :paid,
                      offline_payment_method: @order.offline_payment_method || :cash,
-                     paid_at: @order.read_attribute(:paid_at) || Time.current)
+                     paid_at: @order.read_attribute(:paid_at) || Time.current,
+                     status: @order.unpaid? ? :paid : @order.status)
     else
-      @order.update!(payment_status: :unpaid, offline_payment_method: nil, paid_at: nil)
+      @order.update!(payment_status: :unpaid, offline_payment_method: nil, paid_at: nil,
+                     status: @order.paid? && !@order.tracked_payment? ? :unpaid : @order.status)
     end
   end
 

@@ -51,11 +51,11 @@ RSpec.describe ManualPrivatePartyService do
       order = service.order
       expect(order.manually_added?).to be true
       expect(order.source).to eq("party")
-      # `status` reste `unpaid` — une vente due, comptée dans le CA facturé —
-      # et c'est `payment_status` qui porte l'encaissement sur place
-      # (#pizza-parties, même axe que #275). Avant, les deux étaient confondus :
-      # on posait `status: paid` sans jamais tracer le moyen d'encaissement.
-      expect(order.status).to eq("unpaid")
+      # `payment_status` + moyen portent l'encaissement sur place (#pizza-parties,
+      # même axe que #275) ; le statut `unpaid` le suit et passe à `paid`, sinon
+      # la fiche party affichait « Non payée » à côté d'un « Payé · Liquide ».
+      # Le moyen reste toujours tracé — jamais `paid` sans lui.
+      expect(order.status).to eq("paid")
       expect(order).to be_payment_status_paid
       expect(order.offline_payment_method).to eq("cash")
       expect(order.total_cents).to eq(8 * 500 + 4_000)

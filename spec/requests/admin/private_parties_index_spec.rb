@@ -83,6 +83,20 @@ RSpec.describe "Admin — écran Parties, parties privées", type: :request do
     expect(body.index("Réservations privées à venir")).to be < body.index("Pizza parties privées passées")
   end
 
+  # Le paiement se lit sur les traces réelles, pas sur `payment_status`.
+  it "affiche si la party est payée, et par quel moyen" do
+    _, online = party_with_event(held_on: today + 7, name: "Carte Payée")
+    create(:payment, order: online)
+    _, cash = party_with_event(held_on: today - 7, name: "Liquide Pointée")
+    cash.update!(offline_payment_method: :cash)
+    party_with_event(held_on: today - 14, name: "Pas Réglée")
+
+    expect(body).to include("Paiement")
+    expect(body).to include("Payé · Carte / Bancontact")
+    expect(body).to include("Payé · Liquide")
+    expect(body.scan("Non payé").size).to eq(1)
+  end
+
   it "n'affiche pas les parties annulées" do
     _, order = party_with_event(held_on: today + 7, name: "Annulée Party")
     order.update!(status: :cancelled)

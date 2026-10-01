@@ -13,6 +13,7 @@ section.mb-8
               th.text-right Pâtons
               th Client
               th.text-right Montant
+              th Paiement
               th Forfait
               th Mot du client
               th.text-right Actions
@@ -33,6 +34,13 @@ section.mb-8
                 td style="color: var(--text-strong);" = party.customer&.full_name || "—"
                 td.adm-grid-num.text-right style="color: var(--text-strong);"
                   = number_to_currency(party.total_euros, unit: "€", separator: ",", delimiter: " ")
+                / Moyen d'encaissement tracé ; sans trace, la party reste à
+                / pointer depuis sa fiche de commande (encaissement).
+                td.whitespace-nowrap
+                  - if party.paid?
+                    = adm_chip("Payé · #{order_payment_method_label(party.payment_method)}", tone: :success)
+                  - else
+                    = adm_chip("Non payé", tone: :warning)
                 td style="color: var(--text-muted);" = party.forfait? ? "Oui" : "Non"
                 / Tronqué pour tenir dans la ligne ; le texte entier reste lisible
                 / en survol, et sur la fiche de commande (#169).

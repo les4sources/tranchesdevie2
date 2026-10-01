@@ -14,10 +14,12 @@ module Admin
   # recommandée par l'issue.
   class PrivatePartyIndex
     Entry = Struct.new(:order, :party_event, :held_on, :customer, :paton_count,
-                       :total_cents, :forfait, :slot_label, :note, keyword_init: true) do
+                       :total_cents, :forfait, :slot_label, :note, :payment_method,
+                       keyword_init: true) do
       def forfait? = forfait
       def event? = party_event.present?
       def total_euros = (total_cents / 100.0).round(2)
+      def paid? = payment_method.present?
     end
 
     # Commandes portant au moins un pâton de party PRIVÉE, quel que soit leur
@@ -28,7 +30,7 @@ module Admin
                            .select(:order_id)
 
       Order.where(id: order_ids)
-           .includes(:customer, :bake_day, :party_event,
+           .includes(:customer, :bake_day, :party_event, :payment, :wallet_transactions,
                      order_items: { product_variant: :product })
     end
 
@@ -72,7 +74,11 @@ module Admin
         total_cents: order.total_cents,
         forfait: forfait?(order),
         slot_label: event&.slot_label,
-        note: order.customer_note
+        note: order.customer_note,
+        # Moyen d'encaissement RÉELLEMENT tracé (Stripe, portefeuille, liquide ou
+        # virement pointés) — jamais `payment_status`, qui n'est pas fiable sur
+        # l'historique : une commande « paid » sans trace n'a pas été encaissée.
+        payment_method: order.payment_method
       )
     end
 

@@ -64,7 +64,7 @@ gem "kamal", require: false
 gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 2.1"
+gem "image_processing", "~> 2.2"
 # Backend ImageMagick des variantes Active Storage (cf. config.active_storage.variant_processor).
 # Le serveur de production n'a PAS libvips (aucun libvips.so.42, rien dans ldconfig) mais a
 # ImageMagick 6.9.11 : vips y faisait échouer `assets:precompile`, donc tous les déploiements.

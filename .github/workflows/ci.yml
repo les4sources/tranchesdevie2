@@ -91,6 +91,15 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/tranchesdevie_test
         run: bin/rails db:test:prepare
 
+      # tailwindcss-rails ne greffe sa compilation que sur `test:prepare`, que
+      # ce job n'appelle pas : sans cette étape, `app/assets/builds/tailwind.css`
+      # (ignoré par git) n'existe pas et les specs système tournent sur une page
+      # sans aucun style (pas de `hidden`, pas de `fixed`, pas de `dvh`).
+      - name: Build Tailwind CSS
+        env:
+          RAILS_ENV: test
+        run: bin/rails tailwindcss:build
+
       - name: Run the RSpec suite
         env:
           RAILS_ENV: test

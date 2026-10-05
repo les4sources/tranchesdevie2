@@ -64,7 +64,9 @@ RSpec.describe "Annulation d’une Pizza party" do
     end
 
     it "garde le SMS pour une commande de pain" do
-      bread_order = create(:order, :paid, customer: customer)
+      # Cut-off à venir : la fournée par défaut (mardi prochain) a déjà passé son
+      # cut-off le lundi, et RefundService refuse alors de rembourser.
+      bread_order = create(:order, :paid, customer: customer, bake_day: create(:bake_day, :can_order))
       create(:payment, order: bread_order, status: :succeeded, stripe_payment_intent_id: "pi_bread")
 
       RefundService.new(bread_order).call

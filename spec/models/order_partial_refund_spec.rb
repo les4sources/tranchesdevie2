@@ -39,7 +39,11 @@ RSpec.describe Order, 'remboursement partiel' do
 
   describe '#can_report_issue_by_customer?' do
     it 'ouvre la fenêtre sur une commande retirée récemment' do
-      expect(order.can_report_issue_by_customer?).to be(true)
+      # Relatif à aujourd'hui : la fournée datée du `let` sort de la fenêtre de
+      # 14 jours avec le temps.
+      order.bake_day.update!(baked_on: 2.days.ago.to_date)
+
+      expect(order.reload.can_report_issue_by_customer?).to be(true)
     end
 
     it 'la referme au-delà de deux semaines' do

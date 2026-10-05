@@ -4,7 +4,7 @@ require 'rails_helper'
 # plafond, quantités déjà rendues, et sa place dans le reporting.
 RSpec.describe Order, 'remboursement partiel' do
   let(:customer) { create(:customer) }
-  let(:bake_day) { create(:bake_day, baked_on: 3.days.ago.to_date) }
+  let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 9, 18)) }
   let(:order) { create(:order, :ready, customer: customer, bake_day: bake_day, total_cents: 1_650) }
   let!(:item) { create(:order_item, order: order, qty: 3, unit_price_cents: 550) }
 
@@ -39,7 +39,11 @@ RSpec.describe Order, 'remboursement partiel' do
 
   describe '#can_report_issue_by_customer?' do
     it 'ouvre la fenêtre sur une commande retirée récemment' do
-      expect(order.can_report_issue_by_customer?).to be(true)
+      # Relatif à aujourd'hui : la fournée datée du `let` sort de la fenêtre de
+      # 14 jours avec le temps.
+      order.bake_day.update!(baked_on: 2.days.ago.to_date)
+
+      expect(order.reload.can_report_issue_by_customer?).to be(true)
     end
 
     it 'la referme au-delà de deux semaines' do
@@ -62,8 +66,8 @@ RSpec.describe Order, 'remboursement partiel' do
   end
 
   describe 'reporting des remboursements' do
-    let(:range_start) { 1.month.ago.to_date }
-    let(:range_end) { Date.current }
+    let(:range_start) { Date.new(2026, 9, 1) }
+    let(:range_end) { Date.new(2026, 9, 30) }
 
     it 'fait apparaître le remboursement partiel dans le résumé' do
       create(:partial_refund, order: order, amount_cents: 550, channel: :wallet)

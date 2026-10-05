@@ -179,6 +179,8 @@ Rails.application.routes.draw do
     # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
     get "factures/periode", to: "invoices#period", as: :period_invoice
+    # Bon de livraison PDF d'une commande, à côté du relevé (Facturation).
+    get "bons-de-livraison/commande/:order_id", to: "delivery_notes#show", as: :order_delivery_note
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do
@@ -247,6 +249,8 @@ Rails.application.routes.draw do
         # Feuille d'émargement PDF d'un point de retrait (#148), paramétrée par
         # ?pickup_location_id= — même pattern que Admin::InvoicesController.
         get :pickup_sheet
+        # Bons de livraison du jour : un seul PDF, un bon par commande.
+        get :delivery_notes, path: "bons-de-livraison"
         # Feuille compta (#feuille-compta) : reporting tableur par jour de cuisson
         # (validation des chiffres boulangers/4S, format feuille de Stéphanie).
         get :sheet

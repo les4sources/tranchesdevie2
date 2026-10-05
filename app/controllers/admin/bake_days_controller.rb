@@ -1,5 +1,5 @@
 class Admin::BakeDaysController < Admin::BaseController
-  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel, :pickup_sheet, :sheet ]
+  before_action :set_bake_day, only: [ :show, :edit, :update, :destroy, :confirm_cancel, :cancel, :pickup_sheet, :delivery_notes, :sheet ]
 
   def index
     # Jours futurs (aujourd'hui et futurs)
@@ -108,6 +108,22 @@ class Admin::BakeDaysController < Admin::BaseController
   def pickup_sheet
     pickup_location = PickupLocation.find(params[:pickup_location_id])
     service = PickupSheetPdfService.new(@bake_day, pickup_location)
+
+    send_data service.render,
+      filename: service.filename,
+      type: "application/pdf",
+      disposition: "attachment"
+  end
+
+  # GET /admin/bake_days/:id/bons-de-livraison
+  # Tous les bons de livraison du jour dans un seul PDF, un bon par commande.
+  def delivery_notes
+    service = DeliveryNotePdfService.for_bake_day(@bake_day)
+
+    if service.nil?
+      redirect_to admin_bake_day_path(@bake_day), alert: "Aucune commande à livrer pour cette journée."
+      return
+    end
 
     send_data service.render,
       filename: service.filename,

@@ -22,6 +22,10 @@ require "prawn/table"
 #   service = DeliveryNotePdfService.new(order)
 #   service.render    # => String binaire (PDF)
 #   service.filename  # => "bon-de-livraison-BL-20260512-0001.pdf"
+#
+# Bons d'une journée de cuisson : un seul PDF, un bon par page (un bon long
+# peut déborder sur la suivante, le suivant repart toujours sur une page neuve).
+#   DeliveryNotePdfService.for_bake_day(bake_day)  # => service, ou nil si aucune commande
 class DeliveryNotePdfService
   BRAND_COLOR = InvoicePdfService::BRAND_COLOR   # terracotta
   MUTED_COLOR = InvoicePdfService::MUTED_COLOR
@@ -33,8 +37,23 @@ class DeliveryNotePdfService
   LOGO_PATH = Rails.root.join("app/assets/images/logo-les-4-sources.png").freeze
   LOGO_SIZE = 46
 
-  def initialize(order)
-    @order = order
+  # Commandes d'une journée qui donnent lieu à une livraison : les mêmes que
+  # sur la feuille d'émargement (annulées et en attente de paiement exclues).
+  def self.for_bake_day(bake_day)
+    orders = bake_day.orders
+                     .where(status: PickupSheetPdfService::PRODUCTION_STATUSES)
+                     .includes(:customer, :pickup_location, order_items: { product_variant: :product })
+                     .sort_by { |o| [ o.pickup_location&.position.to_i, I18n.transliterate(o.customer.full_name.to_s).downcase, o.order_number ] }
+    return nil if orders.empty?
+
+    new(orders, filename: "bons-de-livraison-#{bake_day.baked_on.iso8601}.pdf")
+  end
+
+  # `orders` : une commande, ou une liste (un bon par commande).
+  def initialize(orders, filename: nil)
+    @orders = Array(orders)
+    @order = @orders.first
+    @filename = filename
   end
 
   def render
@@ -42,22 +61,35 @@ class DeliveryNotePdfService
   end
 
   def filename
-    "bon-de-livraison-#{number}.pdf"
+    @filename || "bon-de-livraison-#{number}.pdf"
   end
 
   # « BL-20260512-0001 » : dérivé du numéro de commande (TV-YYYYMMDD-NNNN), donc
   # stable d'un téléchargement à l'autre sans rien persister.
-  def number
-    "BL-#{@order.order_number.delete_prefix('TV-')}"
+  def number(order = @order)
+    "BL-#{order.order_number.delete_prefix('TV-')}"
   end
 
   private
 
   def document
-    pdf = Prawn::Document.new(page_size: "A4", margin: [ 36, 40, 50, 40 ], info: { Title: "#{DOCUMENT_TITLE} #{number}" })
+    title = @orders.one? ? "#{DOCUMENT_TITLE} #{number}" : "Bons de livraison"
+    pdf = Prawn::Document.new(page_size: "A4", margin: [ 36, 40, 50, 40 ], info: { Title: title })
     pdf.font_families.update(default: pdf.font_families["Helvetica"])
     pdf.fill_color TEXT_COLOR
 
+    @orders.each_with_index do |order, index|
+      @order = order
+      @items = nil
+      pdf.start_new_page if index.positive?
+      render_note(pdf)
+    end
+    render_footer(pdf)
+
+    pdf
+  end
+
+  def render_note(pdf)
     render_header(pdf)
     render_key_facts(pdf)
     render_parties(pdf)
@@ -65,9 +97,6 @@ class DeliveryNotePdfService
     render_totals(pdf)
     render_customer_note(pdf)
     render_reception(pdf)
-    render_footer(pdf)
-
-    pdf
   end
 
   # Bandeau : logo + nom de la boulangerie à gauche, titre du document à droite.
@@ -273,6 +302,8 @@ class DeliveryNotePdfService
         pdf.fill_color TEXT_COLOR
       end
     end
+
+    return unless @orders.one?
 
     pdf.number_pages "<page> / <total>", at: [ pdf.bounds.right - 60, -34 ], width: 60,
       align: :right, size: 7.5, color: MUTED_COLOR

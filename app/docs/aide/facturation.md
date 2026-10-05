@@ -68,6 +68,10 @@ la boulangerie et du client, lieu de retrait, détail des pains (quantité, prix
 unitaire, total) et coût total. Un cadre « Livré par / Reçu par » permet au
 client de signer à la réception.
 
+Pour imprimer tous les bons d'une fournée d'un coup, ouvre la page du **jour de
+cuisson** et clique sur **Bons de livraison (PDF)** : un seul fichier, un bon par
+commande (les commandes annulées sont exclues).
+
 ## Et pour les chiffres globaux ?
 
 Pour les totaux, les remboursements, les payouts et la répartition des revenus,

@@ -139,7 +139,25 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('Ton inscription Pizza party')
+      # Pas de portefeuille → pas d'option portefeuille.
       expect(response.body).not_to include('Payer avec mon portefeuille')
+    end
+
+    it 'propose le portefeuille quand le solde couvre l’inscription' do
+      create(:wallet, customer: customer, balance_cents: 3_000)
+
+      get new_checkout_path
+
+      expect(response.body).to include('value="wallet"')
+      expect(response.body).to include('id="submit-wallet-order"')
+    end
+
+    it 'ne propose pas le portefeuille quand le solde ne couvre pas l’inscription' do
+      create(:wallet, customer: customer, balance_cents: 1_500)
+
+      get new_checkout_path
+
+      expect(response.body).not_to include('value="wallet"')
     end
 
     it 'crée une commande party rattachée à l’événement au paiement en ligne' do
@@ -170,13 +188,82 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       expect(Order.count).to eq(0)
     end
 
-    it 'refuse le paiement par portefeuille' do
-      post '/checkout/create_wallet_order',
-           params: { first_name: 'Léa' }.to_json,
-           headers: { 'CONTENT_TYPE' => 'application/json' }
+    describe 'paiement par portefeuille' do
+      def pay_with_wallet
+        post '/checkout/create_wallet_order',
+             params: { first_name: 'Léa' }.to_json,
+             headers: { 'CONTENT_TYPE' => 'application/json' }
+      end
 
-      expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.parsed_body['error']).to include('portefeuille')
+      it 'inscrit et débite le portefeuille quand le solde suffit' do
+        wallet = create(:wallet, customer: customer, balance_cents: 3_000)
+
+        expect { pay_with_wallet }.to change { Order.where(status: :paid, source: :party).count }.by(1)
+
+        expect(response).to have_http_status(:ok)
+        order = Order.find_by!(public_token: response.parsed_body['order_token'])
+        expect(order.party_event).to eq(event)
+        expect(order.total_cents).to eq(2_600)
+        expect(order.payment_method).to eq(:wallet)
+        expect(wallet.reload.balance_cents).to eq(400)
+        expect(event.seats_taken).to eq(3)
+        expect(session[:cart]).to eq([])
+        expect(session[:public_party_event_id]).to be_nil
+      end
+
+      it 'refuse sans rien créer quand le solde est insuffisant' do
+        wallet = create(:wallet, customer: customer, balance_cents: 1_500)
+
+        expect { pay_with_wallet }.not_to change(Order, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to include('insuffisant')
+        expect(wallet.reload.balance_cents).to eq(1_500)
+      end
+
+      it 'refuse quand la jauge restante est insuffisante, sans débiter' do
+        wallet = create(:wallet, customer: customer, balance_cents: 3_000)
+        event.update!(capacity: 2)
+
+        expect { pay_with_wallet }.not_to change(Order, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to include('2 places')
+        expect(wallet.reload.balance_cents).to eq(3_000)
+      end
+
+      it 'libère la tentative de paiement en ligne en cours avant de payer' do
+        create(:wallet, customer: customer, balance_cents: 3_000)
+        stub_stripe_payment_intent_create(amount: 2_600)
+        post '/checkout/create_payment_intent',
+             params: { first_name: 'Léa' }.to_json,
+             headers: { 'CONTENT_TYPE' => 'application/json' }
+        pending = Order.pending.last
+        allow(Stripe::PaymentIntent).to receive(:retrieve)
+          .with(pending.payment_intent_id)
+          .and_return(double(status: 'requires_payment_method'))
+        allow(Stripe::PaymentIntent).to receive(:cancel)
+
+        pay_with_wallet
+
+        expect(response).to have_http_status(:ok)
+        expect(Order.exists?(pending.id)).to be(false)
+        expect(event.seats_taken).to eq(3)
+      end
+
+      it 'ne débite pas deux fois sur une double soumission' do
+        wallet = create(:wallet, customer: customer, balance_cents: 6_000)
+        pay_with_wallet
+        first_token = response.parsed_body['order_token']
+
+        # Double-clic : le panier est encore en session dans l'autre onglet.
+        post cart_add_path, params: { product_variant_id: adult_variant.id, public_party_event_id: event.id, qty: 2 }
+        post cart_add_path, params: { product_variant_id: child_variant.id, public_party_event_id: event.id, qty: 1 }
+
+        expect { pay_with_wallet }.not_to change { Order.where(status: :paid).count }
+        expect(response.parsed_body['order_token']).to eq(first_token)
+        expect(wallet.reload.balance_cents).to eq(6_000 - 2_600)
+      end
     end
 
     # Le groupe Sourciers porte une remise CIBLÉE (8 € par place) et 0 % de remise

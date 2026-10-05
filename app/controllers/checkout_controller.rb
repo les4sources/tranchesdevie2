@@ -61,9 +61,9 @@ class CheckoutController < ApplicationController
     # couvre le total. Le serveur revérifie sous verrou au moment du paiement.
     @wallet = @customer&.persisted? ? @customer.wallet : nil
     @wallet_available_cents = @wallet&.available_balance_cents || 0
-    # Pas de paiement portefeuille pour une party : le portefeuille sert aux
-    # commandes pain récurrentes ; une party est un achat ponctuel (Bancontact/carte).
-    @wallet_payment_available = !@party_checkout && @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
+    # Vaut aussi pour l'inscription à une party publique : un client qui a
+    # rechargé son portefeuille s'attend à pouvoir s'en servir partout.
+    @wallet_payment_available = @wallet.present? && @total_cents.positive? && @wallet_available_cents >= @total_cents
 
     # Points de retrait ouverts sur la fournée choisie (#148). Le lieu par défaut
     # est pré-sélectionné. Une commande party n'a pas de choix de lieu (le modèle
@@ -530,7 +530,8 @@ class CheckoutController < ApplicationController
   # Paiement d'une commande checkout directement depuis le portefeuille du
   # client, sans passer par le calendrier (#friction-portefeuille). Pendant du
   # tunnel Stripe : on réserve la capacité (commande :pending via
-  # OrderCreationService), puis on débite le portefeuille de façon atomique
+  # OrderCreationService, ou PublicPartyRegistrationService pour une inscription
+  # à une Pizza party publique — jauge de l'événement), puis on débite le portefeuille de façon atomique
   # (WalletCheckoutService, verrou de ligne). Si le débit échoue (solde
   # insuffisant, course), on détruit la réservation pour libérer la capacité —
   # exactement comme create_payment_intent le fait sur échec Stripe.
@@ -551,18 +552,20 @@ class CheckoutController < ApplicationController
     session[:last_name] = json_params["last_name"] if json_params["last_name"].present?
     session[:email] = json_params["email"] if json_params["email"].present?
 
-    # Le portefeuille n'est pas proposé pour une party (achat ponctuel) ; on
-    # rejette aussi côté serveur (page périmée, requête forgée).
+    # Inscription à une party publique : datée par son événement, pas par une
+    # fournée. Les inscriptions ont pu fermer depuis l'affichage de la page.
     if public_party_cart?
-      render json: { success: false, error: "Le paiement par portefeuille n'est pas disponible pour une Pizza party" }, status: :unprocessable_entity
-      return
-    end
-
-    @bake_day = BakeDay.find_by(id: session[:bake_day_id])
-    unless @bake_day
-      capture_checkout_issue("bake_day_missing", level: :warning)
-      render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
-      return
+      unless public_party_event
+        render json: { success: false, error: "Événement introuvable" }, status: :unprocessable_entity
+        return
+      end
+    else
+      @bake_day = BakeDay.find_by(id: session[:bake_day_id])
+      unless @bake_day
+        capture_checkout_issue("bake_day_missing", level: :warning)
+        render json: { success: false, error: "Jour de cuisson introuvable" }, status: :unprocessable_entity
+        return
+      end
     end
 
     customer = find_or_create_customer(json_params)
@@ -576,12 +579,14 @@ class CheckoutController < ApplicationController
     end
 
     # Résolu AVANT la transaction : une levée sous le verrou consultatif ne doit
-    # pas remonter au travers du rollback.
-    pickup_location = requested_pickup_location(json_params)
+    # pas remonter au travers du rollback. Une party n'a pas de choix de lieu.
+    pickup_location = public_party_cart? ? nil : requested_pickup_location(json_params)
 
     # Même garde-fou que create_payment_intent : une tentative Stripe abandonnée
-    # du même client ne doit pas bloquer son paiement portefeuille.
-    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day)
+    # du même client ne doit pas bloquer son paiement portefeuille. (Pour une
+    # party publique, PublicPartyRegistrationService libère lui-même les
+    # inscriptions :pending du client sur l'événement.)
+    PendingReservationReleaseService.call(customer: customer, bake_day: @bake_day) unless public_party_cart?
 
     paid_order = nil
     wallet_error = nil
@@ -599,18 +604,28 @@ class CheckoutController < ApplicationController
         "SELECT pg_advisory_xact_lock(#{WALLET_ORDER_LOCK_NAMESPACE}, #{customer.id})"
       )
 
-      existing = recent_wallet_order_for(customer, @bake_day)
+      existing = recent_wallet_order_for(customer)
       if existing
         paid_order = existing
       else
-        service = OrderCreationService.new(
-          customer: customer,
-          bake_day: @bake_day,
-          cart_items: session[:cart] || [],
-          payment_method: "wallet",
-          group_name: json_params["group_name"],
-          pickup_location: pickup_location
-        )
+        service = if public_party_cart?
+          PublicPartyRegistrationService.new(
+            customer: customer,
+            party_event: public_party_event,
+            cart_items: session[:cart] || [],
+            payment_method: "wallet",
+            group_name: json_params["group_name"]
+          )
+        else
+          OrderCreationService.new(
+            customer: customer,
+            bake_day: @bake_day,
+            cart_items: session[:cart] || [],
+            payment_method: "wallet",
+            group_name: json_params["group_name"],
+            pickup_location: pickup_location
+          )
+        end
         created = service.call
 
         unless created
@@ -775,18 +790,24 @@ class CheckoutController < ApplicationController
     }
   end
 
-  # Commande portefeuille récente identique (même client, même jour de cuisson,
-  # déjà payée par débit de portefeuille), pour l'idempotence des soumissions
-  # concurrentes. Fenêtre courte : cible les double-soumissions accidentelles,
-  # pas une vraie 2e commande passée plus tard. À appeler SOUS le verrou client.
-  def recent_wallet_order_for(customer, bake_day)
-    customer.orders
-            .where(bake_day: bake_day, source: :checkout, status: :paid)
-            .where(created_at: 1.minute.ago..)
-            .joins(:wallet_transactions)
-            .where(wallet_transactions: { transaction_type: WalletTransaction.transaction_types[:order_debit] })
-            .order(created_at: :desc)
-            .first
+  # Commande portefeuille récente identique (même client, même jour de cuisson
+  # — ou même événement pour une party publique —, déjà payée par débit de
+  # portefeuille), pour l'idempotence des soumissions concurrentes. Fenêtre
+  # courte : cible les double-soumissions accidentelles, pas une vraie 2e
+  # commande passée plus tard. À appeler SOUS le verrou client.
+  def recent_wallet_order_for(customer)
+    scope = if public_party_cart?
+      customer.orders.where(party_event: public_party_event, source: :party)
+    else
+      customer.orders.where(bake_day: @bake_day, source: :checkout)
+    end
+
+    scope.where(status: :paid)
+         .where(created_at: 1.minute.ago..)
+         .joins(:wallet_transactions)
+         .where(wallet_transactions: { transaction_type: WalletTransaction.transaction_types[:order_debit] })
+         .order(created_at: :desc)
+         .first
   end
 
   def find_order_by_payment_intent(payment_intent_id)

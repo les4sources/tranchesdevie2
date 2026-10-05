@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [ :show, :edit, :update, :update_status, :encaissement, :refund, :destroy ]
+  before_action :set_order, only: [ :show, :edit, :update, :update_status, :encaissement, :charge_wallet, :refund, :destroy ]
   before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
@@ -187,6 +187,18 @@ class Admin::OrdersController < Admin::BaseController
     end
 
     respond_to_encaissement
+  end
+
+  # Encaisse la commande en débitant le portefeuille du client (commande saisie
+  # en admin pour un client dont le portefeuille est chargé).
+  def charge_wallet
+    service = AdminWalletChargeService.new(@order)
+
+    if service.call
+      redirect_to admin_order_path(@order), notice: "Montant prélevé sur le portefeuille"
+    else
+      redirect_to admin_order_path(@order), alert: service.error
+    end
   end
 
   def refund

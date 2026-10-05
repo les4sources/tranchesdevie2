@@ -121,6 +121,24 @@
     </div>
 
     <div class="space-y-3 p-4">
+      <%# Prélever sur le portefeuille plutôt que de laisser la commande due. %>
+      <% if AdminWalletChargeService.chargeable?(@order) %>
+        <% wallet_available_cents = @order.customer.wallet.available_balance_cents %>
+        <% wallet_available_euros = number_to_currency(wallet_available_cents / 100.0, unit: "€", separator: ",", delimiter: "") %>
+        <% if wallet_available_cents >= @order.total_cents %>
+          <%= form_with url: charge_wallet_admin_order_path(@order), method: :post, local: true do |f| %>
+            <%= f.submit "Prélever sur le portefeuille",
+                class: adm_btn_class(:primary, "w-full"),
+                data: { turbo_confirm: "Débiter #{number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "")} du portefeuille du client ?" } %>
+          <% end %>
+          <p class="text-sm" style="color: var(--text-muted);">Solde disponible : <%= wallet_available_euros %></p>
+        <% else %>
+          <p class="text-sm" style="color: var(--text-muted);">
+            Portefeuille : solde disponible insuffisant (<%= wallet_available_euros %>) pour prélever cette commande.
+          </p>
+        <% end %>
+      <% end %>
+
       <% if @order.unpaid? && @order.can_transition_to?(:paid) %>
         <%= form_with url: update_status_admin_order_path(@order), method: :patch, local: true, class: "space-y-2" do |f| %>
           <%= f.hidden_field :status, value: :paid %>

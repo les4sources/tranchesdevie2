@@ -187,6 +187,8 @@ Rails.application.routes.draw do
         # financier uniquement, ne touche pas au statut logistique.
         patch :encaissement
         post :refund
+        # Prélèvement sur le portefeuille du client d'une commande due saisie en admin.
+        post :charge_wallet
         # Remboursement ligne à ligne d'une commande livrée
         # (#remboursement-partiel). Distinct de `refund`, qui rembourse tout et
         # annule la commande.

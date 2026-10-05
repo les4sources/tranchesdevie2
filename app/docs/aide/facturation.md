@@ -60,6 +60,14 @@ Un client a besoin d'une facture ? Deux cas :
 > Une commande n'a besoin d'une facture que si le client la demande. Le champ
 > « facture requise » de la commande le signale.
 
+## Imprimer un bon de livraison
+
+Sous chaque commande de l'écran Facturation, le lien **Bon de livraison (PDF)**
+produit le document qui part avec les pains : date de production, coordonnées de
+la boulangerie et du client, lieu de retrait, détail des pains (quantité, prix
+unitaire, total) et coût total. Un cadre « Livré par / Reçu par » permet au
+client de signer à la réception.
+
 ## Et pour les chiffres globaux ?
 
 Pour les totaux, les remboursements, les payouts et la répartition des revenus,

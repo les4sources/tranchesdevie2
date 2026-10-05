@@ -179,6 +179,8 @@ Rails.application.routes.draw do
     # Factures PDF (#38) : une commande, ou un ensemble (période / mois client).
     get "factures/commande/:order_id", to: "invoices#order", as: :order_invoice
     get "factures/periode", to: "invoices#period", as: :period_invoice
+    # Bon de livraison PDF d'une commande, à côté du relevé (Facturation).
+    get "bons-de-livraison/commande/:order_id", to: "delivery_notes#show", as: :order_delivery_note
 
     resources :orders, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
       member do

@@ -70,7 +70,8 @@ client de signer à la réception.
 
 Pour imprimer tous les bons d'une fournée d'un coup, ouvre la page du **jour de
 cuisson** et clique sur **Bons de livraison (PDF)** : un seul fichier, un bon par
-commande (les commandes annulées sont exclues).
+commande d'un client **facturable** (les particuliers et les commandes annulées
+sont exclus).
 
 ## Et pour les chiffres globaux ?
 

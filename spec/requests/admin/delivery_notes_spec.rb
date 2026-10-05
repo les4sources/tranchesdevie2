@@ -35,26 +35,33 @@ RSpec.describe "Admin::DeliveryNotes", type: :request do
     let(:bake_day) { create(:bake_day, baked_on: Date.new(2026, 5, 12)) }
     let!(:order_a) do
       create(:order, bake_day: bake_day, status: :paid, total_cents: 550,
-        customer: create(:customer, first_name: "Alice", last_name: "Martin")).tap do |o|
+        customer: create(:customer, billable: true, first_name: "Alice", last_name: "Martin")).tap do |o|
         create(:order_item, order: o, qty: 1, unit_price_cents: 550)
       end
     end
     let!(:order_b) do
       create(:order, bake_day: bake_day, status: :ready, total_cents: 1100,
-        customer: create(:customer, first_name: "Bruno", last_name: "Lambert")).tap do |o|
+        customer: create(:customer, billable: true, first_name: "Bruno", last_name: "Lambert")).tap do |o|
         create(:order_item, order: o, qty: 2, unit_price_cents: 550)
       end
     end
     let!(:cancelled) do
       create(:order, bake_day: bake_day, status: :cancelled, total_cents: 550,
-        customer: create(:customer, first_name: "Chloé", last_name: "Annulée")).tap do |o|
+        customer: create(:customer, billable: true, first_name: "Chloé", last_name: "Annulée")).tap do |o|
+        create(:order_item, order: o, qty: 1, unit_price_cents: 550)
+      end
+    end
+
+    let!(:individual) do
+      create(:order, bake_day: bake_day, status: :paid, total_cents: 550,
+        customer: create(:customer, billable: false, first_name: "Denis", last_name: "Particulier")).tap do |o|
         create(:order_item, order: o, qty: 1, unit_price_cents: 550)
       end
     end
 
     before { post admin_login_path, params: { password: "test-admin-pw" } }
 
-    it "regroupe un bon par commande à livrer dans un seul PDF" do
+    it "regroupe un bon par commande de client facturable dans un seul PDF" do
       get delivery_notes_admin_bake_day_path(bake_day)
 
       expect(response).to have_http_status(:ok)
@@ -66,9 +73,10 @@ RSpec.describe "Admin::DeliveryNotes", type: :request do
       expect(pages[0]).to include("Alice Martin", order_a.order_number)
       expect(pages[1]).to include("Bruno Lambert", order_b.order_number)
       expect(pages.join).not_to include("Chloé")
+      expect(pages.join).not_to include("Particulier")
     end
 
-    it "redirige avec une alerte quand la journée n'a aucune commande" do
+    it "redirige avec une alerte quand la journée n'a aucune commande de client facturable" do
       empty = create(:bake_day, baked_on: Date.new(2026, 5, 15))
       get delivery_notes_admin_bake_day_path(empty)
 

@@ -62,16 +62,20 @@ Un client a besoin d'une facture ? Deux cas :
 
 ## Imprimer un bon de livraison
 
-Sous chaque commande de l'écran Facturation, le lien **Bon de livraison (PDF)**
-produit le document qui part avec les pains : date de production, coordonnées de
-la boulangerie et du client, lieu de retrait, détail des pains (quantité, prix
-unitaire, total) et coût total. Un cadre « Livré par / Reçu par » permet au
-client de signer à la réception.
+Seuls les clients **facturables livrés par la boulangerie** ont un bon de
+livraison. Pour l'activer, ouvre la fiche du client, clique sur **Modifier** et
+coche **Livré par la boulangerie** (en plus de **Facturable**).
+
+Pour ces clients, sous chaque commande de l'écran Facturation, le lien **Bon de
+livraison (PDF)** produit le document qui part avec les pains : date de
+production, coordonnées de la boulangerie et du client, lieu de retrait, détail
+des pains (quantité, prix unitaire, total) et coût total. Un cadre « Livré par /
+Reçu par » permet au client de signer à la réception.
 
 Pour imprimer tous les bons d'une fournée d'un coup, ouvre la page du **jour de
 cuisson** et clique sur **Bons de livraison (PDF)** : un seul fichier, un bon par
-commande d'un client **facturable** (les particuliers et les commandes annulées
-sont exclus).
+commande d'un client livré par la boulangerie (les commandes annulées sont
+exclues).
 
 ## Et pour les chiffres globaux ?
 

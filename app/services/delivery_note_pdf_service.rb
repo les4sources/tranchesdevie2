@@ -38,13 +38,13 @@ class DeliveryNotePdfService
   LOGO_SIZE = 46
 
   # Commandes d'une journée qui donnent lieu à un bon de livraison : celles des
-  # clients facturables (épiceries, points de dépôt), aux mêmes statuts que la
-  # feuille d'émargement (annulées et en attente de paiement exclues). Les
-  # particuliers n'en reçoivent pas.
+  # clients facturables livrés par la boulangerie (Customer#receives_delivery_notes?),
+  # aux mêmes statuts que la feuille d'émargement (annulées et en attente de
+  # paiement exclues).
   def self.for_bake_day(bake_day)
     orders = bake_day.orders
                      .where(status: PickupSheetPdfService::PRODUCTION_STATUSES)
-                     .where(customer_id: Customer.billable.select(:id))
+                     .where(customer_id: Customer.receiving_delivery_notes.select(:id))
                      .includes(:customer, :pickup_location, order_items: { product_variant: :product })
                      .sort_by { |o| [ o.pickup_location&.position.to_i, I18n.transliterate(o.customer.full_name.to_s).downcase, o.order_number ] }
     return nil if orders.empty?

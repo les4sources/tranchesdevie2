@@ -23,6 +23,9 @@ class Customer < ApplicationRecord
   scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
   # Clients professionnels (épiceries, points de dépôt) facturés mensuellement.
   scope :billable, -> { where(billable: true) }
+  # Clients facturables livrés par la boulangerie : les seuls à recevoir un bon
+  # de livraison (Facturation et page d'un jour de cuisson).
+  scope :receiving_delivery_notes, -> { billable.where(delivered_by_bakery: true) }
 
   # Recherche « naturelle » d'un client : prénom, nom, prénom+nom, e-mail ou
   # téléphone. Le téléphone est comparé chiffre à chiffre (les numéros sont
@@ -114,6 +117,13 @@ class Customer < ApplicationRecord
 
   def opt_in_email!
     update!(email_opt_out: false)
+  end
+
+
+  # Un bon de livraison n'a de sens que pour un client facturable que la
+  # boulangerie livre elle-même.
+  def receives_delivery_notes?
+    billable? && delivered_by_bakery?
   end
 
   private

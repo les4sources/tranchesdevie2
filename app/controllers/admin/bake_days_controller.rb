@@ -121,7 +121,7 @@ class Admin::BakeDaysController < Admin::BaseController
     service = DeliveryNotePdfService.for_bake_day(@bake_day)
 
     if service.nil?
-      redirect_to admin_bake_day_path(@bake_day), alert: "Aucune commande de client facturable pour cette journée."
+      redirect_to admin_bake_day_path(@bake_day), alert: "Aucune commande de client livré par la boulangerie pour cette journée."
       return
     end
 

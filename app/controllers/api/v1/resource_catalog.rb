@@ -68,7 +68,7 @@ module Api
           description: "Clients identifiés par téléphone E.164. CONTIENT DES DONNÉES PERSONNELLES (téléphone, email, nom).",
           fields: {
             id: "integer", first_name: "string", last_name: "string|null", full_name: "string",
-            phone_e164: "string|null (PII)", email: "string|null (PII)", billable: "boolean",
+            phone_e164: "string|null (PII)", email: "string|null (PII)", billable: "boolean", delivered_by_bakery: "boolean",
             sms_opt_out: "boolean", email_opt_out: "boolean", effective_discount_percent: "integer",
             groups: "array<group>", wallet_balance_cents: "integer|null", wallet_balance_euros: "number|null",
             created_at: "datetime", updated_at: "datetime"

@@ -115,9 +115,11 @@
                     <%= link_to "Relevé de commandes (PDF)",
                           admin_order_invoice_path(order_id: order.id),
                           class: "adm-rowaction mt-0.5 block text-xs" %>
-                    <%= link_to "Bon de livraison (PDF)",
-                          admin_order_delivery_note_path(order_id: order.id),
-                          class: "adm-rowaction mt-0.5 block text-xs" %>
+                    <% if billing.customer.receives_delivery_notes? %>
+                      <%= link_to "Bon de livraison (PDF)",
+                            admin_order_delivery_note_path(order_id: order.id),
+                            class: "adm-rowaction mt-0.5 block text-xs" %>
+                    <% end %>
                   </td>
                   <td style="color: var(--text-muted);">
                     <ul class="space-y-0.5">

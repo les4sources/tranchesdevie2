@@ -11,6 +11,21 @@ RSpec.describe PlannedOrderService do
   end
 
   describe '.upsert' do
+    context 'with a pizza party product' do
+      let(:party_variant) { create(:product_variant, product: create(:product, :pizza_party_public), price_cents: 1000) }
+
+      it 'refuses the order: a party is booked on its event, not in the calendar' do
+        result = PlannedOrderService.upsert(
+          customer: customer,
+          bake_day: bake_day,
+          items: items + [ { product_variant_id: party_variant.id.to_s, qty: 2 } ]
+        )
+
+        expect(result[:error]).to include("pizza parties")
+        expect(customer.orders.count).to eq(0)
+      end
+    end
+
     context 'creating a new planned order' do
       it 'creates an order with status planned' do
         result = PlannedOrderService.upsert(customer: customer, bake_day: bake_day, items: items)

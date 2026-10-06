@@ -19,7 +19,7 @@ module Customers
                                        .store_channel
                                        .visible_to_customer(current_customer)
                                        .joins(:product)
-                                       .merge(Product.not_deleted.active.store_channel)
+                                       .merge(Product.not_deleted.active.store_channel.plannable)
                                        .includes(product: { product_images: :image_attachment })
                                        .order("products.category ASC, products.position ASC, products.name ASC")
 

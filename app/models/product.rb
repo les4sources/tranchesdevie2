@@ -42,6 +42,12 @@ class Product < ApplicationRecord
   scope :not_deleted, -> { where(deleted_at: nil) }
   # Le produit forfait de la Pizza party (#68) — un seul attendu en base.
   scope :pizza_party_forfait, -> { where(pizza_party_role: :forfait) }
+  # Produits qu'un client peut PLANIFIER dans son calendrier : tout sauf les
+  # pizza parties. Une party se réserve sur son événement ; ajoutée à une
+  # commande de pain, elle n'est rattachée à aucun événement, échappe à ses
+  # inscriptions et à sa capacité, et sort comme une ligne de client à part sur
+  # la journée de cuisson. Même exclusion que le catalogue.
+  scope :plannable, -> { where(pizza_party_role: :none) }
 
   # Rôles pizza_party présents dans un panier de session. Seule survivance de
   # l'ancien service de forfait, dont la raison d'être — synchroniser une ligne

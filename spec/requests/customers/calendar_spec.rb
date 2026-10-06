@@ -46,6 +46,34 @@ RSpec.describe "Customers::Calendar", type: :request do
     end
   end
 
+  # Une pizza party se réserve sur son événement : glissée dans une commande de
+  # pain planifiée, elle n'est rattachée à aucun événement et sort comme un
+  # client à part sur la journée de cuisson.
+  describe "pizza parties" do
+    let!(:party_variant) do
+      create(:product_variant,
+             product: create(:product, :pizza_party_public, name: "Pizza party publique"),
+             price_cents: 1000)
+    end
+
+    it "ne les propose pas dans le calendrier" do
+      get '/calendrier'
+
+      expect(response.body).to include(product_variant.product.name)
+      expect(response.body).not_to include("Pizza party publique")
+    end
+
+    it "refuse de les planifier, même avec l'id posté à la main" do
+      patch '/calendrier/update_day', params: {
+        bake_day_id: future_bake_day.id,
+        items: [ { product_variant_id: party_variant.id, qty: 2 } ]
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(customer.orders.where(bake_day: future_bake_day)).to be_empty
+    end
+  end
+
   describe "GET /calendrier" do
     it "returns success for authenticated customer" do
       get '/calendrier'

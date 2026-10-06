@@ -8,6 +8,12 @@ class PlannedOrderService
         return { error: "Le point de retrait choisi n'est pas disponible pour cette fournée" }
       end
 
+      # Garde serveur : `update_day` accepte n'importe quel product_variant_id.
+      variant_ids = items.map { |item| item[:product_variant_id] }
+      if ProductVariant.joins(:product).where(id: variant_ids).where.not(products: { pizza_party_role: :none }).exists?
+        return { error: "Les pizza parties se réservent depuis la page Événements, pas dans le calendrier" }
+      end
+
       order = customer.orders.find_or_initialize_by(
         bake_day: bake_day,
         status: :planned,

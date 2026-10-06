@@ -61,7 +61,12 @@
       <% if @customer.billable? %>
         <div>
           <dt class="adm-eyebrow">Facturation</dt>
-          <dd class="mt-1"><%= adm_chip "Facturable", tone: :brand %></dd>
+          <dd class="mt-1 flex flex-wrap gap-1">
+            <%= adm_chip "Facturable", tone: :brand %>
+            <% if @customer.delivered_by_bakery? %>
+              <%= adm_chip "Livré par la boulangerie", tone: :accent %>
+            <% end %>
+          </dd>
         </div>
       <% end %>
 

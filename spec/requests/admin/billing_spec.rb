@@ -37,6 +37,15 @@ RSpec.describe "Admin::Billing", type: :request do
       expect(response.body).to include("Impayé")
     end
 
+    it "ne propose le bon de livraison qu'aux clients livrés par la boulangerie" do
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).not_to include(admin_order_delivery_note_path(order_id: order.id))
+
+      pro.update!(delivered_by_bakery: true)
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).to include(admin_order_delivery_note_path(order_id: order.id))
+    end
+
     it "exporte le récapitulatif en CSV" do
       get admin_billing_path(month: "2026-05", format: :csv)
       expect(response).to have_http_status(:ok)

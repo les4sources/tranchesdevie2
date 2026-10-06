@@ -64,6 +64,14 @@
 
 <div class="mt-6">
   <div class="flex items-center">
+    <%= f.check_box :delivered_by_bakery, style: "accent-color: var(--brand);" %>
+    <%= f.label :delivered_by_bakery, "Livré par la boulangerie", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
+  </div>
+  <p class="mt-1 text-sm" style="color: var(--text-muted);">Pour un client facturable que la boulangerie livre elle-même : ses commandes ont alors un bon de livraison (Facturation et page du jour de cuisson).</p>
+</div>
+
+<div class="mt-6">
+  <div class="flex items-center">
     <%= f.check_box :cash_payment_allowed, style: "accent-color: var(--brand);" %>
     <%= f.label :cash_payment_allowed, "Paiement cash autorisé", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
   </div>

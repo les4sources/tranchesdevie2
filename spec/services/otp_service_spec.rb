@@ -120,4 +120,29 @@ RSpec.describe OtpService do
       expect(described_class.normalize_phone("abc")).to be_nil
     end
   end
+
+  describe ".send_otp quand Smstools refuse le SMS" do
+    let(:phone) { "+32470333444" }
+
+    before do
+      stub_const("ENV", ENV.to_h.merge(
+        "SMSTOOLS_CLIENT_ID" => "id", "SMSTOOLS_CLIENT_SECRET" => "secret", "SMSTOOLS_SENDER" => "TdV"
+      ))
+      stub_request(:post, OtpService::SMSTOOLS_API_URL)
+        .to_return(status: 402, body: '{"error":"insufficient credits"}', headers: { "Content-Type" => "application/json" })
+      allow(Sentry).to receive(:capture_message)
+    end
+
+    it "propose le code par e-mail, ne garde pas de code orphelin et prévient Sentry" do
+      result = described_class.send_otp(phone)
+
+      expect(result).to eq(success: false, error: described_class.sms_failed_error)
+      expect(result[:error]).to include("par e-mail")
+      expect(PhoneVerification.for_phone(phone)).to be_empty
+      expect(Sentry).to have_received(:capture_message).with(
+        "[otp] otp_sms_rejected",
+        hash_including(level: :error, extra: hash_including(status: 402, phone_suffix: "444"))
+      )
+    end
+  end
 end

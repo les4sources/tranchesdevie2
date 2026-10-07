@@ -915,12 +915,19 @@ class CheckoutController < ApplicationController
     )
   end
 
+  # Même normalisation que la page Connexion (OtpService) : « 0470 12 34 56 »,
+  # « 0032 470… », « +32 0470… » sont acceptés. Avant, seul un « +32… » passait :
+  # la conversion reposait sur le JS (libphonenumber chargé depuis un CDN, au
+  # blur du champ). Si ce script ne se chargeait pas, ou si le client touchait
+  # « Par SMS » sans quitter le champ, le serveur répondait « Format de
+  # téléphone invalide » à un numéro belge parfaitement valide.
   def normalize_phone(phone)
-    phone.to_s.strip.gsub(/\s/, "")
+    identifier = OtpService.classify_identifier(phone)
+    identifier[:phone] if identifier[:type] == :phone
   end
 
   def valid_e164?(phone)
-    phone.match?(/\A\+[1-9]\d{1,14}\z/)
+    OtpService.valid_e164?(phone)
   end
 
   def find_or_create_customer(json_params = {})

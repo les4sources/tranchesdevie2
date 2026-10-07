@@ -32,7 +32,7 @@ class OtpService
 
     unless sms_sent
       verification.destroy # Remove verification if SMS failed
-      return { success: false, error: "Erreur lors de l'envoi du SMS. Veuillez réessayer." }
+      return { success: false, error: sms_failed_error }
     end
 
     { success: true, verification_id: verification.id }
@@ -209,6 +209,13 @@ class OtpService
     { success: false, error: "Erreur lors de l'envoi de l'e-mail. Veuillez réessayer." }
   end
 
+  # L'envoi par e-mail est l'issue de secours quand Smstools refuse le SMS
+  # (crédit épuisé, identifiants, panne) : le message la nomme, sans quoi un
+  # nouveau client reste bloqué devant un bouton qui « ne marche pas ».
+  def self.sms_failed_error
+    "Le SMS n'a pas pu être envoyé. Réessaie dans un instant, ou reçois ton code par e-mail."
+  end
+
   def self.no_email_on_file_error
     "Aucune adresse e-mail n'est associée à ce numéro. Contacte-nous à boulangerie@les4sources.be."
   end
@@ -254,6 +261,8 @@ class OtpService
 
     unless client_id.present? && client_secret.present? && sender.present?
       Rails.logger.error("OTP Service - Missing configuration: client_id=#{client_id.present?}, client_secret=#{client_secret.present?}, sender=#{sender.present?}")
+      report_sms_failure("otp_sms_missing_configuration",
+                         client_id: client_id.present?, client_secret: client_secret.present?, sender: sender.present?)
       return false
     end
 
@@ -305,6 +314,8 @@ class OtpService
       true
     else
       Rails.logger.error("Failed to send OTP SMS - Status: #{response.code}, Body: #{response.body}, Request: #{request_body.inspect}")
+      report_sms_failure("otp_sms_rejected",
+                         status: response.code, response_body: response.body.to_s.first(500), phone_suffix: to.to_s.last(3))
       false
     end
   rescue StandardError => e
@@ -312,6 +323,16 @@ class OtpService
     Rails.logger.error("OTP SMS Service Error Backtrace: #{e.backtrace.first(5).join("\n")}")
     Sentry.capture_exception(e) if defined?(Sentry)
     false
+  end
+
+  # Un refus de Smstools n'est pas une exception : sans ce signalement, l'échec
+  # ne laissait qu'une ligne de log et Sentry restait muet pendant que plus aucun
+  # client ne recevait son code. Le corps du SMS (qui contient le code) n'est
+  # jamais transmis.
+  def self.report_sms_failure(message, **extra)
+    return unless defined?(Sentry)
+
+    Sentry.capture_message("[otp] #{message}", level: :error, extra: extra)
   end
 
   def self.client_id

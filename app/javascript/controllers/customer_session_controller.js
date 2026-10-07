@@ -48,7 +48,7 @@ export default class extends Controller {
 
       const html = await response.text()
       const doc = new DOMParser().parseFromString(html, "text/html")
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
+      const alertElement = this.flash(doc, "alert")
 
       if (!response.ok || alertElement) {
         this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de l'envoi du code", "error")
@@ -59,7 +59,7 @@ export default class extends Controller {
       if (otpSection) otpSection.classList.remove("hidden")
       this.otpInputTarget?.focus()
 
-      const noticeElement = doc.querySelector(".notice, [class*='notice'], .bg-sage-100")
+      const noticeElement = this.flash(doc, "notice")
       this.showMessage(noticeElement ? noticeElement.textContent.trim() : "Code envoyé", "success")
     } catch (error) {
       this.showMessage("Erreur de connexion", "error")
@@ -109,7 +109,7 @@ export default class extends Controller {
         return
       }
 
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
+      const alertElement = this.flash(doc, "alert")
       this.showMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la vérification", "error")
     } catch (error) {
       this.showMessage("Erreur de connexion", "error")
@@ -152,7 +152,7 @@ export default class extends Controller {
 
       const html = await response.text()
       const doc = new DOMParser().parseFromString(html, "text/html")
-      const alertElement = doc.querySelector(".alert, [class*='alert'], .bg-danger-100")
+      const alertElement = this.flash(doc, "alert")
       this.showNameMessage(alertElement ? alertElement.textContent.trim() : "Erreur lors de la création du compte", "error")
     } catch (error) {
       this.showNameMessage("Erreur de connexion", "error")
@@ -160,6 +160,14 @@ export default class extends Controller {
       button.disabled = false
       button.textContent = "Créer mon compte"
     }
+  }
+
+  // Lit le message flash (notice ou alert) de la page rendue par le serveur.
+  // L'ancien sélecteur « .bg-sage-100 » attrapait l'encart d'explication en tête
+  // de page : après l'envoi, le client voyait ce texte au lieu de « Code envoyé
+  // par SMS à HH:MM » et croyait que le bouton n'avait rien fait.
+  flash(doc, kind) {
+    return doc.querySelector(`[data-flash="${kind}"]`)
   }
 
   showNameMessage(message, type) {

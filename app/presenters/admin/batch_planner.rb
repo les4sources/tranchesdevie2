@@ -30,6 +30,26 @@ module Admin
       @batch_stats ||= batches.map { |batch| stats_for(batch, items_by_batch_id[batch.id] || []) }
     end
 
+    # Priorité 1 de la répartition : deux fournées qui se suivent ne peuvent pas
+    # utiliser plus de moules d'un type que l'armoire n'en contient
+    # (`MoldType#stock`) — pendant que l'une cuit, l'autre lève dans ses moules.
+    # Une entrée par paire et par type en défaut, pour l'afficher pendant les
+    # ajustements à la main. Une fournée seule compte aussi.
+    def mold_shortages
+      @mold_shortages ||= begin
+        windows = batch_stats.size == 1 ? [ batch_stats ] : batch_stats.each_cons(2).to_a
+
+        windows.flat_map do |window|
+          MoldType.not_deleted.ordered.where.not(stock: nil).filter_map do |mold_type|
+            used = window.sum { |entry| entry[:molds].find { |mold| mold[:mold_type] == mold_type }&.dig(:units_count).to_i }
+            next if used <= mold_type.stock
+
+            { batches: window.map { |entry| entry[:batch] }, mold_type: mold_type, used: used, stock: mold_type.stock }
+          end
+        end
+      end
+    end
+
     def unassigned_items
       @unassigned_items ||= items_by_batch_id[nil] || []
     end
@@ -132,6 +152,7 @@ module Admin
         paton_dough_grams: items.reject { |item| item.product_variant.product.breads? }
                                 .sum { |item| item.qty * (item.product_variant.flour_quantity || 0) },
         dough: calculator.dough_quantities,
+        flour_type_stats: calculator.flour_type_stats,
         molds: mold_breakdown(items)
       }
     end

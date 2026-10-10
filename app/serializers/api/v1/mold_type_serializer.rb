@@ -8,6 +8,7 @@ module Api
           id: object.id,
           name: object.name,
           limit: object.limit,
+          stock: object.stock,
           position: object.position,
           created_at: iso(object.created_at),
           updated_at: iso(object.updated_at),

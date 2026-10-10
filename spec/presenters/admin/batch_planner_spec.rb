@@ -66,6 +66,34 @@ RSpec.describe Admin::BatchPlanner do
       end
     end
 
+    it "donne à chaque fournée ses quantités de pâte par farine et par produit" do
+      first_stats, second_stats = planner.batch_stats.map { |entry| entry[:flour_type_stats] }
+
+      expect(first_stats.map { |stat| [ stat[:flour].name, stat[:flour_quantity] ] }).to eq([ [ "Froment T65", 6_400 ] ])
+      expect(first_stats.first[:products].map { |detail| [ detail[:product].name, detail[:flour_quantity] ] }).to eq([ [ "Pain froment", 6_400 ] ])
+      expect(second_stats.map { |stat| [ stat[:flour].name, stat[:flour_quantity] ] }).to eq([ [ "Seigle", 1_800 ] ])
+    end
+
+    describe "#mold_shortages" do
+      it "ne signale rien quand le stock suffit aux deux fournées" do
+        petit_moule.update!(stock: 7)
+
+        expect(planner.mold_shortages).to be_empty
+      end
+
+      it "signale deux fournées consécutives qui dépassent le stock" do
+        petit_moule.update!(stock: 6)
+
+        expect(planner.mold_shortages).to contain_exactly(
+          { batches: [ first, second ], mold_type: petit_moule, used: 7, stock: 6 }
+        )
+      end
+
+      it "ignore un type de moule sans stock renseigné" do
+        expect(planner.mold_shortages).to be_empty
+      end
+    end
+
     it "additionne exactement au poids de pâte global" do
       expect(planner.batch_stats.sum { |entry| entry[:total_dough_grams] })
         .to eq(dashboard.total_flour_quantity)

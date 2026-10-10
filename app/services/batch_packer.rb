@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 # Répartit les produits d'un jour de cuisson en fournées, selon les règles que
-# Claire a posées le 28/09/2026, par ordre de priorité :
+# Claire a posées le 28/09/2026, par ordre de priorité, précédées d'une
+# priorité absolue ajoutée par Michael le 10/10/2026 :
 #
+#   0. (priorité 1) deux fournées consécutives n'utilisent pas plus de moules
+#      d'un type que l'armoire n'en contient (`MoldType#stock`) : pendant
+#      qu'une fournée cuit, la suivante lève déjà dans ses moules ;
 #   1. faire le moins de fournées possible (65 kg de pain chacune) ;
 #   2. garder au maximum une même farine dans une même fournée ;
 #   3. passer dans l'ordre petit épeautre, épeautre, seigle, froment ;
@@ -16,6 +20,12 @@
 # La règle 1 fixe le nombre de fournées ; les autres forment un score comparé
 # terme à terme dans cet ordre, où la plus petite valeur gagne. La règle 3
 # range aussi les fournées dans l'ordre de passage.
+#
+# La règle 0 s'applique ensuite à la répartition de Claire, seulement si les
+# moules manquent : on change d'abord l'ordre de passage, puis on déplace des
+# pains d'une fournée à l'autre, en ouvrant une fournée de plus s'il le faut.
+# Si c'est impossible (une seule commande dépasse déjà le stock), on garde la
+# répartition qui en manque le moins.
 #
 # Calcul pur, sans base : `BatchProposalService` lui passe les produits pesés et
 # classés, puis écrit le résultat. C'est ce qui permet de tester les règles sur
@@ -41,10 +51,19 @@ class BatchPacker
   # en dessous ; la borne protège seulement le clic d'un cas imprévu.
   SEARCH_BUDGET = 200_000
 
-  def initialize(products, capacity:, small_product_grams:)
+  # Nombre de fournées jusqu'auquel on essaie tous les ordres de passage pour
+  # tenir le stock de moules (5! = 120 ordres). Une journée réelle en a 2 ou 3.
+  MAX_REORDERED_BINS = 5
+
+  # `line_molds` : { clé de ligne => [type de moule, unités] } pour les lignes
+  # qui occupent un moule ; `mold_stock` : { type de moule => moules en stock }.
+  # Sans eux, la règle 0 ne contraint rien.
+  def initialize(products, capacity:, small_product_grams:, line_molds: {}, mold_stock: {})
     @products = products
     @capacity = capacity
     @small_product_grams = small_product_grams
+    @mold_stock = mold_stock
+    @line_molds = line_molds.select { |_, (mold, _)| mold_stock[mold] }
     @explored = 0
   end
 
@@ -57,7 +76,7 @@ class BatchPacker
 
     (first..last).each do |bin_count|
       parts = best_for(bin_count)
-      return ordered_bins(parts) if parts
+      return fit_molds(ordered_bins(parts)) if parts
     end
 
     # Inatteignable : avec une fournée par ligne, chaque ligne trouve sa place.
@@ -65,6 +84,123 @@ class BatchPacker
   end
 
   private
+
+  # Règle 0, appliquée à la répartition de Claire quand les moules manquent.
+  def fit_molds(bins)
+    return bins if @line_molds.empty? || mold_overflow(bins).zero?
+
+    bins = reorder_for_molds(bins)
+    return bins if mold_overflow(bins).zero?
+
+    move_for_molds(bins)
+  end
+
+  # Moules qui manqueraient, tous types confondus, sur chaque paire de
+  # fournées qui se suivent (sur la fournée seule quand il n'y en a qu'une).
+  def mold_overflow(bins)
+    usages = bins.map { |keys| mold_usage(keys) }
+    windows = usages.size == 1 ? [ usages ] : usages.each_cons(2).to_a
+
+    windows.sum do |window|
+      @mold_stock.sum do |mold, stock|
+        [ window.sum { |usage| usage[mold] } - stock, 0 ].max
+      end
+    end
+  end
+
+  def mold_usage(keys)
+    keys.each_with_object(Hash.new(0)) do |key, usage|
+      mold, units = @line_molds[key]
+      usage[mold] += units if mold
+    end
+  end
+
+  # L'ordre de passage le plus proche de celui de la règle 3 qui manque le
+  # moins de moules : deux fournées pleines de petits moules passent de part
+  # et d'autre d'une fournée qui en utilise peu, plutôt que de se suivre.
+  def reorder_for_molds(bins)
+    return bins if bins.size < 3 || bins.size > MAX_REORDERED_BINS
+
+    indexes = bins.each_index.to_a
+    best = indexes.permutation.min_by do |order|
+      [ mold_overflow(bins.values_at(*order)), indexes.combination(2).count { |a, b| order.index(a) > order.index(b) } ]
+    end
+
+    bins.values_at(*best)
+  end
+
+  # Déplace des pains, un client à la fois, de la fournée où les moules
+  # manquent vers celle qui les absorbe le mieux, ou vers une nouvelle
+  # fournée glissée dans l'ordre de passage. À manque égal, on préfère une
+  # fournée existante, puis celle qui a déjà ce produit, puis sa farine
+  # (règles 1, 2 et 6), puis la plus légère. Chaque déplacement réduit le
+  # manque : la boucle s'arrête d'elle-même.
+  def move_for_molds(bins)
+    bins = bins.map(&:dup)
+    overflow = mold_overflow(bins)
+
+    while overflow.positive?
+      best = nil
+
+      bins.each_with_index do |keys, from|
+        keys.each do |key|
+          next unless @line_molds.key?(key)
+
+          targets(bins, from).each do |to, new_bin|
+            candidate = moved(bins, key, from, to, new_bin)
+            next unless candidate
+
+            rank = [ mold_overflow(candidate), new_bin ? 1 : 0, affinity(bins, key, new_bin ? nil : to), new_bin ? 0 : weight(bins[to]) ]
+            best = [ rank, candidate ] if best.nil? || (rank <=> best.first).negative?
+          end
+        end
+      end
+
+      break if best.nil? || best.first.first >= overflow
+
+      overflow = best.first.first
+      bins = best.last
+    end
+
+    bins
+  end
+
+  # Fournées où une ligne de la fournée `from` peut aller : chacune des
+  # autres, et une nouvelle fournée à chaque place de l'ordre de passage.
+  def targets(bins, from)
+    existing = bins.each_index.reject { |index| index == from }.map { |index| [ index, false ] }
+    existing + (0..bins.size).map { |index| [ index, true ] }
+  end
+
+  def moved(bins, key, from, to, new_bin)
+    grams = line_grams[key]
+    return nil if !new_bin && weight(bins[to]) + grams > @capacity
+
+    result = bins.map(&:dup)
+    result[from].delete(key)
+    new_bin ? result.insert(to, [ key ]) : result[to] << key
+    result.reject(&:empty?)
+  end
+
+  # 0 si la fournée d'arrivée a déjà ce produit, 1 si elle a sa farine, 2 sinon.
+  def affinity(bins, key, to)
+    return 2 if to.nil?
+
+    product = product_by_line[key]
+    others = bins[to].map { |other| product_by_line[other] }
+    return 0 if others.any? { |other| other.key == product.key }
+    return 1 if others.any? { |other| other.family == product.family }
+
+    2
+  end
+
+  def weight(keys)
+    keys.sum { |key| line_grams[key] }
+  end
+
+  def product_by_line
+    @product_by_line ||= @products.flat_map { |product| product.lines.map { |key, _| [ key, product ] } }.to_h
+  end
 
   def families
     @families ||= @products.group_by(&:family).map do |key, products|

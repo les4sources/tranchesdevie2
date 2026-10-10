@@ -19,6 +19,7 @@
           th.text-right Position
           th Nom
           th.text-right Limite
+          th.text-right En stock
           th.text-right Variantes
           th Actions
       tbody
@@ -28,10 +29,11 @@
               td.adm-grid-num.text-right = mold_type.position
               td.font-medium style="color: var(--text-strong);" = mold_type.name
               td.adm-grid-num.text-right = mold_type.limit
+              td.adm-grid-num.text-right = mold_type.stock || "—"
               td.adm-grid-num.text-right = mold_type.product_variants.count
               td.whitespace-nowrap
                 = link_to "Modifier", edit_admin_settings_mold_type_path(mold_type), class: "adm-rowaction mr-3"
                 = button_to "Supprimer", admin_settings_mold_type_path(mold_type), method: :delete, data: { turbo_confirm: "Supprimer ce type de moule ?" }, class: "adm-rowaction", form: { class: "inline" }
         - else
-          = adm_empty_row colspan: 5, title: "Aucun type de moule défini", hint: "La limite d'un type de moule borne ce qu'on peut enfourner sur un jour de cuisson." do
+          = adm_empty_row colspan: 6, title: "Aucun type de moule défini", hint: "La limite d'un type de moule borne ce qu'on peut enfourner sur un jour de cuisson." do
             = link_to "Nouveau type", new_admin_settings_mold_type_path, class: adm_btn_class(:primary)

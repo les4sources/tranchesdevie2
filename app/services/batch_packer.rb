@@ -92,7 +92,7 @@ class BatchPacker
     bins = reorder_for_molds(bins)
     return bins if mold_overflow(bins).zero?
 
-    move_for_molds(bins)
+    balance(move_for_molds(bins))
   end
 
   # Moules qui manqueraient, tous types confondus, sur chaque paire de
@@ -160,6 +160,32 @@ class BatchPacker
 
       overflow = best.first.first
       bins = best.last
+    end
+
+    bins
+  end
+
+  # Les déplacements pour les moules laissent parfois une fournée de quelques
+  # pains à côté d'une fournée pleine. On rapproche les poids (règle 7) en
+  # passant des pains de la plus lourde à la plus légère, de préférence ceux
+  # dont le produit ou la farine y sont déjà (règle 2), sans jamais manquer de
+  # plus de moules.
+  def balance(bins)
+    overflow = mold_overflow(bins)
+
+    200.times do
+      heavy = bins.each_index.max_by { |index| weight(bins[index]) }
+      light = bins.each_index.min_by { |index| weight(bins[index]) }
+      gap = weight(bins[heavy]) - weight(bins[light])
+
+      candidate = bins[heavy].select { |key| line_grams[key] < gap }
+                             .sort_by { |key| [ affinity(bins, key, light), -line_grams[key] ] }
+                             .lazy
+                             .map { |key| moved(bins, key, heavy, light, false) }
+                             .find { |result| result && mold_overflow(result) <= overflow }
+      break unless candidate
+
+      bins = candidate
     end
 
     bins

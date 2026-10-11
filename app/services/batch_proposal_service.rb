@@ -38,6 +38,13 @@ class BatchProposalService
     product.product_flours.max_by { |product_flour| [ product_flour.percentage, -flour_rank(product_flour.flour) ] }&.flour
   end
 
+  # Moules de l'armoire par type (`MoldType#stock`), pour la priorité 1 : deux
+  # fournées consécutives n'en utilisent pas plus. Un type sans stock renseigné
+  # ne contraint rien.
+  def self.mold_stock
+    MoldType.not_deleted.where.not(stock: nil).pluck(:id, :stock).to_h
+  end
+
   attr_reader :bake_day, :dashboard
 
   def initialize(bake_day, dashboard = Admin::BakeDayDashboard.new(bake_day))
@@ -53,8 +60,13 @@ class BatchProposalService
       breads, others = items.partition { |item| item.product_variant.product.breads? }
       by_id = items.index_by(&:id)
 
-      groups = BatchPacker.new(packer_products(breads), capacity: CAPACITY_GRAMS, small_product_grams: SMALL_PRODUCT_GRAMS)
-                          .call
+      groups = BatchPacker.new(
+        packer_products(breads),
+        capacity: CAPACITY_GRAMS,
+        small_product_grams: SMALL_PRODUCT_GRAMS,
+        line_molds: line_molds(breads),
+        mold_stock: self.class.mold_stock
+      ).call
                           .map { |ids| by_id.values_at(*ids) }
 
       attach_patons(groups, others)
@@ -94,6 +106,14 @@ class BatchProposalService
              lines: product_items.map { |item| [ item.id, item.qty * (item.product_variant.flour_quantity || 0) ] }
            )
          end
+  end
+
+  # Seuls les pains occupent un moule, comme dans `BatchPlanner#mold_breakdown`.
+  def line_molds(items)
+    items.each_with_object({}) do |item, molds|
+      mold_type_id = item.product_variant.mold_type_id
+      molds[item.id] = [ mold_type_id, item.qty ] if mold_type_id
+    end
   end
 
   # Les pâtons (et tout ce qui n'est pas du pain) rejoignent la fournée

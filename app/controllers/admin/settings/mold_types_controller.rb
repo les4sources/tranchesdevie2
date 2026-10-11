@@ -50,7 +50,7 @@ module Admin
       end
 
       def mold_type_params
-        params.require(:mold_type).permit(:name, :limit, :position)
+        params.require(:mold_type).permit(:name, :limit, :stock, :position)
       end
     end
   end

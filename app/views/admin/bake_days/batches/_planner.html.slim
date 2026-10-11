@@ -27,6 +27,18 @@
           = button_to "Proposer une répartition", admin_bake_day_batch_proposal_path(bake_day), method: :post, form: { data: { turbo_stream: true, turbo_confirm: replace_confirm } }, class: adm_btn_class(:default)
         = button_to "Ajouter une fournée", admin_bake_day_batches_path(bake_day), method: :post, form: { data: { turbo_stream: true } }, class: adm_btn_class(:primary)
 
+    - if planner.mold_shortages.any?
+      .adm-card.p-4.sm:p-5 data-role="mold-shortages" style="background: var(--danger-100); border-color: var(--danger-200);"
+        h4.text-sm.font-semibold style="color: var(--danger-700);" Moules insuffisants
+        p.mt-1.text-xs style="color: var(--text-muted);"
+          | Deux fournées qui se suivent ne peuvent pas utiliser plus de moules que l'armoire n'en contient.
+        ul.mt-2.space-y-1.text-sm style="color: var(--text-body);"
+          - planner.mold_shortages.each do |shortage|
+            li
+              span.font-semibold = shortage[:batches].map(&:name).join(" + ")
+              |  : #{shortage[:used]} moules « #{shortage[:mold_type].name} » pour #{shortage[:stock]} en stock
+              span.font-semibold style="color: var(--danger-700);" = " (#{shortage[:used] - shortage[:stock]} manquant#{'s' if shortage[:used] - shortage[:stock] > 1})"
+
     - if stats.empty?
       .adm-card.p-6.text-center
         p.text-sm style="color: var(--text-body);"

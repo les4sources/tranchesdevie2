@@ -66,6 +66,12 @@
       p.text-sm style="color: var(--text-muted);"
         | Aucune pâte dans cette fournée pour l'instant — affectez-lui des lignes ci-dessous.
 
+    - if entry[:flour_type_stats].any?
+      div
+        p.adm-eyebrow Quantités de pâte requises par type de farine
+        .mt-2.rounded-md.overflow-hidden style="border: 1px solid var(--border-subtle);"
+          = render "admin/bake_days/flour_dough_table", flour_type_stats: entry[:flour_type_stats], total_grams: entry[:total_dough_grams]
+
     div
       p.adm-eyebrow Moules
       - if entry[:molds].any?

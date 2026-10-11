@@ -155,8 +155,8 @@ module Api
         },
         {
           key: "mold_types", singular: "mold_type", title: "Types de moules", pii: false, collection: true,
-          description: "Types de moules avec limite d'unités par jour de fournée.",
-          fields: { id: "integer", name: "string", limit: "integer", position: "integer", created_at: "datetime", updated_at: "datetime" }
+          description: "Types de moules avec limite d'unités par jour de fournée et nombre de moules en stock (deux fournées consécutives n'en utilisent pas plus).",
+          fields: { id: "integer", name: "string", limit: "integer", stock: "integer|null", position: "integer", created_at: "datetime", updated_at: "datetime" }
         },
         {
           key: "pickup_locations", singular: "pickup_location", title: "Points de retrait", pii: false, collection: true,

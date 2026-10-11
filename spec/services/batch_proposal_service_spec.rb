@@ -93,6 +93,22 @@ RSpec.describe BatchProposalService do
     expect(Batch.exists?(existing.id)).to be(true)
   end
 
+  it "ouvre une fournée de plus plutôt que de manquer de petits moules sur deux fournées qui se suivent" do
+    petit = create(:mold_type, name: "Petit", limit: 500, stock: 80)
+    [ [ "Pain d'épeautre", epeautre, 50 ], [ "Pain au froment", froment, 75 ] ].each do |name, flour, units|
+      product = create(:product, name: name, category: :breads)
+      create(:product_flour, product: product, flour: flour, percentage: 100)
+      variant = create(:product_variant, product: product, flour_quantity: 600, mold_type: petit)
+      units.times { create(:order_item, order: order, product_variant: variant, qty: 1) }
+    end
+
+    expect(described_class.new(bake_day).apply!).to eq(3)
+
+    planner = Admin::BatchPlanner.new(bake_day)
+    expect(planner).to be_fully_assigned
+    expect(planner.mold_shortages).to be_empty
+  end
+
   it "fait une seule fournée jusqu'à 65 kg" do
     line("Pain d'épeautre", flour: epeautre, units: 30)
     line("Pain au froment", flour: froment, units: 35)

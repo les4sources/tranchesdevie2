@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_10_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -285,6 +285,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
     t.integer "limit", null: false
     t.string "name", null: false
     t.integer "position", default: 0
+    t.integer "stock"
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_mold_types_on_deleted_at"
     t.index ["name"], name: "index_mold_types_on_name", unique: true, where: "(deleted_at IS NULL)"

@@ -1,23 +1,4 @@
-<% content_for :title, "Connexion admin" %>
+<% content_for :title, "Connexion · Tranches de Vie" %>
+<% content_for :body_class, "lg-body lg-body--#{@variant}" %>
 
-<div class="mx-auto mt-12 max-w-md">
-  <%# Le titre reste hors de la carte : `application.css` réserve le manuscrit
-      au titre de page et repasse en sans-serif tout titre posé dans une carte. %>
-  <%= adm_page_header "Connexion admin" %>
-
-  <div class="adm-card p-8">
-    <%= form_with url: admin_login_path, local: true do |f| %>
-      <div class="mb-4">
-        <%= f.label :password, "Mot de passe", class: "adm-eyebrow mb-1 block" %>
-        <%= f.password_field :password,
-            class: adm_field_class,
-            required: true,
-            autofocus: true %>
-      </div>
-
-      <div>
-        <%= f.submit "Se connecter", class: adm_btn_class(:primary, "w-full") %>
-      </div>
-    <% end %>
-  </div>
-</div>
+<%= render "admin/sessions/#{@variant}" %>

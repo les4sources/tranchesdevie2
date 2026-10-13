@@ -1,5 +1,6 @@
 class Admin::SessionsController < ApplicationController
-  layout "admin"
+  # La connexion a sa propre coque plein écran ; le reste redirige.
+  layout "admin_login"
   helper Admin::FormHelper
 
   def index
@@ -10,8 +11,16 @@ class Admin::SessionsController < ApplicationController
     end
   end
 
+  # Deux ambiances proposées pour la page de connexion, choisies par
+  # `?variante=` le temps de les comparer : « fournil » (éditorial, photos de
+  # la boulangerie) et « braise » (immersif, la bouche du four la nuit).
+  LOGIN_VARIANTS = %w[fournil braise].freeze
+
   def new
-    redirect_to admin_orders_path if admin_authenticated?
+    return redirect_to admin_orders_path if admin_authenticated?
+
+    @variant = LOGIN_VARIANTS.include?(params[:variante]) ? params[:variante] : LOGIN_VARIANTS.first
+    @next_bake_day = BakeDay.visible_to_customers.future.ordered.first
   end
 
   def create
@@ -22,7 +31,7 @@ class Admin::SessionsController < ApplicationController
       session[:admin_authenticated_at] = Time.current.to_s
       redirect_to admin_orders_path, notice: "Connexion réussie"
     else
-      redirect_to admin_login_path, alert: "Mot de passe incorrect"
+      redirect_to admin_login_path(variante: params[:variante].presence_in(LOGIN_VARIANTS)), alert: "Mot de passe incorrect"
     end
   end
 

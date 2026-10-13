@@ -1,0 +1,57 @@
+<%# Variante « braise » : la nuit, face à la bouche du four. Des braises
+    montent (canvas) ; chaque caractère tapé ajoute du bois : la lueur grandit
+    et le thermomètre grimpe jusqu'à la température de cuisson. %>
+<% greeting, _ = admin_login_greeting %>
+
+<div class="lgb" data-controller="admin-login" data-admin-login-heat-value="true">
+  <canvas class="lgb-embers" data-admin-login-target="canvas" aria-hidden="true"></canvas>
+  <div class="lgb-glow" aria-hidden="true"></div>
+  <div class="lgb-mouth" aria-hidden="true"></div>
+  <div class="lgb-grain" aria-hidden="true"></div>
+
+  <header class="lgb-top">
+    <span class="lgb-eyebrow">Les 4 Sources · Yvoir</span>
+    <span class="lgb-eyebrow">Espace boulangers</span>
+  </header>
+
+  <main class="lgb-center">
+    <p class="lgb-greeting lgb-rise" style="--d: 0"><%= greeting %>, le four est prêt.</p>
+    <h1 class="lgb-brand tdv-script lgb-rise" style="--d: 1">Tranches de Vie</h1>
+
+    <%= form_with url: admin_login_path, local: true, class: "lgb-card lgb-rise", style: "--d: 2", data: { action: "submit->admin-login#submit" } do |f| %>
+      <%= hidden_field_tag :variante, "braise" %>
+
+      <% if alert %>
+        <p class="lgb-alert" role="alert"><%= alert %>. Les braises retombent…</p>
+      <% elsif notice %>
+        <p class="lgb-notice"><%= notice %></p>
+      <% end %>
+
+      <label for="password" class="lgb-label">Mot de passe</label>
+      <div class="lgb-field <%= 'is-error' if alert %>">
+        <%= f.password_field :password, id: "password", required: true, autofocus: true,
+              autocomplete: "current-password", placeholder: "Une bûche après l'autre",
+              data: { admin_login_target: "input", action: "input->admin-login#stoke" } %>
+        <button type="button" class="lgb-eye" data-action="admin-login#toggle" aria-label="Afficher le mot de passe" data-admin-login-target="eye">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <button type="submit" class="lgb-submit" data-admin-login-target="button">
+        <%= lucide "flame", size: 17 %>
+        <span>Ouvrir le four</span>
+      </button>
+    <% end %>
+  </main>
+
+  <footer class="lgb-foot">
+    <div class="lgb-thermo" aria-hidden="true">
+      <span class="lgb-thermo-label">Four</span>
+      <span class="lgb-thermo-bar"><i></i></span>
+      <span class="lgb-thermo-value"><b data-admin-login-target="temperature">180</b>&nbsp;°C</span>
+    </div>
+    <% if (next_bake = admin_login_next_bake(@next_bake_day)) %>
+      <span class="lgb-eyebrow">Prochaine fournée · <%= next_bake %></span>
+    <% end %>
+  </footer>
+</div>

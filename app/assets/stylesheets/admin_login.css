@@ -1,0 +1,390 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Page de connexion admin « fournil » (éditorial, photos, papier farine).
+   Chargée partout via `stylesheet_link_tag :app`, d'où le préfixe strict lgf-.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.lg-body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes lg-rise {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes lg-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+.lg-body--fournil { background: var(--flour-100); color: var(--ink-900); }
+
+.lgf {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(420px, 1fr);
+  min-height: 100vh;
+}
+
+/* ── Photos ──────────────────────────────────────────────────────────────── */
+.lgf-visual {
+  position: relative;
+  overflow: hidden;
+  background: #1d1712;
+  isolation: isolate;
+}
+
+.lgf-slide {
+  position: absolute;
+  inset: -2%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  animation: lgf-slide 40s linear infinite;
+  animation-delay: calc(var(--i) * 8s);
+  will-change: opacity, transform;
+}
+
+@keyframes lgf-slide {
+  0%   { opacity: 0; transform: scale(1.14) translate3d(1.5%, 1%, 0); }
+  4%   { opacity: 1; }
+  20%  { opacity: 1; }
+  25%  { opacity: 0; transform: scale(1.02) translate3d(-1%, -0.5%, 0); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+
+.lgf-slide:first-child { animation-fill-mode: backwards; }
+
+.lgf-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(20, 14, 9, 0.55) 0%, rgba(20, 14, 9, 0) 22%),
+    linear-gradient(0deg, rgba(20, 14, 9, 0.85) 0%, rgba(20, 14, 9, 0.25) 38%, rgba(20, 14, 9, 0) 60%),
+    radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(20, 14, 9, 0.45) 100%);
+  z-index: 1;
+}
+
+.lgf .lgf-brand {
+  position: absolute;
+  top: 2.2rem;
+  left: 2.6rem;
+  z-index: 2;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--flour-50);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+}
+
+.lgf-captions {
+  position: absolute;
+  left: 2.6rem;
+  right: 2.6rem;
+  bottom: 2.4rem;
+  z-index: 2;
+  color: var(--flour-50);
+  min-height: 9.5rem;
+}
+
+.lgf-caption {
+  position: absolute;
+  left: 0;
+  bottom: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  opacity: 0;
+  animation: lgf-caption 40s var(--ease-out) infinite;
+  animation-delay: calc(var(--i) * 8s);
+}
+
+@keyframes lgf-caption {
+  0%, 2%  { opacity: 0; transform: translateY(16px); }
+  6%      { opacity: 1; transform: none; }
+  19%     { opacity: 1; transform: none; }
+  22%     { opacity: 0; transform: translateY(-10px); }
+  100%    { opacity: 0; }
+}
+
+.lgf-caption-index {
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.22em;
+  color: rgba(253, 251, 246, 0.6);
+}
+
+.lgf-caption-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(2.2rem, 3.6vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.lgf-caption-line {
+  font-size: 0.98rem;
+  color: rgba(253, 251, 246, 0.78);
+}
+
+.lgf-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  max-width: 340px;
+}
+
+.lgf-progress span {
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(253, 251, 246, 0.22);
+  overflow: hidden;
+}
+
+.lgf-progress i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--flour-50);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: lgf-bar 40s linear infinite;
+  animation-delay: calc(var(--i) * 8s);
+}
+
+@keyframes lgf-bar {
+  0%    { transform: scaleX(0); opacity: 1; }
+  20%   { transform: scaleX(1); opacity: 1; }
+  22%   { transform: scaleX(1); opacity: 0; }
+  100%  { transform: scaleX(1); opacity: 0; }
+}
+
+/* ── Feuille ─────────────────────────────────────────────────────────────── */
+.lgf-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 2.2rem clamp(2rem, 5vw, 5rem);
+  background-color: var(--flour-50);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .36 0 0 0 0 .24 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 70% at 100% 0%, var(--ember-100) 0%, transparent 55%),
+    radial-gradient(90% 60% at 0% 100%, var(--sage-100) 0%, transparent 60%);
+  box-shadow: -30px 0 60px -30px rgba(43, 38, 32, 0.35);
+  z-index: 1;
+}
+
+.lgf-rise {
+  opacity: 0;
+  animation: lg-rise 0.9s var(--ease-out) forwards;
+  animation-delay: calc(0.15s + var(--d) * 0.09s);
+}
+
+.lgf-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.lgf .lgf-mark { display: none; font-size: 1.9rem; line-height: 1; color: var(--ink-900); margin-right: auto; }
+
+.lgf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: 600 11px/1.2 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--crust-600);
+}
+
+.lgf-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+.lgf-title {
+  margin: 1.1rem 0 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-size: clamp(3.2rem, 5.2vw, 4.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  font-variation-settings: "opsz" 144;
+  color: var(--ink-900);
+}
+
+.lgf-title span { color: var(--ember-600); }
+
+.lgf-whisper {
+  margin: 1rem 0 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: var(--ink-500);
+}
+
+.lgf-next {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.8rem 0 0;
+  padding: 0.5rem 0.9rem 0.5rem 0.75rem;
+  border: 1px solid var(--flour-300);
+  border-radius: var(--radius-pill);
+  background: rgba(254, 252, 248, 0.7);
+  font-size: 0.88rem;
+  color: var(--ink-700);
+}
+
+.lgf-next svg { color: var(--ember-600); }
+.lgf-next strong { font-weight: 600; color: var(--ink-900); }
+
+.lgf-form { margin-top: 2.6rem; }
+
+.lgf-label {
+  display: block;
+  font: 600 11px/1.2 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  margin-bottom: 0.6rem;
+}
+
+.lgf-field {
+  position: relative;
+  border-bottom: 1.5px solid var(--flour-400);
+  transition: border-color 0.3s var(--ease-soft);
+}
+
+.lgf-field::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1.5px;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--ember-600), var(--ember-500), var(--sage-600));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s var(--ease-out);
+}
+
+.lgf-field:focus-within::after { transform: scaleX(1); }
+.lgf-field.is-error { animation: lg-shake 0.5s both; border-color: var(--danger-600); }
+
+.lgf-field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0.7rem 2.6rem 0.8rem 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.7rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-900);
+}
+
+.lgf-field input::placeholder { color: var(--flour-400); letter-spacing: 0.2em; }
+
+.lgf-eye {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  padding: 0.4rem;
+  color: var(--ink-400);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
+}
+
+.lgf-eye:hover, .lgf-eye.is-on { color: var(--ember-600); }
+
+.lgf-submit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1.05rem 1.4rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ink-900);
+  color: var(--flour-50);
+  font: 600 1rem/1 var(--font-sans);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 14px 30px -14px rgba(43, 38, 32, 0.6);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s;
+}
+
+.lgf-submit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, var(--ember-700), var(--ember-600) 45%, var(--ember-500));
+  transform: translateX(-101%);
+  transition: transform 0.55s var(--ease-out);
+}
+
+.lgf-submit:hover::before, .is-submitting .lgf-submit::before { transform: none; }
+.lgf-submit:hover { transform: translateY(-1px); box-shadow: 0 18px 34px -14px rgba(162, 63, 24, 0.6); }
+.lgf-submit svg { transition: transform 0.35s var(--ease-out); }
+.lgf-submit:hover svg { transform: translateX(4px); }
+.lgf-submit:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+
+.lgf-alert, .lgf-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.2rem;
+  font-size: 0.9rem;
+}
+
+.lgf-alert { color: var(--danger-700); }
+.lgf-notice { color: var(--success-700); }
+
+.lgf-foot {
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--ink-400);
+}
+
+@media (max-width: 900px) {
+  .lgf { grid-template-columns: 1fr; }
+  .lgf-visual { display: none; }
+  .lgf .lgf-mark { display: inline; }
+  .lgf-panel { box-shadow: none; min-height: 100vh; padding: 1.5rem 1.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lgf-slide, .lgf-caption, .lgf-progress i { animation: none; }
+  .lgf-slide:first-child, .lgf-caption:first-child { opacity: 1; }
+  .lgf-rise { animation: none; opacity: 1; }
+}
+

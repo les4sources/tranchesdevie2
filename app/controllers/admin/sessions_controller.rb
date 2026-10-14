@@ -1,5 +1,6 @@
 class Admin::SessionsController < ApplicationController
-  layout "admin"
+  # La connexion a sa propre coque plein écran ; le reste redirige.
+  layout "admin_login"
   helper Admin::FormHelper
 
   def index
@@ -11,7 +12,9 @@ class Admin::SessionsController < ApplicationController
   end
 
   def new
-    redirect_to admin_orders_path if admin_authenticated?
+    return redirect_to admin_orders_path if admin_authenticated?
+
+    @next_bake_day = BakeDay.visible_to_customers.future.ordered.first
   end
 
   def create

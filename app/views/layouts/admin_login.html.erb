@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <title><%= content_for(:title) || "Tranches de Vie" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <script async src="<%= asset_path("es-module-shims.min.js") %>" data-turbo-track="reload"></script>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <%# Coque nue, plein écran : chaque variante de la page de connexion
+      dessine elle-même tout l'écran (et ses messages flash). %>
+  <body class="<%= content_for(:body_class) %> <%= 'dev-warning-border' if Rails.env.development? %>">
+    <%= yield %>
+  </body>
+</html>

@@ -1,26 +1,28 @@
-<% content_for :title, "Pizza Party publique — soirées au four à bois" %>
+<% content_for :title, "Camembert Party — soirées fromage au four à bois" %>
+<%# Pleine largeur : le fond du hero court d'un bord à l'autre ; la page gère ses propres conteneurs. %>
+<% content_for :full_bleed, true %>
 
 <section class="border-b border-flour-300 bg-gradient-to-b from-sage-100 to-flour-50">
   <div class="mx-auto max-w-[1040px] px-6 py-12 md:py-16">
     <div class="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
       <div>
         <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-sage-700">
-          <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Pizza Party publique
+          <%= lucide "party-popper", size: 14, color: "var(--ember-600)" %> Camembert Party
         </div>
-        <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Rejoins la prochaine Pizza Party</h1>
+        <h1 class="font-script text-[40px] font-bold leading-[0.95] text-ink-900 sm:text-5xl">Rejoins la prochaine Camembert Party</h1>
         <p class="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-700">
-          Viens déguster de délicieuses pizzas tout juste sorties du four, faire des rencontres et
-          profiter d'une ambiance décontractée ! Nos boulangères préparent des pâtons au levain le
-          jour même, tu amènes ta garniture selon tes envies, et on cuit le tout au feu de bois.
+          Une soirée fromage fondu au coin du four à bois ! Tu amènes ton fromage et tes petits
+          légumes, on les cuit dans le four de la boulangerie, et chacun·e déguste sa mini-fondue
+          avec du pain tout frais, cuit le jour même par nos boulangères.
         </p>
         <div class="mt-5 flex flex-wrap gap-2">
           <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "flame", size: 14, color: "var(--ember-600)" %> Four de boulangerie chauffé au bois</span>
-          <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "wheat", size: 14, color: "var(--sage-700)" %> Pâtons bio et au levain</span>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "wheat", size: 14, color: "var(--sage-700)" %> Pain au froment cuit du jour</span>
           <span class="inline-flex items-center gap-1.5 rounded-full border border-sage-200 bg-warm-white px-3 py-1.5 text-[13px] font-medium text-ink-700"><%= lucide "users", size: 14, color: "var(--sage-700)" %> Et les gens sont super cools !</span>
         </div>
       </div>
       <div>
-        <%= image_tag "pizza_party/party-5.jpg", alt: "Soirée Pizza Party sous les tonnelles des 4 Sources", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
+        <%= image_tag "pizza_party/party-5.jpg", alt: "Soirée conviviale aux 4 Sources", class: "aspect-[4/3] w-full rounded-2xl border border-flour-300 object-cover shadow-sm" %>
       </div>
     </div>
   </div>
@@ -31,55 +33,76 @@
     <div class="grid gap-4 sm:grid-cols-3">
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "wheat", size: 22, color: "var(--sage-700)" %></div>
-        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Des pâtons du jour</h2>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Du pain tout frais</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
-          Nos boulangères préparent de délicieux pâtons au levain le jour même — bio, pétris à la
-          main, prêts à garnir.
+          Nos boulangères cuisent le jour même du pain au froment pour accompagner ton fromage.
+          Planches à découper et platines de cuisson sont fournies.
         </p>
       </div>
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "flame", size: 22, color: "var(--ember-600)" %></div>
         <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Cuisson au feu de bois</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
-          Tu amènes ta garniture, on enfourne tes pizzas entre 18h45 et 20h30, quand le four est
-          encore chaud de la journée.
+          Ton fromage et tes légumes passent dans le four de la boulangerie, encore chaud de la
+          journée, et ressortent en mini-fondue.
         </p>
       </div>
       <div class="rounded-2xl border border-flour-300 bg-warm-white p-6">
-        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "sun", size: 22, color: "var(--sage-700)" %></div>
-        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Terrasse plein sud</h2>
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-sage-100"><%= lucide "moon-star", size: 22, color: "var(--sage-700)" %></div>
+        <h2 class="mt-4 text-[32px] font-semibold leading-tight text-ink-900">Au chaud, tous ensemble</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
-          Et vous les dégustez en terrasse plein sud, 360° nature ! En cas de pluie, on se réfugie
-          dans la grande salle des 4 Sources.
+          On se retrouve dans la grande salle des 4 Sources pour partager le repas, faire des
+          rencontres et profiter d'une ambiance décontractée.
         </p>
       </div>
     </div>
 
     <div class="mt-10 grid gap-4 sm:grid-cols-[1fr_1fr_1.2fr]">
-      <%= image_tag "pizza_party/party-6.jpg", alt: "Pizza au levain tout juste sortie du four", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
-      <%= image_tag "pizza_party/party-7.jpg", alt: "Pizza dégustée en terrasse", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "tranches-de-vie-3.jpg", alt: "Le four à bois de la boulangerie", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
+      <%= image_tag "tranches-de-vie-2.jpg", alt: "Pains tout juste sortis du four", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
       <%= image_tag "pizza_party/party-8.jpg", alt: "Les 4 Sources vus du ciel — 360° nature", class: "aspect-[4/3] w-full rounded-xl border border-flour-300 object-cover" %>
     </div>
 
-    <div class="mt-10 rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
-      <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Infos pratiques</h2>
-      <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
-          <%= lucide "calendar-days", size: 18, color: "var(--sage-700)" %>
-          <span>Inscription <b class="font-semibold text-ink-900">indispensable jusqu'à la veille 16 h 00</b> (la date exacte est indiquée sous chaque soirée) — c'est ce qui nous permet de préparer le bon nombre de pâtons.</span>
-        </p>
-        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
-          <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
-          <span>Participation : <b class="font-semibold text-ink-900">10 € par adulte</b> · <b class="font-semibold text-ink-900">6 € par enfant</b>.</span>
-        </p>
-        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
-          <%= lucide "party-popper", size: 18, color: "var(--ember-600)" %>
-          <span><b class="font-semibold text-ink-900">Bar sur place</b> avec boissons bios, locales et de saison 🍹 — consommations payables en cash ou par virement.</span>
-        </p>
-        <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
-          <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
-          <span>Les enfournements de tes pizzas ont lieu <b class="font-semibold text-ink-900">entre 18h45 et 20h30</b>, lorsque le four est encore chaud de la journée.</span>
-        </p>
+    <div class="mt-10 grid gap-4 md:grid-cols-[1fr_1fr]">
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
+        <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Ce que tu amènes</h2>
+        <ul class="mt-4 space-y-3">
+          <li class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %>
+            <span><b class="font-semibold text-ink-900">Ton fromage</b>, de préférence dans un emballage en bois (camembert, vacherin…).</span>
+          </li>
+          <li class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %>
+            <span><b class="font-semibold text-ink-900">Des accompagnements</b> : légumes, féculents ou salades froides, avec leur assaisonnement.</span>
+          </li>
+          <li class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "check", size: 18, color: "var(--sage-700)" %>
+            <span>Si tu veux, <b class="font-semibold text-ink-900">un petit plat mijoté</b> dans une mini-cocotte de 10 cm de diamètre maximum.</span>
+          </li>
+        </ul>
+      </div>
+      <div class="rounded-2xl border border-flour-300 bg-warm-white p-6 sm:p-8">
+        <h2 class="text-[32px] font-semibold leading-tight text-ink-900">Infos pratiques</h2>
+        <div class="mt-4 space-y-3">
+          <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "calendar-days", size: 18, color: "var(--sage-700)" %>
+            <span>Inscription <b class="font-semibold text-ink-900">indispensable</b> (la date limite est indiquée sous chaque soirée) — c'est ce qui nous permet de cuire la bonne quantité de pain.</span>
+          </p>
+          <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "euro", size: 18, color: "var(--sage-700)" %>
+            <span>Participation :
+              <%= safe_join(@variants.map { |variant| tag.b("#{number_to_currency(variant.price_euros, unit: "€", separator: ",", delimiter: " ", format: "%n %u", strip_insignificant_zeros: true)} par #{variant.name.downcase}", class: "font-semibold text-ink-900") }, " · ") %>.
+            </span>
+          </p>
+          <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "party-popper", size: 18, color: "var(--ember-600)" %>
+            <span><b class="font-semibold text-ink-900">Bar sur place</b> avec boissons bios, locales et de saison 🍹 — consommations payables en cash.</span>
+          </p>
+          <p class="flex items-start gap-2.5 text-sm leading-relaxed text-ink-700">
+            <%= lucide "flame", size: 18, color: "var(--ember-600)" %>
+            <span>Accueil <b class="font-semibold text-ink-900">dès 18h30</b>, les enfournements ont lieu <b class="font-semibold text-ink-900">entre 19h et 19h30</b>.</span>
+          </p>
+        </div>
       </div>
     </div>
 
@@ -90,7 +113,7 @@
           <span>Ton panier t'empêche de t'inscrire</span>
         </p>
         <p class="mt-2 text-sm leading-relaxed text-ink-700">
-          Il contient <b class="font-semibold text-ink-900"><%= @blocking_cart_count %> article<%= "s" if @blocking_cart_count > 1 %></b> de la boulangerie. L'inscription à la Pizza Party se règle dans une commande séparée : termine d'abord cette commande, ou vide ton panier pour t'inscrire tout de suite.
+          Il contient <b class="font-semibold text-ink-900"><%= @blocking_cart_count %> article<%= "s" if @blocking_cart_count > 1 %></b> de la boulangerie. L'inscription à la Camembert Party se règle dans une commande séparée : termine d'abord cette commande, ou vide ton panier pour t'inscrire tout de suite.
         </p>
         <div class="mt-4 flex flex-wrap gap-3">
           <%= link_to "Voir mon panier", cart_path, class: "inline-flex items-center rounded-lg border border-flour-300 bg-warm-white px-4 py-2.5 text-sm font-semibold text-ink-900 transition hover:bg-flour-200" %>
@@ -152,7 +175,7 @@
                     <% end %>
                   </div>
                 <% end %>
-                <p class="text-center text-xs text-ink-500">Sur place, chacun·e garnit son pâton et l'enfourne — un moment festif tous ensemble.</p>
+                <p class="text-center text-xs text-ink-500">Sur place, chacun·e enfourne son fromage — un moment festif tous ensemble.</p>
               </div>
             <% elsif remaining&.zero? %>
               <p class="rounded-md border border-danger-200 bg-danger-100 px-4 py-3 text-sm font-semibold text-danger-700">Cet événement est complet.</p>
@@ -167,8 +190,8 @@
     <%= render "private_party_banner" %>
   <% else %>
     <div class="rounded-2xl border border-flour-300 bg-warm-white p-10 text-center">
-      <p class="text-lg font-semibold text-ink-900">Aucune Pizza Party publique n'est programmée pour le moment.</p>
-      <p class="mt-2 text-sm text-ink-600">Reviens bientôt — ou organise la tienne, juste en dessous.</p>
+      <p class="text-lg font-semibold text-ink-900">Aucune Camembert Party n'est programmée pour le moment.</p>
+      <p class="mt-2 text-sm text-ink-600">Reviens bientôt — ou organise ta Pizza Party privée, juste en dessous.</p>
     </div>
 
     <%= render "private_party_banner" %>

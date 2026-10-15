@@ -27,8 +27,11 @@ Rails.application.routes.draw do
   get "reservations/:token/paiement", to: "party_payments#show", as: :party_payment
   post "reservations/:token/paiement", to: "party_payments#create_payment_intent", as: :party_payment_intent
   get "reservations/:token/merci", to: "party_payments#success", as: :party_payment_success
-  get "pizza-parties", to: "public_parties#index", as: :pizza_parties
-  get "pizza-party-publique", to: redirect("/pizza-parties")
+  # Les parties publiques sont devenues des Camembert Parties (#camembert-parties) ;
+  # les anciennes adresses restent valables pour les liens déjà partagés.
+  get "camembert-parties", to: "public_parties#index", as: :camembert_parties
+  get "pizza-parties", to: redirect("/camembert-parties")
+  get "pizza-party-publique", to: redirect("/camembert-parties")
   # Ancienne URL de la page party (liens partagés / historique).
   get "evenements", to: redirect("/pizza-party-privee")
   get "conditions-generales", to: "pages#cgv", as: :cgv

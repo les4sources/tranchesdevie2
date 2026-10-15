@@ -89,7 +89,7 @@ class CartController < ApplicationController
       end
 
       if non_public_items_in_cart?
-        redirect_back_or_public_parties(alert: "Ton panier contient déjà des articles de la boulangerie. Vide-le (bouton ci-dessous) ou termine cette commande : l'inscription à la Pizza party se règle à part.")
+        redirect_back_or_public_parties(alert: "Ton panier contient déjà des articles de la boulangerie. Vide-le (bouton ci-dessous) ou termine cette commande : l'inscription à la Camembert Party se règle à part.")
         return
       end
 
@@ -102,8 +102,8 @@ class CartController < ApplicationController
       session[:public_party_event_id] = event.id
     elsif public_party_in_cart?
       respond_to do |format|
-        format.html { redirect_to cart_path, alert: "Ton panier contient une inscription Pizza party : termine-la avant de commander autre chose." }
-        format.json { render json: { error: "Ton panier contient une inscription Pizza party : termine-la avant de commander autre chose." }, status: :unprocessable_entity }
+        format.html { redirect_to cart_path, alert: "Ton panier contient une inscription Camembert Party : termine-la avant de commander autre chose." }
+        format.json { render json: { error: "Ton panier contient une inscription Camembert Party : termine-la avant de commander autre chose." }, status: :unprocessable_entity }
       end
       return
     end
@@ -129,7 +129,7 @@ class CartController < ApplicationController
       # adultes ET enfants) ; le reste retourne au catalogue.
       format.html do
         if variant.product.pizza_party_role_public_party?
-          redirect_to pizza_parties_path, notice: "Ajouté au panier ! Ajoute d'autres personnes ou passe au panier pour finaliser."
+          redirect_to camembert_parties_path, notice: "Ajouté au panier ! Ajoute d'autres personnes ou passe au panier pour finaliser."
         else
           redirect_to catalog_path, notice: "Produit ajouté au panier"
         end
@@ -247,7 +247,7 @@ class CartController < ApplicationController
   # « YYYY-MM-DD|midi » → [Date, "midi"], ou [nil, nil] si invalide.
   def redirect_back_or_public_parties(alert:)
     respond_to do |format|
-      format.html { redirect_to pizza_parties_path, alert: alert }
+      format.html { redirect_to camembert_parties_path, alert: alert }
       format.json { render json: { error: alert }, status: :unprocessable_entity }
     end
   end

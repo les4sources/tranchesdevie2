@@ -17,9 +17,9 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
                                         registration_closes_at: 10.days.from_now)
   end
 
-  describe 'GET /pizza-party-publique' do
+  describe 'GET /camembert-parties' do
     it 'liste les événements avec places restantes et clôture' do
-      get pizza_parties_path
+      get camembert_parties_path
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('Pizza Party de septembre')
@@ -31,7 +31,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
     it 'masque les places restantes au-dessus de 50' do
       event.update!(capacity: 120)
 
-      get pizza_parties_path
+      get camembert_parties_path
 
       expect(response.body).not_to include('places restantes')
       expect(response.body).to include('Adulte')
@@ -42,23 +42,37 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       order = create(:order, customer: customer, party_event: event, bake_day: nil, source: :party, status: :paid)
       create(:order_item, order: order, product_variant: adult_variant, qty: 40)
 
-      get pizza_parties_path
+      get camembert_parties_path
 
       expect(response.body).to include('Cet événement est complet.')
     end
 
     it 'affiche le lien de menu et la bannière party privée' do
-      get pizza_parties_path
+      get camembert_parties_path
 
-      expect(response.body).to include('Pizza Parties')
+      expect(response.body).to include('Camembert Parties')
       expect(response.body).to include('Rien que pour ton groupe')
       expect(response.body).to include(pizza_party_privee_path)
+    end
+
+    it 'affiche le tarif à partir des variantes, pas en dur' do
+      get camembert_parties_path
+
+      expect(response.body).to include("#{adult_variant.price_euros.to_i} € par adulte")
+    end
+
+    it 'redirige les anciennes adresses Pizza Party publique' do
+      get '/pizza-parties'
+      expect(response).to redirect_to('/camembert-parties')
+
+      get '/pizza-party-publique'
+      expect(response).to redirect_to('/camembert-parties')
     end
 
     it 'affiche « clôturées » après la date de clôture' do
       event.update!(registration_closes_at: 1.hour.ago)
 
-      get pizza_parties_path
+      get camembert_parties_path
 
       expect(response.body).to include('clôturées')
     end
@@ -71,7 +85,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
       expect(session[:public_party_event_id]).to eq(event.id)
       expect(session[:cart].sum { |i| i['qty'].to_i }).to eq(3)
-      expect(response).to redirect_to(pizza_parties_path)
+      expect(response).to redirect_to(camembert_parties_path)
     end
 
     it 'refuse une inscription clôturée ou sans événement' do
@@ -138,7 +152,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
       get new_checkout_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('Ton inscription Pizza party')
+      expect(response.body).to include('Ton inscription Camembert Party')
       # Pas de portefeuille → pas d'option portefeuille.
       expect(response.body).not_to include('Payer avec mon portefeuille')
     end
@@ -303,7 +317,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
 
       get new_checkout_path
 
-      expect(response).to redirect_to(pizza_parties_path)
+      expect(response).to redirect_to(camembert_parties_path)
     end
   end
 
@@ -382,7 +396,7 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
     it 'annonce le blocage AVANT le clic, avec de quoi le lever' do
       post cart_add_path, params: { product_variant_id: bread_variant.id, qty: 2 }
 
-      get pizza_parties_path
+      get camembert_parties_path
 
       expect(response.body).to include("Ton panier t'empêche de t'inscrire")
       expect(response.body).to include('2 articles')
@@ -390,11 +404,11 @@ RSpec.describe 'Pizza party publique — inscriptions', type: :request do
     end
 
     it "n'affiche aucun bandeau quand le panier ne bloque rien" do
-      get pizza_parties_path
+      get camembert_parties_path
       expect(response.body).not_to include("Ton panier t'empêche de t'inscrire")
 
       post cart_add_path, params: { product_variant_id: adult_variant.id, public_party_event_id: event.id, qty: 2 }
-      get pizza_parties_path
+      get camembert_parties_path
       expect(response.body).not_to include("Ton panier t'empêche de t'inscrire")
     end
 

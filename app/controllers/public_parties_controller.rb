@@ -1,4 +1,5 @@
-# Page publique « Pizza Party publique » (/pizza-party-publique,
+# Page publique des parties PUBLIQUES, devenues « Camembert Party »
+# (/camembert-parties, #camembert-parties ; avant : Pizza Party publique,
 # #pizza-parties) : liste les événements créés par l'admin, avec places
 # restantes et clôture des inscriptions. L'inscription (variantes adulte /
 # enfant) rejoint le panier rattachée à SON événement, puis le checkout crée

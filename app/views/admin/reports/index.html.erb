@@ -8,6 +8,9 @@
   <%= link_to "Versements Stripe",
               payouts_admin_reports_path(start_date: @start_date, end_date: @end_date),
               class: adm_btn_class(:default) %>
+  <%= link_to "Origine des clients",
+              customer_origins_admin_reports_path(start_date: @start_date, end_date: @end_date),
+              class: adm_btn_class(:default) %>
   <%= link_to "Pizza parties privées",
               pizza_parties_admin_reports_path(start_date: @start_date, end_date: @end_date),
               class: adm_btn_class(:default) %>

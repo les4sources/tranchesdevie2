@@ -16,6 +16,11 @@ l'activité.
 
 - **Remboursements** — la liste des commandes remboursées sur une période.
 - **Payouts** — les reversements (ce qui est sorti / à sortir).
+- **Origine des clients** — d'où viennent les mangeurs : les acheteurs de la
+  période classés par village, avec leurs commandes et le chiffre d'affaires.
+  Le village est facultatif et déclaré par le client (dans « Mon compte » ou
+  juste après une commande) ; la carte « Village connu » dit quelle part des
+  clients a répondu.
 - **Pizza parties** — la compta dédiée aux [parties](parties) : barèmes privé /
   public et répartition.
 

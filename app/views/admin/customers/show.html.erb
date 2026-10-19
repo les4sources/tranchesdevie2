@@ -46,6 +46,13 @@
         </div>
       <% end %>
 
+      <% if @customer.locality.present? %>
+        <div>
+          <dt class="adm-eyebrow">Village</dt>
+          <dd class="mt-1 text-sm" style="color: var(--text-strong);"><%= @customer.locality %></dd>
+        </div>
+      <% end %>
+
       <div>
         <dt class="adm-eyebrow">SMS activé</dt>
         <dd class="mt-1">

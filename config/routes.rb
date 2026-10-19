@@ -74,6 +74,8 @@ Rails.application.routes.draw do
     get "mon-compte", to: "account#show", as: :account
     get "mon-compte/edit", to: "account#edit", as: :edit_account
     patch "mon-compte", to: "account#update"
+    # Village du client, demandé dans un encart (compte, confirmation de commande).
+    patch "mon-compte/village", to: "account#update_locality", as: :account_locality
     delete "mon-compte/commandes/:id", to: "account#cancel_order", as: :cancel_order
     patch "mon-compte/commandes/:id/recuperee", to: "account#pickup_order", as: :pickup_order
 
@@ -169,6 +171,8 @@ Rails.application.routes.draw do
         get :pizza_parties
         # Coût des matières premières valorisé aux prix historisés (#209).
         get :ingredient_costs
+        # D'où viennent les mangeurs : clients ventilés par village déclaré.
+        get :customer_origins
       end
     end
     get "billing", to: "billing#index", as: :billing

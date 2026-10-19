@@ -23,6 +23,13 @@
     <%= f.label :email, "Email", class: "adm-eyebrow mb-1 block" %>
     <%= f.email_field :email, class: adm_field_class %>
   </div>
+
+  <div>
+    <%= f.label :locality, "Village", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :locality, list: "locality-suggestions", maxlength: 80, placeholder: "Ex. Godinne", class: adm_field_class %>
+    <%= render "customers/account/locality_datalist" %>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Optionnel. Sert au reporting « Origine des clients ».</p>
+  </div>
 </div>
 
 <div class="mt-6">

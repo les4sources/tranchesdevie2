@@ -1,5 +1,6 @@
-<%# Filtre de période partagé par les écrans de reporting. %>
-<%= form_with url: admin_reports_path, method: :get, local: true, class: "flex flex-wrap items-end gap-3" do |f| %>
+<%# Filtre de période partagé par les écrans de reporting. `url` : l'écran à
+    recharger (par défaut le reporting général). %>
+<%= form_with url: local_assigns.fetch(:url, admin_reports_path), method: :get, local: true, class: "flex flex-wrap items-end gap-3" do |f| %>
   <div>
     <%= f.label :start_date, "Date de début", class: "adm-eyebrow mb-1 block" %>
     <%= f.date_field :start_date, value: start_date, class: adm_field_class("!w-auto") %>

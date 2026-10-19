@@ -13,11 +13,21 @@ class Customer < ApplicationRecord
   # L'e-mail est une identité de connexion à part entière (au même niveau que le
   # GSM) : on le normalise en minuscules et on garantit son unicité applicative.
   before_validation :normalize_email
+  before_validation :normalize_locality
+
+  # Villages proposés à la saisie (commune d'Yvoir et alentours). Simple aide à
+  # la frappe : le client peut écrire n'importe quel autre village.
+  SUGGESTED_LOCALITIES = %w[
+    Yvoir Godinne Mont-Godinne Durnal Purnode Spontin Evrehailles Houx Dorinne
+    Crupet Bauche Anhée Warnant Bioul Sosoye Maredsous Dinant Profondeville
+    Lustin Assesse Ciney Namur
+  ].freeze
 
   validates :first_name, presence: true
   validates :phone_e164, presence: true, uniqueness: { allow_nil: true }, unless: :skip_phone_validation
   validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: "must be in E.164 format" }, if: -> { phone_e164.present? }
   validates :email, uniqueness: { case_sensitive: false }, allow_blank: true
+  validates :locality, length: { maximum: 80 }
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
   scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
@@ -120,6 +130,24 @@ class Customer < ApplicationRecord
   end
 
 
+  # Suggestions du champ « village » : la liste de base + les villages déjà
+  # saisis par d'autres clients (les plus fréquents d'abord), sans doublon de
+  # casse. Ne révèle aucun client : seulement des noms de villages.
+  def self.locality_suggestions(limit: 60)
+    entered = where.not(locality: [ nil, "" ])
+                .group("lower(locality)")
+                .order(Arel.sql("COUNT(*) DESC"))
+                .limit(limit)
+                .pluck(Arel.sql("MIN(locality)"))
+    (SUGGESTED_LOCALITIES + entered).uniq(&:downcase).sort_by { |name| I18n.transliterate(name).downcase }
+  end
+
+  # On demande le village tant qu'il est inconnu, sauf à qui a préféré ne pas
+  # répondre.
+  def locality_prompt?
+    locality.blank? && locality_prompt_dismissed_at.nil?
+  end
+
   # Un bon de livraison n'a de sens que pour un client facturable que la
   # boulangerie livre elle-même.
   def receives_delivery_notes?
@@ -130,5 +158,22 @@ class Customer < ApplicationRecord
 
   def normalize_email
     self.email = email.strip.downcase if email.present?
+  end
+
+  # « godinne », « GODINNE » et « Godinne » doivent compter comme un seul
+  # village dans le reporting : on nettoie les espaces et, si la saisie est tout
+  # en minuscules ou tout en capitales, on met une majuscule à chaque mot
+  # (« mont-godinne » → « Mont-Godinne »). Une casse mixte est laissée telle
+  # quelle (« Mont-sur-Meuse »).
+  def normalize_locality
+    value = locality.to_s.squish
+    if value.blank?
+      self.locality = nil
+      return
+    end
+    if value == value.downcase || value == value.upcase
+      value = value.downcase.gsub(/(\A|[\s\-'])(\p{L})/) { "#{$1}#{$2.upcase}" }
+    end
+    self.locality = value
   end
 end

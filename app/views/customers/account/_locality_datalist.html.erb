@@ -1,0 +1,5 @@
+<datalist id="locality-suggestions">
+  <% Customer.locality_suggestions.each do |name| %>
+    <option value="<%= name %>"></option>
+  <% end %>
+</datalist>

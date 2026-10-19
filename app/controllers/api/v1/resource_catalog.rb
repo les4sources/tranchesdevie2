@@ -69,6 +69,7 @@ module Api
           fields: {
             id: "integer", first_name: "string", last_name: "string|null", full_name: "string",
             phone_e164: "string|null (PII)", email: "string|null (PII)", billable: "boolean", delivered_by_bakery: "boolean",
+            locality: "string|null — village déclaré par le client (facultatif)",
             sms_opt_out: "boolean", email_opt_out: "boolean", effective_discount_percent: "integer",
             groups: "array<group>", wallet_balance_cents: "integer|null", wallet_balance_euros: "number|null",
             created_at: "datetime", updated_at: "datetime"

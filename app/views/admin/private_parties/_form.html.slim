@@ -50,12 +50,11 @@
         span.block.text-xs style="color: var(--text-muted);"
           | Il couvre la préparation, le bois, le matériel et la mise en place. Décochez-le si la party n'en porte pas : le barème ne le compte que si la ligne est réellement là.
 
-    label.flex.cursor-pointer.items-start.gap-2
-      = f.check_box :paid, style: "accent-color: var(--brand); margin-top: 3px;"
-      span
-        span.block.text-sm.font-medium style="color: var(--text-body);" Déjà payée
-        span.block.text-xs style="color: var(--text-muted);"
-          | Une party non payée apparaît partout — écran Parties, jour de cuisson, pâtons à préparer — mais n'entre dans les revenus qu'une fois marquée payée.
+    div class="md:w-1/3"
+      = f.label :payment_method, "Paiement", class: "adm-eyebrow mb-1 block"
+      = f.select :payment_method, party_payment_method_options, { include_blank: "Pas encore payée" }, class: adm_field_class
+      p.mt-1.text-xs style="color: var(--text-muted);"
+        | Une party non payée apparaît partout — écran Parties, jour de cuisson, pâtons à préparer — mais n'entre dans les revenus qu'une fois marquée payée.
 
   .flex.flex-wrap.justify-end.gap-3
     = link_to "Annuler", admin_party_events_path, class: adm_btn_class(:default)

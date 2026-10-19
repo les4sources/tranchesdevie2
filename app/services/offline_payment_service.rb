@@ -5,7 +5,7 @@
 # de commande et la sélection groupée de la fiche client : poser le moyen, le
 # statut financier, la date, et prévenir la compta pour une party privée.
 class OfflinePaymentService
-  METHODS = %w[cash transfer].freeze
+  METHODS = %w[cash transfer online with_stay].freeze
 
   # Commandes qu'on peut pointer : une vente due (CA facturé) pas encore payée.
   # Ni une commande en cours de paiement Stripe (`pending`), ni une planifiée

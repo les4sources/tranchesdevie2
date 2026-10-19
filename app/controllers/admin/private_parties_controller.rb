@@ -30,7 +30,7 @@ module Admin
         customer_id: @order&.customer_id,
         name: @order&.group_name,
         forfait: forfait?(@order),
-        paid: @order&.paid?
+        payment_method: (@order.offline_payment_method if @order&.payment_status_paid?)
       )
     end
 
@@ -68,8 +68,8 @@ module Admin
     end
 
     PrivatePartyForm = Struct.new(:held_on, :slot, :persons, :customer_id, :name, :phone, :email,
-                                  :forfait, :paid, keyword_init: true) do
-      FIELDS = %i[held_on slot persons customer_id name phone email forfait paid].freeze
+                                  :forfait, :payment_method, keyword_init: true) do
+      FIELDS = %i[held_on slot persons customer_id name phone email forfait payment_method].freeze
 
       def initialize(attrs = {})
         given = (attrs.respond_to?(:to_h) ? attrs.to_h : attrs).symbolize_keys
@@ -98,7 +98,9 @@ module Admin
         phone: attrs[:phone],
         email: attrs[:email],
         forfait: attrs[:forfait],
-        paid: attrs[:paid],
+        # Le formulaire choisit le moyen ; « Pas encore payée » laisse le champ vide.
+        paid: attrs[:payment_method].present?,
+        payment_method: attrs[:payment_method],
         party_event: party_event
       )
     end
@@ -116,7 +118,7 @@ module Admin
     end
 
     def private_party_params
-      params.require(:private_party).permit(:held_on, :slot, :persons, :customer_id, :name, :phone, :email, :forfait, :paid)
+      params.require(:private_party).permit(:held_on, :slot, :persons, :customer_id, :name, :phone, :email, :forfait, :payment_method)
     end
   end
 end

@@ -18,10 +18,10 @@ RSpec.describe "Admin::PrivateParties", type: :request do
   let(:forfait_product) { create(:product, :pizza_party_forfait, name: "Forfait") }
   let!(:forfait) { create(:product_variant, product: forfait_product, name: "forfait", price_cents: 4_000, channel: "store") }
 
-  def create_party(persons: 8, held_on: date, slot: "soir", name: "Fabienne Renard", forfait_on: "1", paid: "1", **rest)
+  def create_party(persons: 8, held_on: date, slot: "soir", name: "Fabienne Renard", forfait_on: "1", payment_method: "cash", **rest)
     post admin_private_parties_path, params: {
       private_party: { held_on: held_on.to_s, slot: slot, persons: persons, name: name,
-                       forfait: forfait_on, paid: paid }.merge(rest)
+                       forfait: forfait_on, payment_method: payment_method }.merge(rest)
     }
   end
 
@@ -96,7 +96,7 @@ RSpec.describe "Admin::PrivateParties", type: :request do
   end
 
   describe "la fiche de la party" do
-    before { create_party(persons: 8, paid: "0") }
+    before { create_party(persons: 8, payment_method: "") }
 
     subject(:body) do
       get admin_party_event_path(PartyEvent.last)
@@ -110,14 +110,14 @@ RSpec.describe "Admin::PrivateParties", type: :request do
       expect(body).to include(edit_admin_private_party_path(event))
       # L'encaissement sur place passe par le chemin unique de pointage, qui
       # trace le MOYEN — plus de bascule « payée / non payée » (#pizza-parties).
-      expect(body).to include("Encaissée en liquide")
-      expect(body).to include("Encaissée par virement")
+      expect(body).to include("Marquer payée")
+      expect(body).to include("Liquide", "En ligne", "Virement spécifique", "Avec le séjour")
     end
   end
 
   describe "encaissement sur place" do
     it "pointe le moyen et sait revenir en arrière" do
-      create_party(persons: 8, paid: "0")
+      create_party(persons: 8, payment_method: "")
       order = PartyEvent.last.orders.last
       expect(order).to be_payment_status_unpaid
 
@@ -132,8 +132,27 @@ RSpec.describe "Admin::PrivateParties", type: :request do
       expect(order.offline_payment_method).to be_nil
     end
 
+    it "accepte les quatre moyens d'une party privée" do
+      create_party(persons: 8, payment_method: "")
+      order = PartyEvent.last.orders.last
+
+      %w[cash online transfer with_stay].each do |method|
+        patch encaissement_admin_order_path(order, method: method)
+        expect(order.reload.offline_payment_method).to eq(method)
+        patch encaissement_admin_order_path(order, method: "none")
+      end
+    end
+
+    it "crée une party déjà payée avec le séjour" do
+      create_party(persons: 8, payment_method: "with_stay")
+      order = PartyEvent.last.orders.last
+
+      expect(order).to be_payment_status_paid
+      expect(order.offline_payment_method).to eq("with_stay")
+    end
+
     it "refuse de pointer une réservation déjà payée en ligne" do
-      create_party(persons: 8, paid: "0")
+      create_party(persons: 8, payment_method: "")
       order = PartyEvent.last.orders.last
       create(:payment, order: order, status: :succeeded)
 
@@ -147,7 +166,7 @@ RSpec.describe "Admin::PrivateParties", type: :request do
 
   describe "édition d'une réservation venue du site" do
     it "est refusée : elle porte un PaymentIntent engagé chez Stripe" do
-      create_party(persons: 8, paid: "0")
+      create_party(persons: 8, payment_method: "")
       event = PartyEvent.last
       event.orders.last.update!(payment_intent_id: "pi_en_ligne")
 
@@ -167,13 +186,14 @@ RSpec.describe "Admin::PrivateParties", type: :request do
 
       patch admin_private_party_path(event), params: {
         private_party: { held_on: wednesday.to_s, slot: "midi", persons: 4,
-                         customer_id: order.customer_id, forfait: "0", paid: "1" }
+                         customer_id: order.customer_id, forfait: "0", payment_method: "with_stay" }
       }
 
       expect(response).to redirect_to(admin_party_event_path(event))
       expect(event.reload.held_on).to eq(wednesday)
       expect(event.slot).to eq("midi")
       expect(order.reload.total_cents).to eq(4 * 500)
+      expect(order.offline_payment_method).to eq("with_stay")
     end
   end
 

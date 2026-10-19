@@ -20,7 +20,7 @@ class ManualPrivatePartyService
   attr_reader :party_event, :order, :errors
 
   def initialize(held_on:, slot:, persons:, customer_id: nil, name: nil, phone: nil, email: nil,
-                 forfait: true, paid: false, party_event: nil)
+                 forfait: true, paid: false, payment_method: nil, party_event: nil)
     @held_on = held_on
     @slot = slot.to_s.presence
     @persons = persons.to_i
@@ -30,6 +30,7 @@ class ManualPrivatePartyService
     @email = email.to_s.strip.presence
     @forfait = ActiveModel::Type::Boolean.new.cast(forfait) || false
     @paid = ActiveModel::Type::Boolean.new.cast(paid) || false
+    @payment_method = payment_method.to_s.presence
     @party_event = party_event
     @errors = []
   end
@@ -54,6 +55,9 @@ class ManualPrivatePartyService
     @errors << "Indiquez au moins une personne" if @persons <= 0
     @errors << "Le client est requis (existant, ou nom d'un nouveau)" if customer_source.nil?
     @errors << "Aucun produit « pâton de pizza party » n'est configuré" if paton_variant.nil?
+    if @payment_method && !OfflinePaymentService::METHODS.include?(@payment_method)
+      @errors << "Moyen de paiement inconnu"
+    end
 
     @errors.empty?
   end
@@ -96,7 +100,7 @@ class ManualPrivatePartyService
   def apply_offline_payment
     if @paid
       @order.update!(payment_status: :paid,
-                     offline_payment_method: @order.offline_payment_method || :cash,
+                     offline_payment_method: @payment_method || @order.offline_payment_method || :cash,
                      paid_at: @order.read_attribute(:paid_at) || Time.current,
                      status: @order.unpaid? ? :paid : @order.status)
     else

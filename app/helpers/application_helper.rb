@@ -81,10 +81,26 @@ module ApplicationHelper
       wallet: "Portefeuille",
       # Pointés à la main par le boulanger à la remise (#275).
       cash: "Liquide",
-      transfer: "Virement"
+      transfer: "Virement",
+      online: "En ligne",
+      with_stay: "Avec le séjour"
     }
 
     labels[method&.to_sym]
+  end
+
+  # Moyens proposés pour pointer une pizza party privée payée. Le virement y
+  # est « spécifique » : un virement propre à la party, par opposition à une
+  # party ajoutée à la facture du séjour.
+  PARTY_PAYMENT_METHOD_OPTIONS = [
+    [ "Liquide", "cash" ],
+    [ "En ligne", "online" ],
+    [ "Virement spécifique", "transfer" ],
+    [ "Avec le séjour", "with_stay" ]
+  ].freeze
+
+  def party_payment_method_options
+    PARTY_PAYMENT_METHOD_OPTIONS
   end
 
   # Petite icône SVG (style heroicons) indiquant le mode d'encaissement réel.

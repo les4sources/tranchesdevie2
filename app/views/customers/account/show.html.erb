@@ -39,6 +39,8 @@
       confirmation (ou son erreur) sans recharger la page (#291). %>
   <div id="account-flash"></div>
 
+  <%= render "customers/account/locality_prompt" %>
+
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[0.82fr_1.18fr]">
     <!-- Left column -->
     <div class="flex flex-col gap-[18px] lg:sticky lg:top-5">
@@ -46,7 +48,7 @@
       <div class="overflow-hidden rounded-lg border border-flour-300 bg-warm-white shadow-sm">
         <h2 class="px-6 pb-3 pt-4 font-script text-2xl font-bold text-ink-900">Informations personnelles</h2>
         <div class="px-6 pb-5 pt-1">
-          <% rows = [ [ "Prénom", @customer.first_name ], [ "Nom", @customer.last_name ], [ "Téléphone", @customer.phone_e164 ], [ "Email", @customer.email ] ].reject { |_, v| v.blank? } %>
+          <% rows = [ [ "Prénom", @customer.first_name ], [ "Nom", @customer.last_name ], [ "Téléphone", @customer.phone_e164 ], [ "Email", @customer.email ], [ "Village", @customer.locality ] ].reject { |_, v| v.blank? } %>
           <% rows.each_with_index do |(k, v), i| %>
             <div class="flex items-center justify-between gap-3.5 py-[11px] <%= "border-t border-flour-300" if i.positive? %>">
               <span class="text-[13px] font-medium text-ink-500"><%= k %></span>

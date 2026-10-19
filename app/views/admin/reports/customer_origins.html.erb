@@ -1,0 +1,101 @@
+<% content_for :title, "Origine des clients" %>
+<% content_for :layout, "admin" %>
+
+<%= adm_page_header "Origine des clients" do %>
+  <%= link_to "← Retour au reporting",
+              admin_reports_path(start_date: @start_date, end_date: @end_date),
+              class: adm_btn_class(:default) %>
+<% end %>
+
+<p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">
+  Période du <%= l(@start_date) %> au <%= l(@end_date) %> · clients ayant acheté sur la période, selon le village qu'ils ont indiqué
+</p>
+
+<div class="adm-card mb-4 p-3 sm:p-4">
+  <%= render "date_range_filter", url: customer_origins_admin_reports_path, start_date: @start_date, end_date: @end_date %>
+</div>
+
+<div class="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Clients acheteurs</p>
+    <p class="adm-grid-num mt-1 text-3xl font-bold" style="color: var(--text-strong);"><%= @report.customers_count %></p>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Au moins une commande payée, prête ou récupérée</p>
+  </div>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Villages représentés</p>
+    <p class="adm-grid-num mt-1 text-3xl font-bold" style="color: var(--text-strong);"><%= @report.rows.size %></p>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">
+      <% if (top = @report.rows.first) %>
+        Le plus représenté : <%= top.locality %> (<%= top.customers_count %>)
+      <% else %>
+        Aucun village indiqué pour l'instant
+      <% end %>
+    </p>
+  </div>
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Village connu</p>
+    <p class="adm-grid-num mt-1 text-3xl font-bold" style="color: var(--text-strong);"><%= @report.coverage_percent %> %</p>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);"><%= @report.known_customers_count %> client(s) sur <%= @report.customers_count %> ont répondu</p>
+  </div>
+</div>
+
+<div class="adm-card overflow-hidden">
+  <div class="adm-cardhd">
+    <h2 class="text-sm font-semibold" style="color: var(--text-strong);">Clients par village</h2>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="adm-grid">
+      <thead>
+        <tr>
+          <th>Village</th>
+          <th class="text-right">Clients</th>
+          <th>Part des clients</th>
+          <th class="text-right">Commandes</th>
+          <th class="text-right">Chiffre d'affaires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @report.rows.empty? && @report.unknown.nil? %>
+          <%= adm_empty_row(colspan: 5,
+                            title: "Aucune commande sur cette période.",
+                            hint: "Élargissez la période pour retrouver des acheteurs.") %>
+        <% end %>
+        <% @report.rows.each do |row| %>
+          <% share = @report.customers_count.positive? ? (row.customers_count * 100.0 / @report.customers_count).round : 0 %>
+          <tr>
+            <td class="font-medium" style="color: var(--text-strong);"><%= row.locality %></td>
+            <td class="adm-grid-num text-right"><%= row.customers_count %></td>
+            <td>
+              <div class="flex w-48 items-center gap-2">
+                <%= adm_meter(share, tone: :success) %>
+                <span class="adm-grid-num whitespace-nowrap text-xs" style="color: var(--text-muted);"><%= share %> %</span>
+              </div>
+            </td>
+            <td class="adm-grid-num text-right"><%= row.orders_count %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(row.revenue_cents) %></td>
+          </tr>
+        <% end %>
+        <% if (row = @report.unknown) %>
+          <% share = (row.customers_count * 100.0 / @report.customers_count).round %>
+          <tr style="color: var(--text-muted);">
+            <td class="italic">Non renseigné</td>
+            <td class="adm-grid-num text-right"><%= row.customers_count %></td>
+            <td>
+              <div class="flex w-48 items-center gap-2">
+                <%= adm_meter(share, tone: :neutral) %>
+                <span class="adm-grid-num whitespace-nowrap text-xs"><%= share %> %</span>
+              </div>
+            </td>
+            <td class="adm-grid-num text-right"><%= row.orders_count %></td>
+            <td class="adm-grid-num text-right"><%= reports_currency(row.revenue_cents) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="mt-3 text-sm" style="color: var(--text-muted);">
+  Le village est demandé aux clients dans « Mon compte » et après une commande ; il reste facultatif. Vous pouvez aussi le compléter depuis la fiche d'un mangeur.
+</p>

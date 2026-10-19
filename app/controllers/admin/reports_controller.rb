@@ -33,6 +33,16 @@ class Admin::ReportsController < Admin::BaseController
     @costs = IngredientCostReportService.call(start_date: @start_date, end_date: @end_date)
   end
 
+  # « D'où viennent nos mangeurs ? » : acheteurs de la période ventilés par
+  # village déclaré (retour Michael 19/10/2026).
+  def customer_origins
+    @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
+    @end_date = parsed_date(params[:end_date]) || Date.current
+    @end_date = @start_date if @end_date < @start_date
+
+    @report = CustomerOriginReportService.new(start_date: @start_date, end_date: @end_date).call
+  end
+
   def refunds
     @start_date = parsed_date(params[:start_date]) || Date.current.beginning_of_year
     @end_date = parsed_date(params[:end_date]) || Date.current

@@ -19,7 +19,8 @@ Clique sur un nom pour ouvrir sa fiche. Tu y trouves :
 
 ![La fiche d'un mangeur](shot:customer-show)
 
-- **Ses coordonnées** — nom, téléphone, email.
+- **Ses coordonnées** — nom, téléphone, email, et son village s'il l'a indiqué
+  (modifiable depuis « Modifier »).
 - **Son portefeuille** — un solde prépayé (en euros) qu'il peut utiliser pour
   payer ses commandes. Voir plus bas.
 - **Son historique** — toutes ses commandes passées.

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_10_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -150,11 +150,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_10_220000) do
     t.boolean "email_opt_out", default: false, null: false
     t.string "first_name", null: false
     t.string "last_name"
+    t.string "locality"
+    t.datetime "locality_prompt_dismissed_at"
     t.string "phone_e164"
     t.boolean "skip_wallet_check", default: false, null: false
     t.boolean "sms_opt_out", default: false, null: false
     t.datetime "updated_at", null: false
     t.index "lower((email)::text)", name: "index_customers_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
+    t.index "lower((locality)::text)", name: "index_customers_on_lower_locality"
     t.index ["phone_e164"], name: "index_customers_on_phone_e164", unique: true, where: "(phone_e164 IS NOT NULL)"
   end
 

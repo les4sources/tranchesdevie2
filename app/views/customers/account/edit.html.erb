@@ -60,6 +60,19 @@
               class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
         </div>
 
+        <div>
+          <%= f.label :locality, "Ton village", class: "mb-2 block text-[13px] font-medium text-ink-700" %>
+          <%= f.text_field :locality,
+              value: @customer.locality,
+              list: "locality-suggestions",
+              placeholder: "Ex. Godinne",
+              autocomplete: "address-level2",
+              maxlength: 80,
+              class: "h-12 w-full rounded-md border border-flour-400 bg-white px-3 text-[15px] text-ink-900 shadow-[inset_0_1px_2px_rgba(74,60,38,0.06)] focus:border-sage-600 focus:outline-none focus:ring-[3px] focus:ring-[color:var(--focus-ring)]" %>
+          <%= render "customers/account/locality_datalist" %>
+          <p class="mt-1 text-sm text-ink-500">Facultatif. Ça nous aide à savoir d'où viennent nos mangeurs ; seule l'équipe de la boulangerie le voit.</p>
+        </div>
+
         <div class="flex items-center gap-2">
           <%= f.check_box :sms_opt_out,
               checked: @customer.sms_opt_out,

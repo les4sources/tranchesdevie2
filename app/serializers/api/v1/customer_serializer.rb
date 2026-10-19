@@ -13,6 +13,7 @@ module Api
           email: object.email,
           billable: object.billable,
           delivered_by_bakery: object.delivered_by_bakery,
+          locality: object.locality,
           sms_opt_out: object.sms_opt_out,
           email_opt_out: object.email_opt_out,
           effective_discount_percent: object.effective_discount_percent,

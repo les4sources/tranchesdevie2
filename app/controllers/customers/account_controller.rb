@@ -20,6 +20,24 @@ class Customers::AccountController < ApplicationController
     end
   end
 
+  # Encart « D'où viens-tu ? » : enregistre le village, ou retient que le
+  # client préfère ne pas répondre (on ne lui redemandera plus).
+  def update_locality
+    customer = current_customer
+
+    if params[:dismiss].present?
+      customer.update!(locality_prompt_dismissed_at: Time.current)
+      notice = "C'est noté, on ne te le demandera plus."
+    elsif params[:locality].to_s.strip.present? && customer.update(locality: params[:locality])
+      notice = "Merci ! Ton village est enregistré : #{customer.locality}."
+    else
+      redirect_back fallback_location: customers_account_path, alert: "Indique le nom de ton village."
+      return
+    end
+
+    redirect_back fallback_location: customers_account_path, notice: notice
+  end
+
   def cancel_order
     @order = current_customer.orders.find_by(id: params[:id])
 
@@ -90,6 +108,6 @@ class Customers::AccountController < ApplicationController
   end
 
   def customer_params
-    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :sms_opt_out, :email_opt_out)
+    params.require(:customer).permit(:first_name, :last_name, :phone_e164, :email, :locality, :sms_opt_out, :email_opt_out)
   end
 end

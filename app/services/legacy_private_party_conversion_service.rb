@@ -20,6 +20,11 @@
 # la commande était comptée avant. Une autre date peut être imposée commande par
 # commande (`overrides`), au prix d'un déplacement vers une autre fournée.
 #
+# Un même client a parfois passé PLUSIEURS commandes pour la même soirée (un
+# complément de quelques personnes, payé à part sur Stripe). Elles rejoignent
+# la même party : un groupe = un événement, qui porte alors plusieurs commandes.
+# Les fusionner en une seule commande casserait le lien avec leurs paiements.
+#
 # Ne convertit PAS (et dit pourquoi) :
 #   - une commande annulée : il n'y a pas de party à créer ;
 #   - une commande MIXTE (pain + party) : la sortir de sa fournée y retirerait
@@ -27,9 +32,14 @@
 #
 # Aucune notification : ni SMS, ni e-mail équipe, ni post-it du calendrier.
 class LegacyPrivatePartyConversionService
-  Candidate = Struct.new(:order, :held_on, :slot, :persons, :forfait, :reason, keyword_init: true) do
+  Candidate = Struct.new(:order, :held_on, :slot, :persons, :forfait, :reason, :joins, keyword_init: true) do
     def convertible?
       reason.nil?
+    end
+
+    # Une seule party par client, date et créneau.
+    def group_key
+      [ order.customer_id, held_on, slot ]
     end
   end
 
@@ -49,12 +59,18 @@ class LegacyPrivatePartyConversionService
                  .order(:id)
     scope = scope.where(id: @order_ids) if @order_ids
 
-    scope.map { |order| build_candidate(order) }
+    list = scope.map { |order| build_candidate(order) }
+    mark_joins(list)
+    list
   end
 
-  # Convertit les candidats convertibles. Renvoie les candidats traités.
+  # Convertit les candidats convertibles. Renvoie les parties créées ou complétées.
   def call
-    candidates.select(&:convertible?).each { |candidate| convert!(candidate) }
+    events = {}
+    candidates.select(&:convertible?).each do |candidate|
+      events[candidate.group_key] = convert!(candidate, events[candidate.group_key])
+    end
+    events.values
   end
 
   private
@@ -87,11 +103,31 @@ class LegacyPrivatePartyConversionService
     nil
   end
 
-  def convert!(candidate)
+  # Commande qui rejoint une party : celle d'une commande précédente du même
+  # groupe dans cette liste, ou une party déjà convertie lors d'un passage
+  # antérieur (la tâche peut être relancée commande par commande).
+  def mark_joins(list)
+    first_of_group = {}
+    list.select(&:convertible?).each do |candidate|
+      first = first_of_group[candidate.group_key] ||= candidate
+      candidate.joins = first.order if first != candidate
+      candidate.joins ||= existing_event(candidate)&.orders&.order(:id)&.first
+    end
+  end
+
+  def existing_event(candidate)
+    PartyEvent.private_events.not_deleted
+              .where(held_on: candidate.held_on, slot: PartyEvent.slots[candidate.slot])
+              .joins(:orders).where(orders: { customer_id: candidate.order.customer_id })
+              .first
+  end
+
+  def convert!(candidate, event = nil)
     order = candidate.order
 
     ActiveRecord::Base.transaction do
-      event = PartyEvent.create!(kind: :private_party, held_on: candidate.held_on, slot: candidate.slot)
+      event ||= existing_event(candidate) ||
+                PartyEvent.create!(kind: :private_party, held_on: candidate.held_on, slot: candidate.slot)
       # `update_columns` et non `update!` : la commande est historique, ses
       # validations de création (lieu de retrait ouvert ce jour-là, etc.) n'ont
       # pas à être rejouées, et rien d'autre qu'elle ne doit bouger.
@@ -99,6 +135,6 @@ class LegacyPrivatePartyConversionService
                            bake_day_id: nil, updated_at: Time.current)
     end
 
-    candidate
+    event
   end
 end

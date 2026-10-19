@@ -79,7 +79,7 @@ RSpec.describe "Admin — écran Parties et rapport", type: :system, browser_ui:
     report_orders = Order.completed.in_bake_day_range(today - 60, today - 1).where(id: report_ids).to_a
     screen_orders = Admin::PrivatePartyIndex.new.past
                                             .select { |e| e.held_on&.between?(today - 60, today - 1) }
-                                            .map(&:order)
+                                            .flat_map(&:orders)
 
     expect(screen_orders.map(&:id).sort).to eq(report_orders.map(&:id).sort)
     expect(screen_orders.sum(&:total_cents)).to eq(report_orders.sum(&:total_cents))

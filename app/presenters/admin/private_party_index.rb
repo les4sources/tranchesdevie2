@@ -13,8 +13,12 @@ module Admin
   # l'écran devient cohérent avec le rapport par construction — c'est l'option 2
   # recommandée par l'issue.
   class PrivatePartyIndex
-    Entry = Struct.new(:order, :party_event, :held_on, :customer, :paton_count,
+    # Une ligne = une PARTY. Une party convertie peut porter plusieurs commandes
+    # (la réservation + un complément payé à part) : elles se lisent ensemble,
+    # pâtons et montants additionnés. `order` est la première, `orders` toutes.
+    Entry = Struct.new(:orders, :party_event, :held_on, :customer, :paton_count,
                        :total_cents, :forfait, :slot_label, :note, keyword_init: true) do
+      def order = orders.first
       def forfait? = forfait
       def event? = party_event.present?
       def total_euros = (total_cents / 100.0).round(2)
@@ -44,7 +48,10 @@ module Admin
         # lieu, pas ce qui attend un règlement — celui-là se suit dans la file
         # des demandes, section « Validées, paiement attendu ».
         .reject { |order| order.cancelled? || order.awaiting_payment? }
-        .map { |order| entry_for(order) }
+        # Une party = son événement ; sans événement, chaque commande est la sienne.
+        .group_by { |order| order.party_event_id ? [ :event, order.party_event_id ] : [ :order, order.id ] }
+        .values
+        .map { |orders| entry_for(orders.sort_by(&:created_at)) }
         .sort_by { |entry| [ entry.held_on || Date.new(0), entry.order.created_at ] }
     end
 
@@ -58,21 +65,22 @@ module Admin
 
     private
 
-    def entry_for(order)
+    def entry_for(orders)
+      order = orders.first
       event = order.party_event
 
       Entry.new(
-        order: order,
+        orders: orders,
         party_event: event,
         # `event_date` couvre les deux rattachements ; nil s'il n'y en a aucun,
         # et on l'affiche tel quel plutôt que d'inventer une date.
         held_on: order.event_date,
         customer: order.customer,
-        paton_count: paton_count(order),
-        total_cents: order.total_cents,
-        forfait: forfait?(order),
+        paton_count: orders.sum { |o| paton_count(o) },
+        total_cents: orders.sum(&:total_cents),
+        forfait: orders.any? { |o| forfait?(o) },
         slot_label: event&.slot_label,
-        note: order.customer_note
+        note: orders.map(&:customer_note).compact_blank.join(" · ").presence
       )
     end
 

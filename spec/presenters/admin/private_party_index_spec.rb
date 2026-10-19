@@ -36,6 +36,27 @@ RSpec.describe Admin::PrivatePartyIndex do
   end
 
   describe "#entries" do
+    it "regroupe sur UNE ligne les commandes d'une même party" do
+      event, first = party_with_event(held_on: today - 5, qty: 44, with_forfait: false)
+      top_up = create(:order, :paid, customer: customer, bake_day: nil, party_event: event,
+                                     source: :party, total_cents: 4 * 500)
+      create(:order_item, order: top_up, product_variant: paton, qty: 4, unit_price_cents: 500)
+
+      entries = described_class.new.entries.select { |e| e.party_event == event }
+
+      expect(entries.size).to eq(1)
+      expect(entries.first.orders).to eq([ first, top_up ])
+      expect(entries.first.paton_count).to eq(48)
+      expect(entries.first.total_cents).to eq(48 * 500)
+    end
+
+    it "laisse une ligne par commande quand il n'y a pas d'événement" do
+      party_without_event(baked_on: today - 30)
+      party_without_event(baked_on: today - 30)
+
+      expect(described_class.new.entries.size).to eq(2)
+    end
+
     it "voit AUSSI les parties enregistrées sans événement" do
       _, with_event = party_with_event(held_on: today + 7)
       without_event = party_without_event(baked_on: today - 30)

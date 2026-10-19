@@ -44,7 +44,7 @@ RSpec.describe "Une party validée non payée" do
 
   it "est absente de l'index des parties privées" do
     entries = Admin::PrivatePartyIndex.new.entries
-    expect(entries.map { |entry| entry.order.id }).not_to include(order.id)
+    expect(entries.flat_map(&:orders).map(&:id)).not_to include(order.id)
   end
 
   it "apparaît en revanche dans la prévision « à confirmer » du tableau de bord" do

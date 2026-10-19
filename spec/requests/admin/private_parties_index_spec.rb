@@ -68,6 +68,20 @@ RSpec.describe "Admin — écran Parties, parties privées", type: :request do
     expect(body).to include("Oui")
   end
 
+  it "regroupe les commandes d'une même party sur une seule ligne, paiement partiel signalé" do
+    event, first = party_with_event(held_on: today - 5, qty: 44, name: "Alexandra Durand")
+    top_up = create(:order, :unpaid, customer: first.customer, bake_day: nil, party_event: event,
+                                     source: :party, total_cents: 4 * 500)
+    create(:order_item, order: top_up, product_variant: paton, qty: 4, unit_price_cents: 500)
+    first.update!(payment_status: :paid, offline_payment_method: :cash)
+
+    expect(body.scan("Alexandra Durand").size).to eq(1)
+    expect(body).to include("2 commandes")
+    expect(body).to include("Payé en partie")
+    # 48 pâtons à 5 € + 40 € de forfait.
+    expect(body).to include(CGI.escapeHTML(number_to_currency(280.0, unit: "€", separator: ",", delimiter: " ")))
+  end
+
   it "renvoie vers la fiche de l'événement quand il existe" do
     event, = party_with_event(held_on: today + 7)
 
@@ -136,7 +150,7 @@ RSpec.describe "Admin — écran Parties, parties privées", type: :request do
 
     screen_orders = Admin::PrivatePartyIndex.new.past
                                             .select { |e| e.held_on&.between?(start_date, end_date) }
-                                            .map(&:order)
+                                            .flat_map(&:orders)
 
     expect(screen_orders.map(&:id).sort).to eq(report_orders.map(&:id).sort)
     expect(screen_orders.sum(&:total_cents)).to eq(report_orders.sum(&:total_cents))

@@ -56,7 +56,7 @@ RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
 
     Admin::PrivatePartyIndex.new
       .entries
-      .map(&:order)
+      .flat_map(&:orders)
       .select { |order| order.event_date == date && Order.completed.exists?(order.id) }
       .reject { |order| counted_ids.include?(order.id) }
   end
@@ -90,7 +90,7 @@ RSpec.describe "Couverture des parties privées dans les revenus boulangers" do
     create(:order_item, order: order, product_variant: paton, qty: 8, unit_price_cents: 500)
 
     expect(report.total_party_persons).to eq(8)
-    expect(Admin::PrivatePartyIndex.new.entries.map(&:order).count(order)).to eq(1)
+    expect(Admin::PrivatePartyIndex.new.entries.flat_map(&:orders).count(order)).to eq(1)
   end
 
   # L'issue est de VISIBILITÉ : aucun centime ne doit bouger.

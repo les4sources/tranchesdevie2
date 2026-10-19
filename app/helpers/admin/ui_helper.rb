@@ -103,6 +103,26 @@ module Admin::UiHelper
     end
   end
 
+  # Paiement d'une party qui peut porter plusieurs commandes (réservation +
+  # complément) : la même pastille si elles disent la même chose, sinon
+  # « Payé en partie » pour qu'un reste dû ne se cache pas derrière un « Payé ».
+  def adm_party_payment_chip(orders)
+    return adm_order_payment_chip(orders.first) if orders.size == 1
+
+    paid = orders.select(&:payment_status_paid?)
+    if paid.size == orders.size
+      methods = orders.map(&:payment_method).uniq
+      label = methods.one? ? order_payment_method_label(methods.first) : nil
+      adm_chip(label ? "Payé · #{label}" : "Payé", tone: :success)
+    elsif paid.any?
+      adm_chip("Payé en partie", tone: :warning)
+    elsif orders.all?(&:payment_status_refunded?)
+      adm_chip("Remboursé", tone: :accent)
+    else
+      adm_chip("Non payé", tone: :warning)
+    end
+  end
+
   def adm_payout_status_chip(status)
     adm_chip(status.to_s, tone: PAYOUT_STATUS_TONES.fetch(status.to_s, :neutral))
   end

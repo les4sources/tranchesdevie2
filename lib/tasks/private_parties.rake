@@ -34,6 +34,7 @@ namespace :private_parties do
       order = c.order
       moved = order.bake_day && c.held_on != order.bake_day.baked_on ? " (fournée d'origine #{order.bake_day.baked_on})" : ""
       puts "  ##{order.id} #{order.order_number} — #{order.customer&.full_name} — party du #{c.held_on} #{c.slot}#{moved}"
+      puts "      → rejoint la party de ##{c.joins.id} (même client, même soirée)" if c.joins
       puts "      #{c.persons} pers. · forfait #{c.forfait ? 'oui' : 'non'} · #{euros.call(order.total_cents)} · " \
            "statut #{order.status} · #{payment.call(order)} · source #{order.source}"
       puts "      note : #{order.customer_note.to_s.squish.truncate(140)}" if order.customer_note.present?
@@ -51,8 +52,8 @@ namespace :private_parties do
 
     next unless confirm
 
-    converted = service.call
+    events = service.call
     puts ""
-    puts "#{converted.size} commande(s) convertie(s) en party privée."
+    puts "#{convertible.size} commande(s) rattachée(s) à #{events.size} party(s) privée(s)."
   end
 end

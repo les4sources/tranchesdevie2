@@ -60,8 +60,10 @@
               span style="color: var(--text-muted);" Aucun numéro de téléphone (client identifié par email)
         div
           dt.adm-eyebrow Nombre de personnes
+          / Un groupe peut avoir complété sa réservation par une 2e commande
+          / (ancienne party convertie) : on compte toutes celles non annulées.
           dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
-            = party_paton_count(@reservation)
+            = @active_orders.any? ? @active_orders.sum { |order| party_paton_count(order) } : party_paton_count(@reservation)
     - else
       p.text-sm style="color: var(--text-muted);"
         | Aucune commande n'est rattachée à cette réservation.
@@ -78,33 +80,35 @@
         strong<>  chauffer le four
         | , soit environ 3 heures avant de pouvoir enfourner.
 
-- if @reservation
+/ Une carte par commande : une party convertie peut en porter plusieurs
+/ (réservation + complément payé à part).
+- @orders.each do |order|
   .adm-card.mt-4.overflow-hidden
     .adm-cardhd
-      h2.text-xl.font-semibold style="color: var(--text-strong);" La commande
-      span.adm-eyebrow = @reservation.order_number
+      h2.text-xl.font-semibold style="color: var(--text-strong);" = @orders.size > 1 ? "Commande" : "La commande"
+      span.adm-eyebrow = order.order_number
 
     .p-4.sm:p-6
       dl.grid.grid-cols-1.gap-4.sm:grid-cols-4
         div
           dt.adm-eyebrow Statut
-          dd.mt-1 = adm_order_status_chip(@reservation.status)
+          dd.mt-1 = adm_order_status_chip(order.status)
         div
           dt.adm-eyebrow Réservée le
           dd.adm-grid-num.mt-1.text-sm style="color: var(--text-strong);"
-            = @reservation.created_at.strftime("%d/%m/%Y à %H:%M")
+            = order.created_at.strftime("%d/%m/%Y à %H:%M")
         div
           / Même pastille que la liste des parties : une seule vérité.
           dt.adm-eyebrow Paiement
           dd.mt-1.text-sm style="color: var(--text-strong);"
-            = adm_order_payment_chip(@reservation)
-            - if @reservation.paid_at && !@reservation.payment_status_unpaid?
+            = adm_order_payment_chip(order)
+            - if order.paid_at && !order.payment_status_unpaid?
               span.adm-grid-num.mt-1.block.text-xs style="color: var(--text-muted);"
-                | le #{l(@reservation.paid_at, format: :long)}
+                | le #{l(order.paid_at, format: :long)}
         div
           dt.adm-eyebrow Montant total
           dd.adm-grid-num.mt-1.text-lg.font-semibold style="color: var(--text-strong);"
-            = number_to_currency(@reservation.total_euros, unit: "€", separator: ",", delimiter: "")
+            = number_to_currency(order.total_euros, unit: "€", separator: ",", delimiter: "")
 
     .overflow-x-auto
       table.adm-grid
@@ -115,7 +119,7 @@
             th.text-right Prix unitaire
             th.text-right Sous-total
         tbody
-          - @reservation.order_items.each do |item|
+          - order.order_items.each do |item|
             tr
               td
                 span style="color: var(--text-strong);" = item.product_variant.product.name
@@ -126,6 +130,3 @@
               td.adm-grid-num.text-right.font-medium style="color: var(--text-strong);"
                 = number_to_currency(item.subtotal_euros, unit: "€", separator: ",", delimiter: "")
 
-- if @orders.size > 1
-  p.mt-4.text-sm style="color: var(--text-muted);"
-    | Cette date porte #{@orders.size} commandes ; le détail ci-dessus est celui de la réservation retenue.

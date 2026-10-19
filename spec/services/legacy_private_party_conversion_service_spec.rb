@@ -12,7 +12,10 @@ RSpec.describe LegacyPrivatePartyConversionService do
   let!(:forfait) { create(:product_variant, product: forfait_product, price_cents: 4_000) }
   let(:bread) { create(:product_variant, product: create(:product, :bread), price_cents: 450) }
 
+  let(:customer) { create(:customer) }
+
   def legacy_order(persons: 12, with_forfait: true, extra: nil, **attrs)
+    attrs[:customer] ||= customer
     order = create(:order, bake_day: bake_day, source: :admin, status: :picked_up,
                            total_cents: persons * 500 + (with_forfait ? 4_000 : 0), **attrs)
     create(:order_item, order: order, product_variant: paton, qty: persons, unit_price_cents: 500)
@@ -100,7 +103,7 @@ RSpec.describe LegacyPrivatePartyConversionService do
 
     it "est idempotente et laisse les commandes écartées intactes" do
       mixed = legacy_order(extra: bread)
-      legacy_order
+      legacy_order(customer: create(:customer))
 
       described_class.new.call
       described_class.new.call
@@ -110,9 +113,35 @@ RSpec.describe LegacyPrivatePartyConversionService do
       expect(mixed.bake_day_id).to eq(bake_day.id)
     end
 
+    it "réunit les commandes d'un même client pour la même soirée en une seule party" do
+      main = legacy_order(persons: 44)
+      top_up = legacy_order(persons: 4, with_forfait: false)
+      other = legacy_order(persons: 12, customer: create(:customer))
+
+      expect(described_class.new.candidates.find { |c| c.order == top_up }.joins).to eq(main)
+
+      described_class.new.call
+
+      expect(PartyEvent.count).to eq(2)
+      expect(top_up.reload.party_event).to eq(main.reload.party_event)
+      expect(other.reload.party_event).not_to eq(main.party_event)
+    end
+
+    it "rattache un complément à la party déjà convertie lors d'un passage précédent" do
+      main = legacy_order(persons: 44)
+      described_class.new(order_ids: [ main.id ]).call
+      top_up = legacy_order(persons: 4, with_forfait: false)
+
+      expect(described_class.new.candidates.sole.joins).to eq(main)
+      described_class.new.call
+
+      expect(PartyEvent.count).to eq(1)
+      expect(top_up.reload.party_event).to eq(main.reload.party_event)
+    end
+
     it "se limite aux commandes demandées" do
       first = legacy_order
-      second = legacy_order
+      second = legacy_order(customer: create(:customer))
 
       described_class.new(order_ids: [ second.id ]).call
 

@@ -176,6 +176,21 @@ RSpec.describe "Admin — détail d'une party", type: :request do
       expect(response.body).to include("une boule")
       expect(response.body).to include("forfait")
     end
+
+    # Ancienne party convertie (réservation + complément payé à part) : toutes
+    # les commandes se lisent, et le groupe compte leurs personnes ensemble.
+    it "montre chaque commande d'une party qui en porte plusieurs, et additionne les personnes" do
+      event, first = private_party(qty: 44)
+      second = PartyOrderCreationService.new(
+        customer: customer, party_event: event,
+        cart_items: [ { "product_variant_id" => paton.id.to_s, "qty" => "4" } ]
+      ).call
+
+      get admin_party_event_path(event)
+
+      expect(response.body).to include(first.order_number, second.order_number)
+      expect(response.body).to match(/Nombre de personnes<\/dt><dd[^>]*>48</)
+    end
   end
 
   describe "GET /admin/parties/:id — party PUBLIQUE" do

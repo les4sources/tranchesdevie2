@@ -209,6 +209,20 @@ RSpec.describe ManualPrivatePartyService do
       expect(PizzaPartyRevenueService.call(Order.completed.where(id: order.id)).persons).to eq(8)
     end
 
+    it "trace le moyen choisi plutôt que le liquide par défaut" do
+      service = build(persons: 8, paid: true, payment_method: "with_stay")
+      service.call
+
+      expect(service.order.reload.offline_payment_method).to eq("with_stay")
+    end
+
+    it "refuse un moyen inconnu" do
+      service = build(persons: 8, paid: true, payment_method: "cheque")
+
+      expect(service.call).to be false
+      expect(service.errors).to include("Moyen de paiement inconnu")
+    end
+
     it "laisse la commande non encaissée quand la party n'est pas payée" do
       service = build(persons: 8, paid: false)
       service.call

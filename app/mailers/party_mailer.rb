@@ -13,7 +13,9 @@ class PartyMailer < ApplicationMailer
     stripe: "Stripe (carte / Bancontact)",
     wallet: "Portefeuille",
     cash: "Espèces",
-    transfer: "Virement"
+    transfer: "Virement spécifique",
+    online: "En ligne",
+    with_stay: "Avec le séjour"
   }.freeze
 
   # Prévient boulangers et équipe séjours qu'une party privée vient d'être

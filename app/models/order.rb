@@ -33,9 +33,15 @@ class Order < ApplicationRecord
   # de la remise (#275). L'app ne peut pas deviner un paiement en liquide : ce
   # champ est la seule trace qu'elle en aura jamais. Nul tant que personne n'a
   # pointé — « non pointé » n'est PAS « impayé ».
+  #
+  # `online` et `with_stay` servent surtout aux parties privées : une party
+  # réglée en ligne HORS de cette app (lien de paiement des 4 Sources), ou
+  # ajoutée à la facture d'un séjour de groupe.
   enum :offline_payment_method, {
     cash: 0,
-    transfer: 1
+    transfer: 1,
+    online: 2,
+    with_stay: 3
   }, prefix: :offline_payment
 
   # Statut de facturation (axe comptable) — a-t-on émis la facture ?

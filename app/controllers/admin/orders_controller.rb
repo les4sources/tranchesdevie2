@@ -179,9 +179,11 @@ class Admin::OrdersController < Admin::BaseController
       return respond_to_encaissement("Cette commande est déjà payée en ligne : rien à pointer.")
     end
 
-    case params[:method].to_s
-    when "cash", "transfer" then mark_offline_payment(params[:method])
-    when "none" then clear_offline_payment
+    method = params[:method].to_s
+    if OfflinePaymentService::METHODS.include?(method)
+      mark_offline_payment(method)
+    elsif method == "none"
+      clear_offline_payment
     else
       return respond_to_encaissement("Moyen d'encaissement inconnu.")
     end

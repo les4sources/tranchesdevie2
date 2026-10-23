@@ -28,7 +28,7 @@ This is a **single-tenant** app — no multi-bakery marketplace, no tenant onboa
 
 ## Constraints
 
-- **Runtime:** Ruby 3.3.5, Rails 8.0.3, PostgreSQL. No Node runtime for the app; JS via Importmap (no bundler).
+- **Runtime:** Ruby 3.3.13, Rails 8.1.4, PostgreSQL. No Node runtime for the app; JS via Importmap (no bundler).
 - **Frontend:** Slim templates + Tailwind (`tailwindcss-rails`) + Hotwire (Turbo/Stimulus). No SPA framework.
 - **Payments:** Stripe PaymentIntents only (Card, Bancontact, Apple Pay, Google Pay). No stored card data on our side.
 - **Infra (no Redis):** Solid Queue (in Puma via `SOLID_QUEUE_IN_PUMA`), Solid Cache, Solid Cable — all DB-backed.

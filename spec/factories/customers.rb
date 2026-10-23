@@ -9,7 +9,12 @@ FactoryBot.define do
     # finissait par buter sur des lignes laissées par un run précédent
     # (« Phone e164 est déjà utilisé »), et faisait tomber des specs au hasard,
     # loin de ce qu'elles testaient.
-    sequence(:phone_e164) { |n| "+32#{(Process.pid % 1000).to_s.rjust(3, '0')}#{n.to_s.rjust(6, '0')}" }
+    #
+    # Le « 4 » de tête n'est pas décoratif : sans lui, un PID dont le reste
+    # commence par 0 (≈ 1 run sur 10) donnait « +32045… », que
+    # OtpService.normalize_phone ramène à « +3245… » ; la connexion par OTP ne
+    # retrouvait alors plus le client et toutes les specs connectées tombaient.
+    sequence(:phone_e164) { |n| "+324#{(Process.pid % 1000).to_s.rjust(3, '0')}#{n.to_s.rjust(6, '0')}" }
     sequence(:email) { |n| "client-#{Process.pid}-#{n}@example.test" }
     sms_opt_out { false }
 

@@ -4,7 +4,7 @@ Artisan bakery e-commerce app (single-tenant) for a Belgian bread bakery. Custom
 
 ## Tech Stack
 
-- **Backend**: Ruby 3.3.5, Rails 8.0.3, PostgreSQL
+- **Backend**: Ruby 3.3.13, Rails 8.1.4, PostgreSQL
 - **Frontend**: Slim templates, Tailwind CSS (`tailwindcss-rails`), Hotwire (Turbo + Stimulus), Importmap
 - **Payments**: Stripe (PaymentIntents — Card, Bancontact, Apple Pay, Google Pay)
 - **SMS**: Smstools API (OTP auth, order notifications)

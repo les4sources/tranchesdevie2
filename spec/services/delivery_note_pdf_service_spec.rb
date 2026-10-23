@@ -49,6 +49,10 @@ RSpec.describe DeliveryNotePdfService, type: :service do
     expect(text).to include("+32470000001")
   end
 
+  it "n'affiche pas de lieu de retrait" do
+    expect(text).not_to include("LIEU DE RETRAIT")
+  end
+
   it "détaille les pains avec quantité et prix, et le total" do
     expect(text).to include("Pain froment — Petit 600 g")
     expect(text).to include("Pain épeautre — Grand 1 kg")

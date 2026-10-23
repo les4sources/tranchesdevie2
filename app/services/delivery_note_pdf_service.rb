@@ -9,7 +9,6 @@ require "prawn/table"
 # contenu :
 #   - numéro de bon, numéro de commande, date de production (jour de cuisson) ;
 #   - coordonnées de la boulangerie (Les 4 Sources) et du client ;
-#   - lieu de retrait / livraison ;
 #   - détail des pains : article, quantité, prix unitaire, total ligne ;
 #   - nombre total de pains et coût total (remise ou ajustement exposés sur leur
 #     propre ligne, comme sur le relevé) ;
@@ -152,18 +151,17 @@ class DeliveryNotePdfService
     pdf.move_down 16
   end
 
-  # Expéditeur / destinataire / lieu de retrait, en trois colonnes.
+  # Expéditeur / destinataire, en deux colonnes.
   def render_parties(pdf)
     columns = [
       party_cell("Boulangerie", BakeryDetails.address_lines),
-      party_cell("Client", customer_lines),
-      party_cell("Lieu de retrait", pickup_lines)
+      party_cell("Client", customer_lines)
     ]
 
     pdf.table(
       [ columns ],
       width: pdf.bounds.width,
-      column_widths: Array.new(3, pdf.bounds.width / 3.0),
+      column_widths: Array.new(2, pdf.bounds.width / 2.0),
       cell_style: { borders: [ :top ], border_color: BORDER_COLOR, border_width: 1, padding: [ 8, 10, 4, 0 ], size: 9, leading: 1.5 }
     )
     pdf.move_down 18
@@ -328,13 +326,6 @@ class DeliveryNotePdfService
   def customer_lines
     customer = @order.customer
     [ customer.full_name, customer.email.presence, customer.phone_e164.presence ].compact
-  end
-
-  def pickup_lines
-    location = @order.pickup_location
-    return [ "—" ] unless location
-
-    [ location.name, location.description.to_s.strip.presence ].compact
   end
 
   def discount_label(percent)

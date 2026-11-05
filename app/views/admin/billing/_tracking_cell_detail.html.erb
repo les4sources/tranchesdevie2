@@ -1,0 +1,54 @@
+<%# Bulle de détail d'une case client × mois : les commandes qui font le total,
+    leur statut de facturation et de paiement, puis le calcul de ce qui reste. %>
+<div class="mb-2 flex items-baseline justify-between gap-4">
+  <div>
+    <p class="text-sm font-semibold" style="color: var(--text-strong);"><%= customer.full_name %></p>
+    <p class="text-xs" style="color: var(--text-muted);"><%= month_label(month).capitalize %></p>
+  </div>
+  <%= adm_chip state_label.capitalize, tone: { to_invoice: :danger, awaiting: :warning, paid: :success }.fetch(cell.state, :neutral) %>
+</div>
+
+<table class="w-full text-xs">
+  <thead>
+    <tr style="color: var(--text-muted);">
+      <th class="py-1 pr-2 text-left font-medium">Cuisson</th>
+      <th class="py-1 pr-2 text-right font-medium">Montant</th>
+      <th class="py-1 pr-2 text-left font-medium">Facture</th>
+      <th class="py-1 text-left font-medium">Paiement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% cell.orders.each do |order| %>
+      <tr style="border-top: 1px solid var(--border-subtle);">
+        <td class="whitespace-nowrap py-1 pr-2">
+          <%= link_to l(order.bake_day.baked_on, format: "%d/%m"), admin_order_path(order), class: "adm-link", title: order.order_number %>
+        </td>
+        <td class="adm-grid-num whitespace-nowrap py-1 pr-2 text-right" style="color: var(--text-strong);"><%= reports_currency(order.total_cents) %></td>
+        <td class="whitespace-nowrap py-1 pr-2">
+          <% if order.invoice_status_invoiced? %>
+            <span style="color: var(--success-700);">Facturée</span>
+          <% else %>
+            <span style="color: var(--text-muted);">Non facturée</span>
+          <% end %>
+        </td>
+        <td class="whitespace-nowrap py-1">
+          <% if order.payment_received? %>
+            <span style="color: var(--success-700);">Payée<%= " le #{l(order.paid_at.to_date, format: '%d/%m')}" if order.paid_at %></span>
+          <% elsif order.invoice_status_invoiced? %>
+            <span style="color: var(--warning-700);">En attente</span>
+          <% else %>
+            <span style="color: var(--danger-700);">Impayée</span>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "tracking_cell_calculation", cell: cell %>
+
+<div class="mt-3 text-right">
+  <%= link_to "Ouvrir dans Facturation →",
+        admin_billing_path(month: month.strftime("%Y-%m"), customer_id: customer.id),
+        class: "adm-link text-xs font-medium" %>
+</div>

@@ -176,6 +176,9 @@ Rails.application.routes.draw do
       end
     end
     get "billing", to: "billing#index", as: :billing
+    # Suivi sur 12 mois : tableau croisé clients pro × mois, pour vérifier d'un
+    # coup d'œil ce qui reste à facturer ou à encaisser (#retour Michael).
+    get "billing/suivi", to: "billing#tracking", as: :billing_tracking
     # Marquage groupé des commandes depuis l'écran Facturation (#retour Manon) :
     # « facturées » quand la facture part, « payées » quand l'argent arrive.
     patch "billing/commandes", to: "billing#bulk_update", as: :billing_bulk_update

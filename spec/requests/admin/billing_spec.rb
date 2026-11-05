@@ -37,6 +37,13 @@ RSpec.describe "Admin::Billing", type: :request do
       expect(response.body).to include("Impayé")
     end
 
+    it "affiche le récapitulatif par produit pour préparer la facture" do
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).to include("Récapitulatif par produit")
+      expect(response.body).to include(order.order_items.first.product_variant.name)
+      expect(response.body).to include("Prix/pièce")
+    end
+
     it "ne propose le bon de livraison qu'aux clients livrés par la boulangerie" do
       get admin_billing_path(month: "2026-05")
       expect(response.body).not_to include(admin_order_delivery_note_path(order_id: order.id))

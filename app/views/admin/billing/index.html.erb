@@ -97,6 +97,53 @@
           </div>
         </div>
 
+        <%# Récapitulatif par produit : les lignes de la facture, prêtes à recopier.
+            Un même produit vendu à deux prix sur la période donne deux lignes. %>
+        <div class="px-3 pb-3 pt-3 sm:px-4" style="border-bottom: 1px solid var(--border-subtle);">
+          <p class="adm-eyebrow mb-2">Récapitulatif par produit — pour la facture</p>
+          <div class="overflow-x-auto">
+            <table class="adm-grid">
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Type et poids</th>
+                  <th class="text-right">Prix/pièce</th>
+                  <th class="text-right">Nombre</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% billing.product_lines.each do |line| %>
+                  <tr>
+                    <td style="color: var(--text-strong);"><%= line.product_name %></td>
+                    <td style="color: var(--text-muted);"><%= line.variant_name %></td>
+                    <td class="adm-grid-num whitespace-nowrap text-right"><%= reports_currency(line.unit_price_cents) %></td>
+                    <td class="adm-grid-num whitespace-nowrap text-right font-semibold" style="color: var(--text-strong);"><%= line.qty %></td>
+                    <td class="adm-grid-num whitespace-nowrap text-right"><%= reports_currency(line.total_cents) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+              <tfoot>
+                <% if billing.discount_cents.positive? %>
+                  <tr>
+                    <td colspan="4" style="color: var(--text-muted);">Sous-total au prix catalogue</td>
+                    <td class="adm-grid-num whitespace-nowrap text-right"><%= reports_currency(billing.gross_total_cents) %></td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" style="color: var(--text-muted);">Remise de groupe</td>
+                    <td class="adm-grid-num whitespace-nowrap text-right">− <%= reports_currency(billing.discount_cents) %></td>
+                  </tr>
+                <% end %>
+                <tr class="adm-grid-total">
+                  <td colspan="3">Total du mois</td>
+                  <td class="adm-grid-num text-right"><%= billing.product_lines.sum(&:qty) %></td>
+                  <td class="adm-grid-num text-right"><%= reports_currency(billing.total_cents) %></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="adm-grid">
             <thead>

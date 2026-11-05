@@ -22,8 +22,35 @@ class BillingReportService
     :total_cents,
     :paid_total_cents,
     :unpaid_total_cents,
+    :product_lines,
     keyword_init: true
-  )
+  ) do
+    # Somme des lignes au prix catalogue, avant remise de groupe.
+    def gross_total_cents
+      product_lines.sum(&:total_cents)
+    end
+
+    # Remise de groupe cumulée sur la période (Σ brut − Σ total des commandes).
+    # Jamais négative : un total saisi au-dessus du brut n'est pas une remise.
+    def discount_cents
+      [ gross_total_cents - total_cents, 0 ].max
+    end
+  end
+
+  # Une ligne de facture : un produit/variante à UN prix unitaire, cumulé sur la
+  # période. Si le prix a changé en cours de mois, le même produit donne une
+  # ligne par prix — c'est ce que la facture doit refléter.
+  ProductLine = Struct.new(
+    :product_name,
+    :variant_name,
+    :unit_price_cents,
+    :qty,
+    keyword_init: true
+  ) do
+    def total_cents
+      qty * unit_price_cents
+    end
+  end
 
   Report = Struct.new(
     :month,
@@ -68,9 +95,29 @@ class BillingReportService
         orders: orders,
         total_cents: orders.sum(&:total_cents),
         paid_total_cents: paid_cents,
-        unpaid_total_cents: orders.sum(&:total_cents) - paid_cents
+        unpaid_total_cents: orders.sum(&:total_cents) - paid_cents,
+        product_lines: product_lines_for(orders)
       )
     end
+  end
+
+  # Récapitulatif par produit pour faciliter la facture (#retour Michael) :
+  # regroupe les articles de toutes les commandes par variante ET prix unitaire.
+  def product_lines_for(orders)
+    orders
+      .flat_map(&:order_items)
+      .group_by { |item| [ item.product_variant_id, item.unit_price_cents ] }
+      .map do |(_variant_id, unit_price_cents), items|
+        variant = items.first.product_variant
+
+        ProductLine.new(
+          product_name: variant.product.name,
+          variant_name: variant.name,
+          unit_price_cents: unit_price_cents,
+          qty: items.sum(&:qty)
+        )
+      end
+      .sort_by { |line| [ line.product_name.downcase, line.variant_name.downcase, line.unit_price_cents ] }
   end
 
   def billable_customers

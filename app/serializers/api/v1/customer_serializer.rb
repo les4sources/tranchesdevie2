@@ -12,6 +12,7 @@ module Api
           phone_e164: object.phone_e164,
           email: object.email,
           billable: object.billable,
+          legal_name: object.legal_name,
           delivered_by_bakery: object.delivered_by_bakery,
           locality: object.locality,
           sms_opt_out: object.sms_opt_out,

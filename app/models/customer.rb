@@ -14,6 +14,7 @@ class Customer < ApplicationRecord
   # GSM) : on le normalise en minuscules et on garantit son unicité applicative.
   before_validation :normalize_email
   before_validation :normalize_locality
+  before_validation :normalize_legal_name
 
   # Villages proposés à la saisie (commune d'Yvoir et alentours). Simple aide à
   # la frappe : le client peut écrire n'importe quel autre village.
@@ -28,6 +29,7 @@ class Customer < ApplicationRecord
   validates :phone_e164, format: { with: /\A\+[1-9]\d{1,14}\z/, message: "must be in E.164 format" }, if: -> { phone_e164.present? }
   validates :email, uniqueness: { case_sensitive: false }, allow_blank: true
   validates :locality, length: { maximum: 80 }
+  validates :legal_name, length: { maximum: 150 }
 
   scope :with_sms_enabled, -> { where(sms_opt_out: false) }
   scope :with_email_enabled, -> { where.not(email: [ nil, "" ]).where(email_opt_out: false) }
@@ -175,5 +177,10 @@ class Customer < ApplicationRecord
       value = value.downcase.gsub(/(\A|[\s\-'])(\p{L})/) { "#{$1}#{$2.upcase}" }
     end
     self.locality = value
+  end
+
+  # Structure juridique : espaces nettoyés, vide → nil (pas de chaîne vide en base).
+  def normalize_legal_name
+    self.legal_name = legal_name.to_s.squish.presence
   end
 end

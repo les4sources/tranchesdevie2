@@ -115,12 +115,13 @@ class Admin::BillingController < Admin::BaseController
 
   def billing_csv(report)
     CSV.generate(headers: true) do |csv|
-      csv << [ "Client", "Date de cuisson", "N° commande", "Articles", "Montant (€)", "Statut paiement", "Date de paiement" ]
+      csv << [ "Client", "Structure juridique", "Date de cuisson", "N° commande", "Articles", "Montant (€)", "Statut paiement", "Date de paiement" ]
 
       report.customers.each do |billing|
         billing.orders.each do |order|
           csv << [
             billing.customer.full_name,
+            billing.customer.legal_name.to_s,
             I18n.l(order.bake_day.baked_on),
             order.order_number,
             csv_items(order),

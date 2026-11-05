@@ -62,6 +62,16 @@
             <h2 class="text-sm font-semibold" style="color: var(--text-strong);">
               <%= link_to billing.customer.full_name, admin_customer_path(billing.customer), class: "hover:underline" %>
             </h2>
+            <%# Structure juridique : c'est elle qui paie, souvent sous un autre nom. %>
+            <p class="mt-0.5 text-xs" style="color: var(--text-muted);">
+              Structure juridique :
+              <% if billing.customer.legal_name.present? %>
+                <span class="font-medium" style="color: var(--text-strong);"><%= billing.customer.legal_name %></span>
+              <% else %>
+                <span style="color: var(--text-faint);">non renseignée</span> ·
+                <%= link_to "compléter", edit_admin_customer_path(billing.customer), class: "adm-link" %>
+              <% end %>
+            </p>
             <p class="mt-0.5 text-xs" style="color: var(--text-muted);">
               <%= pluralize(billing.orders.size, "commande") %> —
               Total <span class="font-medium" style="color: var(--text-strong);"><%= reports_currency(billing.total_cents) %></span>

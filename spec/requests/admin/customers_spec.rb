@@ -61,6 +61,20 @@ RSpec.describe "Admin::Customers", type: :request do
 
       expect(customer.reload.cash_payment_allowed).to be(false)
     end
+
+    it "enregistre la structure juridique (espaces nettoyés, vide → nil)" do
+      customer = create(:customer, billable: true)
+
+      patch admin_customer_path(customer), params: {
+        customer: { first_name: customer.first_name, legal_name: "  SRL   Les Délices de Godinne " }
+      }
+      expect(customer.reload.legal_name).to eq("SRL Les Délices de Godinne")
+
+      patch admin_customer_path(customer), params: {
+        customer: { first_name: customer.first_name, legal_name: "" }
+      }
+      expect(customer.reload.legal_name).to be_nil
+    end
   end
 
   # #138 : affichage lecture seule du portefeuille sur la fiche mangeur.

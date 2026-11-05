@@ -74,6 +74,11 @@
               <%= adm_chip "Livré par la boulangerie", tone: :accent %>
             <% end %>
           </dd>
+          <% if @customer.legal_name.present? %>
+            <dd class="mt-1 text-sm" style="color: var(--text-strong);">
+              <span style="color: var(--text-muted);">Structure juridique :</span> <%= @customer.legal_name %>
+            </dd>
+          <% end %>
         </div>
       <% end %>
 

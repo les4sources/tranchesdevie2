@@ -67,6 +67,12 @@
     <%= f.label :billable, "Facturable", class: "ml-2 block text-sm", style: "color: var(--text-body);" %>
   </div>
   <p class="mt-1 text-sm" style="color: var(--text-muted);">Cochez pour les points de dépôt et clients pro qui reçoivent une facture mensuelle.</p>
+
+  <div class="mt-4 md:w-1/2">
+    <%= f.label :legal_name, "Structure juridique", class: "adm-eyebrow mb-1 block" %>
+    <%= f.text_field :legal_name, maxlength: 150, placeholder: "Ex. SRL Les Délices de Godinne", class: adm_field_class %>
+    <p class="mt-1 text-sm" style="color: var(--text-muted);">Optionnel. Nom légal de la structure qui paie les factures, quand il diffère du nom du client (dénomination commerciale). Affiché en Facturation.</p>
+  </div>
 </div>
 
 <div class="mt-6">

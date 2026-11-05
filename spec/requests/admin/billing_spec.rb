@@ -46,6 +46,24 @@ RSpec.describe "Admin::Billing", type: :request do
       expect(response.body).to include(admin_order_delivery_note_path(order_id: order.id))
     end
 
+    it "affiche la structure juridique du client, ou invite à la compléter" do
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).to include("non renseignée")
+      expect(response.body).to include(edit_admin_customer_path(pro))
+
+      pro.update!(legal_name: "SRL Durand Alimentation")
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).to include("SRL Durand Alimentation")
+      expect(response.body).not_to include("non renseignée")
+    end
+
+    it "ajoute la structure juridique à l'export CSV" do
+      pro.update!(legal_name: "SRL Durand Alimentation")
+      get admin_billing_path(month: "2026-05", format: :csv)
+      expect(response.body.lines.first).to include("Structure juridique")
+      expect(response.body).to include("SRL Durand Alimentation")
+    end
+
     it "exporte le récapitulatif en CSV" do
       get admin_billing_path(month: "2026-05", format: :csv)
       expect(response).to have_http_status(:ok)

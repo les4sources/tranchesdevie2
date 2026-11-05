@@ -25,7 +25,9 @@ class BillingTrackingService
   #   - `to_invoice_cents` : ni payé ni facturé — il manque la facture ;
   #   - `awaiting_cents`   : facturé mais pas encore payé — il manque l'argent.
   # Une commande payée en ligne sans facture est réglée : rien à poursuivre.
+  # `orders` garde les commandes de la case, pour le détail affiché au clic.
   Cell = Struct.new(
+    :orders,
     :orders_count,
     :total_cents,
     :paid_cents,
@@ -35,14 +37,17 @@ class BillingTrackingService
     keyword_init: true
   ) do
     def self.empty
-      new(orders_count: 0, total_cents: 0, paid_cents: 0, invoiced_cents: 0, to_invoice_cents: 0, awaiting_cents: 0)
+      new(orders: [], orders_count: 0, total_cents: 0, paid_cents: 0, invoiced_cents: 0, to_invoice_cents: 0, awaiting_cents: 0)
     end
 
     def self.from_orders(orders)
       orders.each_with_object(empty) { |order, cell| cell.add_order(order) }
     end
 
+    SUMMED_FIELDS = %i[orders_count total_cents paid_cents invoiced_cents to_invoice_cents awaiting_cents].freeze
+
     def add_order(order)
+      orders << order
       self.orders_count += 1
       self.total_cents += order.total_cents
       paid = order.payment_received?
@@ -54,8 +59,10 @@ class BillingTrackingService
       self
     end
 
+    # Un total additionne les sommes, sans recopier les commandes : le détail
+    # d'un total se lit client par client.
     def merge!(other)
-      members.each { |field| self[field] += other[field] }
+      SUMMED_FIELDS.each { |field| self[field] += other[field] }
       self
     end
 
@@ -106,7 +113,9 @@ class BillingTrackingService
       next if orders.blank?
 
       by_month = orders.group_by { |order| order.bake_day.baked_on.beginning_of_month }
-      cells = @months.index_with { |month| Cell.from_orders(by_month[month] || []) }
+      cells = @months.index_with do |month|
+        Cell.from_orders((by_month[month] || []).sort_by { |order| order.bake_day.baked_on })
+      end
       Row.new(customer: customer, cells: cells, total: sum_cells(cells.values))
     end
 
@@ -135,6 +144,6 @@ class BillingTrackingService
       .where(status: BillingReportService::BILLABLE_STATUSES)
       .where(customer_id: Customer.billable.select(:id))
       .in_bake_day_range(@months.first, @end_month.end_of_month)
-      .includes(:bake_day)
+      .includes(:bake_day, :payment, :wallet_transactions)
   end
 end

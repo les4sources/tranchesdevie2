@@ -36,6 +36,11 @@ RSpec.describe "Admin::Billing", type: :request do
       expect(response.body).to include("Suivi de facturation")
       expect(response.body).to include("Épicerie Durand")
       expect(response.body).to include("à facturer")
+      # Détail au clic : la commande, son statut et le calcul du reste dû.
+      expect(response.body).to include("popovertarget=\"detail-#{pro.id}-2026-05\"")
+      expect(response.body).to include("Non facturée")
+      expect(response.body).to include("Reste dû")
+      expect(response.body).to include(admin_order_path(order))
       expect(response.body).to include(admin_billing_path(month: "2026-05", customer_id: pro.id).gsub("&", "&amp;"))
     end
 

@@ -38,6 +38,16 @@ RSpec.describe BillingTrackingService do
     expect(row.total.unpaid_cents).to eq(2400)
   end
 
+  it "garde les commandes de chaque case, triées par jour de cuisson, pour le détail" do
+    late = create(:order, :unpaid, customer: pro, bake_day: bake_day_on(Date.new(2026, 4, 21)), total_cents: 800)
+    early = create(:order, :unpaid, customer: pro, bake_day: bake_day_on(Date.new(2026, 4, 7)), total_cents: 600)
+
+    result = report
+    expect(result.rows.sole.cells[Date.new(2026, 4, 1)].orders).to eq([ early, late ])
+    expect(result.month_totals[Date.new(2026, 4, 1)].orders).to be_empty
+    expect(result.month_totals[Date.new(2026, 4, 1)].total_cents).to eq(1400)
+  end
+
   it "fait primer « à facturer » quand un mois mélange les états" do
     bake_day = bake_day_on(Date.new(2026, 9, 8))
     create(:order, :paid, :payment_paid, customer: pro, bake_day: bake_day, total_cents: 1000)

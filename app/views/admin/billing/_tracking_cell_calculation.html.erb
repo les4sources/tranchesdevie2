@@ -1,0 +1,25 @@
+<%# Le calcul d'une case (ou d'un total) : total = payé + à encaisser + à facturer. %>
+<dl class="mt-3 space-y-1 rounded-md p-2 text-xs" style="background: var(--surface-inset);">
+  <div class="flex justify-between gap-4 font-semibold" style="color: var(--text-strong);">
+    <dt>Total (<%= cell.orders_count %> commande<%= "s" if cell.orders_count > 1 %>)</dt>
+    <dd class="adm-grid-num"><%= reports_currency(cell.total_cents) %></dd>
+  </div>
+  <div class="flex justify-between gap-4" style="color: var(--success-700);">
+    <dt>− Payé</dt>
+    <dd class="adm-grid-num"><%= reports_currency(cell.paid_cents) %></dd>
+  </div>
+  <div class="flex justify-between gap-4 pt-1 font-semibold" style="border-top: 1px solid var(--border-subtle); color: <%= cell.unpaid_cents.positive? ? 'var(--danger-700)' : 'var(--text-strong)' %>;">
+    <dt>= Reste dû</dt>
+    <dd class="adm-grid-num"><%= reports_currency(cell.unpaid_cents) %></dd>
+  </div>
+  <% if cell.unpaid_cents.positive? %>
+    <div class="flex justify-between gap-4 pl-3" style="color: var(--warning-700);">
+      <dt>dont facturé, à encaisser</dt>
+      <dd class="adm-grid-num"><%= reports_currency(cell.awaiting_cents) %></dd>
+    </div>
+    <div class="flex justify-between gap-4 pl-3" style="color: var(--danger-700);">
+      <dt>dont à facturer</dt>
+      <dd class="adm-grid-num"><%= reports_currency(cell.to_invoice_cents) %></dd>
+    </div>
+  <% end %>
+</dl>

@@ -18,7 +18,7 @@
   end
 
   # Dans les cases, l'euro rond suffit à repérer un trou ; le détail au centime
-  # est dans l'infobulle et dans l'écran Facturation du mois.
+  # est dans la bulle ouverte au clic et dans l'écran Facturation du mois.
   whole_euros = ->(cents) { number_to_currency(cents / 100.0, unit: "€", precision: 0, separator: ",", delimiter: " ", format: "%n %u") }
 %>
 
@@ -28,7 +28,7 @@
 
 <p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">
   Clients professionnels — de <%= month_label(@report.first_month) %> à <%= month_label(@report.last_month) %>.
-  Cliquer sur une case ouvre le mois de ce client dans l'écran Facturation.
+  Cliquer sur un montant affiche le détail des commandes, du calcul et des paiements.
 </p>
 
 <div class="adm-card mb-4 flex flex-wrap items-center gap-3 p-3 sm:p-4">
@@ -103,13 +103,21 @@
                     <span style="color: var(--text-faint);">—</span>
                   <% else %>
                     <% style = state_styles.fetch(cell.state) %>
-                    <%= link_to admin_billing_path(month: month.strftime("%Y-%m"), customer_id: row.customer.id),
-                          title: cell_title.call(cell),
-                          class: "block rounded-md px-1.5 py-1 hover:opacity-80",
-                          style: "background: #{style[:bg]}; color: #{style[:fg]};" do %>
-                      <span class="adm-grid-num block whitespace-nowrap font-semibold"><%= whole_euros.call(cell.total_cents) %></span>
-                      <span class="block whitespace-nowrap text-[11px]"><%= style[:label] %></span>
-                    <% end %>
+                    <% popover_id = "detail-#{row.customer.id}-#{month.strftime('%Y-%m')}" %>
+                    <div data-controller="billing-cell">
+                      <button type="button" popovertarget="<%= popover_id %>"
+                              data-billing-cell-target="trigger"
+                              aria-label="Détail de <%= row.customer.full_name %>, <%= month_label(month) %>"
+                              class="block w-full cursor-pointer rounded-md px-1.5 py-1 hover:opacity-80"
+                              style="background: <%= style[:bg] %>; color: <%= style[:fg] %>;">
+                        <span class="adm-grid-num block whitespace-nowrap font-semibold"><%= whole_euros.call(cell.total_cents) %></span>
+                        <span class="block whitespace-nowrap text-[11px]"><%= style[:label] %></span>
+                      </button>
+                      <div id="<%= popover_id %>" popover data-billing-cell-target="popover"
+                           class="adm-popover p-3" style="width: 24rem; color: var(--text-body);">
+                        <%= render "tracking_cell_detail", customer: row.customer, month: month, cell: cell, state_label: style[:label] %>
+                      </div>
+                    </div>
                   <% end %>
                 </td>
               <% end %>
@@ -129,14 +137,52 @@
             <td class="sticky left-0 z-10">Total du mois</td>
             <% @report.months.each do |month| %>
               <% cell = @report.month_totals[month] %>
-              <td class="adm-grid-num whitespace-nowrap text-center" style="padding: .4375rem .25rem;" title="<%= cell_title.call(cell) unless cell.empty? %>">
+              <td class="adm-grid-num whitespace-nowrap text-center" style="padding: .4375rem .25rem;">
                 <% if cell.empty? %>
                   —
                 <% else %>
-                  <%= link_to whole_euros.call(cell.total_cents), admin_billing_path(month: month.strftime("%Y-%m")), class: "hover:underline" %>
-                  <% if cell.unpaid_cents.positive? %>
-                    <span class="block text-[11px] font-normal" style="color: var(--danger-700);">dû <%= whole_euros.call(cell.unpaid_cents) %></span>
-                  <% end %>
+                  <% popover_id = "detail-total-#{month.strftime('%Y-%m')}" %>
+                  <div data-controller="billing-cell">
+                    <button type="button" popovertarget="<%= popover_id %>"
+                            data-billing-cell-target="trigger"
+                            aria-label="Détail du total de <%= month_label(month) %>"
+                            class="w-full cursor-pointer font-bold hover:underline">
+                      <%= whole_euros.call(cell.total_cents) %>
+                      <% if cell.unpaid_cents.positive? %>
+                        <span class="block text-[11px] font-normal" style="color: var(--danger-700);">dû <%= whole_euros.call(cell.unpaid_cents) %></span>
+                      <% end %>
+                    </button>
+                    <div id="<%= popover_id %>" popover data-billing-cell-target="popover"
+                         class="adm-popover p-3 font-normal" style="width: 22rem; white-space: normal; color: var(--text-body);">
+                      <p class="text-sm font-semibold" style="color: var(--text-strong);">Total de <%= month_label(month) %></p>
+                      <table class="mt-2 w-full text-xs">
+                        <thead>
+                          <tr style="color: var(--text-muted);">
+                            <th class="py-1 pr-2 text-left font-medium">Client</th>
+                            <th class="py-1 pr-2 text-right font-medium">Total</th>
+                            <th class="py-1 text-right font-medium">Reste dû</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% @report.rows.each do |row| %>
+                            <% client_cell = row.cells[month] %>
+                            <% next if client_cell.empty? %>
+                            <tr style="border-top: 1px solid var(--border-subtle);">
+                              <td class="py-1 pr-2" style="color: var(--text-strong);"><%= row.customer.full_name %></td>
+                              <td class="adm-grid-num whitespace-nowrap py-1 pr-2 text-right"><%= reports_currency(client_cell.total_cents) %></td>
+                              <td class="adm-grid-num whitespace-nowrap py-1 text-right" style="color: <%= client_cell.unpaid_cents.positive? ? 'var(--danger-700)' : 'var(--text-faint)' %>;">
+                                <%= client_cell.unpaid_cents.positive? ? reports_currency(client_cell.unpaid_cents) : "—" %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                      <%= render "tracking_cell_calculation", cell: cell %>
+                      <div class="mt-3 text-right">
+                        <%= link_to "Ouvrir dans Facturation →", admin_billing_path(month: month.strftime("%Y-%m")), class: "adm-link text-xs font-medium" %>
+                      </div>
+                    </div>
+                  </div>
                 <% end %>
               </td>
             <% end %>
@@ -152,7 +198,7 @@
 
   <p class="mt-3 text-xs" style="color: var(--text-muted);">
     « Reste dû » = à facturer + facturé non encaissé. Une commande payée en ligne sans facture compte comme réglée.
-    Survoler une case pour le détail (nombre de commandes, payé, facturé, à facturer).
+    Cliquer sur un montant pour le détail ; Échap ou un clic ailleurs referme la bulle.
   </p>
 <% else %>
   <div class="adm-card p-6">

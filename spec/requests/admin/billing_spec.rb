@@ -30,6 +30,20 @@ RSpec.describe "Admin::Billing", type: :request do
       end
     end
 
+    it "affiche le suivi sur 12 mois, case par case, avec un lien vers le mois" do
+      get admin_billing_tracking_path(fin: "2026-05")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Suivi de facturation")
+      expect(response.body).to include("Épicerie Durand")
+      expect(response.body).to include("à facturer")
+      expect(response.body).to include(admin_billing_path(month: "2026-05", customer_id: pro.id).gsub("&", "&amp;"))
+    end
+
+    it "relie l'écran Facturation au suivi sur 12 mois" do
+      get admin_billing_path(month: "2026-05")
+      expect(response.body).to include(admin_billing_tracking_path(fin: "2026-05"))
+    end
+
     it "affiche le récapitulatif du mois pour les clients facturables" do
       get admin_billing_path(month: "2026-05")
       expect(response).to have_http_status(:ok)

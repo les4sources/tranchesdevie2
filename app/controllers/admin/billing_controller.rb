@@ -23,6 +23,15 @@ class Admin::BillingController < Admin::BaseController
     end
   end
 
+  # Suivi sur 12 mois (#retour Michael) : un client par ligne, un mois par
+  # colonne, chaque case colorée selon ce qui reste à faire (facturer, encaisser
+  # ou rien). `fin` (AAAA-MM) choisit le dernier mois affiché ; par défaut le
+  # mois en cours.
+  def tracking
+    @end_month = parsed_month(params[:fin]) || Date.current.beginning_of_month
+    @report = BillingTrackingService.new(end_month: @end_month).call
+  end
+
   # Marquage groupé des commandes sélectionnées (#retour Manon).
   #
   # Deux gestes de compta, distincts et indépendants :

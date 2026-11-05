@@ -81,4 +81,48 @@ RSpec.describe BillingReportService do
     baked_dates = report.customers.first.orders.map { |o| o.bake_day.baked_on }
     expect(baked_dates).to eq([ earlier.baked_on, later.baked_on ])
   end
+
+  describe "récapitulatif par produit" do
+    let(:pro) { create(:customer, billable: true) }
+    let(:product) { create(:product, name: "Pain froment") }
+    let(:petit) { create(:product_variant, product: product, name: "Petit 600 g") }
+    let(:grand) { create(:product_variant, product: product, name: "Grand 1 kg") }
+
+    def order_with(items, total_cents:)
+      order = create(:order, :paid, customer: pro, bake_day: bake_day_in_month, total_cents: total_cents)
+      items.each do |variant, qty, price|
+        create(:order_item, order: order, product_variant: variant, qty: qty, unit_price_cents: price)
+      end
+      order
+    end
+
+    it "cumule les quantités par variante sur toutes les commandes du mois" do
+      order_with([ [ petit, 2, 450 ], [ grand, 1, 700 ] ], total_cents: 1600)
+      order_with([ [ petit, 3, 450 ] ], total_cents: 1350)
+
+      lines = report.customers.first.product_lines
+      expect(lines.map { |l| [ l.variant_name, l.unit_price_cents, l.qty, l.total_cents ] }).to eq([
+        [ "Grand 1 kg", 700, 1, 700 ],
+        [ "Petit 600 g", 450, 5, 2250 ]
+      ])
+      expect(lines.map(&:product_name).uniq).to eq([ "Pain froment" ])
+    end
+
+    it "sépare un même produit vendu à deux prix différents" do
+      order_with([ [ petit, 2, 450 ] ], total_cents: 900)
+      order_with([ [ petit, 1, 480 ] ], total_cents: 480)
+
+      lines = report.customers.first.product_lines
+      expect(lines.map { |l| [ l.unit_price_cents, l.qty ] }).to eq([ [ 450, 2 ], [ 480, 1 ] ])
+    end
+
+    it "expose la remise de groupe pour réconcilier avec le total" do
+      order_with([ [ petit, 10, 450 ] ], total_cents: 4050)
+
+      billing = report.customers.first
+      expect(billing.gross_total_cents).to eq(4500)
+      expect(billing.discount_cents).to eq(450)
+      expect(billing.total_cents).to eq(4050)
+    end
+  end
 end

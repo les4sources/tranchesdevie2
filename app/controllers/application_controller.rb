@@ -5,9 +5,45 @@ class ApplicationController < ActionController::Base
 
   include CustomerAuthentication
 
+  # Jeton CSRF refusé : le formulaire a été affiché avec une session que le
+  # navigateur n'envoie plus (onglet ouvert depuis longtemps, page restaurée du
+  # cache du téléphone, navigateur intégré de Facebook/Instagram qui bloque les
+  # cookies…). Rails rendait alors la page anglaise « 422 Unprocessable
+  # Content », sans issue pour le client, et Sentry ne la voyait pas (exception
+  # ignorée par défaut). On la signale et on renvoie le client sur sa page,
+  # rechargée avec un jeton neuf, avec une consigne claire.
+  rescue_from ActionController::InvalidAuthenticityToken, with: :handle_invalid_authenticity_token
+
   helper_method :current_cart_items, :current_cart_total_cents, :current_cart_count, :current_cart_variant_qty, :phone_verified?, :current_cart_subtotal_cents, :current_cart_discount_cents, :current_customer_for_cart, :admin_authenticated?
 
   private
+
+  INVALID_TOKEN_MESSAGE = "Ta page n'était plus à jour : nous l'avons rechargée. Réessaie, ça devrait fonctionner maintenant.".freeze
+
+  def handle_invalid_authenticity_token
+    report_invalid_authenticity_token
+
+    respond_to do |format|
+      format.html { redirect_back_or_to root_path, alert: INVALID_TOKEN_MESSAGE }
+      format.json { render json: { error: "Ta page n'était plus à jour. Recharge-la et réessaie." }, status: :unprocessable_content }
+      format.any { head :unprocessable_content }
+    end
+  end
+
+  def report_invalid_authenticity_token
+    return unless defined?(Sentry) && Sentry.initialized?
+
+    Sentry.capture_message(
+      "Jeton CSRF invalide (#{controller_name}##{action_name})",
+      level: :warning,
+      extra: {
+        path: request.path,
+        referer: request.referer,
+        user_agent: request.user_agent,
+        session_cookie_present: cookies[Rails.application.config.session_options[:key]].present?
+      }
+    )
+  end
 
   # wday du jour de cuisson sélectionné en session (s'il est encore commandable), sinon nil.
   # Sert à filtrer le catalogue selon la restriction de jour des variantes.

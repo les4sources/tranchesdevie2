@@ -25,6 +25,7 @@ RSpec.describe 'Jeton CSRF invalide', type: :request do
 
     expect(response).to redirect_to(camembert_parties_path)
     expect(flash[:alert]).to include("plus à jour")
+    expect(flash[:alert]).to include("Facebook ou Instagram")
     expect(session[:cart].to_a).to be_empty
   end
 
@@ -39,6 +40,7 @@ RSpec.describe 'Jeton CSRF invalide', type: :request do
 
     expect(response).to have_http_status(:unprocessable_content)
     expect(response.parsed_body['error']).to include('Recharge-la')
+    expect(response.parsed_body['error']).to include('navigateur habituel')
   end
 
   it 'laisse passer un jeton valide' do

@@ -18,14 +18,15 @@ class ApplicationController < ActionController::Base
 
   private
 
-  INVALID_TOKEN_MESSAGE = "Ta page n'était plus à jour : nous l'avons rechargée. Réessaie, ça devrait fonctionner maintenant.".freeze
+  INVALID_TOKEN_HINT = "Si tu as ouvert le lien depuis Facebook ou Instagram, ouvre plutôt la page dans ton navigateur habituel (Safari, Chrome…) : leur navigateur intégré pose un problème connu avec notre site.".freeze
+  INVALID_TOKEN_MESSAGE = "Ta page n'était plus à jour : nous l'avons rechargée. Réessaie. #{INVALID_TOKEN_HINT}".freeze
 
   def handle_invalid_authenticity_token
     report_invalid_authenticity_token
 
     respond_to do |format|
       format.html { redirect_back_or_to root_path, alert: INVALID_TOKEN_MESSAGE }
-      format.json { render json: { error: "Ta page n'était plus à jour. Recharge-la et réessaie." }, status: :unprocessable_content }
+      format.json { render json: { error: "Ta page n'était plus à jour. Recharge-la et réessaie. #{INVALID_TOKEN_HINT}" }, status: :unprocessable_content }
       format.any { head :unprocessable_content }
     end
   end

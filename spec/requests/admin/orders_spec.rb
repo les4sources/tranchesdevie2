@@ -134,6 +134,32 @@ RSpec.describe "Admin::Orders", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Payé le 12/05/2026")
     end
+
+    it "shows the group discount between the line subtotals and the order total" do
+      group = create(:group, name: "Bénévoles", discount_percent: 20)
+      order.customer.groups << group
+      order.order_items.destroy_all
+      create(:order_item, order: order, qty: 2, unit_price_cents: 500)
+      order.update!(total_cents: 800)
+
+      get admin_order_path(order)
+
+      expect(response.body).to include("Sous-total au prix catalogue")
+      expect(response.body).to include("Remise de groupe « Bénévoles » (−20 %)")
+      expect(response.body).to include("− 2,00 €")
+      expect(response.body).to include("Total de la commande")
+    end
+
+    it "shows no discount row when the order is at catalogue price" do
+      order.order_items.destroy_all
+      create(:order_item, order: order, qty: 2, unit_price_cents: 550)
+      order.update!(total_cents: 1100)
+
+      get admin_order_path(order)
+
+      expect(response.body).not_to include("Sous-total au prix catalogue")
+      expect(response.body).to include("Total de la commande")
+    end
   end
 
   # Garde-fou « Remboursé » : le select de statut de paiement du formulaire

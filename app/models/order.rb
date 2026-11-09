@@ -171,6 +171,19 @@ class Order < ApplicationRecord
     (total_cents / 100.0).round(2)
   end
 
+  # Somme des lignes au prix unitaire enregistré (avant remise). La remise de
+  # groupe n'est pas stockée : elle se lit comme l'écart entre ce brut et
+  # `total_cents`, exactement comme le fait le reporting (`net_cents_by_item`).
+  def items_gross_cents
+    order_items.sum { |item| item.qty * item.unit_price_cents }
+  end
+
+  # Remise appliquée à la commande (0 si aucune). Jamais négative : un total
+  # supérieur au brut n'est pas une « remise » à afficher.
+  def discount_cents
+    [ items_gross_cents - total_cents, 0 ].max
+  end
+
   # Nombre de sacs à pains pour la commande (#52) : 1 sac par unité de pain
   # produit (catégorie « breads » en production maison), pâtons/reventes exclus.
   def bread_bags_count

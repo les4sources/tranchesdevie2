@@ -87,8 +87,8 @@
         <div class="flex flex-col">
           <% @transactions.each do |transaction| %>
             <% credit = transaction.amount_cents >= 0 %>
-            <% tx_icon = { "top_up" => "wallet", "order_refund" => "arrow-left" }.fetch(transaction.transaction_type, "shopping-basket") %>
-            <% tx_label = { "top_up" => "Recharge", "order_debit" => "Commande", "order_refund" => "Remboursement" }[transaction.transaction_type] %>
+            <% tx_icon = { "top_up" => "wallet", "order_refund" => "arrow-left", "partial_refund" => "arrow-left", "order_adjustment" => "pencil" }.fetch(transaction.transaction_type, "shopping-basket") %>
+            <% tx_label = { "top_up" => "Recharge", "order_debit" => "Commande", "order_refund" => "Remboursement", "partial_refund" => "Remboursement partiel", "order_adjustment" => "Ajustement de commande" }[transaction.transaction_type] %>
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-3 transition hover:bg-warm-white-2">
               <div class="flex items-center gap-3">
                 <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full <%= credit ? "bg-sage-100 text-sage-700" : "bg-flour-200 text-ink-500" %>">

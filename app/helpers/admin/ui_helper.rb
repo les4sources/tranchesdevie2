@@ -62,13 +62,17 @@ module Admin::UiHelper
   WALLET_TRANSACTION_TONES = {
     "top_up" => :success,
     "order_debit" => :warning,
-    "order_refund" => :water
+    "order_refund" => :water,
+    "partial_refund" => :water,
+    "order_adjustment" => :neutral
   }.freeze
 
   WALLET_TRANSACTION_LABELS = {
     "top_up" => "Recharge",
     "order_debit" => "Débit commande",
-    "order_refund" => "Remboursement"
+    "order_refund" => "Remboursement",
+    "partial_refund" => "Remboursement partiel",
+    "order_adjustment" => "Ajustement commande"
   }.freeze
 
   # Pastille d'état. `tone` est une tonalité sémantique, jamais une couleur.

@@ -6,7 +6,10 @@ class WalletTransaction < ApplicationRecord
   # `partial_refund` = quelques lignes rendues sur une commande livrée
   # (#remboursement-partiel) : elle reste payée, et `Order#payment_refunded?`
   # ne doit surtout pas s'allumer dessus.
-  enum :transaction_type, { top_up: 0, order_debit: 1, order_refund: 2, partial_refund: 3 }
+  # `order_adjustment` = écart (signé) entre le débit initial et le nouveau
+  # total quand le boulanger modifie une commande déjà débitée : négatif si la
+  # commande grossit, positif si elle diminue.
+  enum :transaction_type, { top_up: 0, order_debit: 1, order_refund: 2, partial_refund: 3, order_adjustment: 4 }
 
   validates :amount_cents, presence: true
   validates :transaction_type, presence: true

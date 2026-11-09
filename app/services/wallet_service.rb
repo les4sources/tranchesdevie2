@@ -72,7 +72,43 @@ class WalletService
       )
     end
 
+    # Réaligne le portefeuille quand le boulanger modifie en admin une commande
+    # déjà débitée : sans cela, le débit gardait l'ancien total et le solde de
+    # la cliente devenait faux (portefeuille de Stéphanie, novembre 2026).
+    #
+    # On ne passe que l'ÉCART, sur le portefeuille qui porte le débit (même si
+    # la commande change de client entre-temps). Rien à faire si la commande
+    # n'a jamais été débitée du portefeuille, ou si elle a déjà été remboursée
+    # intégralement. Le solde peut devenir négatif : la commande est déjà
+    # remise ou promise, le boulanger voit le solde et règle avec la cliente.
+    #
+    # Retourne la WalletTransaction créée, ou nil.
+    def adjust_for_order(order:, previous_total_cents:)
+      delta_cents = order.total_cents - previous_total_cents
+      return nil if delta_cents.zero?
+
+      transactions = WalletTransaction.where(order_id: order.id)
+      debit = transactions.order(:created_at).find_by(transaction_type: :order_debit)
+      return nil if debit.nil?
+      return nil if transactions.exists?(transaction_type: :order_refund)
+
+      wallet = debit.wallet
+      wallet.with_lock do
+        wallet.credit!(
+          -delta_cents,
+          type: :order_adjustment,
+          order: order,
+          description: "Ajustement commande #{order.order_number} " \
+                       "(total modifié de #{format_euros(previous_total_cents)} à #{format_euros(order.total_cents)})"
+        )
+      end
+    end
+
     private
+
+    def format_euros(cents)
+      "#{format('%.2f', cents / 100.0).tr('.', ',')} €"
+    end
 
     # L'index unique est global (et un identifiant Stripe l'est aussi), donc on
     # cherche sans se limiter au portefeuille courant.

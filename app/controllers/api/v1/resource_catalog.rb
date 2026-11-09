@@ -139,7 +139,7 @@ module Api
           description: "Mouvements de solde : recharges, débits de commande, remboursements.",
           fields: {
             id: "integer", wallet_id: "integer", order_id: "integer|null",
-            transaction_type: "enum: top_up|order_debit|order_refund", amount_cents: "integer",
+            transaction_type: "enum: top_up|order_debit|order_refund|partial_refund|order_adjustment", amount_cents: "integer",
             amount_euros: "number", description: "string|null", stripe_payment_intent_id: "string|null",
             created_at: "datetime", updated_at: "datetime"
           }

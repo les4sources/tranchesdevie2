@@ -64,6 +64,7 @@ class Admin::OrdersController < Admin::BaseController
     raw_quantities = permitted_params.delete(:variant_quantities) || {}
     @selected_quantities = normalize_variant_quantities(raw_quantities)
     @final_total_input = permitted_params.delete(:final_total_euros)
+    previous_total_cents = @order.total_cents
 
     subtotal_cents = calculate_total_from_quantities(@selected_quantities)
 
@@ -84,13 +85,16 @@ class Admin::OrdersController < Admin::BaseController
       return
     end
 
+    adjustment = nil
     ActiveRecord::Base.transaction do
       @order.update!(permitted_params)
       @order.order_items.destroy_all
       create_order_items!
+      # Commande déjà débitée du portefeuille : on y passe l'écart de total.
+      adjustment = WalletService.adjust_for_order(order: @order, previous_total_cents: previous_total_cents)
     end
 
-    redirect_to admin_order_path(@order), notice: "Commande modifiée"
+    redirect_to admin_order_path(@order), notice: update_notice(adjustment)
   rescue ActiveRecord::RecordInvalid
     render :edit, status: :unprocessable_entity
   end
@@ -356,6 +360,15 @@ class Admin::OrdersController < Admin::BaseController
     end
 
     GroupDiscountService.new(customer).total_discount_cents(lines)
+  end
+
+  def update_notice(adjustment)
+    return "Commande modifiée" if adjustment.nil?
+
+    amount = format("%.2f", adjustment.amount_cents.abs / 100.0).tr(".", ",")
+    direction = adjustment.amount_cents.negative? ? "débité" : "recrédité"
+    "Commande modifiée : #{amount} € #{direction} sur le portefeuille " \
+      "(nouveau solde : #{format('%.2f', adjustment.wallet.balance_cents / 100.0).tr('.', ',')} €)"
   end
 
   def assign_total_cents!(amount_input)

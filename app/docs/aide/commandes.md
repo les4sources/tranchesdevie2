@@ -80,9 +80,9 @@ Le bouton **Rembourser** n'est visible que tant que la commande est « Payée »
 
 ## Rembourser une partie seulement
 
-Il arrive qu'un retrait se passe mal : il manque un pain dans le sac, on en a donné un autre que celui commandé. Rembourser toute la commande serait injuste des deux côtés — le bloc **Remboursement partiel**, en bas de la fiche d'une commande payée, sert exactement à ça.
+Il arrive qu'un retrait se passe mal : il manque un pain dans le sac, on en a donné un autre que celui commandé. Rembourser toute la commande serait injuste des deux côtés — le bouton **Rembourser une partie…**, dans la colonne des actions d'une commande payée, sert exactement à ça. Il ouvre une fenêtre avec le formulaire : rien n'est remboursé tant que tu n'as pas validé. Si le client a signalé un problème, le bouton **Rembourser ce signalement…** ouvre la même fenêtre, avec les quantités signalées déjà remplies.
 
-![Le signalement du client et le bloc de remboursement partiel](shot:order-partial-refund)
+![Le signalement du client et le formulaire de remboursement partiel](shot:order-partial-refund)
 
 Tu indiques la quantité à rendre sur chaque ligne, et le montant se calcule tout seul (la remise du client est déjà répartie dedans). Tu peux l'écraser : si tu décides d'offrir un pain plutôt que de le rembourser, tu baisses le montant, c'est toi qui décides.
 

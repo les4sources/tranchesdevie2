@@ -32,12 +32,18 @@ RSpec.describe "Admin::PartialRefunds", type: :request do
       allow(SmsService).to receive(:send_partial_refund)
     end
 
-    it "affiche le formulaire sur la fiche d'une commande payée" do
+    it "propose le formulaire dans une modale, derrière un bouton, sur la fiche d'une commande payée" do
       get admin_order_path(order)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Remboursement partiel")
-      expect(response.body).to include(%(name="refund_items[#{item.id}]"))
+      expect(response.body).to include("Rembourser une partie…")
+      expect(response.body).to include(%(data-action="dialog#open"))
+      # Le formulaire est dans un <dialog> fermé : rien n'est visible tant
+      # qu'on n'a pas cliqué, donc rien ne laisse croire à un remboursement.
+      dialog = response.body[/<dialog id="partial-refund-dialog".*?<\/dialog>/m]
+      expect(dialog).to be_present
+      expect(dialog).not_to include(" open")
+      expect(dialog).to include(%(name="refund_items[#{item.id}]"))
     end
 
     it "rembourse les lignes cochées sur le portefeuille" do

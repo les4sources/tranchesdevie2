@@ -222,6 +222,14 @@
                 background: var(--surface-inset);
                 border-radius: var(--radius-md) var(--radius-md) 0 0; }
 
+  /* Modale native (<dialog>, contrôleur Stimulus `dialog`). Le navigateur
+     gère le fond, le focus et Échap ; on ne fait que l'habiller en carte. */
+  .adm-dialog { width: min(56rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
+                margin: auto; padding: 0; overflow: auto; color: inherit;
+                background: var(--surface-card); border: 1px solid var(--border-subtle);
+                border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+  .adm-dialog::backdrop { background: color-mix(in srgb, var(--ink-900) 55%, transparent); }
+
   /* Carte cliquable — la navigation « chapitre précédent / suivant » du centre
      d'aide. Une `.adm-card` seule n'a aucun état de survol : posée sur un lien,
      rien ne disait qu'elle réagissait au clic. */

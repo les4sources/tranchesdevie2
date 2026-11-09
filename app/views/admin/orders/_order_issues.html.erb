@@ -16,10 +16,17 @@
             </span>
           </div>
           <% if issue.state_open? %>
+            <div class="flex flex-wrap items-center gap-2">
+            <% if local_assigns[:can_refund] %>
+              <button type="button" data-action="dialog#open" class="<%= adm_btn_class(:primary) %>">
+                Rembourser ce signalement…
+              </button>
+            <% end %>
             <%= button_to "Marquer traité sans rembourser", resolve_admin_order_issue_path(issue), method: :patch,
                   class: adm_btn_class(:ghost),
                   form: { class: "inline" },
                   data: { turbo_confirm: "Clore ce signalement sans remboursement ?" } %>
+            </div>
           <% end %>
         </div>
 

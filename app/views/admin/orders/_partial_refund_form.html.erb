@@ -5,10 +5,23 @@
 <% refunded_qty = order.refunded_qty_by_item %>
 <% stripe_available = order.payment.present? && order.payment.succeeded? %>
 
-<div class="adm-card mt-4" data-controller="partial-refund">
+<%# Vit dans une modale ouverte par le bouton « Rembourser une partie » : affiché
+    en permanence, le formulaire laissait croire aux boulangers qu'un
+    remboursement avait eu lieu sur chaque commande. %>
+<dialog id="partial-refund-dialog" class="adm-dialog"
+        aria-labelledby="partial-refund-dialog-title"
+        data-dialog-target="dialog"
+        data-action="click->dialog#backdropClose"
+        data-controller="partial-refund">
   <div class="adm-cardhd">
-    <h2 class="text-xl font-semibold" style="color: var(--text-strong);">Remboursement partiel</h2>
-    <span class="adm-eyebrow">reste remboursable <%= number_to_currency(order.refundable_remaining_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+    <div>
+      <h2 id="partial-refund-dialog-title" class="text-xl font-semibold" style="color: var(--text-strong);">Rembourser une partie de la commande</h2>
+      <span class="adm-eyebrow">reste remboursable <%= number_to_currency(order.refundable_remaining_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></span>
+    </div>
+    <button type="button" data-action="dialog#close" class="<%= adm_btn_class(:ghost, "!p-1") %>">
+      <span class="sr-only">Fermer</span>
+      <%= lucide "x", size: 18 %>
+    </button>
   </div>
 
   <%= form_with url: partial_refund_admin_order_path(order), method: :post, local: true, class: "space-y-4 p-4" do %>
@@ -99,8 +112,11 @@
             placeholder: "Ex. : un froment aux graines et le rond cuit sur pierre manquaient." %>
     </div>
 
-    <%= submit_tag "Rembourser",
-          class: adm_btn_class(:danger, "w-full sm:w-auto"),
-          data: { partial_refund_target: "submit", turbo_confirm: "Confirmer ce remboursement ? Le mouvement est immédiat et irréversible." } %>
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <button type="button" data-action="dialog#close" class="<%= adm_btn_class(:default, "w-full sm:w-auto") %>">Annuler</button>
+      <%= submit_tag "Rembourser",
+            class: adm_btn_class(:danger, "w-full sm:w-auto"),
+            data: { partial_refund_target: "submit", turbo_confirm: "Confirmer ce remboursement ? Le mouvement est immédiat et irréversible." } %>
+    </div>
   <% end %>
-</div>
+</dialog>

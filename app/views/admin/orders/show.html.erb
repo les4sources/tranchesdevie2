@@ -246,6 +246,39 @@
         </tr>
       <% end %>
     </tbody>
+    <% if @order.order_items.any? %>
+      <%# Remise de groupe (non stockée) : écart entre le brut des lignes et le
+          total encaissé. Sans elle, les sous-totaux ne collent pas au total. %>
+      <% discount_cents = @order.discount_cents %>
+      <tfoot>
+        <% if discount_cents.positive? %>
+          <%
+            gross_cents = @order.items_gross_cents
+            discount_percent = (discount_cents * 100.0 / gross_cents)
+            discount_group = @order.customer&.best_discount_group
+            group_matches = discount_group && (discount_group.discount_percent.to_f - discount_percent).abs < 0.5
+          %>
+          <tr>
+            <td colspan="3" style="color: var(--text-muted);">Sous-total au prix catalogue</td>
+            <td class="adm-grid-num text-right"><%= number_to_currency(gross_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></td>
+          </tr>
+          <tr>
+            <td colspan="3" style="color: var(--text-muted);">
+              <% if group_matches %>
+                Remise de groupe « <%= discount_group.name %> » (−<%= number_with_precision(discount_group.discount_percent, precision: 0, strip_insignificant_zeros: true) %> %)
+              <% else %>
+                Réduction (−<%= number_with_precision(discount_percent, precision: 1, separator: ",", strip_insignificant_zeros: true) %> %)
+              <% end %>
+            </td>
+            <td class="adm-grid-num text-right" style="color: var(--text-strong);">− <%= number_to_currency(discount_cents / 100.0, unit: "€", separator: ",", delimiter: "") %></td>
+          </tr>
+        <% end %>
+        <tr class="adm-grid-total">
+          <td colspan="3">Total de la commande</td>
+          <td class="adm-grid-num text-right"><%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %></td>
+        </tr>
+      </tfoot>
+    <% end %>
   </table>
 </div>
 

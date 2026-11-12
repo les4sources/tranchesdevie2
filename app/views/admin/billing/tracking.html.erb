@@ -1,0 +1,210 @@
+<% content_for :title, "Suivi de facturation" %>
+<% content_for :layout, "admin" %>
+
+<%
+  # Couleur d'une case selon ce qui reste à faire : c'est elle qu'on lit en premier.
+  state_styles = {
+    to_invoice: { bg: "var(--danger-100)",  fg: "var(--danger-700)",  label: "à facturer" },
+    awaiting:   { bg: "var(--warning-100)", fg: "var(--warning-700)", label: "à encaisser" },
+    paid:       { bg: "var(--success-100)", fg: "var(--success-700)", label: "payé" }
+  }
+
+  cell_title = lambda do |cell|
+    parts = [ "#{cell.orders_count} commande#{'s' if cell.orders_count > 1}", "total #{reports_currency(cell.total_cents)}" ]
+    parts << "payé #{reports_currency(cell.paid_cents)}" if cell.paid_cents.positive?
+    parts << "facturé non payé #{reports_currency(cell.awaiting_cents)}" if cell.awaiting_cents.positive?
+    parts << "à facturer #{reports_currency(cell.to_invoice_cents)}" if cell.to_invoice_cents.positive?
+    parts.join(" · ")
+  end
+
+  # Dans les cases, l'euro rond suffit à repérer un trou ; le détail au centime
+  # est dans la bulle ouverte au clic et dans l'écran Facturation du mois.
+  whole_euros = ->(cents) { number_to_currency(cents / 100.0, unit: "€", precision: 0, separator: ",", delimiter: " ", format: "%n %u") }
+%>
+
+<%= adm_page_header "Suivi de facturation" do %>
+  <%= link_to "Facturation du mois", admin_billing_path, class: adm_btn_class(:default) %>
+<% end %>
+
+<p class="-mt-2 mb-4 text-sm" style="color: var(--text-muted);">
+  Clients professionnels — de <%= month_label(@report.first_month) %> à <%= month_label(@report.last_month) %>.
+  Survoler ou cliquer sur un montant affiche le détail des commandes, du calcul et des paiements.
+</p>
+
+<div class="adm-card mb-4 flex flex-wrap items-center gap-3 p-3 sm:p-4">
+  <%= link_to "← 12 mois précédents",
+        admin_billing_tracking_path(fin: (@report.first_month << 1).strftime("%Y-%m")),
+        class: adm_btn_class(:default) %>
+  <% if @report.last_month < Date.current.beginning_of_month %>
+    <%= link_to "12 mois suivants →",
+          admin_billing_tracking_path(fin: [ @report.last_month >> 12, Date.current.beginning_of_month ].min.strftime("%Y-%m")),
+          class: adm_btn_class(:default) %>
+    <%= link_to "Revenir à aujourd'hui", admin_billing_tracking_path, class: adm_btn_class(:ghost) %>
+  <% end %>
+
+  <div class="ml-auto flex flex-wrap items-center gap-4 text-xs" style="color: var(--text-muted);">
+    <% state_styles.each_value do |style| %>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="inline-block h-3 w-3 rounded-sm" style="background: <%= style[:bg] %>; border: 1px solid <%= style[:fg] %>;"></span>
+        <%= style[:label].capitalize %>
+      </span>
+    <% end %>
+  </div>
+</div>
+
+<% total = @report.grand_total %>
+<div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="adm-card p-4">
+    <p class="adm-eyebrow">Total sur 12 mois</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--text-strong);"><%= reports_currency(total.total_cents) %></p>
+    <p class="mt-1 text-xs" style="color: var(--text-muted);"><%= total.orders_count %> commande<%= "s" if total.orders_count > 1 %></p>
+  </div>
+  <div class="adm-card p-4" style="border-color: var(--success-200);">
+    <p class="adm-eyebrow" style="color: var(--success-700);">Payé</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--success-700);"><%= reports_currency(total.paid_cents) %></p>
+  </div>
+  <div class="adm-card p-4" style="border-color: var(--warning-200);">
+    <p class="adm-eyebrow" style="color: var(--warning-700);">Facturé, à encaisser</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--warning-700);"><%= reports_currency(total.awaiting_cents) %></p>
+  </div>
+  <div class="adm-card p-4" style="border-color: var(--danger-200);">
+    <p class="adm-eyebrow" style="color: var(--danger-700);">À facturer</p>
+    <p class="adm-grid-num mt-1 text-2xl font-bold" style="color: var(--danger-700);"><%= reports_currency(total.to_invoice_cents) %></p>
+  </div>
+</div>
+
+<% if @report.rows.any? %>
+  <section class="adm-card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="adm-grid" style="font-size: .75rem;">
+        <thead>
+          <tr>
+            <th class="left-0" style="z-index: 20; min-width: 10rem;">Client</th>
+            <% @report.months.each do |month| %>
+              <th class="whitespace-nowrap text-center" style="padding: .5rem .25rem;"><%= l(month, format: "%b %y").capitalize %></th>
+            <% end %>
+            <th class="whitespace-nowrap text-right">Total</th>
+            <th class="whitespace-nowrap text-right">Reste dû</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report.rows.each do |row| %>
+            <tr>
+              <td class="sticky left-0 z-10" style="background: var(--surface-card);">
+                <%= link_to row.customer.full_name, admin_customer_path(row.customer), class: "font-medium hover:underline", style: "color: var(--text-strong);" %>
+                <% if row.customer.legal_name.present? %>
+                  <span class="block text-xs" style="color: var(--text-muted);"><%= row.customer.legal_name %></span>
+                <% end %>
+              </td>
+              <% @report.months.each do |month| %>
+                <% cell = row.cells[month] %>
+                <td class="text-center" style="padding: .25rem;">
+                  <% if cell.empty? %>
+                    <span style="color: var(--text-faint);">—</span>
+                  <% else %>
+                    <% style = state_styles.fetch(cell.state) %>
+                    <% popover_id = "detail-#{row.customer.id}-#{month.strftime('%Y-%m')}" %>
+                    <div data-controller="billing-cell">
+                      <button type="button" popovertarget="<%= popover_id %>"
+                              data-billing-cell-target="trigger"
+                              aria-label="Détail de <%= row.customer.full_name %>, <%= month_label(month) %>"
+                              class="block w-full cursor-pointer rounded-md px-1.5 py-1 hover:opacity-80"
+                              style="background: <%= style[:bg] %>; color: <%= style[:fg] %>;">
+                        <span class="adm-grid-num block whitespace-nowrap font-semibold"><%= whole_euros.call(cell.total_cents) %></span>
+                        <span class="block whitespace-nowrap text-[11px]"><%= style[:label] %></span>
+                      </button>
+                      <div id="<%= popover_id %>" popover data-billing-cell-target="popover"
+                           class="adm-popover p-3" style="width: 24rem; color: var(--text-body);">
+                        <%= render "tracking_cell_detail", customer: row.customer, month: month, cell: cell, state_label: style[:label] %>
+                      </div>
+                    </div>
+                  <% end %>
+                </td>
+              <% end %>
+              <td class="adm-grid-num whitespace-nowrap text-right font-semibold" style="color: var(--text-strong);"
+                  title="<%= cell_title.call(row.total) %>">
+                <%= reports_currency(row.total.total_cents) %>
+              </td>
+              <td class="adm-grid-num whitespace-nowrap text-right font-semibold"
+                  style="color: <%= row.total.unpaid_cents.positive? ? 'var(--danger-700)' : 'var(--text-faint)' %>;"
+                  title="<%= cell_title.call(row.total) %>">
+                <%= row.total.unpaid_cents.positive? ? reports_currency(row.total.unpaid_cents) : "—" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr class="adm-grid-total">
+            <td class="sticky left-0 z-10">Total du mois</td>
+            <% @report.months.each do |month| %>
+              <% cell = @report.month_totals[month] %>
+              <td class="adm-grid-num whitespace-nowrap text-center" style="padding: .4375rem .25rem;">
+                <% if cell.empty? %>
+                  —
+                <% else %>
+                  <% popover_id = "detail-total-#{month.strftime('%Y-%m')}" %>
+                  <div data-controller="billing-cell">
+                    <button type="button" popovertarget="<%= popover_id %>"
+                            data-billing-cell-target="trigger"
+                            aria-label="Détail du total de <%= month_label(month) %>"
+                            class="w-full cursor-pointer font-bold hover:underline">
+                      <%= whole_euros.call(cell.total_cents) %>
+                      <% if cell.unpaid_cents.positive? %>
+                        <span class="block text-[11px] font-normal" style="color: var(--danger-700);">dû <%= whole_euros.call(cell.unpaid_cents) %></span>
+                      <% end %>
+                    </button>
+                    <div id="<%= popover_id %>" popover data-billing-cell-target="popover"
+                         class="adm-popover p-3 font-normal" style="width: 22rem; white-space: normal; color: var(--text-body);">
+                      <p class="text-sm font-semibold" style="color: var(--text-strong);">Total de <%= month_label(month) %></p>
+                      <table class="mt-2 w-full text-xs">
+                        <thead>
+                          <tr style="color: var(--text-muted);">
+                            <th class="py-1 pr-2 text-left font-medium">Client</th>
+                            <th class="py-1 pr-2 text-right font-medium">Total</th>
+                            <th class="py-1 text-right font-medium">Reste dû</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% @report.rows.each do |row| %>
+                            <% client_cell = row.cells[month] %>
+                            <% next if client_cell.empty? %>
+                            <tr style="border-top: 1px solid var(--border-subtle);">
+                              <td class="py-1 pr-2" style="color: var(--text-strong);"><%= row.customer.full_name %></td>
+                              <td class="adm-grid-num whitespace-nowrap py-1 pr-2 text-right"><%= reports_currency(client_cell.total_cents) %></td>
+                              <td class="adm-grid-num whitespace-nowrap py-1 text-right" style="color: <%= client_cell.unpaid_cents.positive? ? 'var(--danger-700)' : 'var(--text-faint)' %>;">
+                                <%= client_cell.unpaid_cents.positive? ? reports_currency(client_cell.unpaid_cents) : "—" %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                      <%= render "tracking_cell_calculation", cell: cell %>
+                      <div class="mt-3 text-right">
+                        <%= link_to "Ouvrir dans Facturation →", admin_billing_path(month: month.strftime("%Y-%m")), class: "adm-link text-xs font-medium" %>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </td>
+            <% end %>
+            <td class="adm-grid-num whitespace-nowrap text-right"><%= reports_currency(total.total_cents) %></td>
+            <td class="adm-grid-num whitespace-nowrap text-right" style="color: <%= total.unpaid_cents.positive? ? 'var(--danger-700)' : 'inherit' %>;">
+              <%= total.unpaid_cents.positive? ? reports_currency(total.unpaid_cents) : "—" %>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <p class="mt-3 text-xs" style="color: var(--text-muted);">
+    « Reste dû » = à facturer + facturé non encaissé. Une commande payée en ligne sans facture compte comme réglée.
+    Survoler un montant pour le détail ; un clic garde la bulle ouverte, Échap ou un clic ailleurs la referme.
+  </p>
+<% else %>
+  <div class="adm-card p-6">
+    <p class="text-sm" style="color: var(--text-muted);">
+      Aucune commande de client professionnel sur cette période.
+    </p>
+  </div>
+<% end %>

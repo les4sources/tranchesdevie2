@@ -85,3 +85,30 @@ RSpec.describe PartyEvent, ".camembert_bread_count" do
   it { expect(described_class.camembert_bread_count(6)).to eq(2) }
   it { expect(described_class.camembert_bread_count(66)).to eq(14) }
 end
+
+RSpec.describe BakeCapacityService, "pains des Camembert Parties" do
+  let(:friday) { Date.new(2026, 11, 13) }
+  let!(:default_pickup) { create(:pickup_location, :default) }
+  let!(:bake_day) { create(:bake_day, baked_on: friday, cut_off_at: friday - 2.days) }
+  let(:grand_mold) { create(:mold_type, name: "Grand", limit: 95) }
+  let(:froment) { create(:product, :bread, name: "Pain au froment") }
+  let(:grand) { create(:product_variant, product: froment, name: "Grand 1 kg", price_cents: 550, flour_quantity: 1_050, mold_type: grand_mold) }
+  let(:public_product) { create(:product, :pizza_party_public, category: :dough_balls) }
+  let(:adulte) { create(:product_variant, product: public_product, name: "adulte", price_cents: 1_000, flour_quantity: 250) }
+  let!(:event) { create(:party_event, :public_party, held_on: friday, title: "Camembert Party", menu: :camembert) }
+
+  before do
+    ProductionSetting.current.update!(camembert_bread_variant: grand)
+    PartyOrderCreationService.new(
+      customer: create(:customer), party_event: event,
+      cart_items: [ { "product_variant_id" => adulte.id.to_s, "qty" => "11" } ]
+    ).call.update!(status: :paid)
+  end
+
+  it "compte les pains dans les moules et dans le four" do
+    usage = described_class.new(bake_day).usage
+
+    expect(usage[:molds].find { |entry| entry[:mold_type] == grand_mold }[:used]).to eq(3)
+    expect(usage[:oven][:used]).to eq(3 * 1_050)
+  end
+end

@@ -73,7 +73,10 @@ class BakeCapacityService
 
   private
 
-  # All breads order_items for this bake_day (excluding cancelled)
+  # All breads order_items for this bake_day (excluding cancelled), PLUS the
+  # grands froments fournis aux Camembert Parties que la fournée prépare
+  # (#camembert-parties) : des pains comme les autres — moule, pétrin, four.
+  # Sans eux, le tableau comptait leur pâte mais pas leurs moules.
   def breads_order_items
     @breads_order_items ||= OrderItem
       .joins(order: [], product_variant: :product)
@@ -81,7 +84,11 @@ class BakeCapacityService
       .where.not(orders: { status: :cancelled })
       .where(products: { category: :breads })
       .includes(product_variant: { product: { product_flours: :flour } })
-      .to_a
+      .to_a + camembert_bread_items
+  end
+
+  def camembert_bread_items
+    CamembertBreads.new(BakeDayPartyOrders.production(bake_day)).order_items
   end
 
   # Pâtons des Pizza parties PRIVÉES que cette fournée prépare (#170). Ils sont

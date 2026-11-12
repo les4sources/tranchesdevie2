@@ -346,26 +346,11 @@ module Admin
     # pain supérieur. L'arrondi se fait sur l'ÉVÉNEMENT entier, pas commande par
     # commande : six inscriptions d'une personne font deux pains, pas six.
     def camembert_breads
-      @camembert_breads ||= party_orders
-        .select { |order| order.party_event&.bread_only? }
-        .group_by(&:party_event)
-        .map do |event, event_orders|
-          persons = event_orders.sum { |order| paton_count_for(order) }
-          {
-            party_event: event,
-            persons: persons,
-            bread_count: PartyEvent.camembert_bread_count(persons),
-            variant: camembert_bread_variant,
-            anchor_order: event_orders.min_by(&:id)
-          }
-        end
-        .sort_by { |entry| entry[:party_event].held_on }
+      camembert_calculator.entries
     end
 
     def camembert_bread_variant
-      return @camembert_bread_variant if defined?(@camembert_bread_variant)
-
-      @camembert_bread_variant = ProductionSetting.current.camembert_bread_variant
+      camembert_calculator.entries.first&.variant || ProductionSetting.current.camembert_bread_variant
     end
 
     def orders_by_id
@@ -526,14 +511,11 @@ module Admin
     end
 
     def camembert_bread_items
-      camembert_breads.filter_map do |entry|
-        next if entry[:variant].nil? || entry[:bread_count].zero?
+      camembert_calculator.order_items
+    end
 
-        OrderItem.new(order_id: entry[:anchor_order].id,
-                      product_variant: entry[:variant],
-                      qty: entry[:bread_count],
-                      unit_price_cents: 0)
-      end
+    def camembert_calculator
+      @camembert_calculator ||= CamembertBreads.new(party_orders)
     end
   end
 end

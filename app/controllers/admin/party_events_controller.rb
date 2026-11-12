@@ -43,7 +43,9 @@ module Admin
     end
 
     def new
-      @event = PartyEvent.new(kind: :public_party, held_on: Date.current)
+      # D'octobre à mars, la party publique est une Camembert Party (#camembert-parties).
+      menu = Date.current.month.in?([ 10, 11, 12, 1, 2, 3 ]) ? :camembert : :pizza
+      @event = PartyEvent.new(kind: :public_party, held_on: Date.current, menu: menu)
     end
 
     def create
@@ -78,7 +80,7 @@ module Admin
 
     def event_params
       params.require(:party_event)
-            .permit(:title, :held_on, :slot, :capacity, :description, :registration_closes_at, :active,
+            .permit(:title, :menu, :held_on, :slot, :capacity, :description, :registration_closes_at, :active,
                     :historical_source, :historical_adults, :historical_children, :historical_sourciers, :historical_fees_euros)
     end
   end

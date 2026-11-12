@@ -9,6 +9,11 @@
     = f.label :title, "Titre", class: "adm-eyebrow block"
     = f.text_field :title, required: true, class: adm_field_class
 
+  .space-y-2
+    = f.label :menu, "Formule", class: "adm-eyebrow block"
+    = f.select :menu, PartyEvent::MENU_LABELS.map { |key, label| [ label, key ] }, {}, class: adm_field_class
+    p.text-xs style="color: var(--text-muted);" Camembert Party : pas de pâtons, le tableau de la fournée prévoit un grand froment 1 kg pour #{PartyEvent::CAMEMBERT_PERSONS_PER_BREAD} participants (arrondi au-dessus).
+
   .grid.grid-cols-1.gap-4.sm:grid-cols-2
     .space-y-2
       = f.label :held_on, "Date (en soirée)", class: "adm-eyebrow block"

@@ -8,6 +8,17 @@ class PartyEvent < ApplicationRecord
   enum :kind, { public_party: 0, private_party: 1 }, prefix: :kind
   # Créneau : requis en privé, optionnel en public.
   enum :slot, { midi: 0, soir: 1 }, prefix: :slot
+  # Formule d'une party PUBLIQUE (#camembert-parties). D'octobre à mars, la
+  # Camembert Party remplace la Pizza Party : les convives cuisent leur fromage
+  # au four à bois, la boulangerie ne pétrit AUCUN pâton mais met du pain à
+  # disposition. Une party privée reste une pizza party.
+  enum :menu, { pizza: 0, camembert: 1 }, prefix: :menu
+
+  MENU_LABELS = { "pizza" => "Pizza Party", "camembert" => "Camembert Party" }.freeze
+
+  # Un grand froment 1 kg pour cinq convives, adultes et enfants confondus,
+  # arrondi à l'unité supérieure (règle de la boulangerie, 12/11/2026).
+  CAMEMBERT_PERSONS_PER_BREAD = 5
 
   # Commandes rattachées à l'événement (inscriptions publiques / réservation privée).
   has_many :orders, dependent: :nullify
@@ -288,6 +299,19 @@ class PartyEvent < ApplicationRecord
 
   def slot_label
     SLOT_LABELS[slot] || "—"
+  end
+
+  # Party PUBLIQUE sans pâtons : on y sert du pain, pas de la pâte à pizza.
+  def bread_only?
+    kind_public_party? && menu_camembert?
+  end
+
+  # Grands froments à prévoir pour `persons` convives (1 pour 5, arrondi au-dessus).
+  def self.camembert_bread_count(persons)
+    persons = persons.to_i
+    return 0 unless persons.positive?
+
+    (persons.to_f / CAMEMBERT_PERSONS_PER_BREAD).ceil
   end
 
   # Places consommées d'un événement PUBLIC : somme des pâtons (adulte + enfant)

@@ -95,17 +95,29 @@
   / Une card par party PRIVÉE, une seule par party PUBLIQUE quel que soit le
   / nombre d'inscriptions : le compteur dit combien de soirées se préparent,
   / pas combien de convives se sont inscrits.
+  /
+  / Une Camembert Party (#camembert-parties) ne demande AUCUN pâton : sa card
+  / annonce les grands froments à fournir (1 pour 5 participants), qui sont
+  / déjà comptés dans les quantités du tableau.
   - parties = @dashboard.party_preparation_cards
   - if parties.any?
-    - total_patons = parties.sum { |party| party[:paton_count] }
+    - dough_parties = parties.reject { |party| party[:bread_only] }
+    - total_patons = dough_parties.sum { |party| party[:paton_count] }
+    - total_breads = parties.sum { |party| party.dig(:camembert, :bread_count).to_i }
     #parties-a-preparer.adm-card.p-4.sm:p-6 style="background: var(--accent-tint); border-color: var(--ember-200);"
       .flex.flex-wrap.items-center.gap-3
         = lucide "party-popper", size: 20, color: "var(--accent)"
-        h2.text-xl.font-semibold style="color: var(--text-strong);" Pizza parties à préparer
+        h2.text-xl.font-semibold style="color: var(--text-strong);" = dough_parties.any? ? "Pizza parties à préparer" : "Camembert Party à préparer"
         = adm_chip(pluralize(parties.size, "party", "parties"), tone: :accent)
-        = adm_chip("#{total_patons} pâton#{'s' if total_patons > 1} au total", tone: :accent)
+        - if dough_parties.any?
+          = adm_chip("#{total_patons} pâton#{'s' if total_patons > 1} au total", tone: :accent)
+        - if total_breads.positive?
+          = adm_chip("#{total_breads} grand#{'s' if total_breads > 1} froment#{'s' if total_breads > 1} 1 kg", tone: :accent)
       p.mt-1.text-sm style="color: var(--text-muted);"
-        | Ces pâtons se pétrissent aujourd'hui, en plus des pains. Ils comptent dans le pétrin et la farine, pas dans le four.
+        - if dough_parties.any?
+          | Ces pâtons se pétrissent aujourd'hui, en plus des pains. Ils comptent dans le pétrin et la farine, pas dans le four.
+        - if parties.any? { |party| party[:bread_only] }
+          |  Camembert Party : pas de pâtons, un grand froment 1 kg pour #{PartyEvent::CAMEMBERT_PERSONS_PER_BREAD} participants (adultes et enfants), arrondi au-dessus. Ces pains sont déjà comptés dans les quantités ci-dessous.
 
       .mt-4.grid.gap-3 class="sm:grid-cols-2 xl:grid-cols-3"
         - parties.each do |party|
@@ -119,10 +131,21 @@
                 = adm_chip "pour le #{l(party[:held_on], format: :long_with_day)}", tone: :warning
 
             .mt-3.flex.items-end.gap-4
-              div
-                p.adm-eyebrow Pâtons
-                p.adm-grid-num.mt-1.font-bold style="color: var(--text-strong); font-size: 2rem; line-height: 1;"
-                  = party[:paton_count]
+              - if party[:bread_only]
+                - camembert = party[:camembert] || {}
+                div
+                  p.adm-eyebrow Grands froments 1 kg
+                  p.adm-grid-num.mt-1.font-bold style="color: var(--text-strong); font-size: 2rem; line-height: 1;" data-role="camembert-bread-count"
+                    = camembert[:bread_count].to_i
+                div
+                  p.adm-eyebrow Participants
+                  p.mt-1.text-xl.font-bold style="color: var(--text-strong);"
+                    = camembert[:persons].to_i
+              - else
+                div
+                  p.adm-eyebrow Pâtons
+                  p.adm-grid-num.mt-1.font-bold style="color: var(--text-strong); font-size: 2rem; line-height: 1;"
+                    = party[:paton_count]
               div
                 p.adm-eyebrow Créneau
                 p.mt-1.text-xl.font-bold style="color: var(--accent);"
@@ -139,6 +162,9 @@
                 = party[:title]
               p.mt-1.text-sm style="color: var(--text-muted);"
                 = "#{party[:orders_count]} inscription#{'s' if party[:orders_count] > 1}"
+              - if party[:bread_only] && party.dig(:camembert, :variant).nil?
+                p.mt-2.text-sm.font-semibold style="color: var(--danger-700);"
+                  | Aucun pain n'est réglé pour les Camembert Parties (Paramètres → Capacités de production).
               .mt-2.flex.flex-wrap.gap-3
                 = link_to "Voir la party", admin_party_event_path(party[:party_event]), class: "adm-rowaction"
 
@@ -550,7 +576,7 @@
                     = row[:label]
                     - if party
                       = link_to admin_party_event_path(row[:party_event]), class: "ml-2 align-middle"
-                        = adm_chip(row[:kind] == :private_party ? "Party privée" : "Party publique", tone: row[:kind] == :private_party ? :accent : :brand)
+                        = adm_chip(row[:kind] == :private_party ? "Party privée" : (row[:party_event].bread_only? ? "Camembert Party" : "Party publique"), tone: row[:kind] == :private_party ? :accent : :brand)
                       p.mt-1.text-xs.font-normal style="color: var(--text-muted);"
                         = l(row[:held_on], format: :long_with_day)
                         - if row[:kind] == :private_party
@@ -597,7 +623,8 @@
                     / party noté à côté, et tu cliques, tu vas de suite à son détail ».
                     - if party
                       = link_to admin_party_event_path(party[:party_event])
-                        = adm_chip("#{party[:kind_label]} · #{party[:paton_count]} pâton#{'s' if party[:paton_count] > 1} · #{party[:slot_label]}", tone: party[:private] ? :accent : :brand)
+                        - unit = party[:bread_only] ? "participant" : "pâton"
+                        = adm_chip("#{party[:kind_label]} · #{party[:paton_count]} #{unit}#{'s' if party[:paton_count] > 1} · #{party[:slot_label]}", tone: party[:private] ? :accent : :brand)
                   p.text-sm style="color: var(--text-muted);"
                     | #{order.created_at.strftime("%d/%m/%Y à %H:%M")}
                     - if party && !party[:same_day]

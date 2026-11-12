@@ -26,6 +26,10 @@
       = f.label :private_party_slot_capacity, "Parties privées par créneau", class: "adm-eyebrow block"
       = f.number_field :private_party_slot_capacity, min: 1, class: adm_field_class
       p.text-xs style="color: var(--text-muted);" Nombre max de parties privées réservables sur un même créneau (midi/soir).
+    .space-y-2
+      = f.label :camembert_bread_variant_id, "Pain des Camembert Parties", class: "adm-eyebrow block"
+      = f.select :camembert_bread_variant_id, @bread_variant_options, { include_blank: "— Aucun —" }, class: adm_field_class
+      p.text-xs style="color: var(--text-muted);" = "Un pain pour #{PartyEvent::CAMEMBERT_PERSONS_PER_BREAD} participants, arrondi au-dessus. Il remplace les pâtons sur le tableau de la fournée."
 
   .flex.flex-wrap.items-center.justify-end.gap-3
     = link_to "Annuler", admin_settings_path, class: adm_btn_class(:ghost)

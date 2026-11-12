@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_05_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_100100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -419,6 +419,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_05_100000) do
     t.string "historical_source"
     t.integer "historical_sourciers"
     t.integer "kind", null: false
+    t.integer "menu", default: 0, null: false
     t.datetime "registration_closes_at"
     t.integer "slot"
     t.string "title"
@@ -596,11 +597,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_05_100000) do
   end
 
   create_table "production_settings", force: :cascade do |t|
+    t.bigint "camembert_bread_variant_id"
     t.datetime "created_at", null: false
     t.integer "market_day_oven_capacity_grams", default: 165000, null: false
     t.integer "oven_capacity_grams", default: 110000, null: false
     t.integer "private_party_slot_capacity", default: 2, null: false
     t.datetime "updated_at", null: false
+    t.index ["camembert_bread_variant_id"], name: "index_production_settings_on_camembert_bread_variant_id"
   end
 
   create_table "products", force: :cascade do |t|
@@ -964,6 +967,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_05_100000) do
   add_foreign_key "product_pickup_location_exclusions", "products"
   add_foreign_key "product_variants", "mold_types"
   add_foreign_key "product_variants", "products"
+  add_foreign_key "production_settings", "product_variants", column: "camembert_bread_variant_id"
   add_foreign_key "revenue_partnership_memberships", "artisans"
   add_foreign_key "revenue_partnership_memberships", "revenue_partnerships"
   add_foreign_key "sales_location_costs", "sales_locations"

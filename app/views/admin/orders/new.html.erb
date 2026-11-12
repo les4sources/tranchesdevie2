@@ -57,6 +57,8 @@
         </button>
       </div>
 
+      <%= render "admin/orders/party_hint", order: @order %>
+
       <%= render "admin/orders/variant_quantities_grid",
                  products: @products,
                  selected_quantities: @selected_quantities,

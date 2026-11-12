@@ -298,7 +298,8 @@ class Admin::OrdersController < Admin::BaseController
     # à la création et à l'édition, parce qu'encoder après coup une vente de
     # marché est exactement aussi légitime que corriger la commande qui en est
     # née. Rien ici ne filtre sur `cut_off_at` : l'admin régularise.
-    @products = Product.not_deleted.active.includes(:product_variants).ordered
+    @products = Product.not_deleted.active.includes(:product_variants).ordered.to_a
+    @products.select! { |product| form_product?(product) }
     @max_variant_count = @products.map { |product| product.product_variants.active.size }.max || 0
     @variant_lookup = @products.each_with_object({}) do |product, hash|
       product.product_variants.active.each do |variant|
@@ -315,6 +316,23 @@ class Admin::OrdersController < Admin::BaseController
         targeted_unit_discounts: service.targeted_unit_discounts(@variant_lookup)
       }
     end
+  end
+
+  # Une commande de pain ne propose pas les produits party (#camembert-parties).
+  # Une place de Camembert Party ajoutée ici restait attachée à la FOURNÉE, sans
+  # événement : elle échappait aux inscriptions, à la jauge et au compte des
+  # participants (cas de la commande 2154). L'inscription se fait depuis la
+  # fiche de la party (« Ajouter une inscription »).
+  #
+  # Exceptions : une commande déjà rattachée à une party garde ses produits
+  # party, et une ligne party DÉJÀ présente reste affichée — sans quoi
+  # l'enregistrement la supprimerait sans prévenir.
+  def form_product?(product)
+    return true if product.pizza_party_role_none?
+    return true if @order&.party_event_id.present?
+
+    existing_variant_ids = @order&.persisted? ? @order.order_items.map(&:product_variant_id) : []
+    product.product_variants.any? { |variant| existing_variant_ids.include?(variant.id) }
   end
 
   def order_form_params

@@ -1,0 +1,17 @@
+<%# Les inscriptions aux parties ne se prennent pas dans une commande de pain
+    (#camembert-parties) : elles n'y seraient pas comptées comme participants. %>
+<% unless order.party_event_id.present? %>
+  <% stray_party_line = order.persisted? && order.order_items.any? { |item| !item.product_variant.product.pizza_party_role_none? } %>
+  <div class="mt-3 rounded-md p-3 text-sm" style="background: <%= stray_party_line ? "var(--danger-100)" : "var(--surface-inset)" %>; border: 1px solid <%= stray_party_line ? "var(--danger-200)" : "var(--border-subtle)" %>; color: <%= stray_party_line ? "var(--danger-700)" : "var(--text-muted)" %>;">
+    <% if stray_party_line %>
+      <strong>Cette commande contient une place de party.</strong>
+      Rattachée au jour de cuisson, elle n'est pas comptée dans les participants de la party.
+      Mets sa quantité à 0 ici, puis inscris la personne depuis la fiche de la party
+      (<%= link_to "Parties", admin_party_events_path, class: "underline" %> → la party → « Ajouter une inscription »).
+    <% else %>
+      Pour inscrire quelqu'un à une Camembert Party ou une Pizza Party, passe par la fiche de la party
+      (<%= link_to "Parties", admin_party_events_path, class: "underline" %> → la party → « Ajouter une inscription ») :
+      ajoutée ici, la place ne serait pas comptée dans les participants.
+    <% end %>
+  </div>
+<% end %>

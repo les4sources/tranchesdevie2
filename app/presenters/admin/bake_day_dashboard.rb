@@ -297,7 +297,8 @@ module Admin
             customer_name: nil,
             title: event.title.presence || "Pizza party publique",
             paton_count: entries.sum { |entry| entry[:paton_count] },
-            orders_count: entries.size
+            orders_count: entries.size,
+            camembert: camembert_breads.find { |bread| bread[:party_event] == event }
           )
         end
 
@@ -327,8 +328,44 @@ module Admin
     # Lignes de commande que cette fournée doit produire — commandes du jour
     # ET pâtons des parties pétris ici. C'est l'assiette exacte du tableau
     # global, donc l'assiette exacte que les fournées (#194) se répartissent.
+    #
+    # Exception : les pains des Camembert Parties (#camembert-parties) sont des
+    # lignes CALCULÉES, sans enregistrement — on ne peut pas les affecter à une
+    # fournée. Ils restent hors du planificateur, qui ne voit pas non plus les
+    # places de la party (ce ne sont pas des pâtons).
     def production_items
-      production_order_items
+      production_order_items.select(&:persisted?)
+    end
+
+    # Pains à mettre à disposition des Camembert Parties que cette fournée
+    # prépare (#camembert-parties) : une entrée par événement.
+    #
+    # Une Camembert Party ne demande AUCUN pâton : ses places (adulte/enfant)
+    # ne sont qu'une inscription. La boulangerie fournit en revanche un grand
+    # froment 1 kg pour cinq convives, adultes et enfants confondus, arrondi au
+    # pain supérieur. L'arrondi se fait sur l'ÉVÉNEMENT entier, pas commande par
+    # commande : six inscriptions d'une personne font deux pains, pas six.
+    def camembert_breads
+      @camembert_breads ||= party_orders
+        .select { |order| order.party_event&.bread_only? }
+        .group_by(&:party_event)
+        .map do |event, event_orders|
+          persons = event_orders.sum { |order| paton_count_for(order) }
+          {
+            party_event: event,
+            persons: persons,
+            bread_count: PartyEvent.camembert_bread_count(persons),
+            variant: camembert_bread_variant,
+            anchor_order: event_orders.min_by(&:id)
+          }
+        end
+        .sort_by { |entry| entry[:party_event].held_on }
+    end
+
+    def camembert_bread_variant
+      return @camembert_bread_variant if defined?(@camembert_bread_variant)
+
+      @camembert_bread_variant = ProductionSetting.current.camembert_bread_variant
     end
 
     def orders_by_id
@@ -377,7 +414,11 @@ module Admin
       # party publique ne sont pas des clients de la fournée, c'est l'événement
       # qui l'est.
       public_rows = public_entries.group_by { |entry| entry[:party_event] }.map do |event, entries|
-        quantities = variant_quantities(entries.flat_map { |entry| entry[:order].order_items })
+        quantities = if event.bread_only?
+                       camembert_bread_quantities(event)
+        else
+                       variant_quantities(entries.flat_map { |entry| entry[:order].order_items })
+        end
 
         {
           key: "public-party-#{event.id}",
@@ -393,6 +434,14 @@ module Admin
       end
 
       (private_rows + public_rows).sort_by { |row| [ row[:held_on], row[:label].to_s.downcase ] }
+    end
+
+    # Ligne d'une Camembert Party dans la matrice : ses pains, pas ses places.
+    def camembert_bread_quantities(event)
+      entry = camembert_breads.find { |bread| bread[:party_event] == event }
+      return Hash.new(0) if entry.nil? || entry[:variant].nil? || entry[:bread_count].zero?
+
+      Hash.new(0).merge(entry[:variant].id => entry[:bread_count])
     end
 
     def variant_quantities(items)
@@ -444,11 +493,18 @@ module Admin
         held_on: event.held_on,
         slot_label: event.slot_label,
         private: event.kind_private_party?,
-        kind_label: event.kind_private_party? ? "Party privée" : "Party publique",
+        bread_only: event.bread_only?,
+        kind_label: party_kind_label(event),
         same_day: event.held_on == bake_day.baked_on,
         paton_count: paton_count_for(order),
         customer_name: order.customer&.full_name
       }
+    end
+
+    def party_kind_label(event)
+      return "Party privée" if event.kind_private_party?
+
+      event.bread_only? ? "Camembert Party" : "Party publique"
     end
 
     # Une boule par personne, parties publiques comprises — le compte vit sur
@@ -457,8 +513,27 @@ module Admin
       order.party_paton_count
     end
 
+    # Les places d'une Camembert Party ne sont pas des pâtons : elles sortent de
+    # la production, remplacées par les grands froments à fournir — des lignes
+    # calculées, jamais enregistrées (#camembert-parties). Ainsi ces pains
+    # comptent dans les quantités, la pâte et la farine du tableau, comme les
+    # autres, sans toucher à la commande ni au chiffre d'affaires.
     def production_order_items
-      @production_order_items ||= (production_orders + party_orders).flat_map(&:order_items)
+      @production_order_items ||= begin
+        bread_orders = party_orders.reject { |order| order.party_event&.bread_only? }
+        (production_orders + bread_orders).flat_map(&:order_items) + camembert_bread_items
+      end
+    end
+
+    def camembert_bread_items
+      camembert_breads.filter_map do |entry|
+        next if entry[:variant].nil? || entry[:bread_count].zero?
+
+        OrderItem.new(order_id: entry[:anchor_order].id,
+                      product_variant: entry[:variant],
+                      qty: entry[:bread_count],
+                      unit_price_cents: 0)
+      end
     end
   end
 end

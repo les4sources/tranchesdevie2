@@ -15,6 +15,9 @@ class Batch < ApplicationRecord
   # Une fournée supprimée ne détruit jamais une ligne de commande : les lignes
   # redeviennent simplement non affectées.
   has_many :order_items, dependent: :nullify
+  # Pains des Camembert Parties cuits dans cette fournée (lignes calculées).
+  has_many :camembert_party_events, class_name: "PartyEvent", foreign_key: :bread_batch_id,
+                                    inverse_of: :bread_batch, dependent: :nullify
 
   validates :name, presence: true, length: { maximum: 60 }
   validates :position, presence: true, numericality: { only_integer: true }

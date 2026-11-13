@@ -63,10 +63,18 @@ RSpec.describe Admin::BakeDayDashboard, "Camembert Party" do
     expect(card[:camembert][:bread_count]).to eq(2)
   end
 
-  it "ne propose pas les pains calculés au planificateur de fournées" do
+  it "donne les pains calculés au planificateur de fournées, avec la fournée de l'événement" do
     register(variant: adulte, qty: 6)
+    batch = create(:batch, bake_day: friday_bake, name: "Fournée 1", position: 1)
 
-    expect(dashboard.production_items).to all(be_persisted)
+    bread = dashboard.production_items.sole
+    expect(bread).to be_camembert_bread
+    expect(bread.product_variant).to eq(grand)
+    expect(bread.qty).to eq(2)
+    expect(bread.batch_id).to be_nil
+
+    event.update!(bread_batch: batch)
+    expect(described_class.new(friday_bake).production_items.sole.batch_id).to eq(batch.id)
   end
 
   it "laisse une Pizza Party publique en pâtons" do

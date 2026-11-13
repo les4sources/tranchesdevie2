@@ -22,6 +22,9 @@ class PartyEvent < ApplicationRecord
 
   # Commandes rattachées à l'événement (inscriptions publiques / réservation privée).
   has_many :orders, dependent: :nullify
+  # Fournée qui cuit les pains d'une Camembert Party (#camembert-parties) :
+  # ces pains sont calculés, sans ligne de commande, leur fournée vit donc ici.
+  belongs_to :bread_batch, class_name: "Batch", optional: true
 
   validates :held_on, presence: true
   validates :kind, presence: true

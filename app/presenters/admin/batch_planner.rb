@@ -75,13 +75,17 @@ module Admin
     end
 
     # Lignes groupées par client, pour l'affectation à la main. Chaque client
-    # porte son propre bouton « tout le client vers la fournée N ».
+    # porte son propre bouton « tout le client vers la fournée N ». Les pains
+    # d'une Camembert Party forment leur propre groupe, au nom de l'événement :
+    # ils n'appartiennent à aucun client (#camembert-parties).
     def customer_rows
       @customer_rows ||= production_items
-        .group_by { |item| orders_by_id[item.order_id]&.customer }
-        .map do |customer, items|
+        .group_by { |item| item.camembert_bread? ? item.camembert_party_event : orders_by_id[item.order_id]&.customer }
+        .map do |owner, items|
+          party_event = owner if owner.is_a?(PartyEvent)
           {
-            customer: customer,
+            customer: (owner unless party_event),
+            party_event: party_event,
             lines: items.map { |item| line_for(item) }
                         .sort_by { |line| [ line[:product].name.downcase, line[:variant].name.downcase ] },
             units_count: items.sum(&:qty),
@@ -89,7 +93,7 @@ module Admin
             uniform_batch_id: uniform_batch_id(items)
           }
         end
-        .sort_by { |row| customer_sort_key(row[:customer]) }
+        .sort_by { |row| customer_sort_key(row) }
     end
 
     # Récapitulatif par variante, pour l'affectation en masse « tous les petits
@@ -201,13 +205,18 @@ module Admin
         product: variant.product,
         qty: item.qty,
         batch_id: item.batch_id,
-        party: order&.source&.to_sym == :party
+        party: order&.source&.to_sym == :party,
+        camembert_party_event: item.camembert_party_event
       }
     end
 
     # Les commandes party n'ont pas toujours de client nommé ; on les range en
-    # fin de liste plutôt que de les faire remonter sur un nom vide.
-    def customer_sort_key(customer)
+    # fin de liste plutôt que de les faire remonter sur un nom vide. Les pains
+    # des Camembert Parties ferment la liste.
+    def customer_sort_key(row)
+      return [ 2, row[:party_event].held_on.to_s, row[:party_event].id.to_s ] if row[:party_event]
+
+      customer = row[:customer]
       return [ 1, "", "" ] if customer.nil?
 
       [ 0, customer.last_name.to_s.downcase, customer.first_name.to_s.downcase ]

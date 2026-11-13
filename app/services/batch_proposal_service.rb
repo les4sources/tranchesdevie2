@@ -56,9 +56,9 @@ class BatchProposalService
   # touche pas la base.
   def proposal
     @proposal ||= begin
-      items = dashboard.production_items.sort_by(&:id)
+      items = dashboard.production_items.sort_by { |item| item.camembert_bread? ? [ 1, item.camembert_party_event.id ] : [ 0, item.id ] }
       breads, others = items.partition { |item| item.product_variant.product.breads? }
-      by_id = items.index_by(&:id)
+      by_id = items.index_by { |item| line_key(item) }
 
       groups = BatchPacker.new(
         packer_products(breads),
@@ -83,7 +83,10 @@ class BatchProposalService
       bake_day.batches.destroy_all
       groups.each.with_index(1) do |items, position|
         batch = bake_day.batches.create!(name: "Fournée #{position}", position: position)
-        OrderItem.where(id: items.map(&:id)).update_all(batch_id: batch.id, updated_at: Time.current)
+        camembert, lines = items.partition(&:camembert_bread?)
+        OrderItem.where(id: lines.map(&:id)).update_all(batch_id: batch.id, updated_at: Time.current)
+        PartyEvent.where(id: camembert.map { |item| item.camembert_party_event.id })
+                  .update_all(bread_batch_id: batch.id, updated_at: Time.current)
       end
     end
 
@@ -103,7 +106,7 @@ class BatchProposalService
              family: flour&.id || :none,
              rank: self.class.flour_rank(flour),
              ingredients: product_items.flat_map { |item| item.product_variant.variant_ingredients.map(&:ingredient_id) }.to_set,
-             lines: product_items.map { |item| [ item.id, item.qty * (item.product_variant.flour_quantity || 0) ] }
+             lines: product_items.map { |item| [ line_key(item), item.qty * (item.product_variant.flour_quantity || 0) ] }
            )
          end
   end
@@ -112,7 +115,7 @@ class BatchProposalService
   def line_molds(items)
     items.each_with_object({}) do |item, molds|
       mold_type_id = item.product_variant.mold_type_id
-      molds[item.id] = [ mold_type_id, item.qty ] if mold_type_id
+      molds[line_key(item)] = [ mold_type_id, item.qty ] if mold_type_id
     end
   end
 
@@ -129,6 +132,12 @@ class BatchProposalService
     target = froment_grams.max.positive? ? froment_grams.index(froment_grams.max) : groups.size - 1
     groups[target] += others
     groups
+  end
+
+  # Clé d'une ligne pour le rangement. Les pains de Camembert Party n'ont pas
+  # d'id : on les désigne par leur événement.
+  def line_key(item)
+    item.camembert_bread? ? "camembert-#{item.camembert_party_event.id}" : item.id
   end
 
   def dough_grams(item)

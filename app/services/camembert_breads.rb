@@ -35,7 +35,8 @@ class CamembertBreads
   end
 
   # Lignes CALCULÉES, jamais enregistrées : elles pèsent sur la production
-  # sans toucher aux commandes ni au chiffre d'affaires.
+  # sans toucher aux commandes ni au chiffre d'affaires. Une par événement,
+  # avec la fournée choisie pour ses pains (`PartyEvent#bread_batch_id`).
   def order_items
     entries.filter_map do |entry|
       next if entry.variant.nil? || entry.bread_count.zero?
@@ -43,7 +44,9 @@ class CamembertBreads
       OrderItem.new(order_id: entry.anchor_order.id,
                     product_variant: entry.variant,
                     qty: entry.bread_count,
-                    unit_price_cents: 0)
+                    unit_price_cents: 0,
+                    batch_id: entry.party_event.bread_batch_id,
+                    camembert_party_event: entry.party_event)
     end
   end
 end

@@ -329,12 +329,13 @@ module Admin
     # ET pâtons des parties pétris ici. C'est l'assiette exacte du tableau
     # global, donc l'assiette exacte que les fournées (#194) se répartissent.
     #
-    # Exception : les pains des Camembert Parties (#camembert-parties) sont des
-    # lignes CALCULÉES, sans enregistrement — on ne peut pas les affecter à une
-    # fournée. Ils restent hors du planificateur, qui ne voit pas non plus les
-    # places de la party (ce ne sont pas des pâtons).
+    # Les pains des Camembert Parties (#camembert-parties) en font partie :
+    # lignes CALCULÉES (`OrderItem#camembert_bread?`), sans enregistrement, dont
+    # la fournée vit sur l'événement. Sans eux, le tableau des fournées perdait
+    # leur pâte, leur levain et leurs moules (13/11/2026). Les places de la
+    # party, elles, n'y sont pas : ce ne sont pas des pâtons.
     def production_items
-      production_order_items.select(&:persisted?)
+      production_order_items
     end
 
     # Pains à mettre à disposition des Camembert Parties que cette fournée

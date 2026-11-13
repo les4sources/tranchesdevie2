@@ -5,7 +5,7 @@ class Admin::BatchAssignmentsController < Admin::BaseController
 
   # Affecte des lignes à une fournée — ou les désaffecte quand `batch_id` est
   # vide. Trois portées, volontairement combinables (#194) : une ligne, tout un
-  # client, toute une variante. Affecter une variante puis retirer un client
+  # client, toute une variante — plus les pains d'une Camembert Party. Affecter une variante puis retirer un client
   # précis doit rester possible, donc la dernière action gagne, sans mémoire.
   #
   # Rien n'est proposé ni deviné : la répartition est manuelle de bout en bout.
@@ -16,7 +16,14 @@ class Admin::BatchAssignmentsController < Admin::BaseController
       return render_planner(notice: "Aucune ligne à affecter.")
     end
 
-    OrderItem.where(id: items.map(&:id)).update_all(batch_id: target_batch&.id, updated_at: Time.current)
+    # Les pains de Camembert Party sont calculés, sans ligne enregistrée :
+    # leur fournée s'écrit sur l'événement (#camembert-parties).
+    breads, lines = items.partition(&:camembert_bread?)
+    OrderItem.where(id: lines.map(&:id)).update_all(batch_id: target_batch&.id, updated_at: Time.current) if lines.any?
+    if breads.any?
+      PartyEvent.where(id: breads.map { |item| item.camembert_party_event.id })
+                .update_all(bread_batch_id: target_batch&.id, updated_at: Time.current)
+    end
 
     render_planner(notice: assignment_notice(items.size))
   end
@@ -31,10 +38,15 @@ class Admin::BatchAssignmentsController < Admin::BaseController
     if params[:order_item_id].present?
       id = params[:order_item_id].to_i
       items.select { |item| item.id == id }
+    elsif params[:party_event_id].present?
+      id = params[:party_event_id].to_i
+      items.select { |item| item.camembert_party_event&.id == id }
     elsif params[:customer_id].present?
+      # Les pains de Camembert Party pendent à la commande d'un inscrit, mais
+      # n'appartiennent pas à ce client : ils ont leur propre groupe.
       id = params[:customer_id].to_i
       orders = Order.where(id: items.map(&:order_id), customer_id: id).pluck(:id).to_set
-      items.select { |item| orders.include?(item.order_id) }
+      items.select { |item| !item.camembert_bread? && orders.include?(item.order_id) }
     elsif params[:product_variant_id].present?
       id = params[:product_variant_id].to_i
       items.select { |item| item.product_variant_id == id }

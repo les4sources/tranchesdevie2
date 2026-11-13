@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_100100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -408,6 +408,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_100100) do
 
   create_table "party_events", force: :cascade do |t|
     t.boolean "active", default: true, null: false
+    t.bigint "bread_batch_id"
     t.integer "capacity"
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
@@ -424,6 +425,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_100100) do
     t.integer "slot"
     t.string "title"
     t.datetime "updated_at", null: false
+    t.index ["bread_batch_id"], name: "index_party_events_on_bread_batch_id"
     t.index ["deleted_at"], name: "index_party_events_on_deleted_at"
     t.index ["held_on"], name: "index_party_events_on_held_on"
     t.index ["kind", "held_on"], name: "index_party_events_on_kind_and_held_on"
@@ -952,6 +954,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_100100) do
   add_foreign_key "partial_refunds", "order_issues"
   add_foreign_key "partial_refunds", "orders"
   add_foreign_key "partial_refunds", "wallet_transactions"
+  add_foreign_key "party_events", "batches", column: "bread_batch_id", on_delete: :nullify
   add_foreign_key "party_participants", "party_events"
   add_foreign_key "party_request_items", "party_requests"
   add_foreign_key "party_request_items", "product_variants"

@@ -199,6 +199,10 @@ Rails.application.routes.draw do
         # financier uniquement, ne touche pas au statut logistique.
         patch :encaissement
         post :refund
+        # Annulation depuis la fiche, avec le sort de l'argent choisi dans le même
+        # geste (portefeuille / carte / rien) ; sur une commande déjà annulée,
+        # rembourse seulement (#annulation-portefeuille).
+        post :cancel
         # Prélèvement sur le portefeuille du client d'une commande due saisie en admin.
         post :charge_wallet
         # Remboursement ligne à ligne d'une commande livrée

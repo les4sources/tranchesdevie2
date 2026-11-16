@@ -69,14 +69,24 @@ Un client passe au comptoir ou t'appelle ? Bouton **Nouvelle commande** en haut
 à droite. Tu choisis le mangeur (ou tu en crées un avec **Nouveau mangeur**), la
 fournée, et les produits.
 
-## Rembourser
+## Annuler une commande et rembourser
 
-Depuis le détail d'une commande, l'action **Rembourser** annule la commande,
-rend l'argent (en ligne ou sur le portefeuille) et prévient le client par SMS.
+Depuis le détail d'une commande, le bouton rouge **Annuler la commande…** ouvre
+une fenêtre qui annule la commande **et** te demande ce que tu fais de l'argent :
 
-⚠️ **Attention au piège** : dans le formulaire **Modifier**, le menu « Statut de paiement » a une option « Remboursé ». Cette option **ne rembourse rien** — c'est une simple étiquette comptable, réservée aux paiements en espèces rendus de la main à la main. Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille, utilise toujours le bouton rouge **Rembourser** sur la page de la commande : lui seul renvoie vraiment l'argent au client.
+- **Recréditer sur son portefeuille** (choix par défaut) : immédiat, le nouveau solde est affiché ;
+- **Rembourser sur sa carte / Bancontact** (seulement si le client a payé en ligne) : via Stripe, quelques jours de délai ;
+- **Ne pas rembourser maintenant** : si tu as rendu l'argent autrement.
 
-Le bouton **Rembourser** n'est visible que tant que la commande est « Payée » et que la date limite de commande n'est pas passée. S'il n'apparaît plus et qu'il faut quand même rembourser, contacte Michael.
+Une case **Prévenir le client par SMS** est cochée par défaut. Le bouton reste
+disponible après la date limite de commande : c'est toi qui décides.
+
+Une commande **déjà annulée** mais pas encore remboursée (par exemple annulée
+depuis **Modifier**) affiche un encadré orange « Commande annulée, mais pas
+encore remboursée » et un bouton **Rembourser … €…** : il ouvre la même fenêtre,
+sans rien annuler de plus.
+
+⚠️ **Attention au piège** : dans le formulaire **Modifier**, choisir le statut « Annulée » ou le statut de paiement « Remboursé » **ne rend pas l'argent** — ce sont de simples étiquettes. Pour rendre l'argent, passe toujours par **Annuler la commande…** (ou **Rembourser … €…**) sur la page de la commande.
 
 ## Rembourser une partie seulement
 

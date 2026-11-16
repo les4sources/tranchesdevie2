@@ -51,9 +51,11 @@ class WalletService
       )
     end
 
-    def refund_for_order(wallet:, order:)
+    # `amount_cents` : par défaut le total ; moins quand une partie a déjà été
+    # rendue ligne à ligne (annulation après un remboursement partiel).
+    def refund_for_order(wallet:, order:, amount_cents: order.total_cents)
       wallet.credit!(
-        order.total_cents,
+        amount_cents,
         type: :order_refund,
         order: order,
         description: "Remboursement commande #{order.order_number}"

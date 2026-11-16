@@ -142,6 +142,12 @@
               </label>
             <% end %>
           </div>
+          <% if @order.payment_received? && !@order.party? %>
+            <p class="mt-2 text-xs" style="color: var(--text-muted);">
+              Choisir « Annulée » ici ne rembourse pas le client. Pour annuler <strong>et</strong> recréditer son portefeuille,
+              utilise plutôt <%= link_to "« Annuler la commande… »", admin_order_path(@order), class: "adm-link" %> sur la fiche.
+            </p>
+          <% end %>
         </fieldset>
       </div>
     </div>
@@ -172,10 +178,9 @@
         <p class="font-semibold">⚠️ Ce statut ne rembourse pas le client — c'est une simple étiquette comptable.</p>
         <p class="mt-2">
           Pour rendre l'argent d'un paiement en ligne (Bancontact, carte) ou portefeuille,
-          utilisez le bouton <strong>« Rembourser »</strong> sur
+          utilisez le bouton <strong>« Annuler la commande… »</strong> (ou <strong>« Rembourser… »</strong> si elle est déjà annulée) sur
           <%= link_to "la page de la commande", admin_order_path(@order), class: "font-medium underline" %> :
-          lui seul renvoie l'argent et prévient le client par SMS.
-          S'il n'est plus affiché (commande déjà prête ou date limite passée), contactez Michael.
+          lui seul renvoie l'argent (portefeuille ou carte) et prévient le client par SMS.
         </p>
         <p class="mt-2">
           Seul un paiement en espèces rendu de la main à la main peut être marqué « Remboursé » ici.

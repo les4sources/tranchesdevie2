@@ -316,6 +316,24 @@ class Order < ApplicationRecord
     PartialRefundItem.where(order_item_id: order_items.map(&:id)).group(:order_item_id).sum(:qty)
   end
 
+  # --- Annulation par l'admin (#annulation-portefeuille) ---------------------
+
+  # Statuts depuis lesquels le boulanger peut annuler une commande de pain depuis
+  # sa fiche. Une commande retirée (ou non retirée) ne s'annule plus : on en rend
+  # une partie (remboursement partiel). Les parties ont leur propre parcours.
+  ADMIN_CANCELLABLE_STATUSES = %w[pending unpaid paid ready planned awaiting_payment].freeze
+
+  def admin_cancellable?
+    !party? && ADMIN_CANCELLABLE_STATUSES.include?(status)
+  end
+
+  # Commande annulée dont l'argent encaissé n'a pas (encore) été rendu : c'est
+  # le cas d'une annulation faite depuis « Modifier » (le statut seul ne rend
+  # rien). La fiche propose alors de rembourser après coup.
+  def cancelled_with_money_to_return?
+    cancelled? && !party? && refundable_remaining_cents.positive?
+  end
+
   def can_be_partially_refunded?
     !cancelled? && refundable_remaining_cents.positive?
   end

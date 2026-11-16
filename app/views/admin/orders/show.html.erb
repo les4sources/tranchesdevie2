@@ -178,9 +178,16 @@
         <% end %>
       <% end %>
 
+      <%# Commande de pain : annuler et rendre l'argent se font dans le même geste
+          (portefeuille par défaut), même après le cut-off ; une commande annulée
+          sans remboursement se rembourse encore ici (#annulation-portefeuille). %>
+      <% if @order.admin_cancellable? || @order.cancelled_with_money_to_return? %>
+        <%= render "admin/orders/cancel_dialog", order: @order %>
+      <% end %>
+
       <%# Party : pas de cutoff fournée — remboursable tant que l'événement n'est pas passé. %>
       <% refundable_window = @order.bake_day ? !@order.bake_day.cut_off_passed? : @order.event_date >= Date.current %>
-      <% if @order.paid? && refundable_window %>
+      <% if @order.party? && @order.paid? && refundable_window %>
         <%= form_with url: refund_admin_order_path(@order), method: :post, local: true do |f| %>
           <%= f.submit "Rembourser",
               class: adm_btn_class(:danger, "w-full"),

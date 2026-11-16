@@ -70,6 +70,27 @@ class SmsService
     )
   end
 
+  # Annulation par la boulangerie, depuis l'admin (#annulation-portefeuille).
+  # Distinct de `send_refund`, qui parle d'une annulation « avant l'heure
+  # limite » : ici le cut-off peut être passé, et l'argent va souvent sur le
+  # portefeuille plutôt que sur la carte.
+  def self.send_admin_cancellation_refund(order, amount_cents:, channel:)
+    return false unless order.customer.sms_enabled?
+
+    amount = number_to_currency(amount_cents / 100.0, unit: "€", separator: ",", delimiter: "", format: "%n %u")
+    destination = channel.to_s == "wallet" ? "crédités sur ton portefeuille" : "remboursés sur ton moyen de paiement"
+    date = order.bake_day&.baked_on&.strftime("%d/%m")
+    commande = date ? "Ta commande du #{date}" : "Ta commande"
+    message = "#{commande} chez Tranches de Vie est annulée : #{amount} #{destination}."
+    send_sms(
+      to: order.customer.phone_e164,
+      body: message,
+      kind: :refund,
+      baked_on: order.event_date,
+      customer_id: order.customer.id
+    )
+  end
+
   def self.send_bake_cancelled(order, refunded: true)
     return false unless order.customer.sms_enabled?
 

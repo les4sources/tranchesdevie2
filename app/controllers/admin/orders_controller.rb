@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::BaseController
-  before_action :set_order, only: [ :show, :edit, :update, :update_status, :encaissement, :charge_wallet, :refund, :destroy ]
+  before_action :set_order, only: [ :show, :edit, :update, :update_status, :encaissement, :charge_wallet, :refund, :cancel, :destroy ]
   before_action :load_form_dependencies, only: [ :new, :create, :edit, :update ]
 
   def index
@@ -94,6 +94,13 @@ class Admin::OrdersController < Admin::BaseController
       adjustment = WalletService.adjust_for_order(order: @order, previous_total_cents: previous_total_cents)
     end
 
+    # Annuler depuis « Modifier » ne rend pas l'argent : on le dit tout de
+    # suite, la fiche propose le remboursement (#annulation-portefeuille).
+    if @order.cancelled_with_money_to_return?
+      amount = helpers.number_to_currency(@order.refundable_remaining_cents / 100.0, unit: "€", separator: ",", delimiter: "")
+      flash[:alert] = "Commande annulée, mais les #{amount} payés n'ont pas encore été rendus. " \
+                      "Utilise « Rembourser » dans le cadre Actions."
+    end
     redirect_to admin_order_path(@order), notice: update_notice(adjustment)
   rescue ActiveRecord::RecordInvalid
     render :edit, status: :unprocessable_entity
@@ -207,6 +214,19 @@ class Admin::OrdersController < Admin::BaseController
     end
   end
 
+  # Annule la commande et rend l'argent sur le canal choisi dans la modale
+  # « Annuler la commande » ; sur une commande déjà annulée, rembourse seulement.
+  def cancel
+    was_cancelled = @order.cancelled?
+    service = AdminOrderCancellationService.new(@order, refund: params[:refund], notify: params[:notify])
+
+    if service.call
+      redirect_to admin_order_path(@order), notice: cancel_notice(service, was_cancelled)
+    else
+      redirect_to admin_order_path(@order), alert: service.error
+    end
+  end
+
   def refund
     service = RefundService.new(@order)
 
@@ -231,6 +251,22 @@ class Admin::OrdersController < Admin::BaseController
   end
 
   private
+
+  def cancel_notice(service, was_cancelled)
+    amount = helpers.number_to_currency(service.refunded_cents / 100.0, unit: "€", separator: ",", delimiter: "")
+    refund_text = case service.refund_channel
+    when "wallet" then "#{amount} recrédités sur le portefeuille"
+    when "stripe" then "#{amount} remboursés sur la carte / Bancontact"
+    end
+
+    if was_cancelled
+      "Remboursement effectué : #{refund_text}"
+    elsif refund_text
+      "Commande annulée, #{refund_text}"
+    else
+      "Commande annulée"
+    end
+  end
 
   # Filtre client de la page Commandes (#retour Stéphanie) : soit un client
   # précis choisi dans l'autocomplétion (`customer_id`), soit une recherche

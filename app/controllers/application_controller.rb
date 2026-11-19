@@ -57,10 +57,14 @@ class ApplicationController < ActionController::Base
     bake_day.baked_on.wday
   end
 
+  # Durée d'inactivité après laquelle l'admin doit se reconnecter. Glissante :
+  # chaque page admin chargée remet le compteur à zéro (Admin::BaseController).
+  ADMIN_SESSION_TTL = 7.days
+
   def admin_authenticated?
     session[:admin_authenticated] == true &&
       session[:admin_authenticated_at].present? &&
-      Time.current - Time.parse(session[:admin_authenticated_at]) < 24.hours
+      Time.current - Time.parse(session[:admin_authenticated_at]) < ADMIN_SESSION_TTL
   end
 
   def current_cart_items

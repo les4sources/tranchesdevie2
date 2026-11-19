@@ -160,7 +160,7 @@ A delivered order can be refunded **line by line** without being cancelled (a mi
 ## Authentication
 
 - **Customers**: Phone-based OTP via Smstools. Session expires after 1 year. Rate limited (5 OTP/phone/60s via Rack::Attack).
-- **Admin**: Single password from `ENV['ADMIN_PASSWORD']`. Session expires after 24 hours. No roles/permissions.
+- **Admin**: Single password from `ENV['ADMIN_PASSWORD']`. Session expires after 7 days of inactivity (sliding: each admin request renews it — `ApplicationController::ADMIN_SESSION_TTL`). No roles/permissions.
 
 ## Background Jobs (Solid Queue)
 

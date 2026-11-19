@@ -6,7 +6,11 @@ class Admin::BaseController < ApplicationController
   private
 
   def authenticate_admin!
-    return if admin_authenticated?
+    if admin_authenticated?
+      # Prolonge la session à chaque accès (expiration glissante).
+      session[:admin_authenticated_at] = Time.current.to_s
+      return
+    end
 
     redirect_to admin_login_path, alert: "Veuillez vous connecter"
   end

@@ -80,5 +80,16 @@ RSpec.describe "Feuille compta — assiette du CA", type: :model do
       expect(sheet.settlement.stripe_cents).to eq(200)
       expect(sheet.settlement.untracked_cents).to eq((BILLABLE_TOTAL * 100) - 200)
     end
+
+    # Régression : une commande pointée à la main (liquide, virement…) faisait
+    # planter la feuille en erreur 500 (nil + Integer).
+    it "range une commande pointée à la main dans « pointé à la main »" do
+      cash_order = Order.completed.find_by(total_cents: 200)
+      cash_order.update_columns(offline_payment_method: Order.offline_payment_methods[:cash])
+
+      expect(sheet.settlement.offline_cents).to eq(200)
+      expect(sheet.settlement.untracked_cents).to eq((BILLABLE_TOTAL * 100) - 200)
+      expect(sheet.settlement.total_cents).to eq(sheet.day.revenue_cents)
+    end
   end
 end

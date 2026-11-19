@@ -178,6 +178,12 @@ p.mb-4.text-sm style="color: var(--text-muted);" Chiffres AUTHORITATIVE de l'app
             td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(settlement.wallet_cents)
           tr
             td style="color: var(--text-body);"
+              | Pointé à la main
+              span.block.text-xs style="color: var(--text-muted);"
+                | Liquide, virement, paiement en ligne hors application ou réglé avec le séjour.
+            td.adm-grid-num.text-right style="color: var(--text-strong);" = euro.(settlement.offline_cents)
+          tr
+            td style="color: var(--text-body);"
               | Aucun paiement enregistré
               span.block.text-xs style="color: var(--text-muted);"
                 | L'application ne trace pas les encaissements en liquide : ce montant n'est pas un impayé, c'est simplement ce dont elle ne connaît pas le moyen de paiement.

@@ -14,8 +14,21 @@ class ProcessPlannedOrdersService
     end
 
     def process_order(order, send_sms: true)
+      customer = order.customer.reload
+
+      # Clients internes / professionnels (`skip_wallet_check`, ex. points de
+      # dépôt facturés au mois) : le calendrier ne leur demande aucun solde, la
+      # validation au cut-off ne doit pas non plus. La commande est confirmée
+      # sans débit, en `unpaid` comme une commande cash : elle sera réglée au
+      # retrait ou facturée. Sans ce garde, elle était annulée « faute de
+      # solde » à chaque cut-off.
+      if customer.skip_wallet_check?
+        order.transition_to!(:unpaid)
+        return
+      end
+
       # Reload customer to ensure fresh wallet association
-      wallet = order.customer.reload.wallet
+      wallet = customer.wallet
 
       if wallet.nil? || !wallet.can_cover?(order.total_cents)
         cancel_order(order, send_sms: send_sms)

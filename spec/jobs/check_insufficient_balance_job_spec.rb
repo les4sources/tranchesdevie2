@@ -14,6 +14,13 @@ RSpec.describe CheckInsufficientBalanceJob, type: :job do
     described_class.perform_now
   end
 
+  it "does not warn an internal customer (skip_wallet_check)" do
+    customer.update!(skip_wallet_check: true)
+    create(:order, :planned, customer: customer, bake_day: bake_day, total_cents: 5_000)
+    expect(SmsService).not_to receive(:send_insufficient_balance_warning)
+    described_class.perform_now
+  end
+
   it 'does not warn when the wallet can cover the order' do
     create(:wallet, customer: customer, balance_cents: 10_000)
     create(:order, :planned, customer: customer, bake_day: bake_day, total_cents: 5_000)

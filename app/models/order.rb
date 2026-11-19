@@ -417,7 +417,9 @@ class Order < ApplicationRecord
       # retrait de la validation, blocage du créneau).
       [ :paid, :cancelled ].include?(new_status.to_sym)
     when :planned
-      [ :paid, :cancelled ].include?(new_status.to_sym)
+      # `unpaid` : commande planifiée d'un client interne (`skip_wallet_check`),
+      # confirmée au cut-off sans débit du portefeuille.
+      [ :paid, :unpaid, :cancelled ].include?(new_status.to_sym)
     when :paid
       [ :ready, :cancelled ].include?(new_status.to_sym)
     when :unpaid

@@ -31,6 +31,9 @@ class CheckInsufficientBalanceJob < ApplicationJob
   private
 
   def check_and_notify(order)
+    # Client interne : aucun solde n'est exigé, rien à signaler.
+    return if order.customer.skip_wallet_check?
+
     wallet = order.customer.wallet
 
     if wallet.nil? || !wallet.can_cover?(order.total_cents)

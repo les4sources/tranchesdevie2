@@ -113,6 +113,33 @@ RSpec.describe ProcessPlannedOrdersService do
       end
     end
 
+    context "when the customer is internal (skip_wallet_check)" do
+      before do
+        customer.update!(skip_wallet_check: true)
+        wallet.update!(balance_cents: 0)
+      end
+
+      it "confirms the order as unpaid instead of cancelling it" do
+        ProcessPlannedOrdersService.process_order(planned_order)
+        expect(planned_order.reload.status).to eq("unpaid")
+      end
+
+      it "does not touch the wallet nor send a debit/cancellation SMS" do
+        expect(SmsService).not_to receive(:send_planned_order_confirmed)
+        expect(SmsService).not_to receive(:send_planned_order_cancelled)
+
+        expect {
+          ProcessPlannedOrdersService.process_order(planned_order)
+        }.not_to change { wallet.reload.balance_cents }
+      end
+
+      it "works even without any wallet" do
+        wallet.destroy!
+        ProcessPlannedOrdersService.process_order(planned_order)
+        expect(planned_order.reload.status).to eq("unpaid")
+      end
+    end
+
     context 'when send_sms: false (stale catch-up)' do
       it 'still debits the wallet and marks the order paid but does not send confirmation SMS' do
         expect(SmsService).not_to receive(:send_planned_order_confirmed)

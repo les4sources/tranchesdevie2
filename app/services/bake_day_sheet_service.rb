@@ -61,9 +61,14 @@ class BakeDaySheetService
   # avancé y portent « unpaid » sans qu'on sache ce qui a été encaissé en
   # liquide. La ligne `untracked_cents` rapporte donc un fait — « aucun paiement
   # enregistré » — et surtout PAS un impayé.
-  Settlement = Struct.new(:stripe_cents, :wallet_cents, :untracked_cents, keyword_init: true) do
+  #
+  # `offline_cents` : encaissements pointés à la main par l'équipe
+  # (`offline_payment_method` : liquide, virement, en ligne hors app, avec le
+  # séjour). Sans ce compartiment, une seule commande pointée faisait planter
+  # la feuille (nil + Integer → erreur 500).
+  Settlement = Struct.new(:stripe_cents, :wallet_cents, :offline_cents, :untracked_cents, keyword_init: true) do
     def total_cents
-      stripe_cents + wallet_cents + untracked_cents
+      stripe_cents + wallet_cents + offline_cents + untracked_cents
     end
   end
 
@@ -198,18 +203,28 @@ class BakeDaySheetService
 
   # Ventilation du CA du jour par moyen de paiement réellement enregistré.
   def build_settlement
-    totals = { stripe: 0, wallet: 0, untracked: 0 }
+    totals = { stripe: 0, wallet: 0, offline: 0, untracked: 0 }
 
     accounted_orders.each do |order|
-      bucket = order.payment_method || :untracked
-      totals[bucket] += order.total_cents.to_i
+      totals[settlement_bucket(order)] += order.total_cents.to_i
     end
 
     Settlement.new(
       stripe_cents: totals[:stripe],
       wallet_cents: totals[:wallet],
+      offline_cents: totals[:offline],
       untracked_cents: totals[:untracked]
     )
+  end
+
+  # :stripe / :wallet tels quels ; tout moyen pointé à la main (liquide,
+  # virement…) va dans :offline ; rien d'enregistré → :untracked.
+  def settlement_bucket(order)
+    case order.payment_method
+    when :stripe, :wallet then order.payment_method
+    when nil then :untracked
+    else :offline
+    end
   end
 
   # Détail authoritative du jour (marge, déductions, split 70/30, parties) —

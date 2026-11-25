@@ -3,6 +3,8 @@ require 'rails_helper'
 # Admin panel: auth gate + order write actions + section loads.
 # Covers ISC-46, 47, 48, 49, 50, 51, 52, 54.
 RSpec.describe 'Admin', type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   around do |ex|
     original = ENV['ADMIN_PASSWORD']
     ENV['ADMIN_PASSWORD'] = 'test-admin-pw'
@@ -25,6 +27,34 @@ RSpec.describe 'Admin', type: :request do
       login_admin
       get admin_orders_path
       expect(response).to have_http_status(:ok)
+    end
+
+    it 'keeps the admin signed in for up to 7 days of inactivity' do
+      login_admin
+      travel 7.days - 1.minute do
+        get admin_orders_path
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it 'expires the admin session after 7 days without access' do
+      login_admin
+      travel 7.days + 1.minute do
+        get admin_orders_path
+        expect(response).to redirect_to(admin_login_path)
+      end
+    end
+
+    it 'extends the admin session on each access (sliding expiry)' do
+      login_admin
+      travel 6.days
+      get admin_orders_path
+      expect(response).to have_http_status(:ok)
+      travel 6.days
+      get admin_orders_path
+      expect(response).to have_http_status(:ok)
+    ensure
+      travel_back
     end
 
     it 'rejects a wrong password' do

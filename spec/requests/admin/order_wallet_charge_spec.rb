@@ -56,6 +56,17 @@ RSpec.describe "Admin — prélèvement sur le portefeuille", type: :request do
     expect(wallet.reload.balance_cents).to eq(5_000)
   end
 
+  it "explique sur la fiche que le solde est trop bas et quoi faire" do
+    order = admin_order(total_cents: 6_025)
+
+    get admin_order_path(order)
+
+    expect(response.body).to include("Portefeuille : solde insuffisant pour prélever cette commande.")
+    expect(response.body).to include("Il reste 50,00 € sur le portefeuille")
+    expect(response.body).to include("Ce bouton ne prélève rien sur le portefeuille.")
+    expect(response.body).not_to include("Prélever sur le portefeuille\"")
+  end
+
   it "ne dépense pas l'argent réservé aux commandes planifiées" do
     create(:order, :planned, customer: customer, bake_day: bake_day, total_cents: 4_000, source: :calendar)
     order = admin_order

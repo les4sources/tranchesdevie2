@@ -136,9 +136,17 @@
           <% end %>
           <p class="text-sm" style="color: var(--text-muted);">Solde disponible : <%= wallet_available_euros %></p>
         <% else %>
-          <p class="text-sm" style="color: var(--text-muted);">
-            Portefeuille : solde disponible insuffisant (<%= wallet_available_euros %>) pour prélever cette commande.
-          </p>
+          <%# Message bien visible : sans lui, on cherche le bouton puis on se rabat
+              sur « Marquer comme payée », qui ne prélève rien (portefeuille de
+              Stéphanie, 26/11/2026). %>
+          <div class="rounded-md p-3 text-sm" style="background: var(--warning-100); border: 1px solid var(--warning-200); color: var(--warning-700);">
+            <p class="font-semibold">Portefeuille : solde insuffisant pour prélever cette commande.</p>
+            <p class="mt-1">
+              Il reste <%= wallet_available_euros %> sur le portefeuille, la commande coûte
+              <%= number_to_currency(@order.total_euros, unit: "€", separator: ",", delimiter: "") %>.
+              Une fois le portefeuille rechargé, recharge cette page : le bouton « Prélever sur le portefeuille » apparaîtra.
+            </p>
+          </div>
         <% end %>
       <% end %>
 
@@ -152,6 +160,11 @@
           <%= f.submit "Marquer comme payée",
               class: adm_btn_class(:primary, "w-full"),
               data: { turbo_confirm: "Marquer cette commande comme payée ?" } %>
+          <% if @order.customer&.wallet.present? %>
+            <p class="text-xs" style="color: var(--text-muted);">
+              Argent reçu en liquide ou par virement. Ce bouton ne prélève rien sur le portefeuille.
+            </p>
+          <% end %>
         <% end %>
       <% end %>
 

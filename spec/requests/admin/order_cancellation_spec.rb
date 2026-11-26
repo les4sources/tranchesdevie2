@@ -154,4 +154,46 @@ RSpec.describe "Admin — annulation d'une commande avec remboursement", type: :
     expect(flash[:alert]).to eq("Cette commande ne peut pas être annulée ici.")
     expect(order.reload).to be_picked_up
   end
+  # Portefeuille de Stéphanie, 26/11/2026 : commande saisie en admin, marquée
+  # « payée » à la main (rien prélevé), puis annulée → 60,25 € recrédités sur un
+  # portefeuille qui ne les avait jamais payés.
+  context "commande marquée payée à la main, sans aucun paiement enregistré" do
+    def hand_marked_paid_order(total_cents: 6_025)
+      order = create(:order, :unpaid, customer: customer, bake_day: bake_day, total_cents: total_cents, source: :admin)
+      create(:order_item, order: order, product_variant: variant, qty: 1)
+      patch update_status_admin_order_path(order), params: { status: "paid" }
+      order.reload
+    end
+
+    it "ne coche pas le portefeuille par défaut et prévient qu'aucun paiement n'est enregistré" do
+      order = hand_marked_paid_order
+      expect(order).to be_payment_untraced
+
+      get admin_order_path(order)
+
+      expect(response.body).to include("Aucun paiement enregistré sur cette commande.")
+      expect(response.body).to include("La commande est marquée payée")
+      expect(response.body).to match(/<input[^>]*id="refund_none"[^>]*checked/)
+      expect(response.body).not_to match(/<input[^>]*id="refund_wallet"[^>]*checked/)
+    end
+
+    it "annule sans toucher au portefeuille avec le choix par défaut" do
+      order = hand_marked_paid_order
+
+      post cancel_admin_order_path(order), params: { refund: "none" }
+
+      expect(order.reload).to be_cancelled
+      expect(wallet.reload.balance_cents).to eq(5_000)
+    end
+
+    it "garde le portefeuille coché par défaut quand il a vraiment payé" do
+      order = wallet_paid_order
+
+      get admin_order_path(order)
+
+      expect(order).not_to be_payment_untraced
+      expect(response.body).not_to include("Aucun paiement enregistré sur cette commande.")
+      expect(response.body).to match(/<input[^>]*id="refund_wallet"[^>]*checked/)
+    end
+  end
 end

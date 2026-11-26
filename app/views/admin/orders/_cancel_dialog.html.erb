@@ -10,12 +10,20 @@
 <% wallet = order.customer.wallet %>
 <% paid_label = order_payment_method_label(order.payment_method) %>
 <% sms_enabled = order.customer.sms_enabled? %>
+<%# Payée « à la main », sans trace : rien ne dit que l'argent est arrivé. On ne
+    coche pas le portefeuille par défaut, on oblige à choisir en connaissance
+    de cause. %>
+<% untraced = order.payment_untraced? %>
 
 <div data-controller="dialog" class="space-y-2">
   <% if refund_only %>
     <div class="rounded-md p-3 text-sm" style="background: var(--warning-100); border: 1px solid var(--warning-200); color: var(--warning-700);">
       <p class="font-semibold">Commande annulée, mais pas encore remboursée.</p>
-      <p class="mt-1">Le client a payé <%= amount %><% if paid_label %> (<%= paid_label.downcase %>)<% end %> : rends-lui cet argent ici.</p>
+      <% if untraced %>
+        <p class="mt-1">Elle était marquée payée (<%= amount %>) à la main, sans paiement enregistré. Ne rembourse que si le client t'a vraiment payé.</p>
+      <% else %>
+        <p class="mt-1">Le client a payé <%= amount %><% if paid_label %> (<%= paid_label.downcase %>)<% end %> : rends-lui cet argent ici.</p>
+      <% end %>
     </div>
     <button type="button" data-action="dialog#open" class="<%= adm_btn_class(:primary, "w-full") %>">
       Rembourser <%= amount %>…
@@ -46,13 +54,28 @@
     <%= form_with url: cancel_admin_order_path(order), method: :post, local: true, class: "space-y-4 p-4" do %>
       <% if amount_cents.positive? %>
         <p class="text-sm" style="color: var(--text-body);">
-          Le client a payé <strong style="color: var(--text-strong);"><%= amount %></strong><% if paid_label %> (<%= paid_label.downcase %>)<% end %>.
-          Que fait-on de cet argent ?
+          <% if untraced %>
+            La commande est marquée payée : <strong style="color: var(--text-strong);"><%= amount %></strong>.
+            Faut-il rendre quelque chose ?
+          <% else %>
+            Le client a payé <strong style="color: var(--text-strong);"><%= amount %></strong><% if paid_label %> (<%= paid_label.downcase %>)<% end %>.
+            Que fait-on de cet argent ?
+          <% end %>
         </p>
+
+        <% if untraced %>
+          <div class="rounded-md p-3 text-sm" style="background: var(--warning-100); border: 1px solid var(--warning-200); color: var(--warning-700);">
+            <p class="font-semibold">Aucun paiement enregistré sur cette commande.</p>
+            <p class="mt-1">
+              Elle a été marquée « payée » à la main : rien n'a été prélevé sur le portefeuille ni payé par carte.
+              Ne recrédite le portefeuille que si le client t'a vraiment payé (liquide, virement).
+            </p>
+          </div>
+        <% end %>
 
         <div class="space-y-2">
           <label class="flex items-start gap-2 rounded-md p-3 text-sm" style="border: 1px solid var(--border-subtle); color: var(--text-strong);">
-            <%= radio_button_tag :refund, "wallet", true, class: "mt-0.5", style: "accent-color: var(--brand);" %>
+            <%= radio_button_tag :refund, "wallet", !untraced, class: "mt-0.5", style: "accent-color: var(--brand);", required: true %>
             <span>
               <span class="font-semibold">Recréditer <%= amount %> sur son portefeuille</span>
               <span class="block text-xs" style="color: var(--text-muted);">
@@ -73,10 +96,13 @@
 
           <% unless refund_only %>
             <label class="flex items-start gap-2 rounded-md p-3 text-sm" style="border: 1px solid var(--border-subtle); color: var(--text-strong);">
-              <%= radio_button_tag :refund, "none", false, class: "mt-0.5", style: "accent-color: var(--brand);" %>
+              <%= radio_button_tag :refund, "none", untraced, class: "mt-0.5", style: "accent-color: var(--brand);" %>
               <span>
                 <span class="font-semibold">Ne pas rembourser maintenant</span>
-                <span class="block text-xs" style="color: var(--text-muted);">Argent rendu autrement (liquide…). Tu pourras encore rembourser depuis cette fiche.</span>
+                <span class="block text-xs" style="color: var(--text-muted);">
+                  <% if untraced %>Le bon choix si rien n'a été encaissé.<% else %>Argent rendu autrement (liquide…).<% end %>
+                  Tu pourras encore rembourser depuis cette fiche.
+                </span>
               </span>
             </label>
           <% end %>

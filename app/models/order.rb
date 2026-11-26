@@ -280,6 +280,16 @@ class Order < ApplicationRecord
     payment.present? || wallet_order_debit.present?
   end
 
+  # Marquée « payée » à la main (« Marquer comme payée », « Modifier ») sans
+  # aucune trace d'encaissement : ni Stripe, ni débit du portefeuille, ni moyen
+  # hors-ligne pointé. L'app ne sait donc pas si l'argent est arrivé. À
+  # l'annulation, on ne propose plus par défaut de le « rendre » sur le
+  # portefeuille : c'est ainsi que 60,25 € jamais prélevés y ont été recrédités
+  # (portefeuille de Stéphanie, 26/11/2026).
+  def payment_untraced?
+    payment_received? && payment_method.nil?
+  end
+
   # Commande remise mais dont l'encaissement n'a pas été pointé (#275).
   # Volontairement distinct de « impayé » : l'app ne trace pas le liquide, donc
   # elle ne PEUT PAS savoir si le client a payé.
